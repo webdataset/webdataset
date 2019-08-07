@@ -37,6 +37,7 @@ standard_library.install_aliases()
 from torch.utils.data import IterableDataset
 
 debug_dataset = os.environ.get("WDS_DEBUG", 0)
+popen_bufsize = int(os.environ.get("WDS_BUFSIZE", "2000000"))
 
 meta_prefix = "__"
 meta_suffix = "__"
@@ -480,9 +481,9 @@ class Pipe(object):
         self.close()
 
 
-def command_pipe(cmd):
+def command_pipe(cmd, bufsize=popen_bufsize):
     def f(url):
-        stream = Pipe(cmd.format(url), stdout=PIPE, shell=True)
+        stream = Pipe(cmd.format(url), stdout=PIPE, shell=True, bufsize=bufsize)
         return stream
     return f
 
