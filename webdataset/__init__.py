@@ -4,4 +4,4 @@
 # See the LICENSE file for licensing terms (BSD-style).
 #
 
-from .dataset import WebDataset
+from .dataset import WebDataset, default_handlers
