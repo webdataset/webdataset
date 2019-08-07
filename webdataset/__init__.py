@@ -5,3 +5,4 @@
 #
 
 from .dataset import WebDataset, default_handlers
+from . import tenbin

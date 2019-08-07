@@ -124,6 +124,9 @@ def make_handlers(imagetype):
         handlers[extension] = pickle.loads
     for extension in ["json", "jsn"]:
         handlers[extension] = simplejson.loads
+    for extension in ["ten", "tb"]:
+        from . import tenbin
+        handlers[extension] = tenbin.decode_buffer
     try:
         import msgpack
         for extension in ["mp", "msgpack", "msg"]:
@@ -359,6 +362,43 @@ def group_by_keys(keys=base_plus_ext, lcase=True, suffixes=None):
     return iterator
 
 
+def make_unique(keys):
+    """Given a list of keys, ensures that they are all unique"."""
+    result = []
+    for i, k in enumerate(keys):
+        if k is None or k=="" or k in result:
+            result.append(f"_{i}")
+        else:
+            result.append(k)
+    return result
+
+
+def extract_container(container):
+    """Extracts an embedded container format from a tar file.
+
+    :param container: suffix for container file format
+
+    """
+    def iterator(data):
+        for fname, value in data:
+            if fname.endswith("."+container):
+                if container.endswith("mp"):
+                    import msgpack
+                    sample = msgpack.unpackb(value)
+                elif container.endswith("json"):
+                    import simplejson
+                    sample = simplejson.loads(value)
+                elif container.endswith("pyd"):
+                    sample = pickle.loads(value)
+                elif container.endswith("ten"):
+                    from . import tenbin
+                    sample = tenbin.decode_buffer(value, infos=False)
+                if isinstance(sample, dict):
+                    sample["__key__"] = fname
+                if isinstance(sample, list) or valid_sample(sample):
+                    yield sample
+    return iterator
+
 def tardata(fileobj, skip_meta=r"__[^/]*__($|/)"):
     """Iterator yielding filename, content pairs for the given tar stream.
 
@@ -427,7 +467,7 @@ def apply_decoder(decoder, errors=True):
     return iterator
 
 
-def tariterator1(fileobj, keys=base_plus_ext, decoder=True, suffixes=None, errors=True):
+def tariterator1(fileobj, keys=base_plus_ext, decoder=True, suffixes=None, errors=True, container=None):
     """Iterate through training samples stored in a sharded tar file.
 
     :param fileobj:
@@ -438,9 +478,13 @@ def tariterator1(fileobj, keys=base_plus_ext, decoder=True, suffixes=None, error
     """
     decoder = make_decoder(decoder)
     content = tardata(fileobj)
-    samples = group_by_keys(keys=keys, suffixes=suffixes)(content)
-    decoded = apply_decoder(decoder=decoder, errors=errors)(samples)
-    return decoded
+    if container is not None:
+        samples = extract_container(container)(content)
+    else:
+        samples = group_by_keys(keys=keys, suffixes=suffixes)(content)
+    if container != "ten":
+        samples = apply_decoder(decoder=decoder, errors=errors)(samples)
+    return samples
 
 
 class Pipe(object):
@@ -551,7 +595,7 @@ class WebDataset(IterableDataset):
     def __init__(self, urls, length, extensions=None, decoder="rgb", transforms=None,
                  epochs=1, keys=base_plus_ext, opener=generic_opener,
                  errors=True, verbose=False, shuffle=0, associate=None,
-                 prepare_for_worker=True):
+                 prepare_for_worker=True, container=None):
         """Create a WebLoader
 
         :param urls: shard spec or list of shards
@@ -567,6 +611,7 @@ class WebDataset(IterableDataset):
         self.transforms = listify(transforms)
         self.verbose = verbose
         self.keys = keys
+        self.container = container
         self.errors = errors
         self.associate = associate
         if isinstance(urls, str):
@@ -631,7 +676,13 @@ class WebDataset(IterableDataset):
                                           keys=self.keys,
                                           suffixes=self.suffixes,
                                           decoder=self.decoder,
+                                          container=self.container,
                                           errors=self.errors)
+                    if self.container=="ten":
+                        for sample in source:
+                            assert isinstance(sample, list)
+                            yield tuple(sample)
+                        continue
                     if self.associate is not None:
                         source = associate(self.associate)(source)
                     if self.extensions is not None:
