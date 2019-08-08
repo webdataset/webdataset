@@ -34,7 +34,11 @@ import urllib.parse
 from future import standard_library
 standard_library.install_aliases()
 
-from torch.utils.data import IterableDataset
+try:
+    from torch.utils.data import IterableDataset
+except:
+    class IterableDataset(object):
+        pass
 
 debug_dataset = os.environ.get("WDS_DEBUG", 0)
 popen_bufsize = int(os.environ.get("WDS_BUFSIZE", "2000000"))
@@ -385,6 +389,7 @@ def extract_container(container):
                 if container.endswith("mp"):
                     import msgpack
                     sample = msgpack.unpackb(value)
+                    sample = {k.decode("ascii"): v for k, v in sample.items()}
                 elif container.endswith("json"):
                     import simplejson
                     sample = simplejson.loads(value)
@@ -557,7 +562,7 @@ def shard_of_url(url):
     else:
         return None
 
-def length_loader(indexurl, opener):
+def size_loader(indexurl, opener):
     """Return a length function based on a JSON file.
 
     The JSON file should contain a dictionary that maps
@@ -592,7 +597,7 @@ def length_loader(indexurl, opener):
 class WebDataset(IterableDataset):
     """Iterate over sharded datasets."""
 
-    def __init__(self, urls, length, extensions=None, decoder="rgb", transforms=None,
+    def __init__(self, urls, sizefun=None, extensions=None, decoder="rgb", transforms=None,
                  epochs=1, keys=base_plus_ext, opener=generic_opener,
                  errors=True, verbose=False, shuffle=0, associate=None,
                  prepare_for_worker=True, container=None):
@@ -614,6 +619,10 @@ class WebDataset(IterableDataset):
         self.container = container
         self.errors = errors
         self.associate = associate
+        if callable(sizefun):
+            self.sizefun = sizefun
+        else:
+            self.sizefun = lambda:sizefun
         if isinstance(urls, str):
             urls = braceexpand.braceexpand(urls)
         urls = list(urls)
@@ -630,35 +639,30 @@ class WebDataset(IterableDataset):
         else:
             self.extensions = None
             self.suffixes = None
-        if isinstance(length, str):
-            length = length_loader(length, self.opener)
-        self.length = length
-        if hasattr(length, "__getitem__"):
-            self.size = sum([length[url] for url in self.urls])
-        elif callable(length):
-            self.size = sum([length(url) for url in self.urls])
-        elif isinstance(length, int):
-            self.size = length
-        else:
-            raise ValueError(f"{length}: unknown size spec")
         if prepare_for_worker is True:
-            self.prepare_for_worker = self.shard_selection_by_worker_id
+            self.prepare_for_worker = self.shard_selection
         elif prepare_for_worker is False:
             self.prepare_for_worker = lambda:None
         else:
             self.prepare_for_worker = prepare_for_worker
+        self.subset = None
 
-    def shard_selection_by_worker_id(self):
+    def shard_selection(self):
         import torch
-        worker_info = torch.utils.data.get_worker_info()
-        if worker_info is None:
-            self.urls = self.full_urls
+        index, total = None, None
+        if self.subset is not None:
+            index, total = self.subset
         else:
-            index = worker_info.id
-            total = worker_info.num_workers
-            if index==0 and len(self.full_urls)<total:
-                warnings.warn(f"num_workers {total} > num_shards {len(self.full_urls)}")
-            self.urls = self.full_urls[index::total]
+            worker_info = torch.utils.data.get_worker_info()
+            if worker_info is not None:
+                index = worker_info.id
+                total = worker_info.num_workers
+        if total is None:
+            self.urls = self.full_urls
+            return
+        if index==0 and len(self.full_urls)<total:
+            warnings.warn(f"num_workers {total} > num_shards {len(self.full_urls)}")
+        self.urls = self.full_urls[index::total]
 
     def __iter__(self):
         """Iterate over samples."""
@@ -702,7 +706,6 @@ class WebDataset(IterableDataset):
                     time.sleep(0.5)
                 elif self.errors:
                     raise exn
-
-    def __len__(self):
+    def size(self):
         """Return the length specified at initialization."""
-        return self.size
+        return sum(self.sizefun(url) for url in self.urls)

@@ -153,6 +153,7 @@ def decode_chunks(buf):
 
 def encode_buffer(l, infos=None):
     """Encode a list of arrays into a single byte array."""
+    assert isinstance(l, list)
     return encode_chunks(encode_list(l, infos=infos))
 
 def decode_buffer(buf, infos=False):
