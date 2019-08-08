@@ -600,7 +600,7 @@ class WebDataset(IterableDataset):
     def __init__(self, urls, sizefun=None, extensions=None, decoder="rgb", transforms=None,
                  epochs=1, keys=base_plus_ext, opener=generic_opener,
                  errors=True, verbose=False, shuffle=0, associate=None,
-                 prepare_for_worker=True, container=None):
+                 prepare_for_worker=True, container=None, extra_meta=False):
         """Create a WebLoader
 
         :param urls: shard spec or list of shards
@@ -624,8 +624,9 @@ class WebDataset(IterableDataset):
         else:
             self.sizefun = lambda:sizefun
         if isinstance(urls, str):
-            urls = braceexpand.braceexpand(urls)
-        urls = list(urls)
+            urls = list(braceexpand.braceexpand(urls))
+        #urls = list(urls)
+        assert isinstance(urls, list)
         self.full_urls = urls
         self.urls = urls
         self.shuffle = shuffle
@@ -646,6 +647,7 @@ class WebDataset(IterableDataset):
         else:
             self.prepare_for_worker = prepare_for_worker
         self.subset = None
+        self.extra_meta = False
 
     def shard_selection(self):
         import torch
@@ -697,6 +699,8 @@ class WebDataset(IterableDataset):
                         source = transform(
                             transformer(self.transforms))(source)
                     for sample in source:
+                        if self.extra_meta and isinstance(sample, dict):
+                            sample["__webdataset__"] = (self.subset,)
                         if isinstance(sample, list):
                             sample = tuple(sample)
                         yield sample
