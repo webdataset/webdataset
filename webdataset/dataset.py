@@ -622,7 +622,7 @@ class WebDataset(IterableDataset):
         if callable(sizefun):
             self.sizefun = sizefun
         else:
-            self.sizefun = lambda:sizefun
+            self.sizefun = lambda _:sizefun
         if isinstance(urls, str):
             urls = list(braceexpand.braceexpand(urls))
         #urls = list(urls)
