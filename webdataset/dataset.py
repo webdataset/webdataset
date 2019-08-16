@@ -122,6 +122,8 @@ def make_handlers(imagetype):
     handlers = {}
     for extension in ["cls", "cls2", "class", "count", "index", "inx", "id"]:
         handlers[extension] = maybe_int
+    for extension in ["txt", "text", "transcript"]:
+        handlers[extension] = lambda x: x.decode("utf-8")
     for extension in ["png", "jpg", "jpeg", "img", "image", "pbm", "pgm", "ppm"]:
         handlers[extension] = lambda data: imagehandler(data, imagetype)
     for extension in ["pyd", "pickle"]:
@@ -309,7 +311,6 @@ def shuffle(data, bufsize=1000, initial=100):
         yield sample
     for sample in buf:
         yield sample
-
 
 def base_plus_ext(path):
     """Helper method that splits off all extension.
@@ -597,7 +598,8 @@ def size_loader(indexurl, opener):
 class WebDataset(IterableDataset):
     """Iterate over sharded datasets."""
 
-    def __init__(self, urls, sizefun=None, extensions=None, decoder="rgb", transforms=None,
+    def __init__(self, urls, sizefun=None, extensions=None, decoder="rgb", 
+                 transforms=None, pipeline=None,
                  epochs=1, keys=base_plus_ext, opener=generic_opener,
                  errors=True, verbose=False, shuffle=0, associate=None,
                  prepare_for_worker=True, container=None, extra_meta=False):
@@ -607,6 +609,7 @@ class WebDataset(IterableDataset):
         :param extensions: extensions to extract (Default value = None, can be either list of lists or "a;b c")
         :param decode: decoder to apply to tarfiles (Default value = True)
         :param transforms: list of functions to apply to unbatched samples (Default value = None)
+        :param pipeline: function that maps the iterator, e.g. for batching
         :param opener: either a function that returns a stream or a string that is invoked via Popen
         """
 
@@ -619,6 +622,7 @@ class WebDataset(IterableDataset):
         self.container = container
         self.errors = errors
         self.associate = associate
+        self.pipeline = pipeline
         if callable(sizefun):
             self.sizefun = sizefun
         else:
@@ -698,6 +702,8 @@ class WebDataset(IterableDataset):
                     if self.transforms is not None:
                         source = transform(
                             transformer(self.transforms))(source)
+                    if self.pipeline is not None:
+                        source = self.pipeline(source)
                     for sample in source:
                         if self.extra_meta and isinstance(sample, dict):
                             sample["__webdataset__"] = (self.subset,)
