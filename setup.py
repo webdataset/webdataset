@@ -26,7 +26,7 @@ prereqs = """
 """.split()
 
 setup(
-    name='webdatasets',
+    name='webdataset',
     version='v0.0',
     author="Thomas Breuel",
     description="Record sequential storage for deep learning.",
