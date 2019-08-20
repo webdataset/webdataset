@@ -444,9 +444,7 @@ def make_decoder(spec):
         decoder = lambda sample: decode_based_on_extension(sample, handlers)
     else:
         raise ValueError(f"{spec}: unknown decoder spec")
-
     assert callable(decoder), (spec, decoder)
-
     return decoder
 
 def apply_decoder(decoder, errors=True):
