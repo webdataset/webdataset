@@ -104,13 +104,14 @@ def imagehandler(data, imagespec):
         else:
             return result.astype("f") / 255.0
     elif atype == "torch":
+        import numpy as np
         import torch
-        from torchvision import transforms
-        result = transforms.ToTensor()(img)
+        result = np.asarray(img)
+        assert result.dtype == np.uint8, (image, result.dtype)
         if etype == "uint8":
-            return result.type(torch.uint8)
+            return torch.tensor(result.transpose(2, 0, 1))
         else:
-            return result.type(torch.float) / 255.0
+            return torch.tensor(result.transpose(2, 0, 1)).type(torch.float) / 255.0
 
 def maybe_int(data):
     try:

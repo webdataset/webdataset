@@ -46,7 +46,23 @@ def test_gs():
                         extensions="jpg;png cls", decoder="l")
     assert count_samples(ds, n=10) == 10
 
+def test_rgb8_np_vs_torch():
+    import torch
+    ds = wds.WebDataset("testdata/imagenet-000000.tgz", 47, extensions="png;jpg cls", decoder="rgb8")
+    image, cls = next(iter(ds))
+    ds = wds.WebDataset("testdata/imagenet-000000.tgz", 47, extensions="png;jpg cls", decoder="torchrgb8")
+    image2, cls2 = next(iter(ds))
+    assert (image == image2.permute(1, 2, 0).numpy()).all, (image.shape, image2.shape)
+    assert cls == cls2
 
+def test_float_np_vs_torch():
+    import torch
+    ds = wds.WebDataset("testdata/imagenet-000000.tgz", 47, extensions="png;jpg cls")
+    image, cls = next(iter(ds))
+    ds = wds.WebDataset("testdata/imagenet-000000.tgz", 47, extensions="png;jpg cls", decoder="torchrgb")
+    image2, cls2 = next(iter(ds))
+    assert (image == image2.permute(1, 2, 0).numpy()).all(), (image.shape, image2.shape)
+    assert cls == cls2
 
 
 def test_handlers():
