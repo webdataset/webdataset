@@ -17,49 +17,44 @@ def count_samples(source, *args, n=1000):
     return count
 
 def test_simple():
-    ds = wds.WebDataset("testdata/imagenet-000000.tgz", 47)
+    ds = wds.WebDataset("testdata/imagenet-000000.tgz")
     assert count_samples(ds) == 47
-
-def test_shardspec():
-    ds = wds.WebDataset("testdata/imagenet-000000.tgz", "testdata/imagenet-shards.json")
-    assert count_samples(ds) == 47
-
 
 def test_fields():
-    ds = wds.WebDataset("testdata/imagenet-000000.tgz", 47, extensions="png;jpg cls")
+    ds = wds.WebDataset("testdata/imagenet-000000.tgz", extensions="png;jpg cls")
     assert count_samples(ds) == 47
 
 def test_rgb8():
-    ds = wds.WebDataset("testdata/imagenet-000000.tgz", 47, extensions="png;jpg cls", decoder="rgb8")
+    ds = wds.WebDataset("testdata/imagenet-000000.tgz", extensions="png;jpg cls", decoder="rgb8")
     assert count_samples(ds) == 47
 
 def test_pil():
-    ds = wds.WebDataset("testdata/imagenet-000000.tgz", 1000, decoder="pil")
+    ds = wds.WebDataset("testdata/imagenet-000000.tgz", decoder="pil")
     assert count_samples(ds) == 47
 
 def test_raw():
-    ds = wds.WebDataset("testdata/imagenet-000000.tgz", 1000, decoder=None)
+    ds = wds.WebDataset("testdata/imagenet-000000.tgz", decoder=None)
     assert count_samples(ds) == 47
 
 def test_gs():
-    ds = wds.WebDataset("http://storage.googleapis.com/lpr-imagenet/imagenet_train-0050.tgz", 1000,
+    ds = wds.WebDataset("http://storage.googleapis.com/lpr-imagenet/imagenet_train-0050.tgz",
                         extensions="jpg;png cls", decoder="l")
     assert count_samples(ds, n=10) == 10
 
 def test_rgb8_np_vs_torch():
     import torch
-    ds = wds.WebDataset("testdata/imagenet-000000.tgz", 47, extensions="png;jpg cls", decoder="rgb8")
+    ds = wds.WebDataset("testdata/imagenet-000000.tgz", extensions="png;jpg cls", decoder="rgb8")
     image, cls = next(iter(ds))
-    ds = wds.WebDataset("testdata/imagenet-000000.tgz", 47, extensions="png;jpg cls", decoder="torchrgb8")
+    ds = wds.WebDataset("testdata/imagenet-000000.tgz", extensions="png;jpg cls", decoder="torchrgb8")
     image2, cls2 = next(iter(ds))
     assert (image == image2.permute(1, 2, 0).numpy()).all, (image.shape, image2.shape)
     assert cls == cls2
 
 def test_float_np_vs_torch():
     import torch
-    ds = wds.WebDataset("testdata/imagenet-000000.tgz", 47, extensions="png;jpg cls")
+    ds = wds.WebDataset("testdata/imagenet-000000.tgz", extensions="png;jpg cls")
     image, cls = next(iter(ds))
-    ds = wds.WebDataset("testdata/imagenet-000000.tgz", 47, extensions="png;jpg cls", decoder="torchrgb")
+    ds = wds.WebDataset("testdata/imagenet-000000.tgz", extensions="png;jpg cls", decoder="torchrgb")
     image2, cls2 = next(iter(ds))
     assert (image == image2.permute(1, 2, 0).numpy()).all(), (image.shape, image2.shape)
     assert cls == cls2
@@ -70,7 +65,7 @@ def test_handlers():
     def decode_jpg_and_resize(data):
         return PIL.Image.open(io.BytesIO(data)).resize((128, 128))
     handlers["jpg"] = decode_jpg_and_resize
-    ds = wds.WebDataset("http://storage.googleapis.com/lpr-imagenet/imagenet_train-0050.tgz", 1000000,
+    ds = wds.WebDataset("http://storage.googleapis.com/lpr-imagenet/imagenet_train-0050.tgz",
                         extensions="jpg;png cls", decoder=handlers)
     for sample in ds:
         assert isinstance(sample[0], PIL.Image.Image)
@@ -80,7 +75,7 @@ def test_handlers():
 def test_decoder():
     def mydecoder(sample):
         return {k: len(v) for k, v in sample.items()}
-    ds = wds.WebDataset("http://storage.googleapis.com/lpr-imagenet/imagenet_train-0050.tgz", 1000000,
+    ds = wds.WebDataset("http://storage.googleapis.com/lpr-imagenet/imagenet_train-0050.tgz",
                         extensions="jpg;png cls", decoder=mydecoder)
     for sample in ds:
         assert isinstance(sample[0], int)
@@ -88,7 +83,7 @@ def test_decoder():
 
 
 def test_shard_syntax():
-    ds = wds.WebDataset("http://storage.googleapis.com/lpr-imagenet/imagenet_train-{0000..0147}.tgz", 1000000,
+    ds = wds.WebDataset("http://storage.googleapis.com/lpr-imagenet/imagenet_train-{0000..0147}.tgz",
                         extensions="jpg;png cls", shuffle=0)
     assert count_samples(ds, n=10)==10
 
@@ -98,7 +93,7 @@ def test_opener():
         cmd = "curl -s 'http://storage.googleapis.com/lpr-imagenet/imagenet_train-{}.tgz'".format(url)
         return subprocess.Popen(cmd, bufsize=1000000, shell=True, stdout=subprocess.PIPE).stdout
 
-    ds = wds.WebDataset("{0000..0147}", 1000000,
+    ds = wds.WebDataset("{0000..0147}",
                         extensions="jpg;png cls", shuffle=100, opener=opener)
     assert count_samples(ds, n=10)==10
 
@@ -106,7 +101,7 @@ def test_associate():
     extra_data = simplejson.loads(open("testdata/imagenet-extra.json").read())
     def associate(key):
         return dict(MY_EXTRA_DATA=extra_data[key])
-    ds = wds.WebDataset("testdata/imagenet-000000.tgz", 1000000, associate=associate)
+    ds = wds.WebDataset("testdata/imagenet-000000.tgz", associate=associate)
     for sample in ds:
         assert "MY_EXTRA_DATA" in sample.keys()
         break
@@ -122,7 +117,7 @@ def test_torchvision():
         transforms.ToTensor(),
         normalize,
     ])
-    ds = wds.WebDataset("http://storage.googleapis.com/lpr-imagenet/imagenet_train-{0000..0147}.tgz", 1000000,
+    ds = wds.WebDataset("http://storage.googleapis.com/lpr-imagenet/imagenet_train-{0000..0147}.tgz",
                         decoder="pil",
                         extensions="jpg;png cls",
                         transforms=[preproc, lambda x: x-1, lambda x:x])
@@ -146,7 +141,7 @@ def test_tenbin():
                 assert (a==a_decoded).all()
 
 def test_tenbin_dec():
-    ds = wds.WebDataset("testdata/tendata.tar", 100, extensions="ten")
+    ds = wds.WebDataset("testdata/tendata.tar", extensions="ten")
     assert count_samples(ds) == 100
     for sample in ds:
         xs, ys = sample[0]
@@ -156,14 +151,14 @@ def test_tenbin_dec():
         assert ys.shape == (28, 28)
 
 def test_container_mp():
-    ds = wds.WebDataset("testdata/mpdata.tar", 100, container="mp", decoder=None)
+    ds = wds.WebDataset("testdata/mpdata.tar", container="mp", decoder=None)
     assert count_samples(ds) == 100
     for sample in ds:
         assert isinstance(sample, dict)
         assert set(sample.keys()) == set("__key__ x y".split()), sample
 
 def test_container_ten():
-    ds = wds.WebDataset("testdata/tendata.tar", 100, container="ten", decoder=None)
+    ds = wds.WebDataset("testdata/tendata.tar", container="ten", decoder=None)
     assert count_samples(ds) == 100
     for xs, ys in ds:
         assert xs.dtype == np.float64

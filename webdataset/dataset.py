@@ -538,7 +538,7 @@ def command_pipe(cmd, bufsize=popen_bufsize):
 
 def generic_opener(url):
     cmd = None
-    match = re.search(r'^\([a-zA-Z]+\):')
+    match = re.search(r'^\([a-zA-Z]+\):', url)
     if match:
         scheme = match.group(1).lower()
         hname = "GOPEN_"+scheme
@@ -554,7 +554,7 @@ def generic_opener(url):
 class WebDataset(IterableDataset):
     """Iterate over sharded datasets."""
 
-    def __init__(self, urls, extensions=None, decoder="rgb", 
+    def __init__(self, urls, *, size=None, extensions=None, decoder="rgb", 
                  transforms=None, pipeline=None,
                  epochs=1, keys=base_plus_ext, opener=generic_opener,
                  errors=True, verbose=False, shuffle=0, associate=None,

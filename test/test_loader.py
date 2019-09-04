@@ -19,14 +19,14 @@ import itertools as itt
 
 
 def test_webloader():
-    ds = WebDataset("testdata/sample.tgz", 90, extensions="png;jpg cls");
+    ds = WebDataset("testdata/sample.tgz", extensions="png;jpg cls");
     dl = WebLoader(ds)
     for i, s in enumerate(ds):
         if i>3: break
         assert isinstance(s[0], np.ndarray)
 
 def test_WebLoader_keys():
-    ds = WebDataset("testdata/sample.tgz", 90, extensions=None)
+    ds = WebDataset("testdata/sample.tgz", extensions=None)
     dl = WebLoader(ds)
     for sample in dl:
         break
@@ -57,7 +57,7 @@ def test_WebLoader_batch():
 
 def test_WebLoader_torch():
     import torch
-    ds = WebDataset("testdata/sample.tgz", 90, extensions="png cls")
+    ds = WebDataset("testdata/sample.tgz", extensions="png cls")
     wl = WebLoader(ds, batch_size=32, converters=loader.totorch())
     for sample in wl :
         break
