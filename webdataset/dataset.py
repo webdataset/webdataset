@@ -536,68 +536,25 @@ def command_pipe(cmd, bufsize=popen_bufsize):
         return stream
     return f
 
-
 def generic_opener(url):
-    if url.startswith("gs://"):
+    cmd = None
+    match = re.search(r'^\([a-zA-Z]+\):')
+    if match:
+        scheme = match.group(1).lower()
+        hname = "GOPEN_"+scheme
+        cmd = os.environ.get(hname)
+    elif url.startswith("gs://"):
         cmd = "gsutil cat -q '{}'"
     elif url.startswith("http://") or url.startswith("https://"):
         cmd = "curl --fail -s '{}' --output -"
     else:
-        cmd = "cat '{}'"
+        cmd = "dd if='{}' bs=4M"
     return command_pipe(cmd)(url)
-
-def base_of_url(url):
-    components = urllib.parse.urlparse(url)
-    path = components.path
-    base = re.sub(r"[.].*$", "", re.sub(r".*/", "", path))
-    return base
-
-def shard_of_url(url):
-    components = urllib.parse.urlparse(url)
-    path = components.path
-    base =  re.sub(r".*/", "", path)
-    match = re.search(r"[0-9][0-9-]*[0-9]", base)
-    if match:
-        return match.group(0)
-    else:
-        return None
-
-def size_loader(indexurl, opener):
-    """Return a length function based on a JSON file.
-
-    The JSON file should contain a dictionary that maps
-    either full shard paths or basenames to the number of
-    samples in that shard.
-
-    The number of samples should be given either by:
-
-        json[url]
-        json[basename]
-        json[url]["num_samples"]
-        json[basename]["num_samples"]
-    """
-    with opener(indexurl) as stream:
-        lengths = simplejson.loads(stream.read())
-    assert hasattr(lengths, "__getitem__")
-    def f(url):
-        attempts = []
-        for extractor in (lambda x: x, base_of_url, shard_of_url):
-            key = extractor(url)
-            if key is not None:
-                attempts.append(key)
-                result = lengths.get(key)
-                if result is not None:
-                    if not isinstance(result, int):
-                        result = result["num_samples"]
-                    return result
-        raise ValueError(f"{attempts}: no num_samples in {indexurl}")
-    return f
-
 
 class WebDataset(IterableDataset):
     """Iterate over sharded datasets."""
 
-    def __init__(self, urls, sizefun=None, extensions=None, decoder="rgb", 
+    def __init__(self, urls, extensions=None, decoder="rgb", 
                  transforms=None, pipeline=None,
                  epochs=1, keys=base_plus_ext, opener=generic_opener,
                  errors=True, verbose=False, shuffle=0, associate=None,
@@ -622,10 +579,6 @@ class WebDataset(IterableDataset):
         self.errors = errors
         self.associate = associate
         self.pipeline = pipeline
-        if callable(sizefun):
-            self.sizefun = sizefun
-        else:
-            self.sizefun = lambda _:sizefun
         if isinstance(urls, str):
             urls = list(braceexpand.braceexpand(urls))
         #urls = list(urls)
@@ -715,6 +668,3 @@ class WebDataset(IterableDataset):
                     time.sleep(0.5)
                 elif self.errors:
                     raise exn
-    def size(self):
-        """Return the length specified at initialization."""
-        return sum(self.sizefun(url) for url in self.urls)
