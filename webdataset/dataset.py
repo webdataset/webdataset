@@ -544,7 +544,7 @@ def generic_opener(url):
         hname = "GOPEN_"+scheme
         cmd = os.environ.get(hname)
     elif url.startswith("gs://"):
-        cmd = "gsutil cat -q '{}'"
+        cmd = "gsutil cat '{}'"
     elif url.startswith("http://") or url.startswith("https://"):
         cmd = "curl --fail -s '{}' --output -"
     else:
