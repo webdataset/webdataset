@@ -154,6 +154,16 @@ class TarWriter(object):
         """Close the tar file."""
         self.tarstream.close()
 
+    def dwrite(self, key, **kw):
+        """Convenience function for `write`.
+
+        Takes key as the first argument and key-value pairs for the rest.
+        Replaces "_" with ".".
+        """
+        obj = dict(__key__=key)
+        obj.update({k.replace("_", "."): v for k, v in kw.items()})
+        self.write(obj)
+
     def write(self, obj):
         """Write a dictionary to the tar file.
 
