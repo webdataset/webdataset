@@ -65,7 +65,7 @@ def make_handlers():
     for extension in ["pyd", "pickle"]:
         handlers[extension] = pickle.dumps
     for extension in ["json", "jsn"]:
-        handlers[extension] = simplejson.dumps
+        handlers[extension] = lambda x: simplejson.dumps(x).encode("utf-8")
     for extension in ["ten", "tb"]:
         from . import tenbin
         def f(x):
