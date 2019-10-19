@@ -36,11 +36,15 @@ standard_library.install_aliases()
 
 import gc
 
+collection_counter = 0
+collection_frequency = 50000
+
 def maybe_collect():
     """Running in notebooks, we tend to run out of memory due to 
     weak references, and the collector doesn't seem to get triggered
     in time automatically. This function periodically calls the Python
     garbage collector."""
+    global collection_counter, collection_frequency
     if collection_counter >= collection_frequency == 0:
         gc.collect()
         collection_counter = 0

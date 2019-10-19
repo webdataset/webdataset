@@ -6,6 +6,9 @@ import PIL
 import io
 import numpy as np
 
+local_data = "testdata/imagenet-000000.tgz"
+remote_loc = "http://storage.googleapis.com/lpr-imagenet/"
+
 def count_samples(source, *args, n=1000):
     count = 0
     for i, sample in enumerate(source):
@@ -17,114 +20,56 @@ def count_samples(source, *args, n=1000):
     return count
 
 def test_simple():
-    ds = wds.WebDataset("testdata/imagenet-000000.tgz")
+    ds = wds.WebDataset(local_data)
     assert count_samples(ds) == 47
 
 def test_fields():
-    ds = wds.WebDataset("testdata/imagenet-000000.tgz", extensions="png;jpg cls")
+    ds = wds.WebDataset(local_data, extensions="png;jpg cls")
     assert count_samples(ds) == 47
 
 def test_rgb8():
-    ds = wds.WebDataset("testdata/imagenet-000000.tgz", extensions="png;jpg cls", decoder="rgb8")
+    ds = wds.WebDataset(local_data, extensions="png;jpg cls", decoder="rgb8")
     assert count_samples(ds) == 47
 
 def test_pil():
-    ds = wds.WebDataset("testdata/imagenet-000000.tgz", decoder="pil")
+    ds = wds.WebDataset(local_data, decoder="pil")
     assert count_samples(ds) == 47
 
 def test_raw():
-    ds = wds.WebDataset("testdata/imagenet-000000.tgz", decoder=None)
+    ds = wds.WebDataset(local_data, decoder=None)
     assert count_samples(ds) == 47
 
-def test_gs():
-    ds = wds.WebDataset("http://storage.googleapis.com/lpr-imagenet/imagenet_train-0050.tgz",
+def no_test_gs():
+    ds = wds.WebDataset(remote_data,
                         extensions="jpg;png cls", decoder="l")
     assert count_samples(ds, n=10) == 10
 
 def test_rgb8_np_vs_torch():
     import torch
-    ds = wds.WebDataset("testdata/imagenet-000000.tgz", extensions="png;jpg cls", decoder="rgb8")
+    ds = wds.WebDataset(local_data, extensions="png;jpg cls", decoder="rgb8")
     image, cls = next(iter(ds))
-    ds = wds.WebDataset("testdata/imagenet-000000.tgz", extensions="png;jpg cls", decoder="torchrgb8")
+    ds = wds.WebDataset(local_data, extensions="png;jpg cls", decoder="torchrgb8")
     image2, cls2 = next(iter(ds))
     assert (image == image2.permute(1, 2, 0).numpy()).all, (image.shape, image2.shape)
     assert cls == cls2
 
 def test_float_np_vs_torch():
     import torch
-    ds = wds.WebDataset("testdata/imagenet-000000.tgz", extensions="png;jpg cls")
+    ds = wds.WebDataset(local_data, extensions="png;jpg cls")
     image, cls = next(iter(ds))
-    ds = wds.WebDataset("testdata/imagenet-000000.tgz", extensions="png;jpg cls", decoder="torchrgb")
+    ds = wds.WebDataset(local_data, extensions="png;jpg cls", decoder="torchrgb")
     image2, cls2 = next(iter(ds))
     assert (image == image2.permute(1, 2, 0).numpy()).all(), (image.shape, image2.shape)
     assert cls == cls2
 
 
-def test_handlers():
-    handlers = dict(wds.default_handlers["rgb"])
-    def decode_jpg_and_resize(data):
-        return PIL.Image.open(io.BytesIO(data)).resize((128, 128))
-    handlers["jpg"] = decode_jpg_and_resize
-    ds = wds.WebDataset("http://storage.googleapis.com/lpr-imagenet/imagenet_train-0050.tgz",
-                        extensions="jpg;png cls", decoder=handlers)
-    for sample in ds:
-        assert isinstance(sample[0], PIL.Image.Image)
-        break
-
-
-def test_decoder():
-    def mydecoder(sample):
-        return {k: len(v) for k, v in sample.items()}
-    ds = wds.WebDataset("http://storage.googleapis.com/lpr-imagenet/imagenet_train-0050.tgz",
-                        extensions="jpg;png cls", decoder=mydecoder)
-    for sample in ds:
-        assert isinstance(sample[0], int)
-        break
-
-
-def test_shard_syntax():
-    ds = wds.WebDataset("http://storage.googleapis.com/lpr-imagenet/imagenet_train-{0000..0147}.tgz",
-                        extensions="jpg;png cls", shuffle=0)
-    assert count_samples(ds, n=10)==10
-
-def test_opener():
-    def opener(url):
-        print(url, file=sys.stderr)
-        cmd = "curl -s 'http://storage.googleapis.com/lpr-imagenet/imagenet_train-{}.tgz'".format(url)
-        return subprocess.Popen(cmd, bufsize=1000000, shell=True, stdout=subprocess.PIPE).stdout
-
-    ds = wds.WebDataset("{0000..0147}",
-                        extensions="jpg;png cls", shuffle=100, opener=opener)
-    assert count_samples(ds, n=10)==10
-
 def test_associate():
     extra_data = simplejson.loads(open("testdata/imagenet-extra.json").read())
     def associate(key):
         return dict(MY_EXTRA_DATA=extra_data[key])
-    ds = wds.WebDataset("testdata/imagenet-000000.tgz", associate=associate)
+    ds = wds.WebDataset(local_data, associate=associate)
     for sample in ds:
         assert "MY_EXTRA_DATA" in sample.keys()
-        break
-
-def test_torchvision():
-    import torch
-    from torchvision import transforms
-    normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
-                                     std=[0.229, 0.224, 0.225])
-    preproc = transforms.Compose([
-        transforms.RandomResizedCrop(224),
-        transforms.RandomHorizontalFlip(),
-        transforms.ToTensor(),
-        normalize,
-    ])
-    ds = wds.WebDataset("http://storage.googleapis.com/lpr-imagenet/imagenet_train-{0000..0147}.tgz",
-                        decoder="pil",
-                        extensions="jpg;png cls",
-                        transforms=[preproc, lambda x: x-1, lambda x:x])
-    for sample in ds:
-        assert isinstance(sample[0], torch.Tensor)
-        assert tuple(sample[0].size()) == (3, 224, 224)
-        assert isinstance(sample[1], int)
         break
 
 def test_tenbin():
@@ -168,6 +113,64 @@ def test_container_ten():
 
 def test_dataloader():
     import torch
-    ds = wds.WebDataset("http://storage.googleapis.com/lpr-imagenet/imagenet_train-{0000..0147}.tgz", decoder=None)
+    ds = wds.WebDataset(remote_loc+"imagenet_train-{0000..0147}.tgz", decoder=None)
     dl = torch.utils.data.DataLoader(ds, num_workers=4)
     assert count_samples(dl, n=100) == 100
+
+def test_handlers():
+    handlers = dict(wds.default_handlers["rgb"])
+    def decode_jpg_and_resize(data):
+        return PIL.Image.open(io.BytesIO(data)).resize((128, 128))
+    handlers["jpg"] = decode_jpg_and_resize
+    ds = wds.WebDataset(remote_loc+"imagenet_train-0050.tgz",
+                        extensions="jpg;png cls", decoder=handlers)
+    for sample in ds:
+        assert isinstance(sample[0], PIL.Image.Image)
+        break
+
+
+def test_decoder():
+    def mydecoder(sample):
+        return {k: len(v) for k, v in sample.items()}
+    ds = wds.WebDataset(remote_loc+"imagenet_train-0050.tgz",
+                        extensions="jpg;png cls", decoder=mydecoder)
+    for sample in ds:
+        assert isinstance(sample[0], int)
+        break
+
+
+def test_shard_syntax():
+    ds = wds.WebDataset(remote_loc+"imagenet_train-{0000..0147}.tgz",
+                        extensions="jpg;png cls", shuffle=0)
+    assert count_samples(ds, n=10)==10
+
+def test_opener():
+    def opener(url):
+        print(url, file=sys.stderr)
+        cmd = "curl -s '{}imagenet_train-{}.tgz'".format(remote_loc, url)
+        return subprocess.Popen(cmd, bufsize=1000000, shell=True, stdout=subprocess.PIPE).stdout
+
+    ds = wds.WebDataset("{0000..0147}",
+                        extensions="jpg;png cls", shuffle=100, opener=opener)
+    assert count_samples(ds, n=10)==10
+
+def test_torchvision():
+    import torch
+    from torchvision import transforms
+    normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                                     std=[0.229, 0.224, 0.225])
+    preproc = transforms.Compose([
+        transforms.RandomResizedCrop(224),
+        transforms.RandomHorizontalFlip(),
+        transforms.ToTensor(),
+        normalize,
+    ])
+    ds = wds.WebDataset(remote_loc+"imagenet_train-{0000..0147}.tgz",
+                        decoder="pil",
+                        extensions="jpg;png cls",
+                        transforms=[preproc, lambda x: x-1, lambda x:x])
+    for sample in ds:
+        assert isinstance(sample[0], torch.Tensor)
+        assert tuple(sample[0].size()) == (3, 224, 224)
+        assert isinstance(sample[1], int)
+        break
