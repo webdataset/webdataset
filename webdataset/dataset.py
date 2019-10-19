@@ -34,6 +34,18 @@ import urllib.parse
 from future import standard_library
 standard_library.install_aliases()
 
+import gc
+
+def maybe_collect():
+    """Running in notebooks, we tend to run out of memory due to 
+    weak references, and the collector doesn't seem to get triggered
+    in time automatically. This function periodically calls the Python
+    garbage collector."""
+    if collection_counter >= collection_frequency == 0:
+        gc.collect()
+        collection_counter = 0
+    collection_counter += 1
+
 try:
     from torch.utils.data import IterableDataset
 except:
@@ -459,9 +471,9 @@ def apply_decoder(decoder, errors=True):
         for sample in data:
             try:
                 decoded = decoder(sample)
-            except NoException as exn:
+            except Exception as exn:
                 if errors=="warn":
-                    warnings.warn(repr(exn))
+                    warnings.warn("apply_decoder " + repr(exn))
                     time.sleep(0.5)
                 elif errors:
                     raise exn
@@ -662,9 +674,10 @@ class WebDataset(IterableDataset):
                         if isinstance(sample, list):
                             sample = tuple(sample)
                         yield sample
-            except NoException as exn:
+                        maybe_collect()
+            except Exception as exn:
                 if self.errors=="warn":
-                    warnings.warn(repr(exn))
+                    warnings.warn("dataset __iter__ " + repr(exn))
                     time.sleep(0.5)
                 elif self.errors:
                     raise exn
