@@ -203,3 +203,55 @@ class TarWriter(object):
             self.tarstream.addfile(ti, stream)
             total += ti.size
         return total
+
+
+class ShardWriter(object):
+    """ """
+    def __init__(self, pattern, maxcount=100000, maxsize=3e9, keep_meta=False,
+                 user=None, group=None, compress=None, **kw):
+        """Like TarWriter but splits into multiple shards.
+
+        :param pattern: output file pattern
+        :param maxcount: maximum number of records per shard (Default value = 100000)
+        :param maxsize: maximum size of each shard (Default value = 3e9)
+        :param kw: other options passed to TarWriter
+
+        """
+        self.verbose = 1
+        self.kw = kw
+        self.maxcount = maxcount
+        self.maxsize = maxsize
+        self.tarstream = None
+        self.shard = 0
+        self.pattern = pattern
+        self.total = 0
+        self.count = 0
+        self.size = 0
+        self.next_stream()
+
+    def next_stream(self):
+        if self.tarstream is not None:
+            self.tarstream.close()
+        self.fname = self.pattern % self.shard
+        if self.verbose:
+            print("# writing", self.fname, self.count, "%.1f GB" % (self.size / 1e9), self.total)
+        self.shard += 1
+        stream = open(self.fname, "wb")
+        self.tarstream = TarWriter(stream, **self.kw)
+        self.count = 0
+        self.size = 0
+
+    def write(self, obj):
+        if self.tarstream is None or self.count >= self.maxcount or self.size >= self.maxsize:
+            self.next_stream()
+        size = self.tarstream.write(obj)
+        self.count += 1
+        self.total += 1
+        self.size += size
+
+    def close(self):
+        self.tarstream.close()
+        del self.tarstream
+        del self.shard
+        del self.count
+        del self.size
