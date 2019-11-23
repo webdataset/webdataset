@@ -357,7 +357,7 @@ def valid_sample(sample):
             len(list(sample.keys())) > 0 and
             not sample.get("__bad__", False))
 
-def group_by_keys(keys=base_plus_ext, lcase=True, suffixes=None, trace=trace):
+def group_by_keys(keys=base_plus_ext, lcase=True, suffixes=None):
     """Returns function over iterator that groups key, value pairs into samples.
 
     :param keys: function that splits the key into key and extension (Default value = base_plus_ext)
@@ -371,18 +371,16 @@ def group_by_keys(keys=base_plus_ext, lcase=True, suffixes=None, trace=trace):
             if trace:
                 print(prefix, suffix,
                       current_sample.keys() if isinstance(current_sample, dict) else None)
-            assert current_sample is None or suffix not in current_sample, \
-                f"{fname}: duplicate file name in tar file"
             if prefix is None:
                 continue
-            if current_sample is not None and prefix == current_sample["__key__"]:
-                current_sample[suffix] = value
-                continue
-            if valid_sample(current_sample):
-                yield current_sample
-            current_sample = dict(__key__=prefix)
             if lcase:
                 suffix = suffix.lower()
+            if current_sample is None or prefix != current_sample["__key__"]:
+                if valid_sample(current_sample):
+                    yield current_sample
+                current_sample = dict(__key__=prefix)
+            assert suffix not in current_sample, \
+                f"{fname}: duplicate file name in tar file {suffix} {current_sample.keys()}"
             if suffixes is None or suffix in suffixes:
                 current_sample[suffix] = value
         if valid_sample(current_sample):
@@ -577,7 +575,7 @@ class WebDataset(IterableDataset):
     """Iterate over sharded datasets."""
 
     def __init__(self, urls, *, size=None, extensions=None, decoder="rgb", 
-                 transforms=None, pipeline=None, trace=False,
+                 transforms=None, pipeline=None,
                  epochs=1, keys=base_plus_ext, opener=generic_opener,
                  errors=True, verbose=False, shuffle=0, associate=None,
                  prepare_for_worker=True, container=None, extra_meta=False):
