@@ -36,6 +36,8 @@ standard_library.install_aliases()
 
 import gc
 
+trace = False
+
 collection_counter = 0
 collection_frequency = 50000
 
@@ -355,7 +357,6 @@ def valid_sample(sample):
             len(list(sample.keys())) > 0 and
             not sample.get("__bad__", False))
 
-
 def group_by_keys(keys=base_plus_ext, lcase=True, suffixes=None):
     """Returns function over iterator that groups key, value pairs into samples.
 
@@ -367,16 +368,19 @@ def group_by_keys(keys=base_plus_ext, lcase=True, suffixes=None):
         current_sample = None
         for fname, value in data:
             prefix, suffix = keys(fname)
+            if trace:
+                print(prefix, suffix,
+                      current_sample.keys() if isinstance(current_sample, dict) else None)
             if prefix is None:
                 continue
-            if current_sample is not None and prefix == current_sample["__key__"]:
-                current_sample[suffix] = value
-                continue
-            if valid_sample(current_sample):
-                yield current_sample
-            current_sample = dict(__key__=prefix)
             if lcase:
                 suffix = suffix.lower()
+            if current_sample is None or prefix != current_sample["__key__"]:
+                if valid_sample(current_sample):
+                    yield current_sample
+                current_sample = dict(__key__=prefix)
+            assert suffix not in current_sample, \
+                f"{fname}: duplicate file name in tar file {suffix} {current_sample.keys()}"
             if suffixes is None or suffix in suffixes:
                 current_sample[suffix] = value
         if valid_sample(current_sample):
