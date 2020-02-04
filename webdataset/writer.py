@@ -55,7 +55,7 @@ def bytestr(data):
 def make_handlers():
     handlers = {}
     for extension in ["cls", "cls2", "class", "count", "index", "inx", "id"]:
-        handlers[extension] = str
+        handlers[extension] = lambda x: str(x).encode("ascii")
     for extension in ["txt", "text", "transcript"]:
         handlers[extension] = lambda x: x.encode("utf-8")
     for extension in ["png", "jpg", "jpeg", "img", "image", "pbm", "pgm", "ppm"]:

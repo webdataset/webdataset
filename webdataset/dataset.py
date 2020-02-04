@@ -685,7 +685,7 @@ class WebDataset(IterableDataset):
                         maybe_collect()
             except Exception as exn:
                 if self.errors=="warn":
-                    warnings.warn("dataset __iter__ " + repr(exn))
+                    warnings.warn("dataset __iter__ " + url + " " + repr(exn))
                     time.sleep(0.5)
                 elif self.errors:
                     raise exn
