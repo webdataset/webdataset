@@ -147,13 +147,16 @@ class TarWriter(object):
         self.compress = compress
 
     def __enter__(self):
+        print("enter", file=sys.stderr)
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
+        print("exit", file=sys.stderr)
         self.close()
 
     def close(self):
         """Close the tar file."""
+        print(f"close {self.tarstream} {self.own_fileobj}", file=sys.stderr)
         self.tarstream.close()
         if self.own_fileobj is not None:
             self.own_fileobj.close()
