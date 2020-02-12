@@ -216,7 +216,7 @@ class TarWriter(object):
 class ShardWriter(object):
     """ """
     def __init__(self, pattern, maxcount=100000, maxsize=3e9, keep_meta=False,
-                 user=None, group=None, compress=None, **kw):
+                 user=None, group=None, compress=None, post=None, **kw):
         """Like TarWriter but splits into multiple shards.
 
         :param pattern: output file pattern
@@ -238,8 +238,6 @@ class ShardWriter(object):
         self.next_stream()
 
     def next_stream(self):
-        if self.tarstream is not None:
-            self.tarstream.close()
         self.fname = self.pattern % self.shard
         if self.verbose:
             print("# writing", self.fname, self.count, "%.1f GB" % (self.size / 1e9), self.total)
@@ -257,9 +255,18 @@ class ShardWriter(object):
         self.total += 1
         self.size += size
 
+    def finish(self):
+        if self.tarstream is not None:
+            self.tarstream.close()
+            if callable(self.post):
+                self.post(self.fname)
+            self.tarstream = None
+            self.fname = None
+
     def close(self):
-        self.tarstream.close()
+        self.finish()
         del self.tarstream
+        del self.fname
         del self.shard
         del self.count
         del self.size
