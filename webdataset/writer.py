@@ -147,11 +147,9 @@ class TarWriter(object):
         self.compress = compress
 
     def __enter__(self):
-        print("enter", file=sys.stderr)
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        print("exit", file=sys.stderr)
         self.close()
 
     def close(self):
@@ -272,3 +270,9 @@ class ShardWriter(object):
         del self.shard
         del self.count
         del self.size
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args, **kw):
+        self.close()
