@@ -156,7 +156,6 @@ class TarWriter(object):
 
     def close(self):
         """Close the tar file."""
-        print(f"close {self.tarstream} {self.own_fileobj}", file=sys.stderr)
         self.tarstream.close()
         if self.own_fileobj is not None:
             self.own_fileobj.close()
