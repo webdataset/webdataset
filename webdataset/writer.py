@@ -229,6 +229,8 @@ class ShardWriter(object):
         self.kw = kw
         self.maxcount = maxcount
         self.maxsize = maxsize
+        self.post = post
+
         self.tarstream = None
         self.shard = 0
         self.pattern = pattern
@@ -239,6 +241,7 @@ class ShardWriter(object):
 
     def next_stream(self):
         self.fname = self.pattern % self.shard
+        self.finish()
         if self.verbose:
             print("# writing", self.fname, self.count, "%.1f GB" % (self.size / 1e9), self.total)
         self.shard += 1
