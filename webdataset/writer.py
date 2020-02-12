@@ -240,8 +240,8 @@ class ShardWriter(object):
         self.next_stream()
 
     def next_stream(self):
-        self.fname = self.pattern % self.shard
         self.finish()
+        self.fname = self.pattern % self.shard
         if self.verbose:
             print("# writing", self.fname, self.count, "%.1f GB" % (self.size / 1e9), self.total)
         self.shard += 1
