@@ -5,4 +5,5 @@
 #
 
 from .dataset import WebDataset, default_handlers
+from .writer import TarWriter, ShardWriter
 from . import tenbin

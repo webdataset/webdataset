@@ -566,7 +566,7 @@ def generic_opener(url):
     elif url.startswith("gs://"):
         cmd = "gsutil cat '{}'"
     elif url.startswith("http://") or url.startswith("https://"):
-        cmd = "curl --fail -s '{}' --output -"
+        cmd = "curl --fail -L -s '{}' --output -"
     else:
         cmd = "dd if='{}' bs=4M"
     return command_pipe(cmd)(url)
