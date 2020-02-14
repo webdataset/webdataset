@@ -50,3 +50,7 @@ Very large datasets are best stored as shards, each comprising a number of sampl
 
         tar --sorted -cf - dir | tarsplit -s 1e9 -o out
 
+
+# TODO
+
+ - support `image.*` and `image=jpg,png,jpeg` syntax for extensions
