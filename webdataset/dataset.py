@@ -30,6 +30,7 @@ import PIL
 import PIL.Image
 import six
 import urllib.parse
+from torch.utils.data import IterableDataset
 
 from future import standard_library
 standard_library.install_aliases()
@@ -52,11 +53,26 @@ def maybe_collect():
         collection_counter = 0
     collection_counter += 1
 
-try:
-    from torch.utils.data import IterableDataset
-except:
-    class IterableDataset(object):
-        pass
+def command_pipe(cmd, bufsize=popen_bufsize):
+    def f(url):
+        stream = Pipe(cmd.format(url), stdout=PIPE, shell=True, bufsize=bufsize)
+        return stream
+    return f
+
+def generic_opener(url):
+    cmd = None
+    match = re.search(r'^\([a-zA-Z]+\):', url)
+    if match:
+        scheme = match.group(1).lower()
+        hname = "GOPEN_"+scheme
+        cmd = os.environ.get(hname)
+    elif url.startswith("gs://"):
+        cmd = "gsutil cat '{}'"
+    elif url.startswith("http://") or url.startswith("https://"):
+        cmd = "curl --fail -L -s '{}' --output -"
+    else:
+        cmd = "dd if='{}' bs=4M"
+    return command_pipe(cmd)(url)
 
 debug_dataset = os.environ.get("WDS_DEBUG", 0)
 popen_bufsize = int(os.environ.get("WDS_BUFSIZE", "2000000"))
@@ -549,27 +565,6 @@ class Pipe(object):
     def __exit__(self, type, value, traceback):
         self.close()
 
-
-def command_pipe(cmd, bufsize=popen_bufsize):
-    def f(url):
-        stream = Pipe(cmd.format(url), stdout=PIPE, shell=True, bufsize=bufsize)
-        return stream
-    return f
-
-def generic_opener(url):
-    cmd = None
-    match = re.search(r'^\([a-zA-Z]+\):', url)
-    if match:
-        scheme = match.group(1).lower()
-        hname = "GOPEN_"+scheme
-        cmd = os.environ.get(hname)
-    elif url.startswith("gs://"):
-        cmd = "gsutil cat '{}'"
-    elif url.startswith("http://") or url.startswith("https://"):
-        cmd = "curl --fail -L -s '{}' --output -"
-    else:
-        cmd = "dd if='{}' bs=4M"
-    return command_pipe(cmd)(url)
 
 class WebDataset(IterableDataset):
     """Iterate over sharded datasets."""
