@@ -1,0 +1,26 @@
+name: webdataset-dev
+channels:
+  - conda-forge
+  - pytorch
+dependencies:
+  - simplejson
+  - braceexpand
+  - msgpack-python
+  - pytorch
+  - torchvision
+  - pytest
+  - autopep8
+  - isort
+  #- future
+  #- yaml
+  #- imageio
+  #- pip
+  #- cudatoolkit=10.0
+  #- scikit-image
+  #- scikit-learn
+  #- pyzmq
+  #- jupyterlab
+  #- editdistance
+  #- rise
+  #- bash_kernel
+  #- pytest

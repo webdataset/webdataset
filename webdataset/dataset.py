@@ -5,7 +5,9 @@
 # See the LICENSE file for licensing terms (BSD-style).
 #
 
-from __future__ import absolute_import, division, print_function
+#from __future__ import absolute_import, division, print_function
+#from future import standard_library
+#standard_library.install_aliases()
 
 import argparse
 import collections
@@ -32,12 +34,15 @@ import six
 import urllib.parse
 from torch.utils.data import IterableDataset
 
-from future import standard_library
-standard_library.install_aliases()
-
 import gc
 
 trace = False
+
+debug_dataset = os.environ.get("WDS_DEBUG", 0)
+popen_bufsize = int(os.environ.get("WDS_BUFSIZE", "2000000"))
+
+meta_prefix = "__"
+meta_suffix = "__"
 
 collection_counter = 0
 collection_frequency = 50000
@@ -74,11 +79,6 @@ def generic_opener(url):
         cmd = "dd if='{}' bs=4M"
     return command_pipe(cmd)(url)
 
-debug_dataset = os.environ.get("WDS_DEBUG", 0)
-popen_bufsize = int(os.environ.get("WDS_BUFSIZE", "2000000"))
-
-meta_prefix = "__"
-meta_suffix = "__"
 
 class NoException(Exception):
     pass

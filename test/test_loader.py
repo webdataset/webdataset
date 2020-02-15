@@ -3,12 +3,12 @@
 # This file is part of webloader (see TBD).
 # See the LICENSE file for licensing terms (BSD-style).
 #
-from __future__ import unicode_literals
+
+#from __future__ import unicode_literals
 
 import glob
 import pdb
 from builtins import range
-from imp import reload
 from io import open
 import pytest
 
