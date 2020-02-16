@@ -1,11 +1,16 @@
-import webdataset.dataset as wds
-from itertools import islice
-import simplejson
-import sys, os, subprocess
-import PIL
 import io
+import os
+import subprocess
+import sys
+from itertools import islice
+
 import numpy as np
+import PIL
+
+import simplejson
+import webdataset.dataset as wds
 from webdataset import writer
+
 
 def test_writer(tmpdir):
     with writer.TarWriter(f"{tmpdir}/writer.tar") as sink:

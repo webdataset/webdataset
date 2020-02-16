@@ -1,10 +1,14 @@
-import webdataset.dataset as wds
-from itertools import islice
-import simplejson
-import sys, os, subprocess
-import PIL
 import io
+import os
+import subprocess
+import sys
+from itertools import islice
+
 import numpy as np
+import PIL
+
+import simplejson
+import webdataset.dataset as wds
 
 local_data = "testdata/imagenet-000000.tgz"
 remote_loc = "http://storage.googleapis.com/lpr-imagenet/"

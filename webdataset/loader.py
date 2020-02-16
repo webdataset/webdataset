@@ -8,21 +8,23 @@
 #from __future__ import absolute_import, division, print_function
 
 import argparse
+import collections
+import logging
+import math
 import os
 import sys
-import logging
 import time
-import collections
-import math
-from functools import wraps
-import numpy as np
 import warnings
+from functools import wraps
 
-#from past.utils import old_div
-
+import numpy as np
 from torch.utils.data import Dataset
 
 from webdataset import WebDataset
+
+#from past.utils import old_div
+
+
 
 try:
     from torch.utils.data import IterableDataset

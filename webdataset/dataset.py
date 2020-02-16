@@ -11,30 +11,30 @@
 
 import argparse
 import collections
+import gc
 import io
 import logging
 import os
-import re
-import sys
-import time
-from builtins import range
-from functools import wraps
-import braceexpand
-from subprocess import PIPE, Popen, check_call
-import warnings
-import tarfile
-import simplejson
 import pickle
 import random
+import re
+import sys
+import tarfile
+import time
+import urllib.parse
+import warnings
+from builtins import range
+from functools import wraps
+from subprocess import PIPE, Popen, check_call
 
 import numpy as np
 import PIL
 import PIL.Image
 import six
-import urllib.parse
 from torch.utils.data import IterableDataset
 
-import gc
+import braceexpand
+import simplejson
 
 trace = False
 

@@ -7,8 +7,8 @@
 
 #from __future__ import print_function
 
-import sys
 import glob
+import sys
 from distutils.core import setup  # , Extension, Command
 
 if sys.version_info < (3, 6):

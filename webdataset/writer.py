@@ -9,16 +9,19 @@ import getpass
 import io
 import os
 import os.path
+import pickle
 import re
 import socket
 import sys
 import tarfile
 import time
 import warnings
-import pickle
-import simplejson
+
 import numpy as np
 import PIL
+
+import simplejson
+
 
 def imageencoder(image, format="PNG"):
     """Compress an image using PIL and return it as a string.

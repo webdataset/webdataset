@@ -7,16 +7,16 @@
 #from __future__ import unicode_literals
 
 import glob
+import itertools as itt
 import pdb
 from builtins import range
 from io import open
-import pytest
 
 import numpy as np
-from webdataset import WebDataset
-from webdataset.loader import WebLoader, MultiWebLoader
-from webdataset import loader
-import itertools as itt
+import pytest
+
+from webdataset import WebDataset, loader
+from webdataset.loader import MultiWebLoader, WebLoader
 
 
 def test_webloader():

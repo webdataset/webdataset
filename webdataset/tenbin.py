@@ -1,6 +1,8 @@
-import numpy as np
 import struct
+
+import numpy as np
 from numpy import ndarray
+
 
 def bytelen(a):
     """Determine the length of a in bytes."""
