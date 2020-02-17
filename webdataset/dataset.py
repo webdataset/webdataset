@@ -10,7 +10,7 @@
 or over HTTP connections.
 """
 
-__all__ = "WebDataset tariterator default_handlers".split()
+__all__ = "WebDataset tariterator default_handlers imagehandler".split()
 
 import sys
 
@@ -46,6 +46,8 @@ from torch.utils.data import IterableDataset
 import braceexpand
 import simplejson
 
+from . import io
+
 trace = False
 
 debug_dataset = os.environ.get("WDS_DEBUG", 0)
@@ -67,28 +69,6 @@ def maybe_collect():
         gc.collect()
         collection_counter = 0
     collection_counter += 1
-
-def command_pipe(cmd, bufsize=popen_bufsize):
-    def f(url):
-        stream = Pipe(cmd.format(url), stdout=PIPE, shell=True, bufsize=bufsize)
-        return stream
-    return f
-
-def generic_opener(url):
-    cmd = None
-    match = re.search(r'^\([a-zA-Z]+\):', url)
-    if match:
-        scheme = match.group(1).lower()
-        hname = "GOPEN_"+scheme
-        cmd = os.environ.get(hname)
-    elif url.startswith("gs://"):
-        cmd = "gsutil cat '{}'"
-    elif url.startswith("http://") or url.startswith("https://"):
-        cmd = "curl --fail -L -s '{}' --output -"
-    else:
-        cmd = "dd if='{}' bs=4M"
-    return command_pipe(cmd)(url)
-
 
 class NoException(Exception):
     pass
@@ -126,6 +106,31 @@ imagespecs = {
 
 
 def imagehandler(data, imagespec):
+    """Decode image data using the given `imagespec`.
+
+    The `imagespec` specifies whether the image is decoded
+    to numpy/torch/pi, decoded to uint8/float, and decoded
+    to l/rgb/rgba:
+
+    - l8: numpy uint8 l
+    - rgb8: numpy uint8 rgb
+    - rgba8: numpy uint8 rgba
+    - l: numpy float l
+    - rgb: numpy float rgb
+    - rgba: numpy float rgba
+    - torchl8: torch uint8 l
+    - torchrgb8: torch uint8 rgb
+    - torchrgba8: torch uint8 rgba
+    - torchl: torch float l
+    - torchrgb: torch float rgb
+    - torch: torch float rgb
+    - torchrgba: torch float rgba
+    - pill: pil None l
+    - pil: pil None rgb
+    - pilrgb: pil None rgb
+    - pilrgba: pil None rgba
+
+    """
     assert imagespec in imagespecs, imagespecs.keys()
     atype, etype, mode = imagespecs[imagespec.lower()]
     with six.BytesIO(data) as stream:
@@ -153,12 +158,14 @@ def imagehandler(data, imagespec):
             return torch.tensor(result.transpose(2, 0, 1)).type(torch.float) / 255.0
 
 def maybe_int(data):
+    """Try to turn data into an int; if it fails, return data."""
     try:
         return int(data)
     except ValueError:
         return data
 
 def make_handlers(imagetype):
+    """Preload the default_handlers table."""
     handlers = {}
     for extension in ["cls", "cls2", "class", "count", "index", "inx", "id"]:
         handlers[extension] = maybe_int
@@ -181,6 +188,7 @@ def make_handlers(imagetype):
         pass
     return handlers
 
+
 default_handlers = { key: make_handlers(key) for key in imagespecs.keys() }
 """A mapping of filename extensions to loading functions used by the built-in decoder.
 
@@ -198,8 +206,7 @@ object that is returned as part of a sample by `WebDataset`.
 """
 
 
-
-def decode_based_on_extension1(data, tname, handlers):
+def decode_item_based_on_extension(data, tname, handlers):
     # Unicode change. If it is alread an unicode string, no decoding (Byte->Unicode req)
     if isinstance(data, (int, float, unicode)):
         return data
@@ -212,7 +219,7 @@ def decode_based_on_extension1(data, tname, handlers):
     else:
         return decoder(data)
 
-def decode_based_on_extension(sample, handlers):
+def decode_sample_based_on_extensions(sample, handlers):
     """Autodecode a sample, using extensions as guide for how to decode.
 
     Args:
@@ -227,7 +234,7 @@ def decode_based_on_extension(sample, handlers):
             result[k] = v
             continue
         assert v is not None, (k, sample)
-        result[k] = decode_based_on_extension1(v, k, handlers=handlers)
+        result[k] = decode_item_based_on_extension(v, k, handlers=handlers)
     return result
 
 
@@ -492,11 +499,11 @@ def make_decoder(spec):
     elif callable(spec):
         decoder = spec
     elif isinstance(spec, dict):
-        decoder = lambda sample: decode_based_on_extension(sample, spec)
+        decoder = lambda sample: decode_sample_based_on_extensions(sample, spec)
     elif isinstance(spec, str):
         handlers = default_handlers.get(spec)
         assert handlers is not None, spec
-        decoder = lambda sample: decode_based_on_extension(sample, handlers)
+        decoder = lambda sample: decode_sample_based_on_extensions(sample, handlers)
     else:
         raise ValueError(f"{spec}: unknown decoder spec")
     assert callable(decoder), (spec, decoder)
@@ -615,7 +622,7 @@ class WebDataset(IterableDataset):
 
     def __init__(self, urls, *, size=None, extensions=None, decoder="rgb",
                  transforms=None, pipeline=None,
-                 epochs=1, keys=base_plus_ext, opener=generic_opener,
+                 epochs=1, keys=base_plus_ext, opener=io.reader,
                  errors=True, verbose=False, shuffle=0, associate=None,
                  prepare_for_worker=True, container=None, extra_meta=False):
         self.opener = opener if callable(opener) else command_pipe(opener)

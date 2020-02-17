@@ -2,7 +2,7 @@
 
 tests: virtualenv
 	rm -f objio.yaml objio.yml
-	. ./venv/bin/activate; python3 -m pytest
+	. ./venv/bin/activate; python3 -m pytest -v -x
 
 virtualenv: FORCE
 	test -d venv || python3 -m venv venv
