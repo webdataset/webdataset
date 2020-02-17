@@ -1,7 +1,45 @@
+#
+# Copyright (c) 2017-2019 NVIDIA CORPORATION. All rights reserved.
+# This file is part of the WebDataset library.
+# See the LICENSE file for licensing terms (BSD-style).
+#
+
+"""
+Binary tensor encodings for PyTorch and NumPy.
+
+This defines efficient binary encodings for tensors. The format is 8 byte
+aligned and can be used directly for computations when transmitted, say,
+via RDMA. The format is supported by WebDataset with the `.ten` filename
+extension. It is also used by Tensorcom, Tensorcom RDMA, and can be used
+for fast tensor storage with LMDB and in disk files (which can be memory 
+mapped)
+
+Data is encoded as a series of chunks:
+
+- magic number (int64)
+- length in bytes (int64)
+- bytes (multiple of 64 bytes long)
+
+Arrays are a header chunk followed by a data chunk.
+Header chunks have the following structure:
+
+- dtype (int64)
+- 8 byte array name
+- ndim (int64)
+- dim[0]
+- dim[1]
+- ...
+"""
+
 import struct
 
 import numpy as np
 from numpy import ndarray
+
+__all__ = """
+read write save load
+zsend_single zrecv_single zsend_multipart zrecv_multipart sctp_send sctp_recv
+""".split()
 
 
 def bytelen(a):
@@ -12,7 +50,7 @@ def bytelen(a):
         return len(a)
     else:
         raise ValueError(a, "cannot determine nbytes")
-        
+
 def bytedata(a):
     """Return a the raw data corresponding to a."""
     if isinstance(a, (bytearray, bytes, memoryview)):
@@ -230,7 +268,7 @@ def zrecv_multipart(socket, infos=False):
 
 def sctp_send(socket, dest, l, infos=None):
     """Send arrays as an SCTP datagram.
-    
+
     This is just a convenience function and illustration.
     For more complex networking needs, you may want
     to call encode_buffer and sctp_send directly.

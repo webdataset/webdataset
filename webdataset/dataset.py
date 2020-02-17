@@ -1,13 +1,14 @@
 #!/usr/bin/python
 #
 # Copyright (c) 2017-2019 NVIDIA CORPORATION. All rights reserved.
-# This file is part of webloader (see TBD).
+# This file is part of the WebDataset library.
 # See the LICENSE file for licensing terms (BSD-style).
 #
 
-#from __future__ import absolute_import, division, print_function
-#from future import standard_library
-#standard_library.install_aliases()
+
+"""Train PyTorch models directly from POSIX tar archive, locally
+or over HTTP connections.
+"""
 
 __all__ = "WebDataset tariterator default_handlers".split()
 
@@ -590,34 +591,33 @@ class Pipe(object):
 
 
 class WebDataset(IterableDataset):
-    """Iterate over sharded datasets."""
+    """Iterate over sharded datasets.
+
+    - urls: shard spec or list of shards
+    - extensions: extensions to extract (Default value = None, can be either list of lists or "a;b c")
+    - decode: decoder to apply to files in tarfiles (Default value = True, based on extension)
+    - transforms: list of functions to apply to unbatched samples (Default value = None)
+    - pipeline: function that maps the iterator, e.g. for batching
+    - opener: either a function that returns a stream or a string that is invoked via Popen
+    - epochs: how often to iterate through the shards before finishing the iterator
+    - verbose: verbose output
+    - shuffle: if >0, then shuffle shards, and shuffle samples with a buffer of the given size
+    - associate: a callable or dictionary that returns additional information to associate with each sample
+    - prepare_for_worker: callable called in each worker before anything else is done
+    - container: if given, treats the tar file as a record file of containers (protobufs, msgpack, etc.)
+    - extra_meta: associates subset info with each sample record
+
+    The decoder can be True (default decoder), False (no decoder), a callable (called
+    decode the sample, or a dictionary mapping filename extensions to callables for 
+    the decoding.
+    """
+
 
     def __init__(self, urls, *, size=None, extensions=None, decoder="rgb",
                  transforms=None, pipeline=None,
                  epochs=1, keys=base_plus_ext, opener=generic_opener,
                  errors=True, verbose=False, shuffle=0, associate=None,
                  prepare_for_worker=True, container=None, extra_meta=False):
-        """Create a WebDataset
-
-        - urls: shard spec or list of shards
-        - extensions: extensions to extract (Default value = None, can be either list of lists or "a;b c")
-        - decode: decoder to apply to files in tarfiles (Default value = True, based on extension)
-        - transforms: list of functions to apply to unbatched samples (Default value = None)
-        - pipeline: function that maps the iterator, e.g. for batching
-        - opener: either a function that returns a stream or a string that is invoked via Popen
-        - epochs: how often to iterate through the shards before finishing the iterator
-        - verbose: verbose output
-        - shuffle: if >0, then shuffle shards, and shuffle samples with a buffer of the given size
-        - associate: a callable or dictionary that returns additional information to associate with each sample
-        - prepare_for_worker: callable called in each worker before anything else is done
-        - container: if given, treats the tar file as a record file of containers (protobufs, msgpack, etc.)
-        - extra_meta: associates subset info with each sample record
-
-        The decoder can be True (default decoder), False (no decoder), a callable (called
-        decode the sample, or a dictionary mapping filename extensions to callables for 
-        the decoding.
-        """
-
         self.opener = opener if callable(opener) else command_pipe(opener)
         assert callable(self.opener), opener
         self.decoder = decoder
