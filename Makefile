@@ -11,7 +11,7 @@ virtualenv: FORCE
 docs: FORCE
 	mkdir -p docs
 	cp README.md docs/index.md
-	pydocmd simple webdataset.dataset+ > docs/dataset.md
+	pydocmd simple webdataset.dataset++ > docs/dataset.md
 	pydocmd simple webdataset.tenbin+ > docs/tenbin.md
 	pydocmd simple webdataset.writer+ > docs/writer.md
 	jupyter nbconvert --to markdown examples/coco-to-shards.ipynb

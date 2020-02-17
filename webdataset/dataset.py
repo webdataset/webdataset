@@ -9,6 +9,15 @@
 #from future import standard_library
 #standard_library.install_aliases()
 
+__all__ = "WebDataset tariterator default_handlers".split()
+
+import sys
+
+if sys.version_info[0] == 3:
+    from builtins import str
+    unicode = str
+    buffer = str
+
 import argparse
 import collections
 import gc
@@ -94,11 +103,6 @@ def curried(f):
     return wrapper
 
 
-if sys.version_info[0] == 3:
-    from builtins import str
-    unicode = str
-    buffer = str
-
 imagespecs = {
     "l8": ("numpy", "uint8", "l"),
     "rgb8": ("numpy", "uint8", "rgb"),
@@ -177,6 +181,22 @@ def make_handlers(imagetype):
     return handlers
 
 default_handlers = { key: make_handlers(key) for key in imagespecs.keys() }
+"""A mapping of filename extensions to loading functions used by the built-in decoder.
+
+You can modify this to suit your needs.
+
+E.g.,
+
+```Python
+    default_handlers["mp4"] = my_mp4_decoder
+```
+
+will call `my_mp4_decoder` in order to decode files ending in `.mp4`.
+The decoder takes a single argument, a bytestring, and returns the decoded
+object that is returned as part of a sample by `WebDataset`.
+"""
+
+
 
 def decode_based_on_extension1(data, tname, handlers):
     # Unicode change. If it is alread an unicode string, no decoding (Byte->Unicode req)
@@ -194,8 +214,9 @@ def decode_based_on_extension1(data, tname, handlers):
 def decode_based_on_extension(sample, handlers):
     """Autodecode a sample, using extensions as guide for how to decode.
 
-    :param sample: dictionary representing sample
-    :param imagetype: format for images (gray, rgb, rgba, PIL; rgb8=8 bit)
+    Args:
+    sample: dictionary representing sample
+    imagetype: format for images (gray, rgb, rgba, PIL; rgb8=8 bit)
     """
     result = {}
     for k, v in list(sample.items()):
@@ -228,8 +249,8 @@ def parse_field_spec(fields):
 def transform_with(sample, transformers):
     """Transform a list of values using a list of functions.
 
-    :param sample: list of values
-    :param transformers: list of functions
+    sample: list of values
+    transformers: list of functions
 
     """
     assert not isinstance(sample, dict)
@@ -248,7 +269,7 @@ def transform_with(sample, transformers):
 def transformer(transformers):
     """Curried version of `transform_with`.
 
-    :param transformers: 
+    transformers :
 
     """
     def f(x): return transform_with(x, transformers)
@@ -260,10 +281,6 @@ def listify(x):
 
     Lists and tuples are turned into lists, everything else is turned
     into a one element list.
-
-    :param x: value to be converted
-    :param x): return transform_with(x: 
-    :param transformers)return flistify(x: 
 
     """
     if x is None:
@@ -302,9 +319,9 @@ def extract(data, *fields):
 def transform(data, f=None):
     """Map entire samples using the given function.
 
-    :param data: iterator
-    :param f: function from samples to samples
-    :returns: iterator over transformed samples
+    data: iterator
+    f: function from samples to samples
+    returns: iterator over transformed samples
 
     """
 
@@ -325,9 +342,9 @@ def shuffle(data, bufsize=1000, initial=100):
     startup is less random; this is traded off against
     yielding samples quickly.
 
-    :param data: iterator
-    :param bufsize: buffer size for shuffling
-    :returns: iterator
+    data: iterator
+    bufsize: buffer size for shuffling
+    returns: iterator
 
     """
     import random
@@ -352,8 +369,8 @@ def base_plus_ext(path):
 
     Returns base, allext.
 
-    :param path: path with extensions
-    :returns: path with all extensions removed
+    path: path with extensions
+    returns: path with all extensions removed
 
     """
     match = re.match(r"^((?:.*/|)[^.]+)[.]([^/]*)$", path)
@@ -365,7 +382,7 @@ def base_plus_ext(path):
 def valid_sample(sample):
     """Check whether a sample is valid.
 
-    :param sample: sample to be checked
+        sample: sample to be checked
 
     """
     return (sample is not None and
@@ -376,8 +393,8 @@ def valid_sample(sample):
 def group_by_keys(keys=base_plus_ext, lcase=True, suffixes=None):
     """Returns function over iterator that groups key, value pairs into samples.
 
-    :param keys: function that splits the key into key and extension (Default value = base_plus_ext)
-    :param lcase: convert suffixes to lower case (Default value = True)
+    keys: function that splits the key into key and extension (Default value = base_plus_ext)
+    lcase: convert suffixes to lower case (Default value = True)
 
     """
     def iterator(data):
@@ -418,7 +435,7 @@ def make_unique(keys):
 def extract_container(container):
     """Extracts an embedded container format from a tar file.
 
-    :param container: suffix for container file format
+        container: suffix for container file format
 
     """
     def iterator(data):
@@ -445,8 +462,8 @@ def extract_container(container):
 def tardata(fileobj, skip_meta=r"__[^/]*__($|/)"):
     """Iterator yielding filename, content pairs for the given tar stream.
 
-    :param fileobj: byte stream suitable for tarfile
-    :param skip_meta: regexp for keys that are skipped entirely (Default value = r"__[^/]*__($|/)")
+    - fileobj: byte stream suitable for tarfile
+    - skip_meta: regexp for keys that are skipped entirely (Default value = r"__[^/]*__($|/)")
 
     """
     stream = tarfile.open(fileobj=fileobj, mode="r|*")
@@ -487,8 +504,8 @@ def make_decoder(spec):
 def apply_decoder(decoder, errors=True):
     """Decode samples by invoking the decoder with error handling.
 
-    :param decode: decoder function
-    :param errors: True, "warn", or False
+        decode: decoder function
+        errors: True, "warn", or False
 
     """
     def iterator(data):
@@ -508,14 +525,20 @@ def apply_decoder(decoder, errors=True):
     return iterator
 
 
-def tariterator1(fileobj, keys=base_plus_ext, decoder=True, suffixes=None, errors=True, container=None):
-    """Iterate through training samples stored in a sharded tar file.
+def tariterator(fileobj, keys=base_plus_ext, decoder=True, suffixes=None, errors=True, container=None):
+    """
+    Iterate through training samples stored in a sharded tar file.
 
-    :param fileobj:
-    :param check_sorted:  (Default value = False)
-    :param keys:  (Default value = base_plus_ext)
-    :param decode:  (Default value = True)
+    - fileobj: a Python file-like object
+    - check_sorted:  check whether the input is actually properly sorted (Default value = False)
+    - keys:  key extraction function (Default value = base_plus_ext)
+    - decoder: value decoding function (Default value = True)
 
+    The key extraction function takes a string representing a pathname and
+    returns a pair (__key__, suffix).
+
+    The decoder takes the entire sample as a dict and returns the
+    decoded sample as a dict.
     """
     decoder = make_decoder(decoder)
     content = tardata(fileobj)
@@ -569,19 +592,30 @@ class Pipe(object):
 class WebDataset(IterableDataset):
     """Iterate over sharded datasets."""
 
-    def __init__(self, urls, *, size=None, extensions=None, decoder="rgb", 
+    def __init__(self, urls, *, size=None, extensions=None, decoder="rgb",
                  transforms=None, pipeline=None,
                  epochs=1, keys=base_plus_ext, opener=generic_opener,
                  errors=True, verbose=False, shuffle=0, associate=None,
                  prepare_for_worker=True, container=None, extra_meta=False):
-        """Create a WebLoader
+        """Create a WebDataset
 
-        :param urls: shard spec or list of shards
-        :param extensions: extensions to extract (Default value = None, can be either list of lists or "a;b c")
-        :param decode: decoder to apply to tarfiles (Default value = True)
-        :param transforms: list of functions to apply to unbatched samples (Default value = None)
-        :param pipeline: function that maps the iterator, e.g. for batching
-        :param opener: either a function that returns a stream or a string that is invoked via Popen
+        - urls: shard spec or list of shards
+        - extensions: extensions to extract (Default value = None, can be either list of lists or "a;b c")
+        - decode: decoder to apply to files in tarfiles (Default value = True, based on extension)
+        - transforms: list of functions to apply to unbatched samples (Default value = None)
+        - pipeline: function that maps the iterator, e.g. for batching
+        - opener: either a function that returns a stream or a string that is invoked via Popen
+        - epochs: how often to iterate through the shards before finishing the iterator
+        - verbose: verbose output
+        - shuffle: if >0, then shuffle shards, and shuffle samples with a buffer of the given size
+        - associate: a callable or dictionary that returns additional information to associate with each sample
+        - prepare_for_worker: callable called in each worker before anything else is done
+        - container: if given, treats the tar file as a record file of containers (protobufs, msgpack, etc.)
+        - extra_meta: associates subset info with each sample record
+
+        The decoder can be True (default decoder), False (no decoder), a callable (called
+        decode the sample, or a dictionary mapping filename extensions to callables for 
+        the decoding.
         """
 
         self.opener = opener if callable(opener) else command_pipe(opener)
@@ -621,6 +655,7 @@ class WebDataset(IterableDataset):
         self.extra_meta = False
 
     def shard_selection(self):
+        """Contains the logic for self.subset shard selection."""
         import torch
         index, total = None, None
         if self.subset is not None:
@@ -649,12 +684,12 @@ class WebDataset(IterableDataset):
             stream = None
             try:
                 with self.opener(url) as stream:
-                    source = tariterator1(stream,
-                                          keys=self.keys,
-                                          suffixes=self.suffixes,
-                                          decoder=self.decoder,
-                                          container=self.container,
-                                          errors=self.errors)
+                    source = tariterator(stream,
+                                         keys=self.keys,
+                                         suffixes=self.suffixes,
+                                         decoder=self.decoder,
+                                         container=self.container,
+                                         errors=self.errors)
                     if self.container=="ten":
                         for sample in source:
                             assert isinstance(sample, list)
