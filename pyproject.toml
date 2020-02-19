@@ -1,0 +1,6 @@
+[build-system]
+requires = ["setuptools", "wheel"]  # PEP 508 specifications.
+
+[tool.autopep8]
+max_line_length = 78
+ignore = E501
