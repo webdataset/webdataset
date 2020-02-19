@@ -6,11 +6,11 @@ TarWriter(self, fileobj, keep_meta=False, user='bigdata', group='bigdata', mode=
 ```
 A class for writing dictionaries to tar files.
 
-- fileobj: fileobj: file name for tar file (.tgz/.tar) or open file descriptor
-- bool: keep_meta: keep fields starting with "_"
-- keep_meta:  (Default value = False)
-- encoder: sample encoding (Default value = None)
-- compress:  (Default value = None)
+:param fileobj: fileobj: file name for tar file (.tgz/.tar) or open file descriptor
+:param bool: keep_meta: keep fields starting with "_"
+:param keep_meta:  (Default value = False)
+:param encoder: sample encoding (Default value = None)
+:param compress:  (Default value = None)
 
 The following code will add two file to the tar archive: `a/b.png` and
 `a/b.output.png`.
@@ -29,9 +29,9 @@ ShardWriter(self, pattern, maxcount=100000, maxsize=3000000000.0, keep_meta=Fals
 ```
 Like TarWriter but splits into multiple shards.
 
-- pattern: output file pattern
-- maxcount: maximum number of records per shard (Default value = 100000)
-- maxsize: maximum size of each shard (Default value = 3e9)
-- kw: other options passed to TarWriter
+:param pattern: output file pattern
+:param maxcount: maximum number of records per shard (Default value = 100000)
+:param maxsize: maximum size of each shard (Default value = 3e9)
+:param kw: other options passed to TarWriter
 
 

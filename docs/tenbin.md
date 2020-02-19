@@ -11,19 +11,19 @@ mapped)
 
 Data is encoded as a series of chunks:
 
-- magic number (int64)
-- length in bytes (int64)
-- bytes (multiple of 64 bytes long)
+:param magic number (int64)
+:param length in bytes (int64)
+:param bytes (multiple of 64 bytes long)
 
 Arrays are a header chunk followed by a data chunk.
 Header chunks have the following structure:
 
-- dtype (int64)
-- 8 byte array name
-- ndim (int64)
-- dim[0]
-- dim[1]
-- ...
+:param dtype (int64)
+:param 8 byte array name
+:param ndim (int64)
+:param dim[0]
+:param dim[1]
+:param ...
 
 ## write
 ```python

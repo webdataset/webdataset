@@ -482,8 +482,8 @@ def extract_container(container):
 def tardata(fileobj, skip_meta=r"__[^/]*__($|/)"):
     """Iterator yielding filename, content pairs for the given tar stream.
 
-    - fileobj: byte stream suitable for tarfile
-    - skip_meta: regexp for keys that are skipped entirely (Default value = r"__[^/]*__($|/)")
+    :param fileobj: byte stream suitable for tarfile
+    :param skip_meta: regexp for keys that are skipped entirely (Default value = r"__[^/]*__($|/)")
 
     """
     stream = tarfile.open(fileobj=fileobj, mode="r|*")
@@ -553,10 +553,10 @@ def tariterator(fileobj, keys=base_plus_ext, decoder=True, suffixes=None,
     """
     Iterate through training samples stored in a sharded tar file.
 
-    - fileobj: a Python file-like object
-    - check_sorted:  check whether the input is actually properly sorted (Default value = False)
-    - keys:  key extraction function (Default value = base_plus_ext)
-    - decoder: value decoding function (Default value = True)
+    :param fileobj: a Python file-like object
+    :param check_sorted:  check whether the input is actually properly sorted (Default value = False)
+    :param keys:  key extraction function (Default value = base_plus_ext)
+    :param decoder: value decoding function (Default value = True)
 
     The key extraction function takes a string representing a pathname and
     returns a pair (__key__, suffix).
@@ -578,19 +578,19 @@ def tariterator(fileobj, keys=base_plus_ext, decoder=True, suffixes=None,
 class WebDataset(IterableDataset):
     """Iterate over sharded datasets.
 
-    - urls: shard spec or list of shards
-    - extensions: extensions to extract (Default value = None, can be either list of lists or "a;b c")
-    - decode: decoder to apply to files in tarfiles (Default value = True, based on extension)
-    - transforms: list of functions to apply to unbatched samples (Default value = None)
-    - pipeline: function that maps the iterator, e.g. for batching
-    - opener: either a function that returns a stream or a string that is invoked via Popen
-    - epochs: how often to iterate through the shards before finishing the iterator
-    - verbose: verbose output
-    - shuffle: if >0, then shuffle shards, and shuffle samples with a buffer of the given size
-    - associate: a callable or dictionary that returns additional information to associate with each sample
-    - prepare_for_worker: callable called in each worker before anything else is done
-    - container: if given, treats the tar file as a record file of containers (protobufs, msgpack, etc.)
-    - extra_meta: associates subset info with each sample record
+    :param urls: shard spec or list of shards
+    :param extensions: extensions to extract (Default value = None, can be either list of lists or "a;b c")
+    :param decode: decoder to apply to files in tarfiles (Default value = True, based on extension)
+    :param transforms: list of functions to apply to unbatched samples (Default value = None)
+    :param pipeline: function that maps the iterator, e.g. for batching
+    :param opener: either a function that returns a stream or a string that is invoked via Popen
+    :param epochs: how often to iterate through the shards before finishing the iterator
+    :param verbose: verbose output
+    :param shuffle: if >0, then shuffle shards, and shuffle samples with a buffer of the given size
+    :param associate: a callable or dictionary that returns additional information to associate with each sample
+    :param prepare_for_worker: callable called in each worker before anything else is done
+    :param container: if given, treats the tar file as a record file of containers (protobufs, msgpack, etc.)
+    :param extra_meta: associates subset info with each sample record
 
     The decoder can be True (default decoder), False (no decoder), a callable (called
     decode the sample, or a dictionary mapping filename extensions to callables for

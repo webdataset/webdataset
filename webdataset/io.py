@@ -53,10 +53,10 @@ class Pipe(object):
     This way, clients of the class do not need to know that they are
     dealing with subprocesses.
 
-    - *args: passed to `subprocess.Pipe`
-    - **kw: passed to `subprocess.Pipe`
-    - timeout: timeout for closing/waiting
-    - ignore_errors: don't raise exceptions on subprocess errors
+    :param *args: passed to `subprocess.Pipe`
+    :param **kw: passed to `subprocess.Pipe`
+    :param timeout: timeout for closing/waiting
+    :param ignore_errors: don't raise exceptions on subprocess errors
     """
 
     def __init__(self, *args, timeout=3600.0, ignore_errors=False, **kw):

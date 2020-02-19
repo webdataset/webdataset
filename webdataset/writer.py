@@ -22,8 +22,8 @@ def imageencoder(image, format="PNG"):
 
     Can handle float or uint8 images.
 
-    - image: ndarray representing an image
-    - format: compression format (PNG, JPEG, PPM)
+    :param image: ndarray representing an image
+    :param format: compression format (PNG, JPEG, PPM)
 
     """
     if isinstance(image, np.ndarray):
@@ -130,11 +130,11 @@ def make_encoder(spec):
 class TarWriter(object):
     """A class for writing dictionaries to tar files.
 
-    - fileobj: fileobj: file name for tar file (.tgz/.tar) or open file descriptor
-    - bool: keep_meta: keep fields starting with "_"
-    - keep_meta:  (Default value = False)
-    - encoder: sample encoding (Default value = None)
-    - compress:  (Default value = None)
+    :param fileobj: fileobj: file name for tar file (.tgz/.tar) or open file descriptor
+    :param bool: keep_meta: keep fields starting with "_"
+    :param keep_meta:  (Default value = False)
+    :param encoder: sample encoding (Default value = None)
+    :param compress:  (Default value = None)
 
     The following code will add two file to the tar archive: `a/b.png` and
     `a/b.output.png`.
@@ -239,10 +239,10 @@ class TarWriter(object):
 class ShardWriter(object):
     """Like TarWriter but splits into multiple shards.
 
-    - pattern: output file pattern
-    - maxcount: maximum number of records per shard (Default value = 100000)
-    - maxsize: maximum size of each shard (Default value = 3e9)
-    - kw: other options passed to TarWriter
+    :param pattern: output file pattern
+    :param maxcount: maximum number of records per shard (Default value = 100000)
+    :param maxsize: maximum size of each shard (Default value = 3e9)
+    :param kw: other options passed to TarWriter
 
     """
 
