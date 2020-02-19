@@ -5,6 +5,7 @@ preproc = transforms.Compose([
     transforms.CenterCrop(224),
 ])
 
+
 def transform(sample):
     sample["ppm"] = preproc(sample["png"])
     del sample["png"]

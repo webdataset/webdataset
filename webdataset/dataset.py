@@ -168,7 +168,7 @@ def make_handlers(imagetype):
         handlers[extension] = maybe_int
     for extension in ["txt", "text", "transcript"]:
         handlers[extension] = lambda x: x.decode("utf-8")
-    for extension in ["png", "jpg", "jpeg", "img", "image", 
+    for extension in ["png", "jpg", "jpeg", "img", "image",
                       "pbm", "pgm", "ppm"]:
         handlers[extension] = lambda data: imagehandler(data, imagetype)
     for extension in ["pyd", "pickle"]:
@@ -413,7 +413,7 @@ def group_by_keys(keys=base_plus_ext, lcase=True, suffixes=None):
             prefix, suffix = keys(fname)
             if trace:
                 print(prefix, suffix,
-                      current_sample.keys() 
+                      current_sample.keys()
                       if isinstance(current_sample, dict) else None)
             if prefix is None:
                 continue
@@ -460,12 +460,11 @@ def extract_container(container):
     """
     def iterator(data):
         for fname, value in data:
-            if fname.endswith("."+container):
+            if fname.endswith("." + container):
                 if container.endswith("mp"):
                     import msgpack
                     sample = msgpack.unpackb(value)
-                    sample = {maybe_decode(k, "ascii")
-                              : v for k, v in sample.items()}
+                    sample = {maybe_decode(k, "ascii"): v for k, v in sample.items()}
                 elif container.endswith("json"):
                     import simplejson
                     sample = simplejson.loads(value)

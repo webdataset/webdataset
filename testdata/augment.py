@@ -6,6 +6,7 @@ preproc = transforms.Compose([
     transforms.RandomHorizontalFlip(),
 ])
 
+
 def transform(sample):
     sample["ppm"] = preproc(sample["png"])
     del sample["png"]

@@ -25,21 +25,24 @@ from webdataset import WebDataset
 #from past.utils import old_div
 
 
-
 try:
     from torch.utils.data import IterableDataset
 except:
-    class IterableDataset(object): pass
+    class IterableDataset(object):
+        pass
 
 try:
     from torch import Tensor as TorchTensor
 except:
-    class TorchTensor(object): pass
+    class TorchTensor(object):
+        pass
 
 try:
     from numpy import ndarray
 except:
-    class ndarray(object): pass
+    class ndarray(object):
+        pass
+
 
 def curried(f):
     """A decorator for currying functions in the first argument."""
@@ -67,6 +70,7 @@ def pipeline(source, *args):
         return source
     return compose(*args)(source)
 
+
 def getfirst(a, keys, default=None):
     assert isinstance(a, dict)
     if isinstance(keys, str):
@@ -77,10 +81,12 @@ def getfirst(a, keys, default=None):
             return result
     return default
 
+
 def parse_field_spec(fields):
     if isinstance(fields, str):
         fields = fields.split()
     return [field.split(";") for field in fields]
+
 
 @curried
 def extract(data, *fields):
@@ -88,6 +94,7 @@ def extract(data, *fields):
     """
     for sample in data:
         yield [getfirst(sample, f) for f in fields]
+
 
 @curried
 def transform(data, f=None):
@@ -106,6 +113,7 @@ def transform(data, f=None):
         if isinstance(sample, dict) and isinstance(result, dict):
             result["__key__"] = sample.get("__key__")
         yield result
+
 
 @curried
 def shuffle(data, bufsize=1000, initial=100):
@@ -138,11 +146,13 @@ def shuffle(data, bufsize=1000, initial=100):
 
 
 def list2dict(l):
-    return {i:v for i,v in enumerate(l)}
+    return {i: v for i, v in enumerate(l)}
+
 
 def dict2list(d):
-    n = max(d.keys())+1
+    n = max(d.keys()) + 1
     return [d[i] for i in range(n)]
+
 
 def samples_to_batch(samples, combine_tensors=True, combine_scalars=True, expand=False):
     """Take a collection of samples (dictionaries) and create a batch.
@@ -161,9 +171,9 @@ def samples_to_batch(samples, combine_tensors=True, combine_scalars=True, expand
     if isinstance(samples[0], (tuple, list)):
         samples = [list2dict(x) for x in samples]
         return dict2list(samples_to_batch(samples,
-            combine_tensors=combine_tensors,
-            combine_scalars=combine_scalars,
-            expand=expand))
+                                          combine_tensors=combine_tensors,
+                                          combine_scalars=combine_scalars,
+                                          expand=expand))
     if expand:
         return samples_to_batch_expanded(samples)
     result = {k: [] for k in list(samples[0].keys())}
@@ -205,18 +215,18 @@ def batched(data, batch_size=20, combine_tensors=True, combine_scalars=True, par
     for sample in data:
         if len(batch) >= batch_size:
             yield samples_to_batch(batch,
-                                         combine_tensors=combine_tensors,
-                                         combine_scalars=combine_scalars,
-                                         expand=expand)
+                                   combine_tensors=combine_tensors,
+                                   combine_scalars=combine_scalars,
+                                   expand=expand)
             batch = []
         batch.append(sample)
     if len(batch) == 0:
         return
     elif len(batch) == batch_size or partial:
         yield samples_to_batch(batch,
-                                     combine_tensors=combine_tensors,
-                                     combine_scalars=combine_scalars,
-                                     expand=expand)
+                               combine_tensors=combine_tensors,
+                               combine_scalars=combine_scalars,
+                               expand=expand)
 
 
 @curried
@@ -253,6 +263,7 @@ def batchedbuckets(data, batch_size=5, scale=1.8, seqkey="image", batchdim=1):
         batched["_bucket"] = r
         yield batched
 
+
 def concat(sources, maxepoch=1):
     """Concatenate multiple sources, usually for test sets.
 
@@ -280,6 +291,7 @@ def objhash(obj):
     m.update(obj)
     return m.hexdigest()
 
+
 @curried
 def patched(data, patches, maxpatches=10000):
     """Patch a dataset with another dataset.
@@ -301,6 +313,7 @@ def patched(data, patches, maxpatches=10000):
         key = sample["__key__"]
         return patchdict.get(key, sample)
 
+
 @curried
 def unique(data, key, rekey=False, skip_missing=False, error=True):
     """Ensure that data is unique in the given key.
@@ -321,6 +334,7 @@ def unique(data, key, rekey=False, skip_missing=False, error=True):
         if rekey:
             sample["__key__"] = ident
         yield sample
+
 
 def tonumpy(dtype=None, transpose=True):
     """Curried function to convert to NumPy.
@@ -346,6 +360,7 @@ def tonumpy(dtype=None, transpose=True):
             return a
     return f
 
+
 def totorch(dtype=None, device="cpu", transpose=True):
     """Curried conversion to PyTorch.
 
@@ -370,13 +385,14 @@ def totorch(dtype=None, device="cpu", transpose=True):
                 a = a.transpose(2, 0, 1)
             elif a.ndim == 4 and a.shape[3] in [3, 4]:
                 a = a.transpose(0, 3, 1, 2)
-            if device=="numpy":
+            if device == "numpy":
                 return a
             else:
                 return torch.as_tensor(a, device=device, dtype=dtype_)
         else:
             return a
     return f
+
 
 def transform_with(sample, transformers):
     """Transform a list of values using a list of functions.
@@ -392,10 +408,11 @@ def transform_with(sample, transformers):
     result = list(sample)
     ntransformers = len(transformers)
     for i in range(len(sample)):
-        f = transformers[i%ntransformers]
+        f = transformers[i % ntransformers]
         if f is not None:
             result[i] = f(sample[i])
     return result
+
 
 def transformer(transformers):
     """Curried version of `transform_with`.
@@ -405,6 +422,7 @@ def transformer(transformers):
     """
     def f(x): return transform_with(x, transformers)
     return f
+
 
 def listify(x):
     """Turn a value into a list.
@@ -424,11 +442,13 @@ def listify(x):
     else:
         return [x]
 
+
 def make_loader(args, kw, queue, index):
     kw["use_tracker"] = False
     data = WebLoader(*args, **kw)
     for sample in data:
         queue.put(sample)
+
 
 def maybe_gpu(a, device=None, non_blocking=False):
     if isinstance(a, ndarray):
@@ -439,6 +459,7 @@ def maybe_gpu(a, device=None, non_blocking=False):
     else:
         return a
 
+
 def sync_gpu_transfer(device="cuda"):
     def f(source):
         for data in source:
@@ -448,6 +469,7 @@ def sync_gpu_transfer(device="cuda"):
                 data = {k: maybe_gpu(a, device, True) for k, a in data.items()}
             yield data
     return f
+
 
 def async_gpu_transfer(device="cuda", inflight=2):
     def f(source):
@@ -466,30 +488,36 @@ def async_gpu_transfer(device="cuda", inflight=2):
                     data = {k: maybe_gpu(a, device, True) for k, a in data.items()}
                 q.append(data)
             yield q.popleft()
-            if done and len(q) == 0: break
+            if done and len(q) == 0:
+                break
     return f
 
+
 def funlist(f):
-    if f is None: return f
+    if f is None:
+        return f
     assert callable(f) or callable(f[0])
     if callable(f):
         return [f]
     else:
         return f
 
+
 converter_table = dict(
     torch=totorch(),
     torch_cuda=totorch(device="cuda"),
-    torch_np=totorch(device="numpy"), # torch conventions, NumPy representation
-    torch_numpy=totorch(device="numpy"), # torch conventions, NumPy representation
+    torch_np=totorch(device="numpy"),  # torch conventions, NumPy representation
+    torch_numpy=totorch(device="numpy"),  # torch conventions, NumPy representation
     numpy=tonumpy()
 )
 
+
 class WebLoader(object):
     """Iterate over sharded datasets."""
+
     def __init__(self, dataset,
                  max_batches=int(1e10), max_samples=int(1e10), epochs=1,
-                 pipeline = None, fields=None, transforms=None, shuffle=0,
+                 pipeline=None, fields=None, transforms=None, shuffle=0,
                  batcher=None, batch_size=None, tensor_batches=True, partial_batches=True,
                  batch_transforms=None, converters=None,
                  verbose=False, **kw):
@@ -541,8 +569,10 @@ class WebLoader(object):
                              combine_tensors=self.tensor_batches,
                              partial=self.partial_batches)(source)
         for sample in source:
-            if self.num_batches >= self.max_batches: break
-            if not math.isnan(self.num_samples) and self.num_samples >= self.max_samples: break
+            if self.num_batches >= self.max_batches:
+                break
+            if not math.isnan(self.num_samples) and self.num_samples >= self.max_samples:
+                break
             if self.batch_transforms is not None:
                 if isinstance(sample, dict):
                     raise ValueError("expect list for batch_transforms; did you specify fields= for WebLoader?")
@@ -553,8 +583,10 @@ class WebLoader(object):
                 sample = transform_with(sample, self.converters)
             self.last_sample = sample
             self.num_batches += 1
-            try: self.num_samples += len(sample[0])
-            except: self.num_samples = math.nan
+            try:
+                self.num_samples += len(sample[0])
+            except:
+                self.num_samples = math.nan
             yield sample
 
     def __iter__(self):
@@ -569,10 +601,12 @@ class WebLoader(object):
         """Return the length of the dataset (the size argument passed on initialization)."""
         return self.batches
 
+
 multi_pipes = dict(
     sync_gpu_transfer=sync_gpu_transfer(),
     async_gpu_transfer=async_gpu_transfer()
 )
+
 
 def enqueue_samples_from(dataset, queue, subset, loader_kw):
     if subset:
@@ -580,6 +614,7 @@ def enqueue_samples_from(dataset, queue, subset, loader_kw):
     dl = WebLoader(dataset, **loader_kw)
     for sample in dl:
         queue.put(sample)
+
 
 def joinall(jobs):
     result = []
@@ -591,8 +626,10 @@ def joinall(jobs):
             result.append(job)
     return result
 
+
 class MultiWebLoader(object):
     """Multiprocessing version of WebLoader """
+
     def __init__(self, dataset, num_workers=4, use_torch_mp=False, queue_size=10, multi_pipe=None, **kw):
         """Instantiate multiple WebLoaders in parallel.
 
@@ -610,7 +647,7 @@ class MultiWebLoader(object):
         self.multi_pipe = multi_pipes.get(multi_pipe, multi_pipe)
         assert self.multi_pipe is None or callable(self.multi_pipe)
         self.jobs = None
-        self.sampler = None # for compatibility with DataLoader
+        self.sampler = None  # for compatibility with DataLoader
         self.kw = kw
 
     def raw_iter(self):
@@ -628,7 +665,7 @@ class MultiWebLoader(object):
         try:
             for i in range(self.num_workers):
                 subset = (i, self.num_workers)
-                args=(self.dataset, queue,  subset, self.kw)
+                args = (self.dataset, queue, subset, self.kw)
                 process = mp.Process(target=enqueue_samples_from, args=args)
                 jobs.append(process)
             for job in jobs:
@@ -661,15 +698,18 @@ class MultiWebLoader(object):
         """ """
         return self.batches
 
+
 def asdict(l):
     if isinstance(l, dict):
         return l
     return {i: v for i, v in enumerate(l)}
 
+
 def loader_test(source, nbatches=10, skip=10):
     """Run a test against a loader."""
     for i, sample in enumerate(source):
-        if i >= skip-1: break
+        if i >= skip - 1:
+            break
 
     start = time.time()
     count = 0
@@ -679,16 +719,17 @@ def loader_test(source, nbatches=10, skip=10):
             if isinstance(xs, (list, TorchTensor, ndarray)):
                 count += len(xs)
                 break
-        if i >= nbatches-1: break
+        if i >= nbatches - 1:
+            break
     finish = time.time()
 
-    delta = finish-start
-    print("{:.2f} samples/s {:.2f} batches/s".format(count/delta, nbatches/delta))
+    delta = finish - start
+    print("{:.2f} samples/s {:.2f} batches/s".format(count / delta, nbatches / delta))
 
     print("Example:")
     sample = asdict(sample)
     for index, a in sorted(sample.items()):
-        if isinstance(index, str) and index[0]=="_":
+        if isinstance(index, str) and index[0] == "_":
             if isinstance(a, list):
                 print(index, a[0], "...")
             else:

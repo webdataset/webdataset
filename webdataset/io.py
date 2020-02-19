@@ -112,7 +112,7 @@ def gopen(url, mode, handler=None, bufsize=8192):
     assert mode[0] == "r"
     pr = urlparse(url)
     if pr.scheme == "":
-        pr = urlparse("file:"+url)
+        pr = urlparse("file:" + url)
     if handler is None:
         handler = scheme_to_command.get(pr.scheme)
     if handler is None:

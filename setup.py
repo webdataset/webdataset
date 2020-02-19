@@ -14,7 +14,7 @@ from distutils.core import setup  # , Extension, Command
 if sys.version_info < (3, 6):
     sys.exit("Python versions less than 3.6 are not supported")
 
-scripts=[]
+scripts = []
 
 prereqs = """
     braceexpand

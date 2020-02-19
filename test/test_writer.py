@@ -6,8 +6,8 @@ from itertools import islice
 
 import numpy as np
 import PIL
-
 import simplejson
+
 import webdataset.dataset as wds
 from webdataset import writer
 
