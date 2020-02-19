@@ -11,7 +11,7 @@ This defines efficient binary encodings for tensors. The format is 8 byte
 aligned and can be used directly for computations when transmitted, say,
 via RDMA. The format is supported by WebDataset with the `.ten` filename
 extension. It is also used by Tensorcom, Tensorcom RDMA, and can be used
-for fast tensor storage with LMDB and in disk files (which can be memory 
+for fast tensor storage with LMDB and in disk files (which can be memory
 mapped)
 
 Data is encoded as a series of chunks:
@@ -34,7 +34,6 @@ Header chunks have the following structure:
 import struct
 
 import numpy as np
-from numpy import ndarray
 
 __all__ = """
 read write save load
@@ -105,9 +104,9 @@ def unstr64(i):
 
 def check_infos(data, infos, required_infos=None):
     """Implement infos verification logic."""
-    if required_infos == False or required_infos is None:
+    if required_infos is False or required_infos is None:
         return data
-    if required_infos == True:
+    if required_infos is True:
         return data, infos
     assert isinstance(required_infos, (tuple, list))
     for required, actual in zip(required_infos, infos):

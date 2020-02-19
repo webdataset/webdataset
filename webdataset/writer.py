@@ -6,18 +6,11 @@
 
 __all__ = "TarWriter ShardWriter".split()
 
-import codecs
-import getpass
 import io
-import os
-import os.path
 import pickle
 import re
-import socket
-import sys
 import tarfile
 import time
-import warnings
 
 import numpy as np
 import PIL
