@@ -440,6 +440,15 @@ def make_unique(keys):
     return result
 
 
+def maybe_decode(s, mode="ascii"):
+    if isinstance(s, str):
+        return s
+    elif isinstance(s, bytes):
+        return s.decode(mode)
+    else:
+        raise ValueError(f"{type(s)}: wrong type for maybe_decode")
+
+
 def extract_container(container):
     """Extracts an embedded container format from a tar file.
 
@@ -452,7 +461,7 @@ def extract_container(container):
                 if container.endswith("mp"):
                     import msgpack
                     sample = msgpack.unpackb(value)
-                    sample = {k.decode("ascii"): v for k, v in sample.items()}
+                    sample = {maybe_decode(k, "ascii"): v for k, v in sample.items()}
                 elif container.endswith("json"):
                     import simplejson
                     sample = simplejson.loads(value)
