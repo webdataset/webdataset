@@ -33,7 +33,7 @@ to l/rgb/rgba:
 
 ## tariterator
 ```python
-tariterator(fileobj, keys=<function base_plus_ext at 0x7f8dc3a395f0>, decoder=True, suffixes=None, errors=True, container=None)
+tariterator(fileobj, keys=<function base_plus_ext at 0x7f8152ece5f0>, decoder=True, suffixes=None, errors=True, container=None)
 ```
 
 Iterate through training samples stored in a sharded tar file.
@@ -51,7 +51,7 @@ decoded sample as a dict.
 
 ## WebDataset
 ```python
-WebDataset(self, urls, *, size=None, extensions=None, decoder='rgb', transforms=None, pipeline=None, epochs=1, keys=<function base_plus_ext at 0x7f8dc3a395f0>, opener=<function reader at 0x7f8dc3aa6440>, errors=True, verbose=False, shuffle=0, associate=None, prepare_for_worker=True, container=None, extra_meta=False)
+WebDataset(self, urls, *, size=None, extensions=None, decoder='rgb', transforms=None, pipeline=None, epochs=1, keys=<function base_plus_ext at 0x7f8152ece5f0>, opener=<function reader at 0x7f8152f2e440>, errors=True, verbose=False, shuffle=0, associate=None, prepare_for_worker=True, container=None, extra_meta=False)
 ```
 Iterate over sharded datasets.
 
