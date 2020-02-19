@@ -23,7 +23,6 @@ import time
 import warnings
 from builtins import range
 from functools import wraps
-from subprocess import Popen
 
 import braceexpand
 import numpy as np
