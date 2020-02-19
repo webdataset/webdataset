@@ -1,0 +1,7 @@
+pytest
+simplejson
+braceexpand
+msgpack
+torch
+torchvision
+pyyaml
