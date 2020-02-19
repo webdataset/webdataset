@@ -14,9 +14,10 @@ __all__ = "gopen scheme_to_command".split()
 
 import os
 import sys
-import yaml
-from subprocess import PIPE, Popen, check_call
+from subprocess import PIPE, Popen
 from urllib.parse import urlparse
+
+import yaml
 
 verbose = int(os.environ.get("WDS_GOPEN_VERBOSE", 0))
 
@@ -24,13 +25,16 @@ scheme_to_command = {
     "file": "dd if='{url}' bs=4M",
     "gs": "gsutil cat '{}'",
     "s3": "s3 cp '{url}' -",
-    "az": "azure storage blob --container-name {netloc} --name {filename} --file /dev/stdout",
+    "az": "azure storage blob --container-name {netloc} " +
+            "--name {filename} --file /dev/stdout",
     "http": "curl --fail -L -s '{url}' --output -",
     "https": "curl --fail -L -s '{url}' --output -"
 }
 
+
 def load_schemes():
-    scheme_path = os.environ.get("WDS_SCHEMES", "~/.wds-schemes.yml:./wds-schemes.yml").split(":")
+    scheme_path = os.environ.get(
+        "WDS_SCHEMES", "~/.wds-schemes.yml:./wds-schemes.yml").split(":")
     for fname in scheme_path:
         fname = os.path.expanduser(fname)
         if os.path.exists(fname):
@@ -39,6 +43,7 @@ def load_schemes():
             with open(fname) as stream:
                 updates = yaml.load(stream)
                 scheme_to_command.update(updates)
+
 
 class Pipe(object):
     """Wrapper class for subprocess.Pipe.
@@ -86,6 +91,7 @@ class Pipe(object):
         result = self.stream.readLine(*args, **kw)
         self.status = self.proc.poll()
         self.check_status()
+        return result
 
     def close(self):
         """Wraps stream.close, waits for the subprocess, and handles errors."""
@@ -101,6 +107,7 @@ class Pipe(object):
         """Context handler."""
         self.close()
 
+
 def gopen(url, mode, handler=None, bufsize=8192):
     assert mode[0] == "r"
     pr = urlparse(url)
@@ -114,16 +121,19 @@ def gopen(url, mode, handler=None, bufsize=8192):
                      url=url,
                      filename=os.path.basename(pr.path),
                      dirname=os.path.dirname(pr.path),
-                     abspath=os.path.abspath(pr.path) if pr.scheme=="file" else None)
+                     abspath=os.path.abspath(pr.path) if pr.scheme == "file" else None)
     handler = handler.format(**variables)
     if verbose:
         sys.stderr.print(f"# {handler}", file=sys.stderr)
     return Pipe(handler, stdout=PIPE, shell=True, bufsize=bufsize)
 
+
 def command_pipe(handler):
     return lambda url: gopen(url, "read", handler)
 
+
 def reader(url):
     return gopen(url, "read")
+
 
 load_schemes()

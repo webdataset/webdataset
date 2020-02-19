@@ -12,18 +12,7 @@ or over HTTP connections.
 
 __all__ = "WebDataset tariterator default_handlers imagehandler".split()
 
-import sys
-
-if sys.version_info[0] == 3:
-    from builtins import str
-    unicode = str
-    buffer = str
-
-import argparse
-import collections
 import gc
-import io
-import logging
 import os
 import pickle
 import random
@@ -31,22 +20,26 @@ import re
 import sys
 import tarfile
 import time
-import urllib.parse
 import warnings
 from builtins import range
 from functools import wraps
-from subprocess import PIPE, Popen, check_call
+from subprocess import Popen
 
+import braceexpand
 import numpy as np
 import PIL
 import PIL.Image
+import simplejson
 import six
 from torch.utils.data import IterableDataset
 
-import braceexpand
-import simplejson
-
 from . import io
+
+if sys.version_info[0] == 3:
+    from builtins import str
+    unicode = str
+    buffer = str
+
 
 trace = False
 
@@ -59,8 +52,9 @@ meta_suffix = "__"
 collection_counter = 0
 collection_frequency = 50000
 
+
 def maybe_collect():
-    """Running in notebooks, we tend to run out of memory due to 
+    """Running in notebooks, we tend to run out of memory due to
     weak references, and the collector doesn't seem to get triggered
     in time automatically. This function periodically calls the Python
     garbage collector."""
@@ -69,6 +63,7 @@ def maybe_collect():
         gc.collect()
         collection_counter = 0
     collection_counter += 1
+
 
 class NoException(Exception):
     pass
@@ -140,22 +135,23 @@ def imagehandler(data, imagespec):
     if atype == "pil":
         return img
     elif atype == "numpy":
-        import numpy as np
         result = np.asarray(img)
-        assert result.dtype == np.uint8, (image, result.dtype)
+        assert result.dtype == np.uint8, (img, result.dtype)
         if etype == "uint8":
             return result
         else:
             return result.astype("f") / 255.0
     elif atype == "torch":
-        import numpy as np
         import torch
         result = np.asarray(img)
-        assert result.dtype == np.uint8, (image, result.dtype)
+        assert result.dtype == np.uint8, (img, result.dtype)
         if etype == "uint8":
-            return torch.tensor(result.transpose(2, 0, 1))
+            result = result.transpose(2, 0, 1)
+            return torch.tensor(result)
         else:
-            return torch.tensor(result.transpose(2, 0, 1)).type(torch.float) / 255.0
+            result = result.transpose(2, 0, 1)
+            return torch.tensor(result).type(torch.float) / 255.0
+
 
 def maybe_int(data):
     """Try to turn data into an int; if it fails, return data."""
@@ -164,6 +160,7 @@ def maybe_int(data):
     except ValueError:
         return data
 
+
 def make_handlers(imagetype):
     """Preload the default_handlers table."""
     handlers = {}
@@ -171,7 +168,8 @@ def make_handlers(imagetype):
         handlers[extension] = maybe_int
     for extension in ["txt", "text", "transcript"]:
         handlers[extension] = lambda x: x.decode("utf-8")
-    for extension in ["png", "jpg", "jpeg", "img", "image", "pbm", "pgm", "ppm"]:
+    for extension in ["png", "jpg", "jpeg", "img", "image", 
+                      "pbm", "pgm", "ppm"]:
         handlers[extension] = lambda data: imagehandler(data, imagetype)
     for extension in ["pyd", "pickle"]:
         handlers[extension] = pickle.loads
@@ -189,8 +187,8 @@ def make_handlers(imagetype):
     return handlers
 
 
-default_handlers = { key: make_handlers(key) for key in imagespecs.keys() }
-"""A mapping of filename extensions to loading functions used by the built-in decoder.
+default_handlers = {key: make_handlers(key) for key in imagespecs.keys()}
+"""A mapping of filename extensions to loading functions.
 
 You can modify this to suit your needs.
 
@@ -207,7 +205,8 @@ object that is returned as part of a sample by `WebDataset`.
 
 
 def decode_item_based_on_extension(data, tname, handlers):
-    # Unicode change. If it is alread an unicode string, no decoding (Byte->Unicode req)
+    # Unicode change. If it is alread an unicode string,
+    # no decoding (Byte->Unicode req)
     if isinstance(data, (int, float, unicode)):
         return data
     assert isinstance(data, bytes), type(data)
@@ -218,6 +217,7 @@ def decode_item_based_on_extension(data, tname, handlers):
         return data
     else:
         return decoder(data)
+
 
 def decode_sample_based_on_extensions(sample, handlers):
     """Autodecode a sample, using extensions as guide for how to decode.
@@ -372,6 +372,7 @@ def shuffle(data, bufsize=1000, initial=100):
     for sample in buf:
         yield sample
 
+
 def base_plus_ext(path):
     """Helper method that splits off all extension.
 
@@ -398,10 +399,11 @@ def valid_sample(sample):
             len(list(sample.keys())) > 0 and
             not sample.get("__bad__", False))
 
+
 def group_by_keys(keys=base_plus_ext, lcase=True, suffixes=None):
     """Returns function over iterator that groups key, value pairs into samples.
 
-    keys: function that splits the key into key and extension (Default value = base_plus_ext)
+    keys: function that splits the key into key and extension (base_plus_ext)
     lcase: convert suffixes to lower case (Default value = True)
 
     """
@@ -411,7 +413,8 @@ def group_by_keys(keys=base_plus_ext, lcase=True, suffixes=None):
             prefix, suffix = keys(fname)
             if trace:
                 print(prefix, suffix,
-                      current_sample.keys() if isinstance(current_sample, dict) else None)
+                      current_sample.keys() 
+                      if isinstance(current_sample, dict) else None)
             if prefix is None:
                 continue
             if lcase:
@@ -433,7 +436,7 @@ def make_unique(keys):
     """Given a list of keys, ensures that they are all unique"."""
     result = []
     for i, k in enumerate(keys):
-        if k is None or k=="" or k in result:
+        if k is None or k == "" or k in result:
             result.append(f"_{i}")
         else:
             result.append(k)
@@ -461,7 +464,8 @@ def extract_container(container):
                 if container.endswith("mp"):
                     import msgpack
                     sample = msgpack.unpackb(value)
-                    sample = {maybe_decode(k, "ascii"): v for k, v in sample.items()}
+                    sample = {maybe_decode(k, "ascii")
+                              : v for k, v in sample.items()}
                 elif container.endswith("json"):
                     import simplejson
                     sample = simplejson.loads(value)
@@ -475,6 +479,7 @@ def extract_container(container):
                 if isinstance(sample, list) or valid_sample(sample):
                     yield sample
     return iterator
+
 
 def tardata(fileobj, skip_meta=r"__[^/]*__($|/)"):
     """Iterator yielding filename, content pairs for the given tar stream.
@@ -504,19 +509,22 @@ def make_decoder(spec):
     if spec is True:
         spec = "rgb"
     if spec is False or spec is None:
-        decoder = lambda x: x
+        def decoder(x): return x
     elif callable(spec):
         decoder = spec
     elif isinstance(spec, dict):
-        decoder = lambda sample: decode_sample_based_on_extensions(sample, spec)
+        def decoder(sample): return decode_sample_based_on_extensions(
+            sample, spec)
     elif isinstance(spec, str):
         handlers = default_handlers.get(spec)
         assert handlers is not None, spec
-        decoder = lambda sample: decode_sample_based_on_extensions(sample, handlers)
+        def decoder(sample): return decode_sample_based_on_extensions(
+            sample, handlers)
     else:
         raise ValueError(f"{spec}: unknown decoder spec")
     assert callable(decoder), (spec, decoder)
     return decoder
+
 
 def apply_decoder(decoder, errors=True):
     """Decode samples by invoking the decoder with error handling.
@@ -530,7 +538,7 @@ def apply_decoder(decoder, errors=True):
             try:
                 decoded = decoder(sample)
             except Exception as exn:
-                if errors=="warn":
+                if errors == "warn":
                     warnings.warn("apply_decoder " + repr(exn))
                     time.sleep(0.5)
                 elif errors:
@@ -542,7 +550,8 @@ def apply_decoder(decoder, errors=True):
     return iterator
 
 
-def tariterator(fileobj, keys=base_plus_ext, decoder=True, suffixes=None, errors=True, container=None):
+def tariterator(fileobj, keys=base_plus_ext, decoder=True, suffixes=None,
+                errors=True, container=None):
     """
     Iterate through training samples stored in a sharded tar file.
 
@@ -568,44 +577,6 @@ def tariterator(fileobj, keys=base_plus_ext, decoder=True, suffixes=None, errors
     return samples
 
 
-class Pipe(object):
-    def __init__(self, *args, raise_errors=True, **kw):
-        self.open(*args, **kw)
-        self.raise_errors = raise_errors
-    def open(self, *args, **kw):
-        self.proc = Popen(*args, **kw)
-        self.args = (args, kw)
-        self.stream = self.proc.stdout
-        assert self.stream is not None
-        self.status = None
-        return self
-    def read(self, *args, **kw):
-        result = self.stream.read(*args, **kw)
-        self.status = self.proc.poll()
-        if self.status is not None:
-            self.status = self.proc.wait()
-            if self.status != 0 and self.raise_errors:
-                raise Exception(f"{self.args}: exit {self.status} (read)")
-        return result
-    def readLine(self, *args, **kw):
-        result = self.stream.readLine(*args, **kw)
-        self.status = self.proc.poll()
-        if self.status is not None:
-            self.status = self.proc.wait()
-            if self.status != 0 and self.raise_errors:
-                raise Exception(f"{self.args}: exit {self.status} (readLine)")
-    def close(self):
-        self.stream.close()
-        self.status = self.proc.wait()
-        if self.raise_errors == "all":
-            if self.status != 0 and self.raise_errors:
-                raise Exception(f"{self.args}: exit {self.status} (close)")
-    def __enter__(self):
-        return self
-    def __exit__(self, type, value, traceback):
-        self.close()
-
-
 class WebDataset(IterableDataset):
     """Iterate over sharded datasets.
 
@@ -624,17 +595,16 @@ class WebDataset(IterableDataset):
     - extra_meta: associates subset info with each sample record
 
     The decoder can be True (default decoder), False (no decoder), a callable (called
-    decode the sample, or a dictionary mapping filename extensions to callables for 
+    decode the sample, or a dictionary mapping filename extensions to callables for
     the decoding.
     """
-
 
     def __init__(self, urls, *, size=None, extensions=None, decoder="rgb",
                  transforms=None, pipeline=None,
                  epochs=1, keys=base_plus_ext, opener=io.reader,
                  errors=True, verbose=False, shuffle=0, associate=None,
                  prepare_for_worker=True, container=None, extra_meta=False):
-        self.opener = opener if callable(opener) else command_pipe(opener)
+        self.opener = opener if callable(opener) else io.command_pipe(opener)
         assert callable(self.opener), opener
         self.decoder = decoder
         self.transforms = listify(transforms)
@@ -646,7 +616,7 @@ class WebDataset(IterableDataset):
         self.pipeline = pipeline
         if isinstance(urls, str):
             urls = list(braceexpand.braceexpand(urls))
-        #urls = list(urls)
+        # urls = list(urls)
         assert isinstance(urls, list)
         self.full_urls = urls
         self.urls = urls
@@ -664,7 +634,7 @@ class WebDataset(IterableDataset):
         if prepare_for_worker is True:
             self.prepare_for_worker = self.shard_selection
         elif prepare_for_worker is False:
-            self.prepare_for_worker = lambda:None
+            self.prepare_for_worker = lambda: None
         else:
             self.prepare_for_worker = prepare_for_worker
         self.subset = None
@@ -684,8 +654,9 @@ class WebDataset(IterableDataset):
         if total is None:
             self.urls = self.full_urls
             return
-        if index==0 and len(self.full_urls)<total:
-            warnings.warn(f"num_workers {total} > num_shards {len(self.full_urls)}")
+        if index == 0 and len(self.full_urls) < total:
+            warnings.warn(
+                f"num_workers {total} > num_shards {len(self.full_urls)}")
         self.urls = self.full_urls[index::total]
 
     def __iter__(self):
@@ -693,7 +664,6 @@ class WebDataset(IterableDataset):
         self.prepare_for_worker()
         if self.shuffle > 0:
             random.shuffle(self.urls)
-        finished = False
         self.sample = 0
         urls = self.urls
         for url in urls:
@@ -706,7 +676,7 @@ class WebDataset(IterableDataset):
                                          decoder=self.decoder,
                                          container=self.container,
                                          errors=self.errors)
-                    if self.container=="ten":
+                    if self.container == "ten":
                         for sample in source:
                             assert isinstance(sample, list)
                             yield tuple(sample)
@@ -730,7 +700,7 @@ class WebDataset(IterableDataset):
                         yield sample
                         maybe_collect()
             except Exception as exn:
-                if self.errors=="warn":
+                if self.errors == "warn":
                     warnings.warn("dataset __iter__ " + url + " " + repr(exn))
                     time.sleep(0.5)
                 elif self.errors:

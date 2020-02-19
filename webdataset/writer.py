@@ -21,7 +21,6 @@ import warnings
 
 import numpy as np
 import PIL
-
 import simplejson
 
 
@@ -40,9 +39,11 @@ def imageencoder(image, format="PNG"):
             image = np.clip(image, 0.0, 1.0)
             image = np.array(image * 255.0, 'uint8')
         image = PIL.Image.fromarray(image)
-    if format.upper()=="JPG": format="JPEG"
-    elif format.upper() in ["IMG", "IMAGE"]: format="PPM"
-    if format=="JPEG":
+    if format.upper() == "JPG":
+        format = "JPEG"
+    elif format.upper() in ["IMG", "IMAGE"]:
+        format = "PPM"
+    if format == "JPEG":
         opts = dict(quality=100)
     else:
         opts = dict()
@@ -50,12 +51,14 @@ def imageencoder(image, format="PNG"):
         image.save(result, format=format, **opts)
         return result.getvalue()
 
+
 def bytestr(data):
     if isinstance(data, bytes):
         return data
     if isinstance(data, str):
         return data.encode("ascii")
     return str(data).encode("ascii")
+
 
 def make_handlers():
     handlers = {}
@@ -73,9 +76,12 @@ def make_handlers():
         handlers[extension] = lambda x: simplejson.dumps(x).encode("utf-8")
     for extension in ["ten", "tb"]:
         from . import tenbin
+
         def f(x):
-            if isinstance(x, list): return tenbin.encode_buffer(x)
-            else: return tenbin.encode_buffer([x])
+            if isinstance(x, list):
+                return tenbin.encode_buffer(x)
+            else:
+                return tenbin.encode_buffer([x])
         handlers[extension] = f
     try:
         import msgpack
@@ -85,12 +91,14 @@ def make_handlers():
         pass
     return handlers
 
+
 default_handlers = {
     "default": make_handlers()
 }
 
+
 def encode_based_on_extension1(data, tname, handlers):
-    if tname[0]=="_":
+    if tname[0] == "_":
         assert isinstance(data, str), data
         return data
     extension = re.sub(r".*\.", "", tname).lower()
@@ -102,25 +110,29 @@ def encode_based_on_extension1(data, tname, handlers):
     assert handler is not None, extension
     return handler(data)
 
+
 def encode_based_on_extension(sample, handlers):
     return {k: encode_based_on_extension1(v, k, handlers) for k, v in list(sample.items())}
 
+
 def make_encoder(spec):
     if spec is False or spec is None:
-        encoder = lambda x: x
+        def encoder(x): return x
     elif callable(spec):
         encoder = spec
     elif isinstance(spec, dict):
-        encoder = lambda sample: encode_based_on_extension(sample, spec)
+        def encoder(sample): return encode_based_on_extension(sample, spec)
     elif isinstance(spec, str) or spec is True:
-        if spec is True: spec = "default"
+        if spec is True:
+            spec = "default"
         handlers = default_handlers.get(spec)
         assert handlers is not None, spec
-        encoder = lambda sample: encode_based_on_extension(sample, handlers)
+        def encoder(sample): return encode_based_on_extension(sample, handlers)
     else:
         raise ValueError(f"{spec}: unknown decoder spec")
     assert callable(encoder), (spec, encoder)
     return encoder
+
 
 class TarWriter(object):
     """A class for writing dictionaries to tar files.
@@ -145,9 +157,12 @@ class TarWriter(object):
 
     def __init__(self, fileobj, keep_meta=False, user="bigdata", group="bigdata", mode=0o0444, compress=None, encoder=True):
         if isinstance(fileobj, str):
-            if compress is False: tarmode = "w|"
-            elif compress is True: tarmode = "w|gz"
-            else: tarmode = "w|gz" if fileobj.endswith("gz") else "w|"
+            if compress is False:
+                tarmode = "w|"
+            elif compress is True:
+                tarmode = "w|gz"
+            else:
+                tarmode = "w|gz" if fileobj.endswith("gz") else "w|"
             fileobj = open(fileobj, "wb")
             self.own_fileobj = fileobj
         else:
@@ -200,7 +215,8 @@ class TarWriter(object):
             if k[0] == "_":
                 continue
             assert isinstance(v, bytes), \
-                "{} doesn't map to a bytes after encoding ({})".format(k, type(v))
+                "{} doesn't map to a bytes after encoding ({})".format(
+                    k, type(v))
         key = obj["__key__"]
         for k in sorted(obj.keys()):
             if k == "__key__":
@@ -236,6 +252,7 @@ class ShardWriter(object):
     - kw: other options passed to TarWriter
 
     """
+
     def __init__(self, pattern, maxcount=100000, maxsize=3e9, keep_meta=False,
                  user=None, group=None, compress=None, post=None, **kw):
         self.verbose = 1
@@ -256,7 +273,8 @@ class ShardWriter(object):
         self.finish()
         self.fname = self.pattern % self.shard
         if self.verbose:
-            print("# writing", self.fname, self.count, "%.1f GB" % (self.size / 1e9), self.total)
+            print("# writing", self.fname, self.count, "%.1f GB" %
+                  (self.size / 1e9), self.total)
         self.shard += 1
         stream = open(self.fname, "wb")
         self.tarstream = TarWriter(stream, **self.kw)

@@ -1,4 +1,5 @@
 pytest
+coverage
 simplejson
 braceexpand
 msgpack
