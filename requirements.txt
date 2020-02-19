@@ -1,5 +1,8 @@
 pytest
 coverage
+pydoc-markdown
+
+nbconvert
 simplejson
 braceexpand
 msgpack

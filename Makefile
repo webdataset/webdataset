@@ -25,6 +25,13 @@ docs: FORCE
 	#./cmd2md obj > docs/obj.md
 	#mkdocs build
 
+push: FORCE
+	make tests
+	make docs
+	git add docs/*.md
+	git commit -a
+	git push
+
 install: FORCE
 	sudo python3 -m pip install -r requirements.txt
 	sudo python3 setup.py install
