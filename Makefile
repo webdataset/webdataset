@@ -1,14 +1,14 @@
 #!/bin/bash
 
-tests: virtualenv
+tests: venv
 	rm -f objio.yaml objio.yml
 	. ./venv/bin/activate; python3 -m pytest -v -x
 
-coverage: virtualenv
+coverage: venv
 	rm -f objio.yaml objio.yml
 	. ./venv/bin/activate; coverage run -m pytest -v -x
 
-virtualenv: FORCE
+venv: FORCE
 	test -d venv || python3 -m venv venv
 	. ./venv/bin/activate; python3 -m pip install --no-cache -r requirements.txt
 

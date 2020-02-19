@@ -1,6 +1,7 @@
 pytest
 coverage
 pydoc-markdown
+licenseheaders
 
 nbconvert
 simplejson
