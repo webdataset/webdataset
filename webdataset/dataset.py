@@ -634,6 +634,7 @@ class WebDataset(IterableDataset):
             self.prepare_for_worker = prepare_for_worker
         self.subset = None
         self.extra_meta = False
+        self.sample = None
 
     def shard_selection(self):
         """Contains the logic for self.subset shard selection."""

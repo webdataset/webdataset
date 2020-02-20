@@ -39,7 +39,7 @@ def imageencoder(image, format="PNG"):
     if format == "JPEG":
         opts = dict(quality=100)
     else:
-        opts = dict()
+        opts = {}
     with io.BytesIO() as result:
         image.save(result, format=format, **opts)
         return result.getvalue()
@@ -258,6 +258,7 @@ class ShardWriter:
         self.count = 0
         self.size = 0
         self.next_stream()
+        self.fname = None
 
     def next_stream(self):
         self.finish()
