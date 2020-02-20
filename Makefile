@@ -9,7 +9,7 @@ PIP=$(VENV)/bin/pip $(PIPOPT)
 
 tests: venv FORCE
 	rm -f webdataset.yaml webdataset.yml # config files that interfere with tests
-	. ./venv/bin/activate; python3 -m pytest
+	. ./venv/bin/activate; python3 -m pytest -v -x
 
 # build the virtual environment for development and testing
 

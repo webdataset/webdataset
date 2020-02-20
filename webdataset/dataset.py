@@ -33,6 +33,7 @@ import six
 from torch.utils.data import IterableDataset
 
 from . import io
+from .checks import checkmember, checktype, checkrange, checknotnone, checkcallable
 
 if sys.version_info[0] == 3:
     from builtins import str
@@ -125,7 +126,7 @@ def imagehandler(data, imagespec):
     - pilrgba: pil None rgba
 
     """
-    assert imagespec in imagespecs, imagespecs.keys()
+    checkmember(imagespec, list(imagespecs.keys()), "unknown image specification")
     atype, etype, mode = imagespecs[imagespec.lower()]
     with six.BytesIO(data) as stream:
         img = PIL.Image.open(stream)
@@ -135,7 +136,7 @@ def imagehandler(data, imagespec):
         return img
     elif atype == "numpy":
         result = np.asarray(img)
-        assert result.dtype == np.uint8, (img, result.dtype)
+        checkmember(result.dtype, [np.uint8])
         if etype == "uint8":
             return result
         else:
@@ -143,7 +144,7 @@ def imagehandler(data, imagespec):
     elif atype == "torch":
         import torch
         result = np.asarray(img)
-        assert result.dtype == np.uint8, (img, result.dtype)
+        checkmember(result.dtype, [np.uint8])
         if etype == "uint8":
             result = result.transpose(2, 0, 1)
             return torch.tensor(result)
@@ -208,8 +209,8 @@ def decode_item_based_on_extension(data, tname, handlers):
     # no decoding (Byte->Unicode req)
     if isinstance(data, (int, float, unicode)):
         return data
-    assert isinstance(data, bytes), type(data)
-    assert isinstance(tname, str), tname
+    checktype(data, bytes)
+    checktype(tname, str)
     extension = re.sub(r".*\.", "", tname).lower()
     decoder = handlers.get(extension)
     if decoder is None:
@@ -232,7 +233,7 @@ def decode_sample_based_on_extensions(sample, handlers):
                 v = v.decode('utf-8')
             result[k] = v
             continue
-        assert v is not None, (k, sample)
+        checknotnone(v)
         result[k] = decode_item_based_on_extension(v, k, handlers=handlers)
     return result
 
@@ -260,8 +261,7 @@ def transform_with(sample, transformers):
     transformers: list of functions
 
     """
-    assert not isinstance(sample, dict)
-    assert isinstance(sample, (tuple, list))
+    checktype(sample, (tuple, list))
     if transformers is None or len(transformers) == 0:
         return sample
     result = list(sample)
@@ -355,7 +355,7 @@ def shuffle(data, bufsize=1000, initial=100):
 
     """
     import random
-    assert initial <= bufsize
+    checkrange(initial, 0, bufsize+1)
     buf = []
     startup = True
     for sample in data:
@@ -422,8 +422,8 @@ def group_by_keys(keys=base_plus_ext, lcase=True, suffixes=None):
                 if valid_sample(current_sample):
                     yield current_sample
                 current_sample = dict(__key__=prefix)
-            assert suffix not in current_sample, \
-                f"{fname}: duplicate file name in tar file {suffix} {current_sample.keys()}"
+            if suffix in current_sample:
+                raise ValueError(f"{fname}: duplicate file name in tar file {suffix} {current_sample.keys()}")
             if suffixes is None or suffix in suffixes:
                 current_sample[suffix] = value
         if valid_sample(current_sample):
@@ -515,12 +515,12 @@ def make_decoder(spec):
             sample, spec)
     elif isinstance(spec, str):
         handlers = default_handlers.get(spec)
-        assert handlers is not None, spec
+        checknotnone(handlers, spec)
         def decoder(sample): return decode_sample_based_on_extensions(
             sample, handlers)
     else:
         raise ValueError(f"{spec}: unknown decoder spec")
-    assert callable(decoder), (spec, decoder)
+    checkcallable(decoder, "could not make a callable decoder")
     return decoder
 
 
@@ -603,7 +603,7 @@ class WebDataset(IterableDataset):
                  errors=True, verbose=False, shuffle=0, associate=None,
                  prepare_for_worker=True, container=None, extra_meta=False):
         self.opener = opener if callable(opener) else io.command_pipe(opener)
-        assert callable(self.opener), opener
+        checkcallable(self.opener)
         self.decoder = decoder
         self.transforms = listify(transforms)
         self.verbose = verbose
@@ -614,8 +614,7 @@ class WebDataset(IterableDataset):
         self.pipeline = pipeline
         if isinstance(urls, str):
             urls = list(braceexpand.braceexpand(urls))
-        # urls = list(urls)
-        assert isinstance(urls, list)
+        checktype(urls, list)
         self.full_urls = urls
         self.urls = urls
         self.shuffle = shuffle
@@ -623,7 +622,7 @@ class WebDataset(IterableDataset):
             if isinstance(extensions, str):
                 extensions = [f.split(";") for f in extensions.split()]
             for f in extensions:
-                assert isinstance(f, list), (extensions, f)
+                checktype(f, list)
             self.extensions = extensions
             self.suffixes = {x for l in extensions for x in l}
         else:
@@ -676,7 +675,7 @@ class WebDataset(IterableDataset):
                                          errors=self.errors)
                     if self.container == "ten":
                         for sample in source:
-                            assert isinstance(sample, list)
+                            checktype(sample, list)
                             yield tuple(sample)
                         continue
                     if self.associate is not None:

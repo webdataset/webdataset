@@ -1,8 +1,6 @@
 import io
-import os
 import subprocess
 import sys
-from itertools import islice
 
 import numpy as np
 import PIL
@@ -51,14 +49,7 @@ def test_raw():
     assert count_samples(ds) == 47
 
 
-def no_test_gs():
-    ds = wds.WebDataset(remote_data,
-                        extensions="jpg;png cls", decoder="l")
-    assert count_samples(ds, n=10) == 10
-
-
 def test_rgb8_np_vs_torch():
-    import torch
     ds = wds.WebDataset(local_data, extensions="png;jpg cls", decoder="rgb8")
     image, cls = next(iter(ds))
     ds = wds.WebDataset(local_data, extensions="png;jpg cls", decoder="torchrgb8")
@@ -68,7 +59,6 @@ def test_rgb8_np_vs_torch():
 
 
 def test_float_np_vs_torch():
-    import torch
     ds = wds.WebDataset(local_data, extensions="png;jpg cls")
     image, cls = next(iter(ds))
     ds = wds.WebDataset(local_data, extensions="png;jpg cls", decoder="torchrgb")
