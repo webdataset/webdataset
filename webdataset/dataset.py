@@ -17,7 +17,6 @@ import os
 import pickle
 import random
 import re
-import sys
 import tarfile
 import time
 import warnings
@@ -34,12 +33,6 @@ from torch.utils.data import IterableDataset
 
 from . import io
 from .checks import checkmember, checktype, checkrange, checknotnone, checkcallable
-
-if sys.version_info[0] == 3:
-    from builtins import str
-    unicode = str
-    buffer = str
-
 
 trace = False
 
@@ -207,7 +200,7 @@ object that is returned as part of a sample by `WebDataset`.
 def decode_item_based_on_extension(data, tname, handlers):
     # Unicode change. If it is alread an unicode string,
     # no decoding (Byte->Unicode req)
-    if isinstance(data, (int, float, unicode)):
+    if isinstance(data, (int, float, str)):
         return data
     checktype(data, bytes)
     checktype(tname, str)
