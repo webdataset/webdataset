@@ -127,7 +127,7 @@ def make_encoder(spec):
     return encoder
 
 
-class TarWriter(object):
+class TarWriter:
     """A class for writing dictionaries to tar files.
 
     :param fileobj: fileobj: file name for tar file (.tgz/.tar) or open file descriptor
@@ -234,7 +234,7 @@ class TarWriter(object):
         return total
 
 
-class ShardWriter(object):
+class ShardWriter:
     """Like TarWriter but splits into multiple shards.
 
     :param pattern: output file pattern

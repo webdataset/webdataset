@@ -45,7 +45,7 @@ def load_schemes():
                 scheme_to_command.update(updates)
 
 
-class Pipe(object):
+class Pipe:
     """Wrapper class for subprocess.Pipe.
 
     This class looks like a stream from the outside, but it checks
