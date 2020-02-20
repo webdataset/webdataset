@@ -144,6 +144,7 @@ def imagehandler(data, imagespec):
         else:
             result = result.transpose(2, 0, 1)
             return torch.tensor(result).type(torch.float) / 255.0
+    return None
 
 
 def maybe_int(data):
@@ -633,7 +634,7 @@ class WebDataset(IterableDataset):
         import torch
         index, total = None, None
         if self.subset is not None:
-            index, total = self.subset
+            index, total = self.subset  # skipcq: PYL-E0633
         else:
             worker_info = torch.utils.data.get_worker_info()
             if worker_info is not None:
