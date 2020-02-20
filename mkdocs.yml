@@ -1,0 +1,10 @@
+site_name: webdataset
+nav:
+    - Home: index.md
+    - Usage (example): webdataset-demo.md
+    - COCO Sharding (example): coco-to-shards.md
+    - Imagenet Sharding (example): imagenet-to-shards.md
+    - SVHN Sharding (example): svhn-to-shards.md
+    - Module Docs: pydoc.md
+theme: readthedocs
+
