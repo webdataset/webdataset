@@ -1,6 +1,5 @@
 [![Test](https://github.com/tmbdev/webdataset/workflows/Test/badge.svg)](https://github.com/tmbdev/webdataset/actions?query=workflow%3ATest)
 [![TestPip](https://github.com/tmbdev/webdataset/workflows/TestPip/badge.svg)](https://github.com/tmbdev/webdataset/actions?query=workflow%3ATestPip)
-[![ReadTheDocs](https://readthedocs.org/projects/webdataset/badge/?version=stable)](http://webdataset.readthedocs.io)
 [![DeepSource](https://static.deepsource.io/deepsource-badge-light-mini.svg)](https://deepsource.io/gh/tmbdev/webdataset/?ref=repository-badge)
 
 # WebDataset
@@ -10,6 +9,8 @@ WebDataset is a PyTorch Dataset (IterableDataset) implementation providing effic
 Storing data in POSIX tar archives greatly speeds up I/O operations on rotational storage and on networked file systems because it permits all I/O operations to operate as large sequential reads and writes.
 
 WebDataset fulfills a similar function to Tensorflow's TFRecord/tf.Example classes, but it is much easier to adopt because it does not actually require any kind of data conversion: data is stored in exactly the same format inside tar files as it is on disk, and all preprocessing and data augmentation code remains unchanged.
+
+Documentation: [ReadTheDocs](http://webdataset.readthedocs.io)
 
 # Using WebDataset
 
