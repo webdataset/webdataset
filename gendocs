@@ -1,0 +1,24 @@
+#!/bin/bash
+source venv/bin/activate
+set -x -e
+
+mkdir -p docs
+
+cp README.md docs/index.md
+
+markdown() {
+    pydocmd simple webdataset.$1+ | sed '/^ *- /s/-/:param/' > docs/$1.md
+}
+
+markdown dataset
+markdown tenbin
+markdown writer
+
+jupyter nbconvert --to markdown examples/coco-to-shards.ipynb
+jupyter nbconvert --to markdown examples/imagenet-to-shards.ipynb
+jupyter nbconvert --to markdown examples/svhn-to-shards.ipynb
+
+mv examples/*.md docs
+
+#./cmd2md obj > docs/obj.md
+#mkdocs build

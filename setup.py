@@ -5,7 +5,7 @@
 # See the LICENSE file for licensing terms (BSD-style).
 #
 
-#from __future__ import print_function
+VERSION='0.0.0'
 
 import glob
 import sys
@@ -16,21 +16,25 @@ if sys.version_info < (3, 6):
 
 scripts = []
 
-prereqs = """
-    braceexpand
-    numpy
-    six
-    Pillow
-    simplejson
-    msgpack
-""".split()
-
-setup(
+setuptools.setup(
     name='webdataset',
-    version='v0.0',
-    author="Thomas Breuel",
+    version=VERSION,
     description="Record sequential storage for deep learning.",
+    long_description=open("README.md").read(),
+    long_description_content_type="text/markdown",
+    url="http://github.com/tmbdev/webdataset",
+    author="Thomas Breuel",
+    author_email="tmbdev+removeme@gmail.com",
+    license="MIT",
+    classifiers=[
+        "Development Status :: 3 - Alpha",
+        "License :: OSI Approved :: BSD License",
+        "Programming Language :: Python :: 3.6",
+        "Programming Language :: Python :: 3.7"
+    ],
+    keywords="object store, client, deep learning",
     packages=["webdataset"],
+    python_requires=">=3.6",
     scripts=scripts,
-    install_requires=prereqs,
+    install_requires="Pillow simplejson braceexpand msgpack pyyaml numpy torch".split()
 )

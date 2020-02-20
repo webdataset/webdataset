@@ -1,12 +1,8 @@
-pytest
-coverage
-pydoc-markdown
-licenseheaders
-
-nbconvert
 simplejson
 braceexpand
 msgpack
-torch
-torchvision
 pyyaml
+numpy
+torch
+Pillow
+torchvision
