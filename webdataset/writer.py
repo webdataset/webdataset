@@ -17,7 +17,7 @@ import PIL
 import simplejson
 
 
-def imageencoder(image, format="PNG"):
+def imageencoder(image, format="PNG"):  # skipcq: PYL-W0622
     """Compress an image using PIL and return it as a string.
 
     Can handle float or uint8 images.

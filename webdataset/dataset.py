@@ -51,7 +51,7 @@ def maybe_collect():
     weak references, and the collector doesn't seem to get triggered
     in time automatically. This function periodically calls the Python
     garbage collector."""
-    global collection_counter, collection_frequency
+    global collection_counter, collection_frequency  # skipcq: PYL-W0603
     if collection_counter >= collection_frequency == 0:
         gc.collect()
         collection_counter = 0
@@ -260,7 +260,7 @@ def transform_with(sample, transformers):
         return sample
     result = list(sample)
     ntransformers = len(transformers)
-    for i in range(len(sample)):
+    for i in range(len(sample)):  # skipcq: PYL-C0200
         f = transformers[i % ntransformers]
         if f is not None:
             result[i] = f(sample[i])
