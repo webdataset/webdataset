@@ -1,3 +1,5 @@
+![Test](https://github.com/tmbdev/webdataset/workflows/Test/badge.svg)
+
 # WebDataset
 
 WebDataset is a PyTorch Dataset (IterableDataset) implementation providing efficient access to datasets stored in POSIX tar archives.
