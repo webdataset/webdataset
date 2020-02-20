@@ -5,10 +5,10 @@
 # See the LICENSE file for licensing terms (BSD-style).
 #
 
-VERSION='0.0.0'
-
 import sys
 import setuptools
+
+VERSION = '0.0.0'
 
 if sys.version_info < (3, 6):
     sys.exit("Python versions less than 3.6 are not supported")
