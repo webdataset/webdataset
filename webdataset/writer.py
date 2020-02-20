@@ -131,8 +131,6 @@ class TarWriter(object):
     """A class for writing dictionaries to tar files.
 
     :param fileobj: fileobj: file name for tar file (.tgz/.tar) or open file descriptor
-    :param bool: keep_meta: keep fields starting with "_"
-    :param keep_meta:  (Default value = False)
     :param encoder: sample encoding (Default value = None)
     :param compress:  (Default value = None)
 
@@ -148,7 +146,7 @@ class TarWriter(object):
     ```
     """
 
-    def __init__(self, fileobj, keep_meta=False, user="bigdata", group="bigdata", mode=0o0444, compress=None, encoder=True):
+    def __init__(self, fileobj, user="bigdata", group="bigdata", mode=0o0444, compress=None, encoder=True, keep_meta=False):
         if isinstance(fileobj, str):
             if compress is False:
                 tarmode = "w|"
@@ -246,8 +244,7 @@ class ShardWriter(object):
 
     """
 
-    def __init__(self, pattern, maxcount=100000, maxsize=3e9, keep_meta=False,
-                 user=None, group=None, compress=None, post=None, **kw):
+    def __init__(self, pattern, maxcount=100000, maxsize=3e9, post=None, **kw):
         self.verbose = 1
         self.kw = kw
         self.maxcount = maxcount

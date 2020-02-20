@@ -354,7 +354,6 @@ def shuffle(data, bufsize=1000, initial=100):
     returns: iterator
 
     """
-    import random
     checkrange(initial, 0, bufsize+1)
     buf = []
     startup = True
@@ -465,7 +464,6 @@ def extract_container(container):
                     sample = msgpack.unpackb(value)
                     sample = {maybe_decode(k, "ascii"): v for k, v in sample.items()}
                 elif container.endswith("json"):
-                    import simplejson
                     sample = simplejson.loads(value)
                 elif container.endswith("pyd"):
                     sample = pickle.loads(value)
@@ -597,11 +595,11 @@ class WebDataset(IterableDataset):
     the decoding.
     """
 
-    def __init__(self, urls, *, size=None, extensions=None, decoder="rgb",
+    def __init__(self, urls, *, extensions=None, decoder="rgb",
                  transforms=None, pipeline=None,
                  epochs=1, keys=base_plus_ext, opener=io.reader,
                  errors=True, verbose=False, shuffle=0, associate=None,
-                 prepare_for_worker=True, container=None, extra_meta=False):
+                 prepare_for_worker=True, container=None):
         self.opener = opener if callable(opener) else io.command_pipe(opener)
         checkcallable(self.opener)
         self.decoder = decoder
