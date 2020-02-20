@@ -8,7 +8,7 @@
 import sys
 import setuptools
 
-VERSION = '0.0.0'
+VERSION = '0.1.0'
 
 if sys.version_info < (3, 6):
     sys.exit("Python versions less than 3.6 are not supported")
