@@ -79,7 +79,6 @@ uint64 u8
 long_to_short = [x.split() for x in long_to_short.split("\n")]
 long_to_short = {x[0]: x[1] for x in long_to_short}
 short_to_long = {v: k for k, v in long_to_short.items()}
-long_to_short
 
 
 def check_acceptable_input_type(data, allow64):
@@ -251,7 +250,7 @@ def write(stream, l, infos=None):
 def read(stream, n=999999, infos=False):
     """Read a list of arrays from a stream, with magics, length, and padding."""
     chunks = []
-    for i in range(n):
+    for _ in range(n):
         header = read_chunk(stream)
         if header is None:
             break

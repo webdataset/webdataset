@@ -83,7 +83,7 @@ def test_tenbin():
     for d0 in [0, 1, 2, 10, 100, 1777]:
         for d1 in [0, 1, 2, 10, 100, 345]:
             for t in [np.uint8, np.float16, np.float32, np.float64]:
-                a = np.random.normal(size=(1733, 345)).astype(t)
+                a = np.random.normal(size=(d0, d1)).astype(t)
                 a_encoded = tenbin.encode_buffer([a])
                 a_decoded, = tenbin.decode_buffer(a_encoded)
                 print(a.shape, a_decoded.shape)
