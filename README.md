@@ -1,4 +1,5 @@
-![Test](https://github.com/tmbdev/webdataset/workflows/Test/badge.svg)
+[![Test](https://github.com/tmbdev/webdataset/workflows/Test/badge.svg)](https://github.com/tmbdev/webdataset/actions?query=workflow%3ATest)
+[![TestPip](https://github.com/tmbdev/webdataset/workflows/TestPip/badge.svg)](https://github.com/tmbdev/webdataset/actions?query=workflow%3ATestPip)
 
 # WebDataset
 
