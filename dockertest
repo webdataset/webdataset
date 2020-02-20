@@ -68,23 +68,13 @@ pip)
 docker build -t webdatasettest --no-cache - <<EOF
 FROM webdatasettest-base
 ENV SHELL=/bin/bash
-
-RUN pip3 install webdataset
-
-# we clone this just to get the tests
-
 RUN git clone https://git@github.com/tmbdev/webdataset.git /tmp/webdataset
 WORKDIR /tmp/webdataset
-
-# we need to run the tests in the current directory
-# but we want to make sure that we are using the globally
-# installed libraries, so we move the subdirectory out of the way
-
-RUN mv webdataset use-installed-webdataset
-
-# note that for commands, this will test ./command, not /usr/local/bin/command
-
-RUN python3 -m pytest
+RUN rm -rf webdataset
+RUN ln -s /tmp/venv .
+RUN . venv/bin/activate; pip install --no-cache-dir pytest
+RUN . venv/bin/activate; pip install --no-cache-dir webdataset
+RUN . venv/bin/activate; python3 -m pytest
 EOF
 ;;
 
