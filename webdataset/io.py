@@ -127,7 +127,7 @@ def gopen(url, mode, handler=None, bufsize=8192):
     handler = handler.format(**variables)
     if verbose:
         sys.stderr.print(f"# {handler}", file=sys.stderr)
-    return Pipe(handler, stdout=PIPE, shell=True, bufsize=bufsize)
+    return Pipe(handler, stdout=PIPE, shell=True, bufsize=bufsize)  # skipcq: BAN-B604
 
 
 def command_pipe(handler):

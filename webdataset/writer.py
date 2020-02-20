@@ -61,8 +61,10 @@ def make_handlers():
     for extension in ["txt", "text", "transcript"]:
         handlers[extension] = lambda x: x.encode("utf-8")
     for extension in ["png", "jpg", "jpeg", "img", "image", "pbm", "pgm", "ppm"]:
+
         def f(extension_):
             handlers[extension] = lambda data: imageencoder(data, extension_)
+
         f(extension)
     for extension in ["pyd", "pickle"]:
         handlers[extension] = pickle.dumps
@@ -71,11 +73,12 @@ def make_handlers():
     for extension in ["ten", "tb"]:
         from . import tenbin
 
-        def f(x):
+        def f(x):  # skipcq: PYL-E0102
             if isinstance(x, list):
                 return tenbin.encode_buffer(x)
             else:
                 return tenbin.encode_buffer([x])
+
         handlers[extension] = f
     try:
         import msgpack
@@ -231,7 +234,6 @@ class TarWriter:
             ti.mode = self.mode
             ti.uname = self.user
             ti.gname = self.group
-            assert isinstance(v, bytes), type(v)
             if not isinstance(v, (bytes)):
                 raise ValueError(f"converter didn't yield bytes: {k}, {type(v)}")
             stream = io.BytesIO(v)

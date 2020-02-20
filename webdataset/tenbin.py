@@ -83,9 +83,10 @@ short_to_long = {v: k for k, v in long_to_short.items()}
 
 def check_acceptable_input_type(data, allow64):
     for a in data:
-        assert a.dtype.name in long_to_short, a.dtype.name
-        if not allow64:
-            assert a.dtype.name not in ["float64", "int64", "uint64"]
+        if a.dtype.name not in long_to_short:
+            raise ValueError("unsupported dataypte")
+        if not allow64 and a.dtype.name not in ["float64", "int64", "uint64"]:
+            raise ValueError("64 bit datatypes not allowed unless explicitly enabled")
 
 
 def str64(s):
@@ -107,17 +108,21 @@ def check_infos(data, infos, required_infos=None):
         return data
     if required_infos is True:
         return data, infos
-    assert isinstance(required_infos, (tuple, list))
+    if not isinstance(required_infos, (tuple, list)):
+        raise ValueError("required_infos must be tuple or list")
     for required, actual in zip(required_infos, infos):
-        assert required == actual, (required, actual)
+        raise ValueError(f"actual info {actual} doesn't match required info {required}")
     return data
 
 
 def encode_header(a, info=""):
     """Encode an array header as a byte array."""
-    assert a.ndim < 10
-    assert a.nbytes == np.prod(a.shape) * a.itemsize
-    assert a.dtype.name in long_to_short
+    if a.ndim >= 10:
+        raise ValueError("too many dimensions")
+    if a.nbytes != np.prod(a.shape) * a.itemsize:
+        raise ValueError("mismatch between size and shape")
+    if a.dtype.name not in long_to_short:
+        raise ValueError("unsupported array type")
     header = [
         str64(long_to_short[a.dtype.name]),
         str64(info),
@@ -129,7 +134,8 @@ def encode_header(a, info=""):
 def decode_header(h):
     """Decode a byte array into an array header."""
     h = np.frombuffer(h, dtype="i8")
-    assert unstr64(h[0]) in short_to_long, h
+    if unstr64(h[0]) not in short_to_long:
+        raise ValueError("unsupported array type")
     dtype = np.dtype(short_to_long[unstr64(h[0])])
     info = unstr64(h[1])
     rank = int(h[2])
@@ -142,7 +148,8 @@ def encode_list(l, infos=None):
     if infos is None:
         infos = [""]
     else:
-        assert len(l) == len(infos)
+        if len(l) != len(infos):
+            raise ValueError(f"length of list {l} must muatch length of infos {infos}")
     result = []
     for i, a in enumerate(l):
         header = encode_header(a, infos[i % len(infos)])
@@ -193,7 +200,8 @@ def decode_chunks(buf):
     offset = 0
     total = bytelen(buf)
     while offset < total:
-        assert magic_bytes == buf[offset:offset + 8]
+        if magic_bytes != buf[offset:offset + 8]:
+            raise ValueError("magic bytes mismatch")
         offset += 8
         nbytes = struct.unpack("@q", buf[offset:offset + 8])[0]
         offset += 8
@@ -205,7 +213,8 @@ def decode_chunks(buf):
 
 def encode_buffer(l, infos=None):
     """Encode a list of arrays into a single byte array."""
-    assert isinstance(l, list)
+    if not isinstance(l, list):
+        raise ValueError("requires list")
     return encode_chunks(encode_list(l, infos=infos))
 
 
@@ -230,10 +239,12 @@ def read_chunk(stream):
     magic = stream.read(8)
     if magic == b"":
         return None
-    assert magic == magic_bytes, (magic, magic_bytes)
+    if magic != magic_bytes:
+        raise ValueError("magic number does not match")
     nbytes = stream.read(8)
     nbytes = struct.unpack("@q", nbytes)[0]
-    assert nbytes >= 0
+    if nbytes < 0:
+        raise ValueError("negative nbytes")
     data = stream.read(nbytes)
     padding = roundup(nbytes) - nbytes
     if padding > 0:
@@ -255,23 +266,24 @@ def read(stream, n=999999, infos=False):
         if header is None:
             break
         data = read_chunk(stream)
-        assert data is not None
+        if data is None:
+            raise ValueError("premature EOF")
         chunks += [header, data]
     return decode_list(chunks, infos=infos)
 
 
 def save(fname, *args, infos=None, nocheck=False):
     """Save a list of arrays to a file, with magics, length, and padding."""
-    if not nocheck:
-        assert fname.endswith(".ten")
+    if not nocheck and not fname.endswith(".ten"):
+        raise ValueError("file name should end in .ten")
     with open(fname, "wb") as stream:
         write(stream, args, infos=infos)
 
 
 def load(fname, infos=False, nocheck=False):
     """Read a list of arrays from a file, with magics, length, and padding."""
-    if not nocheck:
-        assert fname.endswith(".ten")
+    if not nocheck and not fname.endswith(".ten"):
+        raise ValueError("file name should end in .ten")
     with open(fname, "rb") as stream:
         return read(stream, infos=infos)
 

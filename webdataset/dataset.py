@@ -333,7 +333,7 @@ def transform(data, f=None):
     """
 
     if f is None:
-        def f(x): return x
+        def f(x): return x  # skipcq: PYL-E0102
     for sample in data:
         result = f(sample)
         if isinstance(sample, dict) and isinstance(result, dict):
@@ -359,7 +359,7 @@ def shuffle(data, bufsize=1000, initial=100):
     startup = True
     for sample in data:
         if len(buf) < bufsize:
-            buf.append(next(data))
+            buf.append(next(data))  # skipcq: PYL-R1708
         k = random.randint(0, len(buf) - 1)
         sample, buf[k] = buf[k], sample
         if startup and len(buf) < initial:
@@ -466,7 +466,7 @@ def extract_container(container):
                 elif container.endswith("json"):
                     sample = simplejson.loads(value)
                 elif container.endswith("pyd"):
-                    sample = pickle.loads(value)
+                    sample = pickle.loads(value)  # skipcq: BAN-B301
                 elif container.endswith("ten"):
                     from . import tenbin
                     sample = tenbin.decode_buffer(value, infos=False)
@@ -533,7 +533,7 @@ def apply_decoder(decoder, errors=True):
         for sample in data:
             try:
                 decoded = decoder(sample)
-            except Exception as exn:
+            except Exception as exn:  # skipcq: PYL-W0703
                 if errors == "warn":
                     warnings.warn("apply_decoder " + repr(exn))
                     time.sleep(0.5)
@@ -694,7 +694,7 @@ class WebDataset(IterableDataset):
                             sample = tuple(sample)
                         yield sample
                         maybe_collect()
-            except Exception as exn:
+            except Exception as exn:  # skipcq: PYL-W0703
                 if self.errors == "warn":
                     warnings.warn("dataset __iter__ " + url + " " + repr(exn))
                     time.sleep(0.5)
