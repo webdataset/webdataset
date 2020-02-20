@@ -1,31 +1,25 @@
 #!/bin/bash
 
+VENV=venv
+PYTHON3=$(VENV)/bin/python3
+PIPOPT=--no-cache-dir
+PIP=$(VENV)/bin/pip $(PIPOPT)
+
 # run the unit tests in a virtual environment
 
 tests: venv FORCE
 	rm -f webdataset.yaml webdataset.yml # config files that interfere with tests
 	. ./venv/bin/activate; python3 -m pytest
 
-testsetup:
-	sudo python3 setup.py install --dry-run
-
 # build the virtual environment for development and testing
 
-venv: FORCE
-	test -d venv || python3 -m venv venv
-	. ./venv/bin/activate; python3 -m pip install --no-cache -r requirements.dev.txt
-	. ./venv/bin/activate; python3 -m pip install --no-cache -r requirements.txt
+venv: $(VENV)/bin/activate
 
-# push a new version to github; commit all changes first or this will fail
-# after a successful push, it will try to clone the repo into a docker container
-# and execute the tests
-
-push: FORCE
-	make tests
-	make docs
-	git add docs/*.md
-	git push
-	./dockertest git
+$(VENV)/bin/activate: requirements.txt requirements.dev.txt
+	test -d $(VENV) || python3 -m venv $(VENV)
+	$(PIP) install -r requirements.dev.txt
+	$(PIP) install -r requirements.txt
+	touch $(VENV)/bin/activate
 
 # push a new version to pypi; commit all changes first or this will fail
 # after a successful push, it will try to clone the repo into a docker container
@@ -33,25 +27,37 @@ push: FORCE
 
 dist: FORCE
 	rm -f dist/*
-	. ./venv/bin/activate; python3 setup.py sdist bdist_wheel
+	$(PYTHON3) setup.py sdist bdist_wheel
 	twine check dist/*
 	twine upload dist/*
-	./dockertest pip
+
+githubtests:
+	./helpers/dockertest git
+
+pypitests:
+	./helpers/dockertest pip
 
 # build the documentation
 
-docs: venv FORCE
-	./gendocs
+docs: FORCE
+	./helpers/gendocs
+	git status | awk '/modified:/{if(index($$0, ".md")<=0)exit(1)}'
+	git add docs/*.md
+	git add README.md
+	git status
+	git commit -a -m "documentation update"
+	git push
 
 # remove temporary build constructs
 
 clean: FORCE
 	rm -rf venv build dist
-	rm -rf examples/*_files
+	rm -f webdataset.yaml webdataset.yml # config files that interfere with tests
+	rm -rf __pycache__ */__pycache__ *.log *.egg-info .pytest_cache .tox
 
 # set the keyring password for pypi uploads
 
 passwd: FORCE
-	. ./venv/bin/activate; python3 -m keyring set https://upload.pypi.org/legacy/ tmbdev
+	$(PYTHON3) -m keyring set https://upload.pypi.org/legacy/ tmbdev
 
 FORCE:

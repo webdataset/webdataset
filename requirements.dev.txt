@@ -2,8 +2,8 @@ coverage
 jupyter
 licenseheaders
 mkdocs
-nbconvert
-pydoc-markdown
 pytest
 setuptools
 wheel
+nbconvert
+keyring
