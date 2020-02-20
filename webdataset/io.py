@@ -103,7 +103,7 @@ class Pipe:
         """Context handler."""
         return self
 
-    def __exit__(self, type, value, traceback):
+    def __exit__(self, etype, value, traceback):
         """Context handler."""
         self.close()
 
