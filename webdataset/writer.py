@@ -28,7 +28,8 @@ def imageencoder(image, format="PNG"):
     """
     if isinstance(image, np.ndarray):
         if image.dtype in [np.dtype('f'), np.dtype('d')]:
-            assert np.amin(image) > -0.001 and np.amax(image) < 1.001
+            if not (np.amin(image) > -0.001 and np.amax(image) < 1.001):
+                raise ValueError(f"image values out of range {np.amin(image)} {np.amax(image)}")
             image = np.clip(image, 0.0, 1.0)
             image = np.array(image * 255.0, 'uint8')
         image = PIL.Image.fromarray(image)
@@ -92,7 +93,8 @@ default_handlers = {
 
 def encode_based_on_extension1(data, tname, handlers):
     if tname[0] == "_":
-        assert isinstance(data, str), data
+        if not isinstance(data, str):
+            raise ValueError("the values of metadata must be of string type")
         return data
     extension = re.sub(r".*\.", "", tname).lower()
     if isinstance(data, bytes):
@@ -100,7 +102,8 @@ def encode_based_on_extension1(data, tname, handlers):
     if isinstance(data, str):
         return data.encode("utf-8")
     handler = handlers.get(extension)
-    assert handler is not None, extension
+    if handler is None:
+        raise ValueError(f"no handler found for {extension}")
     return handler(data)
 
 
@@ -119,11 +122,15 @@ def make_encoder(spec):
         if spec is True:
             spec = "default"
         handlers = default_handlers.get(spec)
-        assert handlers is not None, spec
+        if handlers is None:
+            raise ValueError(f"no handler found for {spec}")
+
         def encoder(sample): return encode_based_on_extension(sample, handlers)
+
     else:
         raise ValueError(f"{spec}: unknown decoder spec")
-    assert callable(encoder), (spec, encoder)
+    if not callable(encoder):
+        raise ValueError(f"{spec} did not yield a callable encoder")
     return encoder
 
 
@@ -201,13 +208,13 @@ class TarWriter:
         """
         total = 0
         obj = self.encoder(obj)
-        assert "__key__" in obj, "object must contain a __key__"
+        if "__key__" not in obj:
+            raise ValueError(f"object must contain a __key__")
         for k, v in list(obj.items()):
             if k[0] == "_":
                 continue
-            assert isinstance(v, bytes), \
-                "{} doesn't map to a bytes after encoding ({})".format(
-                    k, type(v))
+            if not isinstance(v, bytes):
+                raise ValueError(f"{k} doesn't map to a bytes after encoding ({type(v)})")
         key = obj["__key__"]
         for k in sorted(obj.keys()):
             if k == "__key__":
@@ -217,8 +224,6 @@ class TarWriter:
             v = obj[k]
             if isinstance(v, str):
                 v = v.encode("utf-8")
-            assert isinstance(v, (bytes)),  \
-                "converter didn't yield bytes: %s" % ((k, type(v)),)
             now = time.time()
             ti = tarfile.TarInfo(key + "." + k)
             ti.size = len(v)
@@ -226,8 +231,9 @@ class TarWriter:
             ti.mode = self.mode
             ti.uname = self.user
             ti.gname = self.group
-            # Since, you are writing to file, it should be of type bytes
             assert isinstance(v, bytes), type(v)
+            if not isinstance(v, (bytes)):
+                raise ValueError(f"converter didn't yield bytes: {k}, {type(v)}")
             stream = io.BytesIO(v)
             self.tarstream.addfile(ti, stream)
             total += ti.size

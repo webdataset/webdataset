@@ -41,7 +41,7 @@ def load_schemes():
             if verbose:
                 print(f"# loading {fname}", file=sys.stderr)
             with open(fname) as stream:
-                updates = yaml.load(stream)
+                updates = yaml.safe_load(stream)
                 scheme_to_command.update(updates)
 
 
@@ -65,7 +65,8 @@ class Pipe:
         self.proc = Popen(*args, **kw)
         self.args = (args, kw)
         self.stream = self.proc.stdout
-        assert self.stream is not None
+        if self.stream is None:
+            raise ValueError(f"{args}: couldn't open")
         self.status = None
 
     def check_status(self):
@@ -109,7 +110,8 @@ class Pipe:
 
 
 def gopen(url, mode, handler=None, bufsize=8192):
-    assert mode[0] == "r"
+    if mode[0] != "r":
+        raise ValueError(f"{mode}: unsupported mode (only read supported)")
     pr = urlparse(url)
     if pr.scheme == "":
         pr = urlparse("file:" + url)

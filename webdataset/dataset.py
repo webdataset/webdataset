@@ -582,7 +582,6 @@ class WebDataset(IterableDataset):
     :param transforms: list of functions to apply to unbatched samples (Default value = None)
     :param pipeline: function that maps the iterator, e.g. for batching
     :param opener: either a function that returns a stream or a string that is invoked via Popen
-    :param epochs: how often to iterate through the shards before finishing the iterator
     :param verbose: verbose output
     :param shuffle: if >0, then shuffle shards, and shuffle samples with a buffer of the given size
     :param associate: a callable or dictionary that returns additional information to associate with each sample
@@ -597,7 +596,7 @@ class WebDataset(IterableDataset):
 
     def __init__(self, urls, *, extensions=None, decoder="rgb",
                  transforms=None, pipeline=None,
-                 epochs=1, keys=base_plus_ext, opener=io.reader,
+                 keys=base_plus_ext, opener=io.reader,
                  errors=True, verbose=False, shuffle=0, associate=None,
                  prepare_for_worker=True, container=None):
         self.opener = opener if callable(opener) else io.command_pipe(opener)

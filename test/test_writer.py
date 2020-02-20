@@ -13,8 +13,8 @@ def test_writer(tmpdir):
 
     ds = wds.WebDataset(f"{tmpdir}/writer.tar")
     for sample in ds:
+        assert set(sample.keys()) == set("__key__ txt cls".split())
         break
-    assert set(sample.keys()) == set("__key__ txt cls".split())
 
 
 def test_writer2(tmpdir):
@@ -26,5 +26,5 @@ def test_writer2(tmpdir):
 
     ds = wds.WebDataset(f"{tmpdir}/writer.tgz")
     for sample in ds:
+        assert set(sample.keys()) == set("__key__ txt cls".split())
         break
-    assert set(sample.keys()) == set("__key__ txt cls".split())
