@@ -7,4 +7,3 @@ nav:
     - SVHN Sharding (example): svhn-to-shards.md
     - Module Docs: pydoc.md
 theme: readthedocs
-
