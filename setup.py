@@ -7,9 +7,8 @@
 
 VERSION='0.0.0'
 
-import glob
 import sys
-from distutils.core import setup  # , Extension, Command
+import setuptools
 
 if sys.version_info < (3, 6):
     sys.exit("Python versions less than 3.6 are not supported")

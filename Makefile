@@ -6,6 +6,9 @@ tests: venv FORCE
 	rm -f webdataset.yaml webdataset.yml # config files that interfere with tests
 	. ./venv/bin/activate; python3 -m pytest
 
+testsetup:
+	sudo python3 setup.py install --dry-run
+
 # build the virtual environment for development and testing
 
 venv: FORCE
