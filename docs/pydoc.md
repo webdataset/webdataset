@@ -18,7 +18,7 @@ CLASSES
         WebDataset
     
     class WebDataset(torch.utils.data.dataset.IterableDataset)
-     |  WebDataset(urls, *, extensions=None, decoder='rgb', transforms=None, pipeline=None, keys=<function base_plus_ext at 0x7fa5e0100200>, opener=<function reader at 0x7fa5e00ea680>, errors=True, verbose=False, shuffle=0, associate=None, prepare_for_worker=True, container=None)
+     |  WebDataset(urls, *, extensions=None, decoder='rgb', transforms=None, pipeline=None, keys=<function base_plus_ext at 0x7f208ac33200>, opener=<function reader at 0x7f208ac1d680>, errors=True, verbose=False, shuffle=0, associate=None, prepare_for_worker=True, container=None)
      |  
      |  Iterate over sharded datasets.
      |  
@@ -47,7 +47,7 @@ CLASSES
      |  
      |  Methods defined here:
      |  
-     |  __init__(self, urls, *, extensions=None, decoder='rgb', transforms=None, pipeline=None, keys=<function base_plus_ext at 0x7fa5e0100200>, opener=<function reader at 0x7fa5e00ea680>, errors=True, verbose=False, shuffle=0, associate=None, prepare_for_worker=True, container=None)
+     |  __init__(self, urls, *, extensions=None, decoder='rgb', transforms=None, pipeline=None, keys=<function base_plus_ext at 0x7f208ac33200>, opener=<function reader at 0x7f208ac1d680>, errors=True, verbose=False, shuffle=0, associate=None, prepare_for_worker=True, container=None)
      |      Initialize self.  See help(type(self)) for accurate signature.
      |  
      |  __iter__(self)
@@ -101,7 +101,7 @@ FUNCTIONS
         - pilrgb: pil None rgb
         - pilrgba: pil None rgba
     
-    tariterator(fileobj, keys=<function base_plus_ext at 0x7fa5e0100200>, decoder=True, suffixes=None, errors=True, container=None)
+    tariterator(fileobj, keys=<function base_plus_ext at 0x7f208ac33200>, decoder=True, suffixes=None, errors=True, container=None)
         Iterate through training samples stored in a sharded tar file.
         
         :param fileobj: a Python file-like object
