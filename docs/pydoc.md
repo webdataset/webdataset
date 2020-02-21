@@ -18,7 +18,7 @@ CLASSES
         WebDataset
     
     class WebDataset(torch.utils.data.dataset.IterableDataset)
-     |  WebDataset(urls, *, size=None, extensions=None, decoder='rgb', transforms=None, pipeline=None, epochs=1, keys=<function base_plus_ext at 0x7fb8036d9320>, opener=<function reader at 0x7fb8036c47a0>, errors=True, verbose=False, shuffle=0, associate=None, prepare_for_worker=True, container=None, extra_meta=False)
+     |  WebDataset(urls, *, extensions=None, decoder='rgb', transforms=None, pipeline=None, keys=<function base_plus_ext at 0x7fa5e0100200>, opener=<function reader at 0x7fa5e00ea680>, errors=True, verbose=False, shuffle=0, associate=None, prepare_for_worker=True, container=None)
      |  
      |  Iterate over sharded datasets.
      |  
@@ -28,7 +28,6 @@ CLASSES
      |  :param transforms: list of functions to apply to unbatched samples (Default value = None)
      |  :param pipeline: function that maps the iterator, e.g. for batching
      |  :param opener: either a function that returns a stream or a string that is invoked via Popen
-     |  :param epochs: how often to iterate through the shards before finishing the iterator
      |  :param verbose: verbose output
      |  :param shuffle: if >0, then shuffle shards, and shuffle samples with a buffer of the given size
      |  :param associate: a callable or dictionary that returns additional information to associate with each sample
@@ -48,7 +47,7 @@ CLASSES
      |  
      |  Methods defined here:
      |  
-     |  __init__(self, urls, *, size=None, extensions=None, decoder='rgb', transforms=None, pipeline=None, epochs=1, keys=<function base_plus_ext at 0x7fb8036d9320>, opener=<function reader at 0x7fb8036c47a0>, errors=True, verbose=False, shuffle=0, associate=None, prepare_for_worker=True, container=None, extra_meta=False)
+     |  __init__(self, urls, *, extensions=None, decoder='rgb', transforms=None, pipeline=None, keys=<function base_plus_ext at 0x7fa5e0100200>, opener=<function reader at 0x7fa5e00ea680>, errors=True, verbose=False, shuffle=0, associate=None, prepare_for_worker=True, container=None)
      |      Initialize self.  See help(type(self)) for accurate signature.
      |  
      |  __iter__(self)
@@ -102,7 +101,7 @@ FUNCTIONS
         - pilrgb: pil None rgb
         - pilrgba: pil None rgba
     
-    tariterator(fileobj, keys=<function base_plus_ext at 0x7fb8036d9320>, decoder=True, suffixes=None, errors=True, container=None)
+    tariterator(fileobj, keys=<function base_plus_ext at 0x7fa5e0100200>, decoder=True, suffixes=None, errors=True, container=None)
         Iterate through training samples stored in a sharded tar file.
         
         :param fileobj: a Python file-like object
@@ -146,7 +145,7 @@ CLASSES
         TarWriter
     
     class ShardWriter(builtins.object)
-     |  ShardWriter(pattern, maxcount=100000, maxsize=3000000000.0, keep_meta=False, user=None, group=None, compress=None, post=None, **kw)
+     |  ShardWriter(pattern, maxcount=100000, maxsize=3000000000.0, post=None, **kw)
      |  
      |  Like TarWriter but splits into multiple shards.
      |  
@@ -161,7 +160,7 @@ CLASSES
      |  
      |  __exit__(self, *args, **kw)
      |  
-     |  __init__(self, pattern, maxcount=100000, maxsize=3000000000.0, keep_meta=False, user=None, group=None, compress=None, post=None, **kw)
+     |  __init__(self, pattern, maxcount=100000, maxsize=3000000000.0, post=None, **kw)
      |      Initialize self.  See help(type(self)) for accurate signature.
      |  
      |  close(self)
@@ -182,13 +181,11 @@ CLASSES
      |      list of weak references to the object (if defined)
     
     class TarWriter(builtins.object)
-     |  TarWriter(fileobj, keep_meta=False, user='bigdata', group='bigdata', mode=292, compress=None, encoder=True)
+     |  TarWriter(fileobj, user='bigdata', group='bigdata', mode=292, compress=None, encoder=True, keep_meta=False)
      |  
      |  A class for writing dictionaries to tar files.
      |  
      |  :param fileobj: fileobj: file name for tar file (.tgz/.tar) or open file descriptor
-     |  :param bool: keep_meta: keep fields starting with "_"
-     |  :param keep_meta:  (Default value = False)
      |  :param encoder: sample encoding (Default value = None)
      |  :param compress:  (Default value = None)
      |  
@@ -209,7 +206,7 @@ CLASSES
      |  
      |  __exit__(self, exc_type, exc_val, exc_tb)
      |  
-     |  __init__(self, fileobj, keep_meta=False, user='bigdata', group='bigdata', mode=292, compress=None, encoder=True)
+     |  __init__(self, fileobj, user='bigdata', group='bigdata', mode=292, compress=None, encoder=True, keep_meta=False)
      |      Initialize self.  See help(type(self)) for accurate signature.
      |  
      |  close(self)

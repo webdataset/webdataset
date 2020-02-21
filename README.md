@@ -10,7 +10,22 @@ Storing data in POSIX tar archives greatly speeds up I/O operations on rotationa
 
 WebDataset fulfills a similar function to Tensorflow's TFRecord/tf.Example classes, but it is much easier to adopt because it does not actually require any kind of data conversion: data is stored in exactly the same format inside tar files as it is on disk, and all preprocessing and data augmentation code remains unchanged.
 
-Documentation: [ReadTheDocs](http://webdataset.readthedocs.io)
+
+# Installation
+
+```Bash
+    $ pip install webdataset
+```
+
+For the Github version:
+
+```Bash
+    $ pip install git+https://github.com/tmbdev/webdataset.git
+```
+
+# Documentation
+
+[ReadTheDocs](http://webdataset.readthedocs.io)
 
 # Using WebDataset
 
