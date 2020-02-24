@@ -593,7 +593,12 @@ class WebDataset(IterableDataset):
                  keys=base_plus_ext, opener=io.reader,
                  errors=True, verbose=False, shuffle=0, associate=None,
                  prepare_for_worker=True, container=None):
-        self.opener = opener if callable(opener) else io.command_pipe(opener)
+        if isinstance(opener, str):
+            self.opener = io.command_pipe(opener)
+        elif callable(opener):
+            self.opener = opener
+        else:
+            raise ValueError(f"{opener}: must be either str or callable")
         checkcallable(self.opener)
         self.decoder = decoder
         self.transforms = listify(transforms)
