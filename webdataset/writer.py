@@ -265,8 +265,8 @@ class ShardWriter:
         self.total = 0
         self.count = 0
         self.size = 0
-        self.next_stream()
         self.fname = None
+        self.next_stream()
 
     def next_stream(self):
         self.finish()
@@ -291,15 +291,14 @@ class ShardWriter:
     def finish(self):
         if self.tarstream is not None:
             self.tarstream.close()
+            assert self.fname is not None
             if callable(self.post):
                 self.post(self.fname)
             self.tarstream = None
-            self.fname = None
 
     def close(self):
         self.finish()
         del self.tarstream
-        del self.fname
         del self.shard
         del self.count
         del self.size

@@ -25,11 +25,18 @@ $(VENV)/bin/activate: requirements.txt requirements.dev.txt
 # after a successful push, it will try to clone the repo into a docker container
 # and execute the tests
 
-dist: FORCE
-	rm -f dist/*
-	$(PYTHON3) setup.py sdist bdist_wheel
+dist: wheel FORCE
 	twine check dist/*
 	twine upload dist/*
+
+wheel: FORCE
+	rm -f dist/*
+	$(PYTHON3) setup.py sdist bdist_wheel
+
+wheeltest: wheel FORCE
+	#gsutil cp dist/*.whl $(BUCKET)/$$(ls dist/*.whl | xargs basename | sed 's/-[0-9.]*-/-latest-/')
+	#gsutil cp dist/*.tar.gz $(BUCKET)/$$(ls dist/*.tar.gz | xargs basename | sed 's/-[0-9.]*.tar.gz/-latest.tar.gz/')
+	./helpers/dockertest package
 
 githubtests:
 	./helpers/dockertest git

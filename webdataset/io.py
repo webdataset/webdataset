@@ -86,6 +86,8 @@ def gopen(url, mode="rb", handler=None, bufsize=8192):
     pr = urlparse(url)
     if pr.scheme == "":
         return open(url, "rb")
+    if pr.scheme == "file":
+        return open(pr.path, "rb")
     if pr.scheme == "pipe":
         return Pipe(
             url[5:], stdout=PIPE, shell=True, bufsize=bufsize

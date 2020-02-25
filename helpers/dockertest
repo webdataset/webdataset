@@ -57,7 +57,26 @@ RUN . venv/bin/activate; python3 -m pytest
 EOF
 ;;
 
-# run the test as a second stage build without caching
+package)
+cd dist || exit 1
+cat > Dockerfile <<EOF
+FROM webdatasettest-base
+ENV SHELL=/bin/bash
+RUN git clone https://git@github.com/tmbdev/webdataset.git /tmp/webdataset
+RUN mkdir /tmp/work
+RUN cp -av /tmp/webdataset/test* /tmp/work/.
+WORKDIR /tmp/work
+RUN ln -s /tmp/venv .
+RUN . venv/bin/activate; pip install --no-cache-dir pytest
+#RUN . venv/bin/activate; pip install --no-cache-dir webdataset
+#RUN . venv/bin/activate; pip install https://tmb-testreleases.storage.googleapis.com/webdataset-latest-py3-none-any.whl
+ADD webdataset-*.whl /tmp
+RUN . venv/bin/activate; pip install --no-cache-dir /tmp/webdataset-*-py3-none-any.whl
+RUN . venv/bin/activate; python3 -m pytest
+EOF
+docker build -t webdatasettest .
+rm -f Dockerfile
+;;
 
 pip)
 docker build -t webdatasettest --no-cache - <<EOF
