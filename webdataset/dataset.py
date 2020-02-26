@@ -64,11 +64,14 @@ class NoException(Exception):
 
 def curried(f):
     """A decorator for currying functions in the first argument."""
+
     @wraps(f)
     def wrapper(*args, **kw):
         def g(x):
             return f(x, *args, **kw)
+
         return g
+
     return wrapper
 
 
@@ -136,6 +139,7 @@ def imagehandler(data, imagespec):
             return result.astype("f") / 255.0
     elif atype == "torch":
         import torch
+
         result = np.asarray(img)
         checkmember(result.dtype, [np.uint8])
         if etype == "uint8":
@@ -162,8 +166,7 @@ def make_handlers(imagetype):
         handlers[extension] = maybe_int
     for extension in ["txt", "text", "transcript"]:
         handlers[extension] = lambda x: x.decode("utf-8")
-    for extension in ["png", "jpg", "jpeg", "img", "image",
-                      "pbm", "pgm", "ppm"]:
+    for extension in ["png", "jpg", "jpeg", "img", "image", "pbm", "pgm", "ppm"]:
         handlers[extension] = lambda data: imagehandler(data, imagetype)
     for extension in ["pyd", "pickle"]:
         handlers[extension] = pickle.loads
@@ -171,9 +174,11 @@ def make_handlers(imagetype):
         handlers[extension] = simplejson.loads
     for extension in ["ten", "tb"]:
         from . import tenbin
+
         handlers[extension] = tenbin.decode_buffer
     try:
         import msgpack
+
         for extension in ["mp", "msgpack", "msg"]:
             handlers[extension] = msgpack.unpackb
     except ImportError:
@@ -224,7 +229,7 @@ def decode_sample_based_on_extensions(sample, handlers):
     for k, v in list(sample.items()):
         if k[0] == "_":
             if isinstance(v, bytes):
-                v = v.decode('utf-8')
+                v = v.decode("utf-8")
             result[k] = v
             continue
         checknotnone(v)
@@ -273,7 +278,10 @@ def transformer(transformers):
     transformers :
 
     """
-    def f(x): return transform_with(x, transformers)
+
+    def f(x):
+        return transform_with(x, transformers)
+
     return f
 
 
@@ -327,7 +335,10 @@ def transform(data, f=None):
     """
 
     if f is None:
-        def f(x): return x  # skipcq: PYL-E0102
+
+        def f(x):
+            return x  # skipcq: PYL-E0102
+
     for sample in data:
         result = f(sample)
         if isinstance(sample, dict) and isinstance(result, dict):
@@ -348,12 +359,15 @@ def shuffle(data, bufsize=1000, initial=100):
     returns: iterator
 
     """
-    checkrange(initial, 0, bufsize+1)
+    checkrange(initial, 0, bufsize + 1)
     buf = []
     startup = True
     for sample in data:
         if len(buf) < bufsize:
-            buf.append(next(data))  # skipcq: PYL-R1708
+            try:
+                buf.append(next(data))  # skipcq: PYL-R1708
+            except StopIteration:
+                pass
         k = random.randint(0, len(buf) - 1)
         sample, buf[k] = buf[k], sample
         if startup and len(buf) < initial:
@@ -386,10 +400,12 @@ def valid_sample(sample):
         sample: sample to be checked
 
     """
-    return (sample is not None and
-            isinstance(sample, dict) and
-            len(list(sample.keys())) > 0 and
-            not sample.get("__bad__", False))
+    return (
+        sample is not None
+        and isinstance(sample, dict)
+        and len(list(sample.keys())) > 0
+        and not sample.get("__bad__", False)
+    )
 
 
 def group_by_keys(keys=base_plus_ext, lcase=True, suffixes=None):
@@ -399,14 +415,17 @@ def group_by_keys(keys=base_plus_ext, lcase=True, suffixes=None):
     lcase: convert suffixes to lower case (Default value = True)
 
     """
+
     def iterator(data):
         current_sample = None
         for fname, value in data:
             prefix, suffix = keys(fname)
             if trace:
-                print(prefix, suffix,
-                      current_sample.keys()
-                      if isinstance(current_sample, dict) else None)
+                print(
+                    prefix,
+                    suffix,
+                    current_sample.keys() if isinstance(current_sample, dict) else None,
+                )
             if prefix is None:
                 continue
             if lcase:
@@ -416,11 +435,14 @@ def group_by_keys(keys=base_plus_ext, lcase=True, suffixes=None):
                     yield current_sample
                 current_sample = dict(__key__=prefix)
             if suffix in current_sample:
-                raise ValueError(f"{fname}: duplicate file name in tar file {suffix} {current_sample.keys()}")
+                raise ValueError(
+                    f"{fname}: duplicate file name in tar file {suffix} {current_sample.keys()}"
+                )
             if suffixes is None or suffix in suffixes:
                 current_sample[suffix] = value
         if valid_sample(current_sample):
             yield current_sample
+
     return iterator
 
 
@@ -450,11 +472,13 @@ def extract_container(container):
         container: suffix for container file format
 
     """
+
     def iterator(data):
         for fname, value in data:
             if fname.endswith("." + container):
                 if container.endswith("mp"):
                     import msgpack
+
                     sample = msgpack.unpackb(value)
                     sample = {maybe_decode(k, "ascii"): v for k, v in sample.items()}
                 elif container.endswith("json"):
@@ -463,11 +487,13 @@ def extract_container(container):
                     sample = pickle.loads(value)  # skipcq: BAN-B301
                 elif container.endswith("ten"):
                     from . import tenbin
+
                     sample = tenbin.decode_buffer(value, infos=False)
                 if isinstance(sample, dict):
                     sample["__key__"] = fname
                 if isinstance(sample, list) or valid_sample(sample):
                     yield sample
+
     return iterator
 
 
@@ -485,7 +511,11 @@ def tardata(fileobj, skip_meta=r"__[^/]*__($|/)"):
         fname = tarinfo.name
         if fname is None:
             continue
-        if "/" not in fname and fname.startswith(meta_prefix) and fname.endswith(meta_suffix):
+        if (
+            "/" not in fname
+            and fname.startswith(meta_prefix)
+            and fname.endswith(meta_suffix)
+        ):
             # skipping metadata for now
             continue
         if skip_meta is not None and re.match(skip_meta, fname):
@@ -499,17 +529,24 @@ def make_decoder(spec):
     if spec is True:
         spec = "rgb"
     if spec is False or spec is None:
-        def decoder(x): return x
+
+        def decoder(x):
+            return x
+
     elif callable(spec):
         decoder = spec
     elif isinstance(spec, dict):
-        def decoder(sample): return decode_sample_based_on_extensions(
-            sample, spec)
+
+        def decoder(sample):
+            return decode_sample_based_on_extensions(sample, spec)
+
     elif isinstance(spec, str):
         handlers = default_handlers.get(spec)
         checknotnone(handlers, spec)
-        def decoder(sample): return decode_sample_based_on_extensions(
-            sample, handlers)
+
+        def decoder(sample):
+            return decode_sample_based_on_extensions(sample, handlers)
+
     else:
         raise ValueError(f"{spec}: unknown decoder spec")
     checkcallable(decoder, "could not make a callable decoder")
@@ -523,6 +560,7 @@ def apply_decoder(decoder, errors=True):
         errors: True, "warn", or False
 
     """
+
     def iterator(data):
         for sample in data:
             try:
@@ -540,8 +578,14 @@ def apply_decoder(decoder, errors=True):
     return iterator
 
 
-def tariterator(fileobj, keys=base_plus_ext, decoder=True, suffixes=None,
-                errors=True, container=None):
+def tariterator(
+    fileobj,
+    keys=base_plus_ext,
+    decoder=True,
+    suffixes=None,
+    errors=True,
+    container=None,
+):
     """
     Iterate through training samples stored in a sharded tar file.
 
@@ -588,11 +632,25 @@ class WebDataset(IterableDataset):
     the decoding.
     """
 
-    def __init__(self, urls, *, extensions=None, decoder="rgb",
-                 transforms=None, pipeline=None,
-                 keys=base_plus_ext, opener=io.reader,
-                 errors=True, verbose=False, shuffle=0, associate=None,
-                 prepare_for_worker=True, container=None):
+    def __init__(
+        self,
+        urls,
+        *,
+        extensions=None,
+        decoder="rgb",
+        transforms=None,
+        pipeline=None,
+        epochs=1,
+        keys=base_plus_ext,
+        opener=io.reader,
+        errors=True,
+        verbose=False,
+        shuffle=0,
+        associate=None,
+        prepare_for_worker=True,
+        container=None,
+        length=None,
+    ):
         if isinstance(opener, str):
             self.opener = io.command_pipe(opener)
         elif callable(opener):
@@ -602,12 +660,14 @@ class WebDataset(IterableDataset):
         checkcallable(self.opener)
         self.decoder = decoder
         self.transforms = listify(transforms)
+        self.epochs = epochs
         self.verbose = verbose
         self.keys = keys
         self.container = container
         self.errors = errors
         self.associate = associate
         self.pipeline = pipeline
+        self.length = length
         if isinstance(urls, str):
             urls = list(braceexpand.braceexpand(urls))
         checktype(urls, list)
@@ -634,9 +694,13 @@ class WebDataset(IterableDataset):
         self.extra_meta = False
         self.sample = None
 
+    def _len__(self):
+        return self.length
+
     def shard_selection(self):
         """Contains the logic for self.subset shard selection."""
         import torch
+
         index, total = None, None
         if self.subset is not None:
             index, total = self.subset  # skipcq: PYL-E0633
@@ -649,8 +713,7 @@ class WebDataset(IterableDataset):
             self.urls = self.full_urls
             return
         if index == 0 and len(self.full_urls) < total:
-            warnings.warn(
-                f"num_workers {total} > num_shards {len(self.full_urls)}")
+            warnings.warn(f"num_workers {total} > num_shards {len(self.full_urls)}")
         self.urls = self.full_urls[index::total]
 
     def __iter__(self):
@@ -660,42 +723,44 @@ class WebDataset(IterableDataset):
             random.shuffle(self.urls)
         self.sample = 0
         urls = self.urls
-        for url in urls:
-            stream = None
-            try:
-                with self.opener(url) as stream:
-                    source = tariterator(stream,
-                                         keys=self.keys,
-                                         suffixes=self.suffixes,
-                                         decoder=self.decoder,
-                                         container=self.container,
-                                         errors=self.errors)
-                    if self.container == "ten":
+        for epoch in range(self.epochs):
+            for url in urls:
+                stream = None
+                try:
+                    with self.opener(url) as stream:
+                        source = tariterator(
+                            stream,
+                            keys=self.keys,
+                            suffixes=self.suffixes,
+                            decoder=self.decoder,
+                            container=self.container,
+                            errors=self.errors,
+                        )
+                        if self.container == "ten":
+                            for sample in source:
+                                checktype(sample, list)
+                                yield tuple(sample)
+                            continue
+                        if self.associate is not None:
+                            source = associate(self.associate)(source)
+                        if self.extensions is not None:
+                            source = extract(*self.extensions)(source)
+                        if self.shuffle > 1:
+                            source = shuffle(self.shuffle)(source)
+                        if self.transforms is not None:
+                            source = transform(transformer(self.transforms))(source)
+                        if self.pipeline is not None:
+                            source = self.pipeline(source)
                         for sample in source:
-                            checktype(sample, list)
-                            yield tuple(sample)
-                        continue
-                    if self.associate is not None:
-                        source = associate(self.associate)(source)
-                    if self.extensions is not None:
-                        source = extract(*self.extensions)(source)
-                    if self.shuffle > 1:
-                        source = shuffle(self.shuffle)(source)
-                    if self.transforms is not None:
-                        source = transform(
-                            transformer(self.transforms))(source)
-                    if self.pipeline is not None:
-                        source = self.pipeline(source)
-                    for sample in source:
-                        if self.extra_meta and isinstance(sample, dict):
-                            sample["__webdataset__"] = (self.subset,)
-                        if isinstance(sample, list):
-                            sample = tuple(sample)
-                        yield sample
-                        maybe_collect()
-            except Exception as exn:  # skipcq: PYL-W0703
-                if self.errors == "warn":
-                    warnings.warn("dataset __iter__ " + url + " " + repr(exn))
-                    time.sleep(0.5)
-                elif self.errors:
-                    raise exn
+                            if self.extra_meta and isinstance(sample, dict):
+                                sample["__webdataset__"] = (self.subset,)
+                            if isinstance(sample, list):
+                                sample = tuple(sample)
+                            yield sample
+                            maybe_collect()
+                except Exception as exn:  # skipcq: PYL-W0703
+                    if self.errors == "warn":
+                        warnings.warn("dataset __iter__ " + url + " " + repr(exn))
+                        time.sleep(0.5)
+                    elif self.errors:
+                        raise exn
