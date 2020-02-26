@@ -28,10 +28,14 @@ class Pipe:
     :param **kw: passed to `subprocess.Pipe`
     :param timeout: timeout for closing/waiting
     :param ignore_errors: don't raise exceptions on subprocess errors
+    :param ignore_status: list of status codes to ignore
     """
 
-    def __init__(self, *args, timeout=3600.0, ignore_errors=False, **kw):
+    def __init__(
+        self, *args, timeout=3600.0, ignore_errors=False, ignore_status=[], **kw
+    ):
         self.ignore_errors = ignore_errors
+        self.ignore_status = [0] + ignore_status
         self.timeout = timeout
         self.proc = Popen(*args, **kw)
         self.args = (args, kw)
@@ -49,7 +53,7 @@ class Pipe:
         """Checks the status variable and raises an exception if necessary."""
         if self.status is not None:
             self.status = self.proc.wait()
-            if self.status != 0 and not self.ignore_errors:
+            if self.status not in self.ignore_status and not self.ignore_errors:
                 raise Exception(f"{self.args}: exit {self.status} (read)")
 
     def read(self, *args, **kw):
@@ -90,7 +94,11 @@ def gopen(url, mode="rb", handler=None, bufsize=8192):
         return open(pr.path, "rb")
     if pr.scheme == "pipe":
         return Pipe(
-            url[5:], stdout=PIPE, shell=True, bufsize=bufsize
+            url[5:], stdout=PIPE, shell=True, bufsize=bufsize, ignore_status=[141],
+        )  # skipcq: BAN-B604
+    if pr.scheme == "pipenoerr":
+        return Pipe(
+            url[5:], stdout=PIPE, shell=True, bufsize=bufsize, ignore_errors=True, ignore_status=[141],
         )  # skipcq: BAN-B604
 
     import objio
