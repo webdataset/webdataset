@@ -29,6 +29,11 @@ def test_simple():
     assert count_samples(ds) == 47
 
 
+def test_len():
+    ds = wds.WebDataset(local_data, length=100)
+    assert len(ds) == 100
+
+
 def test_fields():
     ds = wds.WebDataset(local_data, extensions="png;jpg cls")
     assert count_samples(ds) == 47

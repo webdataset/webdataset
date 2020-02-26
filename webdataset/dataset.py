@@ -694,7 +694,7 @@ class WebDataset(IterableDataset):
         self.extra_meta = False
         self.sample = None
 
-    def _len__(self):
+    def __len__(self):
         return self.length
 
     def shard_selection(self):
