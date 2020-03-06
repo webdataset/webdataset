@@ -27,11 +27,13 @@ def imageencoder(image, format="PNG"):  # skipcq: PYL-W0622
 
     """
     if isinstance(image, np.ndarray):
-        if image.dtype in [np.dtype('f'), np.dtype('d')]:
+        if image.dtype in [np.dtype("f"), np.dtype("d")]:
             if not (np.amin(image) > -0.001 and np.amax(image) < 1.001):
-                raise ValueError(f"image values out of range {np.amin(image)} {np.amax(image)}")
+                raise ValueError(
+                    f"image values out of range {np.amin(image)} {np.amax(image)}"
+                )
             image = np.clip(image, 0.0, 1.0)
-            image = np.array(image * 255.0, 'uint8')
+            image = np.array(image * 255.0, "uint8")
         image = PIL.Image.fromarray(image)
     if format.upper() == "JPG":
         format = "JPEG"
@@ -82,6 +84,7 @@ def make_handlers():
         handlers[extension] = f
     try:
         import msgpack
+
         for extension in ["mp", "msgpack", "msg"]:
             handlers[extension] = msgpack.packb
     except ImportError:
@@ -89,9 +92,7 @@ def make_handlers():
     return handlers
 
 
-default_handlers = {
-    "default": make_handlers()
-}
+default_handlers = {"default": make_handlers()}
 
 
 def encode_based_on_extension1(data, tname, handlers):
@@ -111,16 +112,24 @@ def encode_based_on_extension1(data, tname, handlers):
 
 
 def encode_based_on_extension(sample, handlers):
-    return {k: encode_based_on_extension1(v, k, handlers) for k, v in list(sample.items())}
+    return {
+        k: encode_based_on_extension1(v, k, handlers) for k, v in list(sample.items())
+    }
 
 
 def make_encoder(spec):
     if spec is False or spec is None:
-        def encoder(x): return x
+
+        def encoder(x):
+            return x
+
     elif callable(spec):
         encoder = spec
     elif isinstance(spec, dict):
-        def encoder(sample): return encode_based_on_extension(sample, spec)
+
+        def encoder(sample):
+            return encode_based_on_extension(sample, spec)
+
     elif isinstance(spec, str) or spec is True:
         if spec is True:
             spec = "default"
@@ -128,7 +137,8 @@ def make_encoder(spec):
         if handlers is None:
             raise ValueError(f"no handler found for {spec}")
 
-        def encoder(sample): return encode_based_on_extension(sample, handlers)
+        def encoder(sample):
+            return encode_based_on_extension(sample, handlers)
 
     else:
         raise ValueError(f"{spec}: unknown decoder spec")
@@ -156,7 +166,16 @@ class TarWriter:
     ```
     """
 
-    def __init__(self, fileobj, user="bigdata", group="bigdata", mode=0o0444, compress=None, encoder=True, keep_meta=False):
+    def __init__(
+        self,
+        fileobj,
+        user="bigdata",
+        group="bigdata",
+        mode=0o0444,
+        compress=None,
+        encoder=True,
+        keep_meta=False,
+    ):
         if isinstance(fileobj, str):
             if compress is False:
                 tarmode = "w|"
@@ -217,7 +236,9 @@ class TarWriter:
             if k[0] == "_":
                 continue
             if not isinstance(v, bytes):
-                raise ValueError(f"{k} doesn't map to a bytes after encoding ({type(v)})")
+                raise ValueError(
+                    f"{k} doesn't map to a bytes after encoding ({type(v)})"
+                )
         key = obj["__key__"]
         for k in sorted(obj.keys()):
             if k == "__key__":
@@ -272,8 +293,13 @@ class ShardWriter:
         self.finish()
         self.fname = self.pattern % self.shard
         if self.verbose:
-            print("# writing", self.fname, self.count, "%.1f GB" %
-                  (self.size / 1e9), self.total)
+            print(
+                "# writing",
+                self.fname,
+                self.count,
+                "%.1f GB" % (self.size / 1e9),
+                self.total,
+            )
         self.shard += 1
         stream = open(self.fname, "wb")
         self.tarstream = TarWriter(stream, **self.kw)
@@ -281,7 +307,11 @@ class ShardWriter:
         self.size = 0
 
     def write(self, obj):
-        if self.tarstream is None or self.count >= self.maxcount or self.size >= self.maxsize:
+        if (
+            self.tarstream is None
+            or self.count >= self.maxcount
+            or self.size >= self.maxsize
+        ):
             self.next_stream()
         size = self.tarstream.write(obj)
         self.count += 1
