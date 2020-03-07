@@ -32,16 +32,22 @@ class Pipe:
     """
 
     def __init__(
-        self, *args, timeout=3600.0, ignore_errors=False, ignore_status=[], **kw
+        self, *args, mode=None, timeout=3600.0, ignore_errors=False, ignore_status=[], **kw
     ):
         self.ignore_errors = ignore_errors
         self.ignore_status = [0] + ignore_status
         self.timeout = timeout
-        self.proc = Popen(*args, **kw)
         self.args = (args, kw)
-        self.stream = self.proc.stdout
-        if self.stream is None:
-            raise ValueError(f"{args}: couldn't open")
+        if mode[0] == "r":
+            self.proc = Popen(*args, stdout=PIPE, **kw)
+            self.stream = self.proc.stdout
+            if self.stream is None:
+                raise ValueError(f"{args}: couldn't open")
+        elif mode[0] == "w":
+            self.proc = Popen(*args, stdin=PIPE, **kw)
+            self.stream = self.proc.stdin
+            if self.stream is None:
+                raise ValueError(f"{args}: couldn't open")
         self.status = None
 
     def check_status(self):
@@ -59,6 +65,11 @@ class Pipe:
     def read(self, *args, **kw):
         """Wraps stream.read and checks status."""
         result = self.stream.read(*args, **kw)
+        self.check_status()
+        return result
+
+    def write(self, *args, **kw):
+        result = self.stream.write(*args, **kw)
         self.check_status()
         return result
 
@@ -85,21 +96,36 @@ class Pipe:
 
 
 def gopen(url, mode="rb", handler=None, bufsize=8192):
-    if mode[0] != "r":
-        raise ValueError(f"{mode}: unsupported mode (only read supported)")
+    assert mode in ["rb", "wb"], mode
     pr = urlparse(url)
     if pr.scheme == "":
-        return open(url, "rb")
+        return open(url, mode)
     if pr.scheme == "file":
-        return open(pr.path, "rb")
+        return open(pr.path, mode)
     if pr.scheme == "pipe":
-        return Pipe(
-            url[5:], stdout=PIPE, shell=True, bufsize=bufsize, ignore_status=[141],
-        )  # skipcq: BAN-B604
+        cmd = url[5:]
+        if mode[0] == "r":
+            return Pipe(
+                cmd, mode=mode, shell=True, bufsize=bufsize, ignore_status=[141],
+            )  # skipcq: BAN-B604
+        elif mode[0] == "w":
+            return Pipe(
+                cmd, mode=mode, shell=True, bufsize=bufsize, ignore_status=[141],
+            )  # skipcq: BAN-B604
+        else:
+            raise ValueError(f"{mode}: unknown mode")
     if pr.scheme == "pipenoerr":
-        return Pipe(
-            url[5:], stdout=PIPE, shell=True, bufsize=bufsize, ignore_errors=True, ignore_status=[141],
-        )  # skipcq: BAN-B604
+        cmd = url[10:]
+        if mode[0] == "r":
+            return Pipe(
+                cmd, mode=mode, shell=True, bufsize=bufsize, ignore_status=[141],
+            )  # skipcq: BAN-B604
+        elif mode[0] == "w":
+            return Pipe(
+                cmd, mode=mode, shell=True, bufsize=bufsize, ignore_status=[141],
+            )  # skipcq: BAN-B604
+        else:
+            raise ValueError(f"{mode}: unknown mode")
 
     import objio
 
