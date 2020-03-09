@@ -8,5 +8,5 @@ jobs:
       - uses: actions/setup-python@v1
         with:
           python-version: 3.7
-      - run: make venv
-      - run: make tests
+      - run: python3 -m pip install invoke
+      - run: invoke test
