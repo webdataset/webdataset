@@ -5,7 +5,8 @@ test_patterns = [
 ]
 
 exclude_patterns = [
-    "docs/**"
+    "docs/**",
+    "tasks.py"
 ]
 
 [[analyzers]]
