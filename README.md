@@ -1,5 +1,4 @@
 [![Test](https://github.com/tmbdev/webdataset/workflows/Test/badge.svg)](https://github.com/tmbdev/webdataset/actions?query=workflow%3ATest)
-[![TestPip](https://github.com/tmbdev/webdataset/workflows/TestPip/badge.svg)](https://github.com/tmbdev/webdataset/actions?query=workflow%3ATestPip)
 [![DeepSource](https://static.deepsource.io/deepsource-badge-light-mini.svg)](https://deepsource.io/gh/tmbdev/webdataset/?ref=repository-badge)
 
 # WebDataset
