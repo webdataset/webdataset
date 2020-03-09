@@ -8,7 +8,6 @@
 import sys
 import setuptools
 
-VERSION = '0.1.3'
 
 if sys.version_info < (3, 6):
     sys.exit("Python versions less than 3.6 are not supported")
@@ -17,7 +16,7 @@ scripts = []
 
 setuptools.setup(
     name='webdataset',
-    version=VERSION,
+    version="0.1.4",
     description="Record sequential storage for deep learning.",
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
