@@ -9,4 +9,5 @@ jobs:
         with:
           python-version: 3.7
       - run: python3 -m pip install invoke
+      - run: invoke virtualenv
       - run: invoke test

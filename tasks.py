@@ -28,10 +28,10 @@ def virtualenv(c):
     c.run(f"{ACTIVATE}{PIP} install -r requirements.txt")
 
 
-@task(virtualenv)
+@task
 def test(c):
     "Run the tests."
-    c.run(f"{PYTHON3} -m pytest")
+    c.run(f"{ACTIVATE}{PYTHON3} -m pytest")
 
 
 @task
