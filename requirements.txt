@@ -1,4 +1,4 @@
-objio
+objectio
 simplejson
 braceexpand
 msgpack
