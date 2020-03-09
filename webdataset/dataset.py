@@ -336,8 +336,8 @@ def transform(data, f=None):
 
     if f is None:
 
-        def f(x):
-            return x  # skipcq: PYL-E0102
+        def f(x):  # skipcq: PYL-E0102
+            return x
 
     for sample in data:
         result = f(sample)

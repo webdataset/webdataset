@@ -1,12 +1,13 @@
 version = 1
 
 test_patterns = [
-    "test/**"
+    "webdataset/test/**"
 ]
 
 exclude_patterns = [
     "docs/**",
-    "tasks.py"
+    "tasks.py",
+    "test_**"
 ]
 
 [[analyzers]]
