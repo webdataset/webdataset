@@ -34,5 +34,5 @@ setuptools.setup(
     packages=["webdataset"],
     python_requires=">=3.6",
     scripts=scripts,
-    install_requires="Pillow simplejson braceexpand msgpack pyyaml numpy torch objio".split()
+    install_requires="Pillow simplejson braceexpand msgpack pyyaml numpy torch objectio".split()
 )

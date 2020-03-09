@@ -1,7 +1,7 @@
 #!/usr/bin/python
 #
 # Copyright (c) 2017-2019 NVIDIA CORPORATION. All rights reserved.
-# This file is part of the objio library.
+# This file is part of the objectio library.
 # See the LICENSE file for licensing terms (BSD-style).
 #
 

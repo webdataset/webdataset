@@ -127,9 +127,9 @@ def gopen(url, mode="rb", handler=None, bufsize=8192):
         else:
             raise ValueError(f"{mode}: unknown mode")
 
-    import objio
+    import objectio
 
-    return objio.gopen(url, "rb")
+    return objectio.gopen(url, "rb")
 
 
 def command_pipe(handler):
