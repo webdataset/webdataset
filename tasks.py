@@ -120,14 +120,13 @@ def pubdocs(c):
 def clean(c):
     "Remove temporary files."
     c.run(f"rm -rf {TEMP}")
-    c.run(f"rm -rf build dist")
+    c.run(f"rm -rf build dist __pycache__ */__pycache__ *.pyc */*.pyc")
 
 
-@task
+@task(clean)
 def cleanall(c):
     "Remove temporary files and virtualenv."
-    c.run(f"rm -rf {TEMP}")
-    c.run(f"rm -rf venv build dist")
+    c.run(f"rm -rf venv")
 
 
 @task(test)
