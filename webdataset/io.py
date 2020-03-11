@@ -95,7 +95,7 @@ class Pipe:
         self.close()
 
 
-def gopen(url, mode="rb", handler=None, bufsize=8192):
+def gopen(url, mode="rb", bufsize=8192):
     assert mode in ["rb", "wb"], mode
     pr = urlparse(url)
     if pr.scheme == "":
@@ -130,10 +130,6 @@ def gopen(url, mode="rb", handler=None, bufsize=8192):
     import objectio
 
     return objectio.gopen(url, "rb")
-
-
-def command_pipe(handler):
-    return lambda url: gopen(url, "rb", handler)
 
 
 def reader(url):
