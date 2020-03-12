@@ -73,8 +73,8 @@ def test_float_np_vs_torch():
 
 
 def test_associate():
-    with open("testdata/imagenet-extra.json")) as stream:
-        extra_data = simplejson.loads(stream)
+    with open("testdata/imagenet-extra.json") as stream:
+        extra_data = simplejson.load(stream)
 
     def associate(key):
         return dict(MY_EXTRA_DATA=extra_data[key])

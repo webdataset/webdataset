@@ -98,6 +98,13 @@ class Pipe:
 def gopen(url, mode="rb", bufsize=8192):
     assert mode in ["rb", "wb"], mode
     pr = urlparse(url)
+    if url == "-":
+        if mode == "rb":
+            return sys.stdin.buffer
+        elif mode == "rw":
+            return sys.stdout.buffer
+        else:
+            raise ValueError(f"unknown mode {mode}")
     if pr.scheme == "":
         return open(url, mode)
     if pr.scheme == "file":
