@@ -497,32 +497,59 @@ def extract_container(container):
     return iterator
 
 
-def tardata(fileobj, skip_meta=r"__[^/]*__($|/)"):
+def reraise_exception(exn):
+    raise exn
+
+
+def ignore_exception(exn):
+    return True
+
+
+def ignore_and_finish(exn):
+    return False
+
+
+def warn_exception(exn):
+    warnings.warn(repr(exn))
+    time.sleep(0.5)
+    return True
+
+
+def tardata(fileobj, skip_meta=r"__[^/]*__($|/)", handler=reraise_exception):
     """Iterator yielding filename, content pairs for the given tar stream.
 
     :param fileobj: byte stream suitable for tarfile
     :param skip_meta: regexp for keys that are skipped entirely (Default value = r"__[^/]*__($|/)")
 
     """
-    stream = tarfile.open(fileobj=fileobj, mode="r|*")
-    for tarinfo in stream:
-        if not tarinfo.isreg():
-            continue
-        fname = tarinfo.name
-        if fname is None:
-            continue
-        if (
-            "/" not in fname
-            and fname.startswith(meta_prefix)
-            and fname.endswith(meta_suffix)
-        ):
-            # skipping metadata for now
-            continue
-        if skip_meta is not None and re.match(skip_meta, fname):
-            continue
-        data = stream.extractfile(tarinfo).read()
-        yield fname, data
-    del stream
+    try:
+        stream = tarfile.open(fileobj=fileobj, mode="r|*")
+        for tarinfo in stream:
+            try:
+                if not tarinfo.isreg():
+                    continue
+                fname = tarinfo.name
+                if fname is None:
+                    continue
+                if (
+                    "/" not in fname
+                    and fname.startswith(meta_prefix)
+                    and fname.endswith(meta_suffix)
+                ):
+                    # skipping metadata for now
+                    continue
+                if skip_meta is not None and re.match(skip_meta, fname):
+                    continue
+                data = stream.extractfile(tarinfo).read()
+                yield fname, data
+            except Exception as exn:
+                if handler(exn):
+                    continue
+                else:
+                    break
+        del stream
+    except Exception as exn:
+        handler(exn)
 
 
 def make_decoder(spec):
@@ -553,7 +580,7 @@ def make_decoder(spec):
     return decoder
 
 
-def apply_decoder(decoder, errors=True):
+def apply_decoder(decoder, handler=reraise_exception):
     """Decode samples by invoking the decoder with error handling.
 
         decode: decoder function
@@ -566,13 +593,10 @@ def apply_decoder(decoder, errors=True):
             try:
                 decoded = decoder(sample)
             except Exception as exn:  # skipcq: PYL-W0703
-                if errors == "warn":
-                    warnings.warn("apply_decoder " + repr(exn))
-                    time.sleep(0.5)
-                elif errors:
-                    raise exn
-                else:
+                if handler(exn):
                     continue
+                else:
+                    break
             yield decoded
 
     return iterator
@@ -583,8 +607,9 @@ def tariterator(
     keys=base_plus_ext,
     decoder=True,
     suffixes=None,
-    errors=True,
     container=None,
+    tar_errors=reraise_exception,
+    decode_errors=reraise_exception,
 ):
     """
     Iterate through training samples stored in a sharded tar file.
@@ -601,13 +626,13 @@ def tariterator(
     decoded sample as a dict.
     """
     decoder = make_decoder(decoder)
-    content = tardata(fileobj)
+    content = tardata(fileobj, handler=tar_errors)
     if container is not None:
         samples = extract_container(container)(content)
     else:
         samples = group_by_keys(keys=keys, suffixes=suffixes)(content)
     if container != "ten":
-        samples = apply_decoder(decoder=decoder, errors=errors)(samples)
+        samples = apply_decoder(decoder=decoder, handler=decode_errors)(samples)
     return samples
 
 
@@ -643,13 +668,14 @@ class WebDataset(IterableDataset):
         epochs=1,
         keys=base_plus_ext,
         opener=io.reader,
-        errors=True,
         verbose=False,
         shuffle=0,
         associate=None,
         prepare_for_worker=True,
         container=None,
         length=None,
+        tar_errors=reraise_exception,
+        decode_errors=reraise_exception,
     ):
         if isinstance(opener, str):
             self.opener = io.command_pipe(opener)
@@ -664,7 +690,8 @@ class WebDataset(IterableDataset):
         self.verbose = verbose
         self.keys = keys
         self.container = container
-        self.errors = errors
+        self.tar_errors = tar_errors
+        self.decode_errors = decode_errors
         self.associate = associate
         self.pipeline = pipeline
         self.length = length
@@ -734,7 +761,8 @@ class WebDataset(IterableDataset):
                             suffixes=self.suffixes,
                             decoder=self.decoder,
                             container=self.container,
-                            errors=self.errors,
+                            tar_errors=self.tar_errors,
+                            decode_errors=self.decode_errors
                         )
                         if self.container == "ten":
                             for sample in source:
