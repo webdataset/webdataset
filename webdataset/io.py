@@ -12,6 +12,7 @@ Open URLs by calling subcommands.
 
 __all__ = "gopen scheme_to_command".split()
 
+import sys
 from subprocess import PIPE, Popen
 from urllib.parse import urlparse
 
@@ -32,7 +33,13 @@ class Pipe:
     """
 
     def __init__(
-        self, *args, mode=None, timeout=3600.0, ignore_errors=False, ignore_status=[], **kw
+        self,
+        *args,
+        mode=None,
+        timeout=3600.0,
+        ignore_errors=False,
+        ignore_status=[],
+        **kw,
     ):
         self.ignore_errors = ignore_errors
         self.ignore_status = [0] + ignore_status
@@ -101,7 +108,7 @@ def gopen(url, mode="rb", bufsize=8192):
     if url == "-":
         if mode == "rb":
             return sys.stdin.buffer
-        elif mode == "rw":
+        elif mode == "wb":
             return sys.stdout.buffer
         else:
             raise ValueError(f"unknown mode {mode}")
