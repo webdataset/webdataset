@@ -21,7 +21,7 @@ import tarfile
 import time
 import warnings
 from builtins import range
-from functools import wraps
+from functools import reduce, wraps
 
 import braceexpand
 import numpy as np
@@ -32,7 +32,7 @@ import six
 from torch.utils.data import IterableDataset
 
 from . import io
-from .checks import checkmember, checktype, checkrange, checknotnone, checkcallable
+from .checks import checkmember, checktype, checknotnone, checkcallable
 
 trace = False
 
@@ -44,6 +44,54 @@ meta_suffix = "__"
 
 collection_counter = 0
 collection_frequency = 50000
+
+
+def curried(f):
+    """A decorator for currying functions in the first argument."""
+
+    @wraps(f)
+    def wrapper(*args, **kw):
+        def g(x):
+            return f(x, *args, **kw)
+
+        return g
+
+    return wrapper
+
+
+def compose2(f, g):
+    """Compose two functions, g(f(x))"""
+    return lambda x: g(f(x))
+
+
+def compose(*args):
+    """Compose a sequence of functions (left-to-right)"""
+    return reduce(compose2, args)
+
+
+def pipeline(source, *args):
+    """Write an input pipeline; first argument is source, rest are filters."""
+    if len(args) == 0:
+        return source
+    return compose(*args)(source)
+
+
+def reraise_exception(exn):
+    raise exn
+
+
+def ignore_exception(exn):
+    return True
+
+
+def ignore_and_finish(exn):
+    return False
+
+
+def warn_exception(exn):
+    warnings.warn(repr(exn))
+    time.sleep(0.5)
+    return True
 
 
 def maybe_collect():
@@ -60,19 +108,6 @@ def maybe_collect():
 
 class NoException(Exception):
     pass
-
-
-def curried(f):
-    """A decorator for currying functions in the first argument."""
-
-    @wraps(f)
-    def wrapper(*args, **kw):
-        def g(x):
-            return f(x, *args, **kw)
-
-        return g
-
-    return wrapper
 
 
 imagespecs = {
@@ -226,6 +261,7 @@ def decode_sample_based_on_extensions(sample, handlers):
     imagetype: format for images (gray, rgb, rgba, PIL; rgb8=8 bit)
     """
     result = {}
+    assert isinstance(sample, dict)
     for k, v in list(sample.items()):
         if k[0] == "_":
             if isinstance(v, bytes):
@@ -325,7 +361,7 @@ def extract(data, *fields):
 
 
 @curried
-def transform(data, f=None):
+def map_stream(data, f=None, handler=reraise_exception):
     """Map entire samples using the given function.
 
     data: iterator
@@ -340,7 +376,13 @@ def transform(data, f=None):
             return x
 
     for sample in data:
-        result = f(sample)
+        try:
+            result = f(sample)
+        except Exception as exn:
+            if handler(exn):
+                continue
+            else:
+                break
         if isinstance(sample, dict) and isinstance(result, dict):
             result["__key__"] = sample.get("__key__")
         yield result
@@ -359,7 +401,7 @@ def shuffle(data, bufsize=1000, initial=100):
     returns: iterator
 
     """
-    checkrange(initial, 0, bufsize + 1)
+    initial = min(initial, bufsize)
     buf = []
     startup = True
     for sample in data:
@@ -497,24 +539,6 @@ def extract_container(container):
     return iterator
 
 
-def reraise_exception(exn):
-    raise exn
-
-
-def ignore_exception(exn):
-    return True
-
-
-def ignore_and_finish(exn):
-    return False
-
-
-def warn_exception(exn):
-    warnings.warn(repr(exn))
-    time.sleep(0.5)
-    return True
-
-
 def tardata(fileobj, skip_meta=r"__[^/]*__($|/)", handler=reraise_exception):
     """Iterator yielding filename, content pairs for the given tar stream.
 
@@ -580,7 +604,7 @@ def make_decoder(spec):
     return decoder
 
 
-def apply_decoder(decoder, handler=reraise_exception):
+def apply_decoder(decoder=make_decoder(True), handler=reraise_exception):
     """Decode samples by invoking the decoder with error handling.
 
         decode: decoder function
@@ -762,7 +786,7 @@ class WebDataset(IterableDataset):
                             decoder=self.decoder,
                             container=self.container,
                             tar_errors=self.tar_errors,
-                            decode_errors=self.decode_errors
+                            decode_errors=self.decode_errors,
                         )
                         if self.container == "ten":
                             for sample in source:
@@ -776,7 +800,7 @@ class WebDataset(IterableDataset):
                         if self.shuffle > 1:
                             source = shuffle(self.shuffle)(source)
                         if self.transforms is not None:
-                            source = transform(transformer(self.transforms))(source)
+                            source = map_stream(transformer(self.transforms))(source)
                         if self.pipeline is not None:
                             source = self.pipeline(source)
                         for sample in source:
@@ -792,3 +816,218 @@ class WebDataset(IterableDataset):
                         time.sleep(0.5)
                     elif self.errors:
                         raise exn
+
+
+class Dataset(IterableDataset):
+    """Iterate over sharded datasets.
+
+    :param urls: shard spec or list of shards
+    :param prepare_for_worker: callable called in each worker before anything else is done
+
+    """
+
+    def __init__(
+        self,
+        urls,
+        *,
+        keys=base_plus_ext,
+        suffixes=None,
+        length=None,
+        epochs=1,
+        opener=io.reader,
+        handler=reraise_exception,
+        shuffle=False,
+        prepare_for_worker=True,
+        initial_pipeline=None,
+    ):
+        if isinstance(opener, str):
+            self.opener = io.command_pipe(opener)
+        elif callable(opener):
+            self.opener = opener
+        else:
+            raise ValueError(f"{opener}: must be either str or callable")
+        checkcallable(self.opener)
+        if isinstance(urls, str):
+            urls = list(braceexpand.braceexpand(urls))
+        self.full_urls = self.urls = urls
+        self.length = length
+        self.epochs = epochs
+        self.keys = keys
+        self.suffixes = suffixes
+        self.subset = None
+        self.do_shuffle = shuffle
+        self.handler = handler
+        if prepare_for_worker is True:
+            self.prepare_for_worker = self.shard_selection
+        elif prepare_for_worker is False:
+            self.prepare_for_worker = lambda: None
+        else:
+            self.prepare_for_worker = prepare_for_worker
+        self.pipeline = (
+            initial_pipeline if initial_pipeline is not None else [group_by_keys()]
+        )
+
+    def __len__(self):
+        return self.length
+
+    def shard_selection(self):
+        """Contains the logic for self.subset shard selection."""
+        import torch
+
+        index, total = None, None
+        if self.subset is not None:
+            index, total = self.subset  # skipcq: PYL-E0633
+        else:
+            worker_info = torch.utils.data.get_worker_info()
+            if worker_info is not None:
+                index = worker_info.id
+                total = worker_info.num_workers
+        if total is None:
+            self.urls = self.full_urls
+            return
+        if index == 0 and len(self.full_urls) < total:
+            warnings.warn(f"num_workers {total} > num_shards {len(self.full_urls)}")
+        self.urls = self.full_urls[index::total]
+
+    def raw_iter(self):
+        """Iterate over samples."""
+        self.prepare_for_worker()
+        if self.do_shuffle:
+            random.shuffle(self.urls)
+        self.sample = 0
+        urls = self.urls
+        for epoch in range(self.epochs):
+            for url in urls:
+                stream = None
+                with self.opener(url) as stream:
+                    files_of_archive = tardata(stream, handler=self.handler)
+                    for fname, content in files_of_archive:
+                        yield fname, content
+                    maybe_collect()
+
+    def __iter__(self):
+        return pipeline(self.raw_iter(), *self.pipeline)
+
+    def add_stage(self, stage):
+        self.pipeline.append(stage)
+        return self
+
+    def shuffle(self, size):
+        self.pipeline.append(shuffle(size))
+        return self
+
+    def decode(self, decoder="rgb", handler=reraise_exception):
+        f = make_decoder(decoder)
+
+        def stage(data):
+            for sample in data:
+                assert isinstance(sample, dict), sample
+                try:
+                    decoded = f(sample)
+                except Exception as exn:  # skipcq: PYL-W0703
+                    if handler(exn):
+                        continue
+                    else:
+                        break
+                yield decoded
+
+        self.pipeline.append(stage)
+        return self
+
+    def map(self, f, handler=reraise_exception):
+        def stage(data):
+            for sample in data:
+                try:
+                    result = f(sample)
+                except Exception as exn:
+                    if handler(exn):
+                        continue
+                    else:
+                        break
+                if isinstance(sample, dict) and isinstance(result, dict):
+                    result["__key__"] = sample.get("__key__")
+                yield result
+
+        self.pipeline.append(stage)
+        return self
+
+    def rename(self, handler=reraise_exception, **kw):
+        def stage(data):
+            for sample in data:
+                try:
+                    yield {k: getfirst(sample, v) for k, v in kw.items()}
+                except Exception as exn:
+                    if handler(exn):
+                        continue
+                    else:
+                        break
+
+        self.pipeline.append(stage)
+        return self
+
+    def associate(self, associator, **kw):
+        def stage(data):
+            for sample in data:
+                if callable(associator):
+                    extra = associator(sample["__key__"])
+                else:
+                    extra = associator.get(sample["__key__"], {})
+                sample.update(extra)  # destructive
+                yield sample
+
+        self.pipeline.append(stage)
+        return self
+
+    def transform(self, handler=reraise_exception, **kw):
+        assert len(list(kw.keys())) > 0
+        for f in kw.values():
+            assert callable(f)
+
+        def stage(data):
+            for sample in data:
+                assert isinstance(sample, dict)
+                try:
+                    for k, f in kw:
+                        sample[k] = f(sample[k])
+                except Exception as exn:
+                    if handler(exn):
+                        continue
+                    else:
+                        break
+                yield sample
+
+        self.pipeline.append(stage)
+        return self
+
+    def extract(self, *args, handler=reraise_exception):
+        def stage(data):
+            for sample in data:
+                try:
+                    yield [getfirst(sample, f) for f in args]
+                except Exception as exn:
+                    if handler(exn):
+                        continue
+                    else:
+                        break
+
+        self.pipeline.append(stage)
+        return self
+
+    def apply(self, *args, handler=reraise_exception):
+        def stage(data):
+            for f in args:
+                assert callable(f)
+            for sample in data:
+                assert isinstance(sample, (list, tuple))
+                assert len(args) == len(sample)
+                try:
+                    sample = [f(v) for f, v in zip(args, sample)]
+                except Exception as exn:
+                    if handler(exn):
+                        continue
+                    else:
+                        break
+                yield sample
+
+        self.pipeline.append(stage)
+        return self

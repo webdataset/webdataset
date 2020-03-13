@@ -14,10 +14,10 @@ remote_loc = "http://storage.googleapis.com/lpr-imagenet/"
 
 def count_samples(source, *args, n=1000):
     count = 0
-    for i, sample in enumerate(source):
+    for i, sample in enumerate(iter(source)):
         if i >= n:
             break
-        assert isinstance(sample, (tuple, dict))
+        assert isinstance(sample, (tuple, dict, list)), (type(sample), sample)
         for f in args:
             assert f(sample)
         count += 1
@@ -27,6 +27,35 @@ def count_samples(source, *args, n=1000):
 def test_simple():
     ds = wds.WebDataset(local_data)
     assert count_samples(ds) == 47
+
+
+def test_simple1():
+    ds = wds.Dataset(local_data, initial_pipeline=[])
+    assert count_samples(ds) == 188
+
+
+def test_simple2():
+    ds = wds.Dataset(local_data)
+    assert count_samples(ds) == 47
+
+
+def test_simple3():
+    ds = wds.Dataset(local_data).shuffle(5).extract("png;jpg cls")
+    assert count_samples(ds) == 47
+
+
+def test_simple4():
+    ds = (
+        wds.Dataset(local_data)
+        .shuffle(5)
+        .decode("rgb")
+        .rename(image="png;jpg", cls="cls")
+        .extract("image", "cls")
+    )
+    assert count_samples(ds) == 47
+    image, cls = next(iter(ds))
+    assert isinstance(image, np.ndarray), image
+    assert isinstance(cls, int)
 
 
 def test_len():
