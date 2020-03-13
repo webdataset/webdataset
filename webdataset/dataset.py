@@ -27,7 +27,7 @@ from torch.utils.data import IterableDataset
 from . import io
 from . import filters
 from .checks import checkcallable
-from .webdataset import WebDataset  # pyqa: F401
+from .webdataset import WebDataset  # noqa: F401
 
 trace = False
 
