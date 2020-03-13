@@ -10,25 +10,23 @@
 or over HTTP connections.
 """
 
-__all__ = "WebDataset tariterator default_handlers imagehandler".split()
+__all__ = "Dataset WebDataset tariterator default_handlers imagehandler".split()
 
 import gc
 import os
-import pickle
 import random
 import re
 import tarfile
 import time
 import warnings
 from builtins import range
-from functools import reduce, wraps
 
 import braceexpand
-import simplejson
 from torch.utils.data import IterableDataset
 
 from . import io
 from . import autodecode
+from . import filters
 from .checks import checktype, checkcallable
 
 trace = False
@@ -41,36 +39,6 @@ meta_suffix = "__"
 
 collection_counter = 0
 collection_frequency = 50000
-
-
-def curried(f):
-    """A decorator for currying functions in the first argument."""
-
-    @wraps(f)
-    def wrapper(*args, **kw):
-        def g(x):
-            return f(x, *args, **kw)
-
-        return g
-
-    return wrapper
-
-
-def compose2(f, g):
-    """Compose two functions, g(f(x))"""
-    return lambda x: g(f(x))
-
-
-def compose(*args):
-    """Compose a sequence of functions (left-to-right)"""
-    return reduce(compose2, args)
-
-
-def pipeline(source, *args):
-    """Write an input pipeline; first argument is source, rest are filters."""
-    if len(args) == 0:
-        return source
-    return compose(*args)(source)
 
 
 def reraise_exception(exn):
@@ -91,70 +59,6 @@ def warn_exception(exn):
     return True
 
 
-def maybe_collect():
-    """Running in notebooks, we tend to run out of memory due to
-    weak references, and the collector doesn't seem to get triggered
-    in time automatically. This function periodically calls the Python
-    garbage collector."""
-    global collection_counter, collection_frequency  # skipcq: PYL-W0603
-    if collection_counter >= collection_frequency == 0:
-        gc.collect()
-        collection_counter = 0
-    collection_counter += 1
-
-
-class NoException(Exception):
-    pass
-
-
-def getfirst(a, keys, default=None):
-    if isinstance(keys, str):
-        keys = keys.split(";")
-    for k in keys:
-        result = a.get(k)
-        if result is not None:
-            return result
-    return default
-
-
-def parse_field_spec(fields):
-    if isinstance(fields, str):
-        fields = fields.split()
-    return [field.split(";") for field in fields]
-
-
-def transform_with(sample, transformers):
-    """Transform a list of values using a list of functions.
-
-    sample: list of values
-    transformers: list of functions
-
-    """
-    checktype(sample, (tuple, list))
-    if transformers is None or len(transformers) == 0:
-        return sample
-    result = list(sample)
-    ntransformers = len(transformers)
-    for i in range(len(sample)):  # skipcq: PYL-C0200
-        f = transformers[i % ntransformers]
-        if f is not None:
-            result[i] = f(sample[i])
-    return result
-
-
-def transformer(transformers):
-    """Curried version of `transform_with`.
-
-    transformers :
-
-    """
-
-    def f(x):
-        return transform_with(x, transformers)
-
-    return f
-
-
 def listify(x):
     """Turn a value into a list.
 
@@ -170,89 +74,20 @@ def listify(x):
         return [x]
 
 
-@curried
-def associate(data, associator):
-    """Extract the given fields and return a tuple.
-    """
-    for sample in data:
-        if callable(associator):
-            extra = associator(sample["__key__"])
-        else:
-            extra = associator.get(sample["__key__"], {})
-        sample.update(extra)
-        yield sample
+def maybe_collect():
+    """Running in notebooks, we tend to run out of memory due to
+    weak references, and the collector doesn't seem to get triggered
+    in time automatically. This function periodically calls the Python
+    garbage collector."""
+    global collection_counter, collection_frequency  # skipcq: PYL-W0603
+    if collection_counter >= collection_frequency == 0:
+        gc.collect()
+        collection_counter = 0
+    collection_counter += 1
 
 
-@curried
-def extract(data, *fields):
-    """Extract the given fields and return a tuple.
-    """
-    for sample in data:
-        if fields is None:
-            yield sample
-        else:
-            yield [getfirst(sample, f) for f in fields]
-
-
-@curried
-def map_stream(data, f=None, handler=reraise_exception):
-    """Map entire samples using the given function.
-
-    data: iterator
-    f: function from samples to samples
-    returns: iterator over transformed samples
-
-    """
-
-    if f is None:
-
-        def f(x):  # skipcq: PYL-E0102
-            return x
-
-    for sample in data:
-        try:
-            result = f(sample)
-        except Exception as exn:
-            if handler(exn):
-                continue
-            else:
-                break
-        if isinstance(sample, dict) and isinstance(result, dict):
-            result["__key__"] = sample.get("__key__")
-        yield result
-
-
-@curried
-def shuffle(data, bufsize=1000, initial=100):
-    """Shuffle the data in the stream.
-
-    This uses a buffer of size `bufsize`. Shuffling at
-    startup is less random; this is traded off against
-    yielding samples quickly.
-
-    data: iterator
-    bufsize: buffer size for shuffling
-    returns: iterator
-
-    """
-    initial = min(initial, bufsize)
-    buf = []
-    startup = True
-    for sample in data:
-        if len(buf) < bufsize:
-            try:
-                buf.append(next(data))  # skipcq: PYL-R1708
-            except StopIteration:
-                pass
-        k = random.randint(0, len(buf) - 1)
-        sample, buf[k] = buf[k], sample
-        if startup and len(buf) < initial:
-            buf.append(sample)
-            continue
-        startup = False
-        yield sample
-    for sample in buf:
-        yield sample
+class NoException(Exception):
+    pass
 
 
 def base_plus_ext(path):
@@ -322,17 +157,6 @@ def group_by_keys(keys=base_plus_ext, lcase=True, suffixes=None):
     return iterator
 
 
-def make_unique(keys):
-    """Given a list of keys, ensures that they are all unique"."""
-    result = []
-    for i, k in enumerate(keys):
-        if k is None or k == "" or k in result:
-            result.append(f"_{i}")
-        else:
-            result.append(k)
-    return result
-
-
 def maybe_decode(s, mode="ascii"):
     if isinstance(s, str):
         return s
@@ -340,37 +164,6 @@ def maybe_decode(s, mode="ascii"):
         return s.decode(mode)
     else:
         raise ValueError(f"{type(s)}: wrong type for maybe_decode")
-
-
-def extract_container(container):
-    """Extracts an embedded container format from a tar file.
-
-        container: suffix for container file format
-
-    """
-
-    def iterator(data):
-        for fname, value in data:
-            if fname.endswith("." + container):
-                if container.endswith("mp"):
-                    import msgpack
-
-                    sample = msgpack.unpackb(value)
-                    sample = {maybe_decode(k, "ascii"): v for k, v in sample.items()}
-                elif container.endswith("json"):
-                    sample = simplejson.loads(value)
-                elif container.endswith("pyd"):
-                    sample = pickle.loads(value)  # skipcq: BAN-B301
-                elif container.endswith("ten"):
-                    from . import tenbin
-
-                    sample = tenbin.decode_buffer(value, infos=False)
-                if isinstance(sample, dict):
-                    sample["__key__"] = fname
-                if isinstance(sample, list) or valid_sample(sample):
-                    yield sample
-
-    return iterator
 
 
 def tardata(fileobj, skip_meta=r"__[^/]*__($|/)", handler=reraise_exception):
@@ -415,7 +208,6 @@ def tariterator(
     keys=base_plus_ext,
     decoder=True,
     suffixes=None,
-    container=None,
     tar_errors=reraise_exception,
     decode_errors=reraise_exception,
 ):
@@ -433,16 +225,10 @@ def tariterator(
     The decoder takes the entire sample as a dict and returns the
     decoded sample as a dict.
     """
-    decoder = autodecode.make_decoder(decoder)
     content = tardata(fileobj, handler=tar_errors)
-    if container is not None:
-        samples = extract_container(container)(content)
-    else:
-        samples = group_by_keys(keys=keys, suffixes=suffixes)(content)
-    if container != "ten":
-        samples = autodecode.apply_decoder(decoder=decoder, handler=decode_errors)(
-            samples
-        )
+    samples = group_by_keys(keys=keys, suffixes=suffixes)(content)
+    decoder = autodecode.make_decoder(decoder)
+    samples = filters.map_stream(decoder, handler=decode_errors)(samples)
     return samples
 
 
@@ -459,7 +245,6 @@ class WebDataset(IterableDataset):
     :param shuffle: if >0, then shuffle shards, and shuffle samples with a buffer of the given size
     :param associate: a callable or dictionary that returns additional information to associate with each sample
     :param prepare_for_worker: callable called in each worker before anything else is done
-    :param container: if given, treats the tar file as a record file of containers (protobufs, msgpack, etc.)
     :param extra_meta: associates subset info with each sample record
 
     The decoder can be True (default decoder), False (no decoder), a callable (called
@@ -482,10 +267,8 @@ class WebDataset(IterableDataset):
         shuffle=0,
         associate=None,
         prepare_for_worker=True,
-        container=None,
         length=None,
-        tar_errors=reraise_exception,
-        decode_errors=reraise_exception,
+        handler=reraise_exception,
     ):
         if isinstance(opener, str):
             self.opener = io.command_pipe(opener)
@@ -499,9 +282,7 @@ class WebDataset(IterableDataset):
         self.epochs = epochs
         self.verbose = verbose
         self.keys = keys
-        self.container = container
-        self.tar_errors = tar_errors
-        self.decode_errors = decode_errors
+        self.handler = handler
         self.associate = associate
         self.pipeline = pipeline
         self.length = length
@@ -570,23 +351,20 @@ class WebDataset(IterableDataset):
                             keys=self.keys,
                             suffixes=self.suffixes,
                             decoder=self.decoder,
-                            container=self.container,
-                            tar_errors=self.tar_errors,
-                            decode_errors=self.decode_errors,
+                            tar_errors=self.handler,
+                            decode_errors=self.handler,
                         )
-                        if self.container == "ten":
-                            for sample in source:
-                                checktype(sample, list)
-                                yield tuple(sample)
-                            continue
+                        source = iter(source)
                         if self.associate is not None:
-                            source = associate(self.associate)(source)
+                            source = filters.associate(self.associate)(source)
                         if self.extensions is not None:
-                            source = extract(*self.extensions)(source)
+                            source = filters.extract(*self.extensions)(source)
                         if self.shuffle > 1:
-                            source = shuffle(self.shuffle)(source)
+                            source = filters.shuffle(self.shuffle)(source)
                         if self.transforms is not None:
-                            source = map_stream(transformer(self.transforms))(source)
+                            source = filters.map_stream(
+                                filters.transformer(self.transforms)
+                            )(source)
                         if self.pipeline is not None:
                             source = self.pipeline(source)
                         for sample in source:
@@ -597,11 +375,10 @@ class WebDataset(IterableDataset):
                             yield sample
                             maybe_collect()
                 except Exception as exn:  # skipcq: PYL-W0703
-                    if self.errors == "warn":
-                        warnings.warn("dataset __iter__ " + url + " " + repr(exn))
-                        time.sleep(0.5)
-                    elif self.errors:
-                        raise exn
+                    if self.handler(exn):
+                        continue
+                    else:
+                        break
 
 
 class Dataset(IterableDataset):
@@ -692,14 +469,17 @@ class Dataset(IterableDataset):
                     maybe_collect()
 
     def __iter__(self):
-        return pipeline(self.raw_iter(), *self.pipeline)
+        return filters.pipeline(self.raw_iter(), *self.pipeline)
 
     def add_stage(self, stage):
         self.pipeline.append(stage)
         return self
 
     def shuffle(self, size):
-        self.pipeline.append(shuffle(size))
+        if size == 0:
+            return self
+        self.do_shuffle = True
+        self.pipeline.append(filters.shuffle(size))
         return self
 
     def decode(self, decoder="rgb", handler=reraise_exception):
@@ -741,7 +521,7 @@ class Dataset(IterableDataset):
         def stage(data):
             for sample in data:
                 try:
-                    yield {k: getfirst(sample, v) for k, v in kw.items()}
+                    yield {k: filters.getfirst(sample, v) for k, v in kw.items()}
                 except Exception as exn:
                     if handler(exn):
                         continue
@@ -789,7 +569,7 @@ class Dataset(IterableDataset):
         def stage(data):
             for sample in data:
                 try:
-                    yield [getfirst(sample, f) for f in args]
+                    yield [filters.getfirst(sample, f) for f in args]
                 except Exception as exn:
                     if handler(exn):
                         continue

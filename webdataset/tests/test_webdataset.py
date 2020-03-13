@@ -8,6 +8,7 @@ import simplejson
 
 import webdataset.dataset as wds
 from webdataset import autodecode
+import torch
 
 local_data = "testdata/imagenet-000000.tgz"
 remote_loc = "http://storage.googleapis.com/lpr-imagenet/"
@@ -67,11 +68,17 @@ def test_len():
 def test_fields():
     ds = wds.WebDataset(local_data, extensions="png;jpg cls")
     assert count_samples(ds) == 47
+    image, cls = next(iter(ds))
+    assert isinstance(image, np.ndarray), type(image)
+    assert isinstance(cls, int), type(cls)
 
 
 def test_rgb8():
     ds = wds.WebDataset(local_data, extensions="png;jpg cls", decoder="rgb8")
     assert count_samples(ds) == 47
+    image, cls = next(iter(ds))
+    assert isinstance(image, np.ndarray), type(image)
+    assert isinstance(cls, int), type(cls)
 
 
 def test_pil():
@@ -87,8 +94,12 @@ def test_raw():
 def test_rgb8_np_vs_torch():
     ds = wds.WebDataset(local_data, extensions="png;jpg cls", decoder="rgb8")
     image, cls = next(iter(ds))
+    assert isinstance(image, np.ndarray), type(image)
+    assert isinstance(cls, int), type(cls)
     ds = wds.WebDataset(local_data, extensions="png;jpg cls", decoder="torchrgb8")
     image2, cls2 = next(iter(ds))
+    assert isinstance(image2, torch.Tensor), type(image2)
+    assert isinstance(cls, int), type(cls)
     assert (image == image2.permute(1, 2, 0).numpy()).all, (image.shape, image2.shape)
     assert cls == cls2
 
@@ -141,22 +152,22 @@ def test_tenbin_dec():
         assert ys.shape == (28, 28)
 
 
-def test_container_mp():
-    ds = wds.WebDataset("testdata/mpdata.tar", container="mp", decoder=None)
-    assert count_samples(ds) == 100
-    for sample in ds:
-        assert isinstance(sample, dict)
-        assert set(sample.keys()) == set("__key__ x y".split()), sample
+# def test_container_mp():
+#     ds = wds.WebDataset("testdata/mpdata.tar", container="mp", decoder=None)
+#     assert count_samples(ds) == 100
+#     for sample in ds:
+#         assert isinstance(sample, dict)
+#         assert set(sample.keys()) == set("__key__ x y".split()), sample
 
 
-def test_container_ten():
-    ds = wds.WebDataset("testdata/tendata.tar", container="ten", decoder=None)
-    assert count_samples(ds) == 100
-    for xs, ys in ds:
-        assert xs.dtype == np.float64
-        assert ys.dtype == np.float64
-        assert xs.shape == (28, 28)
-        assert ys.shape == (28, 28)
+# def test_container_ten():
+#     ds = wds.WebDataset("testdata/tendata.tar", container="ten", decoder=None)
+#     assert count_samples(ds) == 100
+#     for xs, ys in ds:
+#         assert xs.dtype == np.float64
+#         assert ys.dtype == np.float64
+#         assert xs.shape == (28, 28)
+#         assert ys.shape == (28, 28)
 
 
 def test_dataloader():
