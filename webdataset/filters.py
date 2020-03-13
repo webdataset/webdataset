@@ -273,7 +273,7 @@ def extract(*args, handler=reraise_exception):
     def stage(data):
         for sample in data:
             try:
-                yield [getfirst(sample, f) for f in args]
+                yield tuple([getfirst(sample, f) for f in args])
             except Exception as exn:
                 if handler(exn):
                     continue
@@ -299,6 +299,6 @@ def apply(*args, handler=reraise_exception):
                     continue
                 else:
                     break
-            yield sample
+            yield tuple(sample)
 
     return stage

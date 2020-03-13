@@ -10,7 +10,9 @@
 or over HTTP connections.
 """
 
-__all__ = "Dataset WebDataset tariterator default_handlers imagehandler".split()
+__all__ = """Dataset WebDataset tariterator default_handlers imagehandler
+reraise_exception ignore_exception warn_exception ignore_and_stop warn_and_stop
+""".split()
 
 import gc
 import os
@@ -60,6 +62,13 @@ def warn_exception(exn):
 
 def ignore_and_stop(exn):
     """Called in an exception handler to ignore any exception and stop further processing."""
+    return False
+
+
+def warn_and_stop(exn):
+    """Called in an exception handler to ignore any exception and stop further processing."""
+    warnings.warn(repr(exn))
+    time.sleep(0.5)
     return False
 
 
@@ -270,10 +279,12 @@ class Dataset(IterableDataset):
         return filters.pipeline(self.raw_iter(), *self.pipeline)
 
     def add_stage(self, stage):
+        """Add a pipline stage (a function taking an iterator and returning another iterator)."""
         self.pipeline.append(stage)
         return self
 
     def shuffle(self, size):
+        """Shuffle the data."""
         if size == 0:
             return self
         self.do_shuffle = True
@@ -281,29 +292,31 @@ class Dataset(IterableDataset):
         return self
 
     def decode(self, decoder="rgb", handler=reraise_exception):
+        """Decode the data with the given decoder."""
         self.pipeline.append(filters.decode(decoder, handler=handler))
         return self
 
     def map(self, f, handler=reraise_exception):
+        """Apply function `f` to each sample."""
         self.pipeline.append(filters.map(f, handler=handler))
         return self
 
     def rename(self, handler=reraise_exception, **kw):
+        """Rename fields in the sample, dropping all unmatched fields."""
         self.pipeline.append(filters.rename(handler=handler, **kw))
         return self
 
-    def associate(self, associator, **kw):
-        self.pipeline.append(filters.associate(associator, **kw))
-        return self
-
     def transform(self, handler=reraise_exception, **kw):
+        """Transform each sample by applying functions to corresponding fields."""
         self.pipeline.append(filters.transform(handler=handler, **kw))
         return self
 
     def extract(self, *args, handler=reraise_exception):
+        """Extract fields from the sample in order and yield tuples."""
         self.pipeline.append(filters.extract(*args, handler=handler))
         return self
 
     def apply(self, *args, handler=reraise_exception):
+        """Apply a list of functions to the tuple."""
         self.pipeline.apply(filters.apply(*args, handler=handler))
         return self
