@@ -32,6 +32,7 @@ import six
 from torch.utils.data import IterableDataset
 
 from . import io
+from . import autodecode
 from .checks import checkmember, checktype, checknotnone, checkcallable
 
 trace = False
@@ -576,56 +577,6 @@ def tardata(fileobj, skip_meta=r"__[^/]*__($|/)", handler=reraise_exception):
         handler(exn)
 
 
-def make_decoder(spec):
-    if spec is True:
-        spec = "rgb"
-    if spec is False or spec is None:
-
-        def decoder(x):
-            return x
-
-    elif callable(spec):
-        decoder = spec
-    elif isinstance(spec, dict):
-
-        def decoder(sample):
-            return decode_sample_based_on_extensions(sample, spec)
-
-    elif isinstance(spec, str):
-        handlers = default_handlers.get(spec)
-        checknotnone(handlers, spec)
-
-        def decoder(sample):
-            return decode_sample_based_on_extensions(sample, handlers)
-
-    else:
-        raise ValueError(f"{spec}: unknown decoder spec")
-    checkcallable(decoder, "could not make a callable decoder")
-    return decoder
-
-
-def apply_decoder(decoder=make_decoder(True), handler=reraise_exception):
-    """Decode samples by invoking the decoder with error handling.
-
-        decode: decoder function
-        errors: True, "warn", or False
-
-    """
-
-    def iterator(data):
-        for sample in data:
-            try:
-                decoded = decoder(sample)
-            except Exception as exn:  # skipcq: PYL-W0703
-                if handler(exn):
-                    continue
-                else:
-                    break
-            yield decoded
-
-    return iterator
-
-
 def tariterator(
     fileobj,
     keys=base_plus_ext,
@@ -649,14 +600,14 @@ def tariterator(
     The decoder takes the entire sample as a dict and returns the
     decoded sample as a dict.
     """
-    decoder = make_decoder(decoder)
+    decoder = autodecode.make_decoder(decoder)
     content = tardata(fileobj, handler=tar_errors)
     if container is not None:
         samples = extract_container(container)(content)
     else:
         samples = group_by_keys(keys=keys, suffixes=suffixes)(content)
     if container != "ten":
-        samples = apply_decoder(decoder=decoder, handler=decode_errors)(samples)
+        samples = autodecode.apply_decoder(decoder=decoder, handler=decode_errors)(samples)
     return samples
 
 
@@ -917,7 +868,7 @@ class Dataset(IterableDataset):
         return self
 
     def decode(self, decoder="rgb", handler=reraise_exception):
-        f = make_decoder(decoder)
+        f = autodecode.make_decoder(decoder)
 
         def stage(data):
             for sample in data:
