@@ -28,7 +28,6 @@ from . import io
 from . import autodecode
 from . import filters
 from .checks import checktype, checkcallable
-from .webdataset import WebDataset
 
 trace = False
 
@@ -43,25 +42,36 @@ collection_frequency = 50000
 
 
 def reraise_exception(exn):
-    """Called in an exception handler to re-raise the exception."""
     raise exn
 
 
 def ignore_exception(exn):
-    """Called in an exception handler to ignore any exception and continue."""
     return True
 
 
+def ignore_and_finish(exn):
+    return False
+
+
 def warn_exception(exn):
-    """Called in an exception handler to ignore any exception, isssue a warning, and continue."""
     warnings.warn(repr(exn))
     time.sleep(0.5)
     return True
 
 
-def ignore_and_stop(exn):
-    """Called in an exception handler to ignore any exception and stop further processing."""
-    return False
+def listify(x):
+    """Turn a value into a list.
+
+    Lists and tuples are turned into lists, everything else is turned
+    into a one element list.
+
+    """
+    if x is None:
+        return None
+    elif isinstance(x, (list, tuple)):
+        return x
+    else:
+        return [x]
 
 
 def maybe_collect():
@@ -74,6 +84,10 @@ def maybe_collect():
         gc.collect()
         collection_counter = 0
     collection_counter += 1
+
+
+class NoException(Exception):
+    pass
 
 
 def base_plus_ext(path):
@@ -143,6 +157,15 @@ def group_by_keys(keys=base_plus_ext, lcase=True, suffixes=None):
     return iterator
 
 
+def maybe_decode(s, mode="ascii"):
+    if isinstance(s, str):
+        return s
+    elif isinstance(s, bytes):
+        return s.decode(mode)
+    else:
+        raise ValueError(f"{type(s)}: wrong type for maybe_decode")
+
+
 def tardata(fileobj, skip_meta=r"__[^/]*__($|/)", handler=reraise_exception):
     """Iterator yielding filename, content pairs for the given tar stream.
 
@@ -178,6 +201,184 @@ def tardata(fileobj, skip_meta=r"__[^/]*__($|/)", handler=reraise_exception):
         del stream
     except Exception as exn:
         handler(exn)
+
+
+def tariterator(
+    fileobj,
+    keys=base_plus_ext,
+    decoder=True,
+    suffixes=None,
+    tar_errors=reraise_exception,
+    decode_errors=reraise_exception,
+):
+    """
+    Iterate through training samples stored in a sharded tar file.
+
+    :param fileobj: a Python file-like object
+    :param check_sorted:  check whether the input is actually properly sorted (Default value = False)
+    :param keys:  key extraction function (Default value = base_plus_ext)
+    :param decoder: value decoding function (Default value = True)
+
+    The key extraction function takes a string representing a pathname and
+    returns a pair (__key__, suffix).
+
+    The decoder takes the entire sample as a dict and returns the
+    decoded sample as a dict.
+    """
+    content = tardata(fileobj, handler=tar_errors)
+    samples = group_by_keys(keys=keys, suffixes=suffixes)(content)
+    decoder = autodecode.make_decoder(decoder)
+    samples = filters.map_stream(decoder, handler=decode_errors)(samples)
+    return samples
+
+
+class WebDataset(IterableDataset):
+    """Iterate over sharded datasets.
+
+    :param urls: shard spec or list of shards
+    :param extensions: extensions to extract (Default value = None, can be either list of lists or "a;b c")
+    :param decode: decoder to apply to files in tarfiles (Default value = True, based on extension)
+    :param transforms: list of functions to apply to unbatched samples (Default value = None)
+    :param pipeline: function that maps the iterator, e.g. for batching
+    :param opener: either a function that returns a stream or a string that is invoked via Popen
+    :param verbose: verbose output
+    :param shuffle: if >0, then shuffle shards, and shuffle samples with a buffer of the given size
+    :param associate: a callable or dictionary that returns additional information to associate with each sample
+    :param prepare_for_worker: callable called in each worker before anything else is done
+    :param extra_meta: associates subset info with each sample record
+
+    The decoder can be True (default decoder), False (no decoder), a callable (called
+    decode the sample, or a dictionary mapping filename extensions to callables for
+    the decoding.
+    """
+
+    def __init__(
+        self,
+        urls,
+        *,
+        extensions=None,
+        decoder="rgb",
+        transforms=None,
+        pipeline=None,
+        epochs=1,
+        keys=base_plus_ext,
+        opener=io.reader,
+        verbose=False,
+        shuffle=0,
+        associate=None,
+        prepare_for_worker=True,
+        length=None,
+        handler=reraise_exception,
+    ):
+        if isinstance(opener, str):
+            self.opener = io.command_pipe(opener)
+        elif callable(opener):
+            self.opener = opener
+        else:
+            raise ValueError(f"{opener}: must be either str or callable")
+        checkcallable(self.opener)
+        self.decoder = decoder
+        self.transforms = listify(transforms)
+        self.epochs = epochs
+        self.verbose = verbose
+        self.keys = keys
+        self.handler = handler
+        self.associate = associate
+        self.pipeline = pipeline
+        self.length = length
+        if isinstance(urls, str):
+            urls = list(braceexpand.braceexpand(urls))
+        checktype(urls, list)
+        self.full_urls = urls
+        self.urls = urls
+        self.shuffle = shuffle
+        if extensions is not None:
+            if isinstance(extensions, str):
+                extensions = [f.split(";") for f in extensions.split()]
+            for f in extensions:
+                checktype(f, list)
+            self.extensions = extensions
+            self.suffixes = {x for l in extensions for x in l}
+        else:
+            self.extensions = None
+            self.suffixes = None
+        if prepare_for_worker is True:
+            self.prepare_for_worker = self.shard_selection
+        elif prepare_for_worker is False:
+            self.prepare_for_worker = lambda: None
+        else:
+            self.prepare_for_worker = prepare_for_worker
+        self.subset = None
+        self.extra_meta = False
+        self.sample = None
+
+    def __len__(self):
+        return self.length
+
+    def shard_selection(self):
+        """Contains the logic for self.subset shard selection."""
+        import torch
+
+        index, total = None, None
+        if self.subset is not None:
+            index, total = self.subset  # skipcq: PYL-E0633
+        else:
+            worker_info = torch.utils.data.get_worker_info()
+            if worker_info is not None:
+                index = worker_info.id
+                total = worker_info.num_workers
+        if total is None:
+            self.urls = self.full_urls
+            return
+        if index == 0 and len(self.full_urls) < total:
+            warnings.warn(f"num_workers {total} > num_shards {len(self.full_urls)}")
+        self.urls = self.full_urls[index::total]
+
+    def __iter__(self):
+        """Iterate over samples."""
+        self.prepare_for_worker()
+        if self.shuffle > 0:
+            random.shuffle(self.urls)
+        self.sample = 0
+        urls = self.urls
+        for epoch in range(self.epochs):
+            for url in urls:
+                stream = None
+                try:
+                    with self.opener(url) as stream:
+                        source = tariterator(
+                            stream,
+                            keys=self.keys,
+                            suffixes=self.suffixes,
+                            decoder=self.decoder,
+                            tar_errors=self.handler,
+                            decode_errors=self.handler,
+                        )
+                        source = iter(source)
+                        if self.associate is not None:
+                            source = filters.associate(self.associate)(source)
+                        if self.extensions is not None:
+                            source = filters.extract(*self.extensions)(source)
+                        if self.shuffle > 1:
+                            source = filters.shuffle(self.shuffle)(source)
+                        if self.transforms is not None:
+                            source = filters.map_stream(
+                                filters.transformer(self.transforms)
+                            )(source)
+                        if self.pipeline is not None:
+                            source = self.pipeline(source)
+                        for sample in source:
+                            if self.extra_meta and isinstance(sample, dict):
+                                sample["__webdataset__"] = (self.subset,)
+                            if isinstance(sample, list):
+                                sample = tuple(sample)
+                            yield sample
+                            maybe_collect()
+                except Exception as exn:  # skipcq: PYL-W0703
+                    if self.handler(exn):
+                        continue
+                    else:
+                        break
 
 
 class Dataset(IterableDataset):
