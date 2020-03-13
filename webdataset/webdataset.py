@@ -358,7 +358,7 @@ class WebDataset(IterableDataset):
                         if self.associate is not None:
                             source = filters.associate(self.associate)(source)
                         if self.extensions is not None:
-                            source = filters.extract(*self.extensions)(source)
+                            source = filters.to_tuple(*self.extensions)(source)
                         if self.shuffle > 1:
                             source = filters.shuffle(self.shuffle)(source)
                         if self.transforms is not None:

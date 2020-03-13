@@ -31,35 +31,6 @@ def test_simple():
     assert count_samples(ds) == 47
 
 
-def test_simple1():
-    ds = wds.Dataset(local_data, initial_pipeline=[])
-    assert count_samples(ds) == 188
-
-
-def test_simple2():
-    ds = wds.Dataset(local_data)
-    assert count_samples(ds) == 47
-
-
-def test_simple3():
-    ds = wds.Dataset(local_data).shuffle(5).extract("png;jpg cls")
-    assert count_samples(ds) == 47
-
-
-def test_simple4():
-    ds = (
-        wds.Dataset(local_data)
-        .shuffle(5)
-        .decode("rgb")
-        .rename(image="png;jpg", cls="cls")
-        .extract("image", "cls")
-    )
-    assert count_samples(ds) == 47
-    image, cls = next(iter(ds))
-    assert isinstance(image, np.ndarray), image
-    assert isinstance(cls, int)
-
-
 def test_len():
     ds = wds.WebDataset(local_data, length=100)
     assert len(ds) == 100

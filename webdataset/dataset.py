@@ -306,17 +306,17 @@ class Dataset(IterableDataset):
         self.pipeline.append(filters.rename(handler=handler, **kw))
         return self
 
-    def transform(self, handler=reraise_exception, **kw):
+    def map_dict(self, handler=reraise_exception, **kw):
         """Transform each sample by applying functions to corresponding fields."""
-        self.pipeline.append(filters.transform(handler=handler, **kw))
+        self.pipeline.append(filters.map_dict(handler=handler, **kw))
         return self
 
-    def extract(self, *args, handler=reraise_exception):
+    def to_tuple(self, *args, handler=reraise_exception):
         """Extract fields from the sample in order and yield tuples."""
-        self.pipeline.append(filters.extract(*args, handler=handler))
+        self.pipeline.append(filters.to_tuple(*args, handler=handler))
         return self
 
-    def apply(self, *args, handler=reraise_exception):
+    def map_tuple(self, *args, handler=reraise_exception):
         """Apply a list of functions to the tuple."""
-        self.pipeline.apply(filters.apply(*args, handler=handler))
+        self.pipeline.append(filters.map_tuple(*args, handler=handler))
         return self

@@ -53,13 +53,15 @@ def pipeline(source, *args):
     return compose(*args)(source)
 
 
-def getfirst(a, keys, default=None):
+def getfirst(a, keys, default=None, noerror=False):
     if isinstance(keys, str):
+        assert " " not in keys
         keys = keys.split(";")
     for k in keys:
-        result = a.get(k)
-        if result is not None:
-            return result
+        if k in a:
+            return a[k]
+    if not noerror:
+        raise ValueError(f"didn't find {keys} in {list(a.keys())}")
     return default
 
 
@@ -225,7 +227,9 @@ def rename(handler=reraise_exception, **kw):
     def stage(data):
         for sample in data:
             try:
-                yield {k: getfirst(sample, v) for k, v in kw.items()}
+                yield {
+                    k: getfirst(sample, v) for k, v in kw.items()
+                }
             except Exception as exn:
                 if handler(exn):
                     continue
@@ -248,7 +252,7 @@ def associate(associator, **kw):
     return stage
 
 
-def transform(handler=reraise_exception, **kw):
+def map_dict(handler=reraise_exception, **kw):
     assert len(list(kw.keys())) > 0
     for f in kw.values():
         assert callable(f)
@@ -257,7 +261,7 @@ def transform(handler=reraise_exception, **kw):
         for sample in data:
             assert isinstance(sample, dict)
             try:
-                for k, f in kw:
+                for k, f in kw.items():
                     sample[k] = f(sample[k])
             except Exception as exn:
                 if handler(exn):
@@ -269,7 +273,10 @@ def transform(handler=reraise_exception, **kw):
     return stage
 
 
-def extract(*args, handler=reraise_exception):
+def to_tuple(*args, handler=reraise_exception):
+    if len(args) == 1 and isinstance(args[0], str) and " " in args[0]:
+        args = args[0].split()
+
     def stage(data):
         for sample in data:
             try:
@@ -283,13 +290,13 @@ def extract(*args, handler=reraise_exception):
     return stage
 
 
-def apply(*args, handler=reraise_exception):
+def map_tuple(*args, handler=reraise_exception):
     def stage(data):
         for f in args:
             assert callable(f)
         for sample in data:
             assert isinstance(sample, (list, tuple))
-            assert len(args) == len(sample)
+            assert len(args) == len(sample), f"len(args) {len(args)} != len(sample) {len(sample)}"
             sample = list(sample)
             try:
                 for i in range(min(len(args), len(sample))):
