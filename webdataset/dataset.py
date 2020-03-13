@@ -25,10 +25,9 @@ import braceexpand
 from torch.utils.data import IterableDataset
 
 from . import io
-from . import autodecode
 from . import filters
-from .checks import checktype, checkcallable
-from .webdataset import WebDataset
+from .checks import checkcallable
+from .webdataset import WebDataset  # pyqa: F401
 
 trace = False
 
@@ -282,117 +281,29 @@ class Dataset(IterableDataset):
         return self
 
     def decode(self, decoder="rgb", handler=reraise_exception):
-        f = autodecode.make_decoder(decoder)
-
-        def stage(data):
-            for sample in data:
-                assert isinstance(sample, dict), sample
-                try:
-                    decoded = f(sample)
-                except Exception as exn:  # skipcq: PYL-W0703
-                    if handler(exn):
-                        continue
-                    else:
-                        break
-                yield decoded
-
-        self.pipeline.append(stage)
+        self.pipeline.append(filters.decode(decoder, handler=handler))
         return self
 
     def map(self, f, handler=reraise_exception):
-        def stage(data):
-            for sample in data:
-                try:
-                    result = f(sample)
-                except Exception as exn:
-                    if handler(exn):
-                        continue
-                    else:
-                        break
-                if isinstance(sample, dict) and isinstance(result, dict):
-                    result["__key__"] = sample.get("__key__")
-                yield result
-
-        self.pipeline.append(stage)
+        self.pipeline.append(filters.map(f, handler=handler))
         return self
 
     def rename(self, handler=reraise_exception, **kw):
-        def stage(data):
-            for sample in data:
-                try:
-                    yield {k: filters.getfirst(sample, v) for k, v in kw.items()}
-                except Exception as exn:
-                    if handler(exn):
-                        continue
-                    else:
-                        break
-
-        self.pipeline.append(stage)
+        self.pipeline.append(filters.rename(handler=handler, **kw))
         return self
 
     def associate(self, associator, **kw):
-        def stage(data):
-            for sample in data:
-                if callable(associator):
-                    extra = associator(sample["__key__"])
-                else:
-                    extra = associator.get(sample["__key__"], {})
-                sample.update(extra)  # destructive
-                yield sample
-
-        self.pipeline.append(stage)
+        self.pipeline.append(filters.associate(associator, **kw))
         return self
 
     def transform(self, handler=reraise_exception, **kw):
-        assert len(list(kw.keys())) > 0
-        for f in kw.values():
-            assert callable(f)
-
-        def stage(data):
-            for sample in data:
-                assert isinstance(sample, dict)
-                try:
-                    for k, f in kw:
-                        sample[k] = f(sample[k])
-                except Exception as exn:
-                    if handler(exn):
-                        continue
-                    else:
-                        break
-                yield sample
-
-        self.pipeline.append(stage)
+        self.pipeline.append(filters.transform(handler=handler, **kw))
         return self
 
     def extract(self, *args, handler=reraise_exception):
-        def stage(data):
-            for sample in data:
-                try:
-                    yield [filters.getfirst(sample, f) for f in args]
-                except Exception as exn:
-                    if handler(exn):
-                        continue
-                    else:
-                        break
-
-        self.pipeline.append(stage)
+        self.pipeline.append(filters.extract(*args, handler=handler))
         return self
 
     def apply(self, *args, handler=reraise_exception):
-        def stage(data):
-            for f in args:
-                assert callable(f)
-            for sample in data:
-                assert isinstance(sample, (list, tuple))
-                assert len(args) == len(sample)
-                try:
-                    sample = [f(v) for f, v in zip(args, sample)]
-                except Exception as exn:
-                    if handler(exn):
-                        continue
-                    else:
-                        break
-                yield sample
-
-        self.pipeline.append(stage)
+        self.pipeline.apply(filters.apply(*args, handler=handler))
         return self

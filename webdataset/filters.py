@@ -16,6 +16,7 @@ import random
 from functools import reduce, wraps
 
 from .checks import checktype
+from . import autodecode
 
 
 def reraise_exception(exn):
@@ -100,28 +101,28 @@ def transformer(transformers):
     return f
 
 
-@curried
-def associate(data, associator):
-    """Extract the given fields and return a tuple.
-    """
-    for sample in data:
-        if callable(associator):
-            extra = associator(sample["__key__"])
-        else:
-            extra = associator.get(sample["__key__"], {})
-        sample.update(extra)
-        yield sample
+# @curried
+# def associate(data, associator):
+#     """Extract the given fields and return a tuple.
+#     """
+#     for sample in data:
+#         if callable(associator):
+#             extra = associator(sample["__key__"])
+#         else:
+#             extra = associator.get(sample["__key__"], {})
+#         sample.update(extra)
+#         yield sample
 
 
-@curried
-def extract(data, *fields):
-    """Extract the given fields and return a tuple.
-    """
-    for sample in data:
-        if fields is None:
-            yield sample
-        else:
-            yield [getfirst(sample, f) for f in fields]
+# @curried
+# def extract(data, *fields):
+#     """Extract the given fields and return a tuple.
+#     """
+#     for sample in data:
+#         if fields is None:
+#             yield sample
+#         else:
+#             yield [getfirst(sample, f) for f in fields]
 
 
 @curried
@@ -183,3 +184,121 @@ def shuffle(data, bufsize=1000, initial=100):
         yield sample
     for sample in buf:
         yield sample
+
+
+def decode(decoder="rgb", handler=reraise_exception):
+    f = autodecode.make_decoder(decoder)
+
+    def stage(data):
+        for sample in data:
+            assert isinstance(sample, dict), sample
+            try:
+                decoded = f(sample)
+            except Exception as exn:  # skipcq: PYL-W0703
+                if handler(exn):
+                    continue
+                else:
+                    break
+            yield decoded
+
+    return stage
+
+
+def map(f, handler=reraise_exception):
+    def stage(data):
+        for sample in data:
+            try:
+                result = f(sample)
+            except Exception as exn:
+                if handler(exn):
+                    continue
+                else:
+                    break
+            if isinstance(sample, dict) and isinstance(result, dict):
+                result["__key__"] = sample.get("__key__")
+            yield result
+
+    return stage
+
+
+def rename(handler=reraise_exception, **kw):
+    def stage(data):
+        for sample in data:
+            try:
+                yield {k: getfirst(sample, v) for k, v in kw.items()}
+            except Exception as exn:
+                if handler(exn):
+                    continue
+                else:
+                    break
+
+    return stage
+
+
+def associate(associator, **kw):
+    def stage(data):
+        for sample in data:
+            if callable(associator):
+                extra = associator(sample["__key__"])
+            else:
+                extra = associator.get(sample["__key__"], {})
+            sample.update(extra)  # destructive
+            yield sample
+
+    return stage
+
+
+def transform(handler=reraise_exception, **kw):
+    assert len(list(kw.keys())) > 0
+    for f in kw.values():
+        assert callable(f)
+
+    def stage(data):
+        for sample in data:
+            assert isinstance(sample, dict)
+            try:
+                for k, f in kw:
+                    sample[k] = f(sample[k])
+            except Exception as exn:
+                if handler(exn):
+                    continue
+                else:
+                    break
+            yield sample
+
+    return stage
+
+
+def extract(*args, handler=reraise_exception):
+    def stage(data):
+        for sample in data:
+            try:
+                yield [getfirst(sample, f) for f in args]
+            except Exception as exn:
+                if handler(exn):
+                    continue
+                else:
+                    break
+
+    return stage
+
+
+def apply(*args, handler=reraise_exception):
+    def stage(data):
+        for f in args:
+            assert callable(f)
+        for sample in data:
+            assert isinstance(sample, (list, tuple))
+            assert len(args) == len(sample)
+            sample = list(sample)
+            try:
+                for i in range(min(len(args), len(sample))):
+                    sample[i] = args[i](sample[i])
+            except Exception as exn:
+                if handler(exn):
+                    continue
+                else:
+                    break
+            yield sample
+
+    return stage
