@@ -7,6 +7,7 @@ import PIL
 import simplejson
 
 import webdataset.dataset as wds
+from webdataset import autodecode
 
 local_data = "testdata/imagenet-000000.tgz"
 remote_loc = "http://storage.googleapis.com/lpr-imagenet/"
@@ -167,7 +168,7 @@ def test_dataloader():
 
 
 def test_handlers():
-    handlers = dict(wds.default_handlers["rgb"])
+    handlers = dict(autodecode.default_handlers["rgb"])
 
     def decode_jpg_and_resize(data):
         return PIL.Image.open(io.BytesIO(data)).resize((128, 128))

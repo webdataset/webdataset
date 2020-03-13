@@ -7,5 +7,6 @@
 __all__ = "tenbin dataset writer".split()
 
 from . import tenbin
-from .dataset import WebDataset, default_handlers
+from .dataset import WebDataset
+from .autodecode import default_handlers
 from .writer import ShardWriter, TarWriter
