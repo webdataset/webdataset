@@ -45,15 +45,21 @@ def reraise_exception(exn):
     raise exn
 
 
-def ignore_exception(exn):
+def ignore_and_continue(exn):
     return True
 
 
-def ignore_and_finish(exn):
+def ignore_and_stop(exn):
     return False
 
 
-def warn_exception(exn):
+def warn_and_continue(exn):
+    warnings.warn(repr(exn))
+    time.sleep(0.5)
+    return True
+
+
+def warn_and_stop(exn):
     warnings.warn(repr(exn))
     time.sleep(0.5)
     return True

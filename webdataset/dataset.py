@@ -11,7 +11,7 @@ or over HTTP connections.
 """
 
 __all__ = """Dataset WebDataset tariterator default_handlers imagehandler
-reraise_exception ignore_exception warn_exception ignore_and_stop warn_and_stop
+reraise_exception ignore_and_continue warn_and_continue ignore_and_stop warn_and_stop
 """.split()
 
 import gc
@@ -48,12 +48,12 @@ def reraise_exception(exn):
     raise exn
 
 
-def ignore_exception(exn):
+def ignore_and_continue(exn):
     """Called in an exception handler to ignore any exception and continue."""
     return True
 
 
-def warn_exception(exn):
+def warn_and_continue(exn):
     """Called in an exception handler to ignore any exception, isssue a warning, and continue."""
     warnings.warn(repr(exn))
     time.sleep(0.5)

@@ -103,7 +103,7 @@ def test_dataset_decode_handler():
             good[0] += 1
             return decoder(sample)
 
-    ds = wds.Dataset(local_data).decode(faulty_decoder, wds.ignore_exception)
+    ds = wds.Dataset(local_data).decode(faulty_decoder, wds.ignore_and_continue)
     result = count_samples_tuple(ds)
     assert count[0] == 47
     assert good[0] == 24
