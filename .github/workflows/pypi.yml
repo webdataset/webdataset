@@ -1,0 +1,26 @@
+name: publish on pypi
+on: [push]
+jobs:
+  publish:
+    name: build-and-publish
+    runs-on: ubuntu-18.04
+    steps:
+    - uses: actions/checkout@master
+    - uses: actions/setup-python@v1
+      with:
+        python-version: 3.7
+    - run: pip3 install -U -r requirements.dev.txt
+    - run: pip3 install -U -r requirements.txt
+    - run: pytest
+    - run: python3 setup.py sdist bdist_wheel
+    - name: publish to test.pypi.org
+      uses: pypa/gh-action-pypi-publish@master
+      with:
+        password: ${{ secrets.test_pypi_token }}
+        repository_url: https://test.pypi.org/legacy/
+      continue-on-error: true
+    - name: publish to pypi.org
+      if: startsWith(github.event.ref, 'refs/tags')
+      uses: pypa/gh-action-pypi-publish@master
+      with:
+        password: ${{ secrets.pypi_token }}
