@@ -278,7 +278,7 @@ class Dataset(IterableDataset):
     def __iter__(self):
         return filters.pipeline(self.raw_iter(), *self.pipeline)
 
-    def add_stage(self, stage):
+    def pipe(self, stage):
         """Add a pipline stage (a function taking an iterator and returning another iterator)."""
         self.pipeline.append(stage)
         return self

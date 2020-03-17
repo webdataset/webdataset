@@ -1,0 +1,46 @@
+#!/bin/bash
+
+docker build -t run-jupyter -  <<'EOF' &&
+FROM ubuntu:19.10
+ENV LC_ALL=C
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN echo start
+RUN apt-get -qqy update
+RUN apt-get -qqy install ca-certificates curl apt-transport-https lsb-release gnupg
+
+RUN apt-get -qqy install firefox rxvt
+
+#RUN curl -sL https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor | tee /etc/apt/trusted.gpg.d/microsoft.asc.gpg > /dev/null
+#RUN AZ_REPO=$(lsb_release -cs); echo "deb [arch=amd64] https://packages.microsoft.com/repos/azure-cli/ $AZ_REPO main" | tee /etc/apt/sources.list.d/azure-cli.list
+#RUN apt-get -qqy update
+#RUN apt-get -qqy install azure-cli
+#RUN az aks install-cli
+
+
+RUN apt-get install -qqy python3-pip
+RUN pip3 install future editdistance braceexpand pyyaml simplejson pyzmq
+RUN pip3 install matplotlib scipy scikit-image scikit-learn imageio h5py
+RUN pip3 install jupyter jupyterlab rise bash_kernel
+RUN pip3 install autopep8 isort
+RUN pip3 install pytest sphinx nbsphinx
+RUN pip3 install torch torchvision
+RUN pip3 install typer mkdocs
+
+
+RUN apt-get -qqy install git mercurial
+RUN pip3 install git+git://github.com/tmbdev/webdataset.git
+RUN pip3 install git+git://github.com/tmbdev/tarproc.git
+EOF
+
+docker run -ti \
+    -v /etc/passwd:/etc/passwd \
+    -v /etc/group:/etc/group \
+    -u "$(id -u):$(id -g)" \
+    -v /tmp/.X11-unix:/tmp/.X11-unix \
+    -v "$HOME:$HOME" \
+    -w "$(pwd)" \
+    --net host \
+    -e DISPLAY="$DISPLAY" \
+    run-jupyter \
+    jupyter "${@:-lab}"
