@@ -12,6 +12,7 @@ or over HTTP connections.
 
 __all__ = "WebDataset tariterator default_handlers imagehandler".split()
 
+import sys
 import random
 from functools import reduce, wraps
 
@@ -153,6 +154,19 @@ def map_stream(data, f=None, handler=reraise_exception):
         if isinstance(sample, dict) and isinstance(result, dict):
             result["__key__"] = sample.get("__key__")
         yield result
+
+
+@curried
+def info(data, fmt=None, n=3, every=-1, width=50, stream=sys.stderr, name=""):
+    for i, sample in enumerate(data):
+        if i < n or (every > 0 and (i+1)%every == 0):
+            if fmt is None:
+                print("---", name, file=stream)
+                for k, v in sample.items():
+                    print(k, repr(v)[:width], file=stream)
+            else:
+                print(fmt.format(**sample), file=stream)
+        yield sample
 
 
 @curried

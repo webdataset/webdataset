@@ -87,6 +87,13 @@ command_template = """
 @task
 def gendocs(c):
     "Generate docs."
+
+    # convert IPython Notebooks
+    for nb in ["README.ipynb"] + glob.glob("docs/*.ipynb"):
+        c.run(f"{ACTIVATE} jupyter nbconvert {nb} --to markdown")
+    c.run(f"cp README.md docs/index.md")
+
+    # generate pydoc for each module
     document = ""
     for module in MODULES:
         with os.popen(f"{ACTIVATE}{PYTHON3} -m pydoc {module}") as stream:
@@ -94,6 +101,8 @@ def gendocs(c):
         document += pydoc_template.format(text=text, module=module)
     with open("docs/pydoc.md", "w") as stream:
         stream.write(document)
+
+    # generate help text for each command
     document = ""
     for command in COMMANDS:
         with os.popen(f"{ACTIVATE}{PYTHON3}{command} --help ") as stream:

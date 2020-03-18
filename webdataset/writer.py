@@ -153,8 +153,13 @@ class TarWriter:
     """A class for writing dictionaries to tar files.
 
     :param fileobj: fileobj: file name for tar file (.tgz/.tar) or open file descriptor
-    :param encoder: sample encoding (Default value = None)
+    :param encoder: sample encoding (Default value = True)
     :param compress:  (Default value = None)
+
+    `True` will use an encoder that behaves similar to the automatic
+    decoder for `Dataset`. `False` disables encoding and expects byte strings
+    (except for metadata, which must be strings). The `encoder` argument can
+    also be a `callable`, or a dictionary mapping extensions to encoders.
 
     The following code will add two file to the tar archive: `a/b.png` and
     `a/b.output.png`.
