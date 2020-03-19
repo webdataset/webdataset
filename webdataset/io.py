@@ -102,9 +102,60 @@ class Pipe:
         self.close()
 
 
+def gopen_objectio(url, mode="rb", bufsize=8192):
+    import objectio
+
+    return objectio.gopen(url, mode)
+
+
+def gopen_file(url, mode="rb", bufsize=8192):
+    return open(url, mode)
+
+
+def gopen_pipe(url, mode="rb", bufsize=8192):
+    assert url.startswith("pipe:")
+    cmd = url[5:]
+    if mode[0] == "r":
+        return Pipe(
+            cmd, mode=mode, shell=True, bufsize=bufsize, ignore_status=[141],
+        )  # skipcq: BAN-B604
+    elif mode[0] == "w":
+        return Pipe(
+            cmd, mode=mode, shell=True, bufsize=bufsize, ignore_status=[141],
+        )  # skipcq: BAN-B604
+    else:
+        raise ValueError(f"{mode}: unknown mode")
+
+
+def gopen_curl(url, mode="rb", bufsize=8192):
+    if mode[0] == "r":
+        cmd = f"curl -s -L '{url}'"
+        return Pipe(
+            cmd, mode=mode, shell=True, bufsize=bufsize, ignore_status=[141],
+        )  # skipcq: BAN-B604
+    elif mode[0] == "w":
+        cmd = f"curl -s -L -T - '{url}'"
+        return Pipe(
+            cmd, mode=mode, shell=True, bufsize=bufsize, ignore_status=[141],
+        )  # skipcq: BAN-B604
+    else:
+        raise ValueError(f"{mode}: unknown mode")
+
+
+gopen_schemes = dict(
+    __default__=gopen_objectio,
+    pipe=gopen_pipe,
+    http=gopen_curl,
+    https=gopen_curl,
+    sftp=gopen_curl,
+    ftps=gopen_curl,
+    scp=gopen_curl,
+)
+
+
 def gopen(url, mode="rb", bufsize=8192):
+    global fallback_gopen
     assert mode in ["rb", "wb"], mode
-    pr = urlparse(url)
     if url == "-":
         if mode == "rb":
             return sys.stdin.buffer
@@ -112,38 +163,14 @@ def gopen(url, mode="rb", bufsize=8192):
             return sys.stdout.buffer
         else:
             raise ValueError(f"unknown mode {mode}")
+    pr = urlparse(url)
     if pr.scheme == "":
         return open(url, mode)
     if pr.scheme == "file":
         return open(pr.path, mode)
-    if pr.scheme == "pipe":
-        cmd = url[5:]
-        if mode[0] == "r":
-            return Pipe(
-                cmd, mode=mode, shell=True, bufsize=bufsize, ignore_status=[141],
-            )  # skipcq: BAN-B604
-        elif mode[0] == "w":
-            return Pipe(
-                cmd, mode=mode, shell=True, bufsize=bufsize, ignore_status=[141],
-            )  # skipcq: BAN-B604
-        else:
-            raise ValueError(f"{mode}: unknown mode")
-    if pr.scheme == "pipenoerr":
-        cmd = url[10:]
-        if mode[0] == "r":
-            return Pipe(
-                cmd, mode=mode, shell=True, bufsize=bufsize, ignore_status=[141],
-            )  # skipcq: BAN-B604
-        elif mode[0] == "w":
-            return Pipe(
-                cmd, mode=mode, shell=True, bufsize=bufsize, ignore_status=[141],
-            )  # skipcq: BAN-B604
-        else:
-            raise ValueError(f"{mode}: unknown mode")
-
-    import objectio
-
-    return objectio.gopen(url, "rb")
+    handler = gopen_schemes["__default__"]
+    handler = gopen_schemes.get(pr.scheme, handler)
+    return handler(url, mode, bufsize)
 
 
 def reader(url):
