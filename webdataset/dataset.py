@@ -26,7 +26,7 @@ from builtins import range
 import braceexpand
 from torch.utils.data import IterableDataset
 
-from . import io
+from . import gopen
 from . import filters
 from .checks import checkcallable
 from .webdataset import WebDataset  # noqa: F401
@@ -204,14 +204,14 @@ class Dataset(IterableDataset):
         suffixes=None,
         length=None,
         epochs=1,
-        opener=io.reader,
+        opener=gopen.reader,
         handler=reraise_exception,
         shuffle=False,
         prepare_for_worker=True,
         initial_pipeline=None,
     ):
         if isinstance(opener, str):
-            self.opener = io.command_pipe(opener)
+            self.opener = gopen.command_pipe(opener)
         elif callable(opener):
             self.opener = opener
         else:

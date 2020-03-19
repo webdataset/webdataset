@@ -5,6 +5,9 @@
 # See the LICENSE file for licensing terms (BSD-style).
 #
 
+# THIS CODE IS DEPRECATED AND WILL BE REMOVED SOON
+# USE webdataset.Dataset INSTEAD
+
 
 """Train PyTorch models directly from POSIX tar archive, locally
 or over HTTP connections.
@@ -24,7 +27,7 @@ from builtins import range
 import braceexpand
 from torch.utils.data import IterableDataset
 
-from . import io
+from . import gopen
 from . import autodecode
 from . import filters
 from .checks import checktype, checkcallable
@@ -268,7 +271,7 @@ class WebDataset(IterableDataset):
         pipeline=None,
         epochs=1,
         keys=base_plus_ext,
-        opener=io.reader,
+        opener=gopen.reader,
         verbose=False,
         shuffle=0,
         associate=None,
@@ -277,7 +280,7 @@ class WebDataset(IterableDataset):
         handler=reraise_exception,
     ):
         if isinstance(opener, str):
-            self.opener = io.command_pipe(opener)
+            self.opener = gopen.command_pipe(opener)
         elif callable(opener):
             self.opener = opener
         else:

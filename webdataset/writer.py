@@ -16,7 +16,7 @@ import numpy as np
 import PIL
 import simplejson
 
-import webdataset.io as webio
+from . import gopen
 
 
 def imageencoder(image, format="PNG"):  # skipcq: PYL-W0622
@@ -190,7 +190,7 @@ class TarWriter:
                 tarmode = "w|gz"
             else:
                 tarmode = "w|gz" if fileobj.endswith("gz") else "w|"
-            fileobj = webio.gopen(fileobj, "wb")
+            fileobj = gopen.gopen(fileobj, "wb")
             self.own_fileobj = fileobj
         else:
             tarmode = "w|gz" if compress is True else "w|"
