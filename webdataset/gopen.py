@@ -131,12 +131,12 @@ def gopen_curl(url, mode="rb", bufsize=8192):
     if mode[0] == "r":
         cmd = f"curl -s -L '{url}'"
         return Pipe(
-            cmd, mode=mode, shell=True, bufsize=bufsize, ignore_status=[141],
+            cmd, mode=mode, shell=True, bufsize=bufsize, ignore_status=[141, 23],
         )  # skipcq: BAN-B604
     elif mode[0] == "w":
         cmd = f"curl -s -L -T - '{url}'"
         return Pipe(
-            cmd, mode=mode, shell=True, bufsize=bufsize, ignore_status=[141],
+            cmd, mode=mode, shell=True, bufsize=bufsize, ignore_status=[141, 26],
         )  # skipcq: BAN-B604
     else:
         raise ValueError(f"{mode}: unknown mode")
