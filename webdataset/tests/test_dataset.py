@@ -89,6 +89,18 @@ def test_dataset_decode_nohandler():
         count_samples_tuple(ds)
 
 
+def test_dataset_missing_totuple_raises():
+    with pytest.raises(ValueError):
+        ds = wds.Dataset(local_data).to_tuple("foo", "bar")
+        count_samples_tuple(ds)
+
+
+def test_dataset_missing_rename_raises():
+    with pytest.raises(ValueError):
+        ds = wds.Dataset(local_data).rename(x="foo", y="bar")
+        count_samples_tuple(ds)
+
+
 def test_dataset_decode_handler():
     count = [0]
     good = [0]

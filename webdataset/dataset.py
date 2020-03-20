@@ -283,12 +283,12 @@ class Dataset(IterableDataset):
         self.pipeline.append(stage)
         return self
 
-    def shuffle(self, size):
+    def shuffle(self, size, **kw):
         """Shuffle the data."""
         if size == 0:
             return self
         self.do_shuffle = True
-        self.pipeline.append(filters.shuffle(size))
+        self.pipeline.append(filters.shuffle(size, **kw))
         return self
 
     def decode(self, decoder="rgb", handler=reraise_exception):
@@ -309,6 +309,11 @@ class Dataset(IterableDataset):
     def map_dict(self, handler=reraise_exception, **kw):
         """Transform each sample by applying functions to corresponding fields."""
         self.pipeline.append(filters.map_dict(handler=handler, **kw))
+        return self
+
+    def select(self, predicate, **kw):
+        """Select samples based on a predicate."""
+        self.pipeline.append(filters.select(predicate, **kw))
         return self
 
     def to_tuple(self, *args, handler=reraise_exception):

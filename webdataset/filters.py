@@ -54,14 +54,14 @@ def pipeline(source, *args):
     return compose(*args)(source)
 
 
-def getfirst(a, keys, default=None, noerror=False):
+def getfirst(a, keys, default=None, missing_is_error=True):
     if isinstance(keys, str):
         assert " " not in keys
         keys = keys.split(";")
     for k in keys:
         if k in a:
             return a[k]
-    if not noerror:
+    if missing_is_error:
         raise ValueError(f"didn't find {keys} in {list(a.keys())}")
     return default
 
@@ -159,7 +159,7 @@ def map_stream(data, f=None, handler=reraise_exception):
 @curried
 def info(data, fmt=None, n=3, every=-1, width=50, stream=sys.stderr, name=""):
     for i, sample in enumerate(data):
-        if i < n or (every > 0 and (i+1)%every == 0):
+        if i < n or (every > 0 and (i + 1) % every == 0):
             if fmt is None:
                 print("---", name, file=stream)
                 for k, v in sample.items():
@@ -202,6 +202,13 @@ def shuffle(data, bufsize=1000, initial=100):
         yield sample
 
 
+@curried
+def select(data, predicate, invert=False):
+    for sample in data:
+        if bool(predicate(data)) != bool(invert):
+            yield sample
+
+
 def decode(decoder="rgb", handler=reraise_exception):
     f = autodecode.make_decoder(decoder)
 
@@ -242,7 +249,7 @@ def rename(handler=reraise_exception, **kw):
         for sample in data:
             try:
                 yield {
-                    k: getfirst(sample, v) for k, v in kw.items()
+                    k: getfirst(sample, v, missing_is_error=True) for k, v in kw.items()
                 }
             except Exception as exn:
                 if handler(exn):
@@ -294,7 +301,7 @@ def to_tuple(*args, handler=reraise_exception):
     def stage(data):
         for sample in data:
             try:
-                yield tuple([getfirst(sample, f) for f in args])
+                yield tuple([getfirst(sample, f, missing_is_error=True) for f in args])
             except Exception as exn:
                 if handler(exn):
                     continue
@@ -310,7 +317,9 @@ def map_tuple(*args, handler=reraise_exception):
             assert callable(f)
         for sample in data:
             assert isinstance(sample, (list, tuple))
-            assert len(args) == len(sample), f"len(args) {len(args)} != len(sample) {len(sample)}"
+            assert len(args) == len(
+                sample
+            ), f"len(args) {len(args)} != len(sample) {len(sample)}"
             sample = list(sample)
             try:
                 for i in range(min(len(args), len(sample))):
