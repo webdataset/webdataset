@@ -203,9 +203,9 @@ def shuffle(data, bufsize=1000, initial=100):
 
 
 @curried
-def select(data, predicate, invert=False):
+def select(data, predicate):
     for sample in data:
-        if bool(predicate(data)) != bool(invert):
+        if predicate(sample):
             yield sample
 
 
