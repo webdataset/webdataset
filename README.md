@@ -372,6 +372,8 @@ For very large scale processing, it's easiest to submit separate jobs to a Kuber
 
 The [AIStore](http://github.com/NVIDIA/aistore) server provides an efficient backend for WebDataset; it functions like a combination of web server, content distribution network, P2P network, and distributed file system. Together, AIStore and WebDataset can serve input data from rotational drives distributed across many servers at the speed of local SSDs to many GPUs, at a fraction of the cost. We can easily achieve hundreds of MBytes/s of I/O per GPU even in large, distributed training jobs.
 
-The [tarproc](http://github.com/tmbdev/tarproc) utilities provide command line manipulation and processing of webdatasets and other tar files, including splitting, concatenation, and `xargs`-like functionality.
+The [tarp](http://github.com/tmbdev/tarp) utilities provide command line manipulation and processing of webdatasets and other tar files, including splitting, concatenation, and `xargs`-like functionality. (There is a Python prototype called [tarproc](http://github.com/tmbdev/tarproc) available as well.)
+
+For large scale ETL and preprocessing jobs, you can simply schedule Kubernetes Pods or Jobs to process shards in parallel. Workflow systems like Argo may be useful for that, or you may find [qupods](http://github.com/tmbdev/qupods) useful, since it will pace job submission and keep track of logs for you.
 
 The [tensorcom](http://github.com/tmbdev/tensorcom/) library provides fast three-tiered I/O; it can be inserted between [AIStore](http://github.com/NVIDIA/aistore) and [WebDataset](http://github.com/tmbdev/webdataset) to permit distributed data augmentation and I/O. It is particularly useful when data augmentation requires more CPU than the GPU server has available.
