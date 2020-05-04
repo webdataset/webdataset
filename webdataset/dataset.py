@@ -220,7 +220,6 @@ class Dataset(IterableDataset):
         if isinstance(urls, str):
             urls = list(braceexpand.braceexpand(urls))
         self.full_urls = self.urls = urls
-        self.total_length = length
         self.length = length
         self.epochs = epochs
         self.keys = keys
@@ -255,12 +254,9 @@ class Dataset(IterableDataset):
                 total = worker_info.num_workers
         if total is None:
             self.urls = self.full_urls
-            self.length = self.total_length
             return
         if index == 0 and len(self.full_urls) < total:
             warnings.warn(f"num_workers {total} > num_shards {len(self.full_urls)}")
-        if self.total_length is not None:
-            self.length = self.total_length // total
         self.urls = self.full_urls[index::total]
 
     def raw_iter(self):
@@ -277,8 +273,6 @@ class Dataset(IterableDataset):
                 with self.opener(url) as stream:
                     files_of_archive = tardata(stream, handler=self.handler)
                     for fname, content in files_of_archive:
-                        if self.length is not None and count >= self.length:
-                            return
                         yield fname, content
                         count += 1
                     maybe_collect()
@@ -333,3 +327,38 @@ class Dataset(IterableDataset):
         """Apply a list of functions to the tuple."""
         self.pipeline.append(filters.map_tuple(*args, handler=handler))
         return self
+
+    # TODO: add batching here
+
+
+class ChoppedDataset(IterableDataset):
+    """Change the actual and declared length of an IterableDataset.
+
+    :param dataset: IterableDataset
+    :param length: declared length of the dataset
+    :param actual: actual length of dataset (if different from declared)
+
+    This will continuously iterate through the original dataset, but
+    impose new eopch boundaries at the given length/actual.
+    This exists mainly as a workaround for the odd logic in DataLoader.
+    It is also useful for choosing smaller nominal epoch sizes with
+    very large datasets.
+
+    """
+    def __init__(self, dataset, length, actual=None):
+        self.dataset = dataset
+        self.source = iter(dataset)
+        self.length = length
+        self.actual = self.length if actual is None else actual
+
+    def __len__(self):
+        return self.length
+
+    def __iter__(self):
+        for i in range(self.actual):
+            try:
+                sample = next(self.source)
+            except StopIteration:
+                self.source = iter(self.dataset)
+                sample = next(self.source)
+            yield sample

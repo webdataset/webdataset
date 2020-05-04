@@ -386,3 +386,22 @@ def test_torchvision():
         assert tuple(sample[0].size()) == (3, 224, 224)
         assert isinstance(sample[1], int)
         break
+
+def test_chopped():
+    import torch
+    from torchvision import datasets
+
+    ds = datasets.FakeData(size=100)
+    cds = wds.ChoppedDataset(ds, 20)
+    assert len(cds) == 20
+    assert count_samples_tuple(cds, n=500) == 20
+
+    ds = datasets.FakeData(size=100)
+    cds = wds.ChoppedDataset(ds, 250)
+    assert len(cds) == 250
+    assert count_samples_tuple(cds, n=500) == 250
+
+    ds = datasets.FakeData(size=100)
+    cds = wds.ChoppedDataset(ds, 250, actual=77)
+    assert len(cds) == 250
+    assert count_samples_tuple(cds, n=500) == 77
