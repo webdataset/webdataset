@@ -220,6 +220,7 @@ class Dataset(IterableDataset):
         if isinstance(urls, str):
             urls = list(braceexpand.braceexpand(urls))
         self.full_urls = self.urls = urls
+        self.total_length = length
         self.length = length
         self.epochs = epochs
         self.keys = keys
@@ -254,9 +255,12 @@ class Dataset(IterableDataset):
                 total = worker_info.num_workers
         if total is None:
             self.urls = self.full_urls
+            self.length = self.total_length
             return
         if index == 0 and len(self.full_urls) < total:
             warnings.warn(f"num_workers {total} > num_shards {len(self.full_urls)}")
+        if self.total_length is not None:
+            self.length = self.total_length // total
         self.urls = self.full_urls[index::total]
 
     def raw_iter(self):
@@ -266,13 +270,17 @@ class Dataset(IterableDataset):
             random.shuffle(self.urls)
         self.sample = 0
         urls = self.urls
+        count = 0
         for epoch in range(self.epochs):
             for url in urls:
                 stream = None
                 with self.opener(url) as stream:
                     files_of_archive = tardata(stream, handler=self.handler)
                     for fname, content in files_of_archive:
+                        if self.length is not None and count >= self.length:
+                            return
                         yield fname, content
+                        count += 1
                     maybe_collect()
 
     def __iter__(self):
