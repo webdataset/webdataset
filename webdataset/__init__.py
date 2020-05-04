@@ -10,6 +10,7 @@ __all__ = "tenbin dataset writer".split()
 from . import tenbin
 from .dataset import (
     Dataset,
+    ChoppedDataset,
     reraise_exception,
     ignore_and_continue,
     warn_and_continue,
