@@ -402,6 +402,11 @@ def test_chopped():
     assert count_samples_tuple(cds, n=500) == 250
 
     ds = datasets.FakeData(size=100)
-    cds = wds.ChoppedDataset(ds, 250, actual=77)
+    cds = wds.ChoppedDataset(ds, 77, nominal=250)
     assert len(cds) == 250
     assert count_samples_tuple(cds, n=500) == 77
+
+    ds = datasets.FakeData(size=100)
+    cds = wds.ChoppedDataset(ds, 250, nominal=77)
+    assert len(cds) == 77
+    assert count_samples_tuple(cds, n=500) == 250

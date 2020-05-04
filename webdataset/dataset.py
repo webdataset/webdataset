@@ -332,30 +332,32 @@ class Dataset(IterableDataset):
 
 
 class ChoppedDataset(IterableDataset):
-    """Change the actual and declared length of an IterableDataset.
+    """Change the actual and nominal length of an IterableDataset.
 
     :param dataset: IterableDataset
     :param length: declared length of the dataset
-    :param actual: actual length of dataset (if different from declared)
+    :param nominal: nominal length of dataset (if different from declared)
 
     This will continuously iterate through the original dataset, but
-    impose new eopch boundaries at the given length/actual.
+    impose new eopch boundaries at the given length/nominal.
     This exists mainly as a workaround for the odd logic in DataLoader.
     It is also useful for choosing smaller nominal epoch sizes with
     very large datasets.
 
     """
-    def __init__(self, dataset, length, actual=None):
+    def __init__(self, dataset, length=None, nominal=None):
         self.dataset = dataset
-        self.source = iter(dataset)
+        if length is None:
+            length = len(dataset)
         self.length = length
-        self.actual = self.length if actual is None else actual
+        self.nominal = self.length if nominal is None else nominal
+        self.source = iter(dataset)
 
     def __len__(self):
-        return self.length
+        return self.nominal
 
     def __iter__(self):
-        for i in range(self.actual):
+        for i in range(self.length):
             try:
                 sample = next(self.source)
             except StopIteration:
