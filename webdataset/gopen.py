@@ -12,6 +12,7 @@ Open URLs by calling subcommands.
 
 __all__ = "gopen scheme_to_command".split()
 
+import os
 import sys
 from subprocess import PIPE, Popen
 from urllib.parse import urlparse
@@ -165,9 +166,11 @@ def gopen(url, mode="rb", bufsize=8192):
             raise ValueError(f"unknown mode {mode}")
     pr = urlparse(url)
     if pr.scheme == "":
-        return open(url, mode)
+        bufsize = int(os.environ.get("GOPEN_BUFFER", -1))
+        return open(url, mode, buffering=bufsize)
     if pr.scheme == "file":
-        return open(pr.path, mode)
+        bufsize = int(os.environ.get("GOPEN_BUFFER", -1))
+        return open(pr.path, mode, buffering=bufsize)
     handler = gopen_schemes["__default__"]
     handler = gopen_schemes.get(pr.scheme, handler)
     return handler(url, mode, bufsize)
