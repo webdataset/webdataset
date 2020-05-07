@@ -227,6 +227,7 @@ class Dataset(IterableDataset):
         self.subset = None
         self.do_shuffle = shuffle
         self.handler = handler
+        self.rng = random
         if prepare_for_worker is True:
             self.prepare_for_worker = self.shard_selection
         elif prepare_for_worker is False:
@@ -263,7 +264,7 @@ class Dataset(IterableDataset):
         """Iterate over samples."""
         self.prepare_for_worker()
         if self.do_shuffle:
-            random.shuffle(self.urls)
+            self.rng.shuffle(self.urls)
         self.sample = 0
         urls = self.urls
         count = 0
@@ -290,7 +291,7 @@ class Dataset(IterableDataset):
         if size == 0:
             return self
         self.do_shuffle = True
-        self.pipeline.append(filters.shuffle(size, **kw))
+        self.pipeline.append(filters.shuffle(size, rng=self.rng, **kw))
         return self
 
     def decode(self, decoder="rgb", handler=reraise_exception):

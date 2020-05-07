@@ -170,7 +170,7 @@ def info(data, fmt=None, n=3, every=-1, width=50, stream=sys.stderr, name=""):
 
 
 @curried
-def shuffle(data, bufsize=1000, initial=100):
+def shuffle(data, bufsize=1000, initial=100, rng=random):
     """Shuffle the data in the stream.
 
     This uses a buffer of size `bufsize`. Shuffling at
@@ -180,6 +180,7 @@ def shuffle(data, bufsize=1000, initial=100):
     data: iterator
     bufsize: buffer size for shuffling
     returns: iterator
+    rng: either random module or random.Random instance
 
     """
     initial = min(initial, bufsize)
@@ -191,7 +192,7 @@ def shuffle(data, bufsize=1000, initial=100):
                 buf.append(next(data))  # skipcq: PYL-R1708
             except StopIteration:
                 pass
-        k = random.randint(0, len(buf) - 1)
+        k = rng.randint(0, len(buf) - 1)
         sample, buf[k] = buf[k], sample
         if startup and len(buf) < initial:
             buf.append(sample)

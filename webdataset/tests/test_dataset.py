@@ -11,7 +11,10 @@ import webdataset.dataset as wds
 from webdataset import autodecode
 
 local_data = "testdata/imagenet-000000.tgz"
-remote_loc = "http://storage.googleapis.com/lpr-imagenet/"
+remote_loc = "http://storage.googleapis.com/nvdata-openimages/"
+remote_shards = "openimages-train-0000{00..99}.tar"
+remote_shard = "openimages-train-000321.tar"
+remote_pattern = "openimages-train-{}.tar"
 
 
 def count_samples_tuple(source, *args, n=1000):
@@ -291,7 +294,7 @@ def test_tenbin_dec():
 def test_dataloader():
     import torch
 
-    ds = wds.Dataset(remote_loc + "imagenet_train-{0000..0147}.tgz")
+    ds = wds.Dataset(remote_loc + remote_shards)
     dl = torch.utils.data.DataLoader(ds, num_workers=4)
     assert count_samples_tuple(dl, n=100) == 100
 
@@ -305,9 +308,9 @@ def test_handlers():
     handlers["jpg"] = decode_jpg_and_resize
 
     ds = (
-        wds.Dataset(remote_loc + "imagenet_train-0050.tgz")
+        wds.Dataset(remote_loc + remote_shard)
         .decode(handlers)
-        .to_tuple("jpg;png", "cls")
+        .to_tuple("jpg;png", "json")
     )
 
     for sample in ds:
@@ -320,9 +323,9 @@ def test_decoder():
         return {k: len(v) for k, v in sample.items()}
 
     ds = (
-        wds.Dataset(remote_loc + "imagenet_train-0050.tgz")
+        wds.Dataset(remote_loc + remote_shard)
         .decode(mydecoder)
-        .to_tuple("jpg;png", "cls")
+        .to_tuple("jpg;png", "json")
     )
     for sample in ds:
         assert isinstance(sample[0], int)
@@ -331,9 +334,9 @@ def test_decoder():
 
 def test_shard_syntax():
     ds = (
-        wds.Dataset(remote_loc + "imagenet_train-{0000..0147}.tgz")
+        wds.Dataset(remote_loc + remote_shards)
         .decode()
-        .to_tuple("jpg;png", "cls")
+        .to_tuple("jpg;png", "json")
         .shuffle(0)
     )
     assert count_samples_tuple(ds, n=10) == 10
@@ -342,20 +345,25 @@ def test_shard_syntax():
 def test_opener():
     def opener(url):
         print(url, file=sys.stderr)
-        cmd = "curl -s '{}imagenet_train-{}.tgz'".format(remote_loc, url)
+        cmd = "curl -s '{}{}'".format(remote_loc, remote_pattern.format(url))
+        print(cmd, file=sys.stderr)
         return subprocess.Popen(
             cmd, bufsize=1000000, shell=True, stdout=subprocess.PIPE
         ).stdout
 
-    ds = wds.Dataset("{0000..0147}", opener=opener).shuffle(100).to_tuple("jpg;png cls")
+    ds = (
+        wds.Dataset("{000000..000099}", opener=opener)
+        .shuffle(100)
+        .to_tuple("jpg;png", "json")
+    )
     assert count_samples_tuple(ds, n=10) == 10
 
 
 def test_pipe():
     ds = (
-        wds.Dataset(f"pipe:curl -s '{remote_loc}" + "imagenet_train-{0000..0147}.tgz'")
+        wds.Dataset(f"pipe:curl -s '{remote_loc}{remote_shards}'")
         .shuffle(100)
-        .to_tuple("jpg;png cls")
+        .to_tuple("jpg;png", "json")
     )
     assert count_samples_tuple(ds, n=10) == 10
 
@@ -376,19 +384,19 @@ def test_torchvision():
         ]
     )
     ds = (
-        wds.Dataset(remote_loc + "imagenet_train-{0000..0147}.tgz")
+        wds.Dataset(remote_loc + remote_shards)
         .decode("pil")
-        .to_tuple("jpg;png", "cls")
-        .map_tuple(preproc, lambda x: x - 1)
+        .to_tuple("jpg;png", "json")
+        .map_tuple(preproc, lambda x: x)
     )
     for sample in ds:
-        assert isinstance(sample[0], torch.Tensor)
-        assert tuple(sample[0].size()) == (3, 224, 224)
-        assert isinstance(sample[1], int)
+        assert isinstance(sample[0], torch.Tensor), type(sample[0])
+        assert tuple(sample[0].size()) == (3, 224, 224), sample[0].size()
+        assert isinstance(sample[1], list), type(sample[1])
         break
 
+
 def test_chopped():
-    import torch
     from torchvision import datasets
 
     ds = datasets.FakeData(size=100)
