@@ -11,7 +11,7 @@ def test_writer(tmpdir):
     ftype = os.popen(f"file {tmpdir}/writer.tar").read()
     assert "compress" not in ftype, ftype
 
-    ds = wds.WebDataset(f"{tmpdir}/writer.tar")
+    ds = wds.Dataset(f"{tmpdir}/writer.tar")
     for sample in ds:
         assert set(sample.keys()) == set("__key__ txt cls".split())
         break
@@ -24,7 +24,7 @@ def test_writer2(tmpdir):
     ftype = os.popen(f"file {tmpdir}/writer2.tgz").read()
     assert "compress" in ftype, ftype
 
-    ds = wds.WebDataset(f"{tmpdir}/writer2.tgz")
+    ds = wds.Dataset(f"{tmpdir}/writer2.tgz")
     for sample in ds:
         assert set(sample.keys()) == set("__key__ txt cls".split())
         break
@@ -34,7 +34,7 @@ def test_writer_pipe(tmpdir):
     with writer.TarWriter(f"pipe:cat > {tmpdir}/writer3.tar") as sink:
         sink.write(dict(__key__="a", txt="hello", cls="3"))
     os.system(f"ls -l {tmpdir}")
-    ds = wds.WebDataset(f"pipe:cat {tmpdir}/writer3.tar")
+    ds = wds.Dataset(f"pipe:cat {tmpdir}/writer3.tar")
     for sample in ds:
         assert set(sample.keys()) == set("__key__ txt cls".split())
         break

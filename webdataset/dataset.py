@@ -10,7 +10,7 @@
 or over HTTP connections.
 """
 
-__all__ = """Dataset WebDataset tariterator default_handlers imagehandler
+__all__ = """Dataset tariterator default_handlers imagehandler
 reraise_exception ignore_and_continue warn_and_continue ignore_and_stop warn_and_stop
 """.split()
 
@@ -29,7 +29,6 @@ from torch.utils.data import IterableDataset
 from . import gopen
 from . import filters
 from .checks import checkcallable
-from .webdataset import WebDataset  # noqa: F401
 
 trace = False
 
