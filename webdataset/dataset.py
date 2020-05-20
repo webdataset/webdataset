@@ -331,7 +331,7 @@ class Dataset(IterableDataset):
     # TODO: add batching here
 
 
-class ChoppedDataset(IterableDataset):
+class ResizedDataset(IterableDataset):
     """Change the actual and nominal length of an IterableDataset.
 
     :param dataset: IterableDataset
@@ -339,12 +339,13 @@ class ChoppedDataset(IterableDataset):
     :param nominal: nominal length of dataset (if different from declared)
 
     This will continuously iterate through the original dataset, but
-    impose new eopch boundaries at the given length/nominal.
+    impose new epoch boundaries at the given length/nominal.
     This exists mainly as a workaround for the odd logic in DataLoader.
     It is also useful for choosing smaller nominal epoch sizes with
     very large datasets.
 
     """
+
     def __init__(self, dataset, length=None, nominal=None):
         self.dataset = dataset
         if length is None:
@@ -364,3 +365,6 @@ class ChoppedDataset(IterableDataset):
                 self.source = iter(self.dataset)
                 sample = next(self.source)
             yield sample
+
+
+ChoppedDataset = ResizedDataset
