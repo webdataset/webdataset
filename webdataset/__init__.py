@@ -11,6 +11,7 @@ from . import tenbin
 from .dataset import (
     Dataset,
     ChoppedDataset,
+    ResizedDataset,
     reraise_exception,
     ignore_and_continue,
     warn_and_continue,
