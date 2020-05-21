@@ -21,6 +21,13 @@ from .checks import checktype
 from . import autodecode
 
 
+try:
+    from torch import Tensor as TorchTensor
+except ModuleNotFoundError:
+    class TorchTensor:
+        pass
+
+
 def reraise_exception(exn):
     raise exn
 
@@ -336,6 +343,22 @@ def map_tuple(*args, handler=reraise_exception):
     return stage
 
 
+def batch_tensors(l, expand=False):
+    if isinstance(l[0], np.ndarray):
+        if not expand:
+            return np.ndarray(list(l))
+        else:
+            raise Exception("unimplemented")
+    elif isinstance(l[0], TorchTensor):
+        import torch
+        if not expand:
+            return torch.stack(list(l))
+        else:
+            raise Exception("unimplemented")
+    else:
+        raise ValueError(f"{l}: cannot combine")
+
+
 def samples_to_batch(samples, combine_tensors=True, combine_scalars=True, expand=False):
     """Take a collection of samples (dictionaries) and create a batch.
 
@@ -348,53 +371,18 @@ def samples_to_batch(samples, combine_tensors=True, combine_scalars=True, expand
     :rtype: dict
 
     """
-    if expand:
-        return samples_to_batch_expanded(samples)
-    result = {k: [] for k in list(samples[0].keys())}
-    for i in range(len(samples)):
-        for k in list(result.keys()):
-            result[k].append(samples[i][k])
-    if combine_tensors is True:
-        tensor_names = [
-            x for x in list(result.keys()) if isinstance(result[x][0], np.ndarray)
-        ]
-        for k in tensor_names:
-            sizes = {a.shape for a in result[k]}
-            assert len(sizes) == 1, sizes
-            result[k] = np.array(result[k])
-    if combine_scalars is True:
-        scalar_names = [
-            x for x in list(result.keys()) if isinstance(result[x][0], (int, float))
-        ]
-        for k in scalar_names:
-            result[k] = np.array(result[k])
-    return result
-
-
-def samples_to_batch_expanded(samples):
-    """Take a collection of samples (dictionaries) and create a batch.
-
-    :param dict samples: list of samples
-    :returns: single sample consisting of a batch
-    :rtype: dict
-
-    """
-    result = {k: [] for k in list(samples[0].keys())}
-    for i in range(len(samples)):
-        for k in list(result.keys()):
-            result[k].append(samples[i][k])
-    tensor_names = [
-        x for x in list(result.keys()) if isinstance(result[x][0], np.ndarray)
-    ]
-    for k in tensor_names:
-        size = result[k][0].shape
-        for r in result[k][1:]:
-            size = tuple(np.maximum(size, r.shape))
-        output = np.zeros((len(result[k]),) + size)
-        for i, t in enumerate(result[k]):
-            sub = tuple([i] + [slice(0, x) for x in t.shape])
-            output[sub] = t
-        result[k] = output
+    batched = list(zip(*samples))
+    result = []
+    for b in batched:
+        if isinstance(b[0], (int, float)):
+            if combine_scalars:
+                b = np.array(list(b))
+        elif isinstance(b[0], (TorchTensor, np.ndarray)):
+            if combine_tensors:
+                b = batch_tensors(b, expand=expand)
+        else:
+            b = list(b)
+        result.append(b)
     return result
 
 
