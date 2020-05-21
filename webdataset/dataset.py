@@ -373,12 +373,19 @@ class ResizedDataset(IterableDataset):
             length = len(dataset)
         self.length = length
         self.nominal = self.length if nominal is None else nominal
-        self.source = iter(dataset)
+        self.source = None
 
     def __len__(self):
         return self.nominal
 
+    def __getstate__(self):
+        result = dict(self.__dict__)
+        result["source"] = None
+        return result
+
     def __iter__(self):
+        if self.source is None:
+            self.source = iter(self.dataset)
         for i in range(self.length):
             try:
                 sample = next(self.source)
