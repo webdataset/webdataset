@@ -226,7 +226,7 @@ class Dataset(IterableDataset):
         self.subset = None
         self.do_shuffle = shuffle
         self.handler = handler
-        self.rng = random
+        self.rng = random.Random()
         if prepare_for_worker is True:
             self.prepare_for_worker = self.shard_selection
         elif prepare_for_worker is False:
