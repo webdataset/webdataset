@@ -14,7 +14,7 @@ __all__ = "WebDataset tariterator default_handlers imagehandler".split()
 
 import sys
 import random
-from functools import reduce, wraps
+from functools import reduce
 import numpy as np
 
 from .checks import checktype
@@ -24,25 +24,43 @@ from . import autodecode
 try:
     from torch import Tensor as TorchTensor
 except ModuleNotFoundError:
+
     class TorchTensor:
         pass
+
+
+class Curried2(object):
+    """Helper class for currying pipeline stages.
+
+    We use this roundabout construct becauce it can be pickled."""
+
+    def __init__(self, f, *args, **kw):
+        self.f = f
+        self.args = args
+        self.kw = kw
+
+    def __call__(self, data):
+        return self.f(data, *self.args, **self.kw)
+
+
+class Curried(object):
+    """Helper class for currying pipeline stages.
+
+    We use this roundabout construct becauce it can be pickled."""
+
+    def __init__(self, f):
+        self.f = f
+
+    def __call__(self, *args, **kw):
+        return Curried2(self.f, *args, **kw)
 
 
 def reraise_exception(exn):
     raise exn
 
 
-def curried(f):
-    """A decorator for currying functions in the first argument."""
-
-    @wraps(f)
-    def wrapper(*args, **kw):
-        def g(x):
-            return f(x, *args, **kw)
-
-        return g
-
-    return wrapper
+def identity(x):
+    return x
 
 
 def compose2(f, g):
@@ -136,8 +154,7 @@ def transformer(transformers):
 #             yield [getfirst(sample, f) for f in fields]
 
 
-@curried
-def map_stream(data, f=None, handler=reraise_exception):
+def map_stream_(data, f=None, handler=reraise_exception):
     """Map entire samples using the given function.
 
     data: iterator
@@ -164,8 +181,10 @@ def map_stream(data, f=None, handler=reraise_exception):
         yield result
 
 
-@curried
-def info(data, fmt=None, n=3, every=-1, width=50, stream=sys.stderr, name=""):
+map_stream = Curried(map_stream_)
+
+
+def info_(data, fmt=None, n=3, every=-1, width=50, stream=sys.stderr, name=""):
     for i, sample in enumerate(data):
         if i < n or (every > 0 and (i + 1) % every == 0):
             if fmt is None:
@@ -177,8 +196,10 @@ def info(data, fmt=None, n=3, every=-1, width=50, stream=sys.stderr, name=""):
         yield sample
 
 
-@curried
-def shuffle(data, bufsize=1000, initial=100, rng=random):
+info = Curried(info_)
+
+
+def shuffle_(data, bufsize=1000, initial=100, rng=random):
     """Shuffle the data in the stream.
 
     This uses a buffer of size `bufsize`. Shuffling at
@@ -211,152 +232,156 @@ def shuffle(data, bufsize=1000, initial=100, rng=random):
         yield sample
 
 
-@curried
-def select(data, predicate):
+shuffle = Curried(shuffle_)
+
+
+def select_(data, predicate):
     for sample in data:
         if predicate(sample):
             yield sample
 
 
-def decode(decoder="rgb", handler=reraise_exception):
+select = Curried(select_)
+
+
+def decode_(data, decoder="rgb", handler=reraise_exception):
     f = autodecode.make_decoder(decoder)
 
-    def stage(data):
-        for sample in data:
-            assert isinstance(sample, dict), sample
-            try:
-                decoded = f(sample)
-            except Exception as exn:  # skipcq: PYL-W0703
-                if handler(exn):
-                    continue
-                else:
-                    break
-            yield decoded
-
-    return stage
-
-
-def map(f, handler=reraise_exception):
-    def stage(data):
-        for sample in data:
-            try:
-                result = f(sample)
-            except Exception as exn:
-                if handler(exn):
-                    continue
-                else:
-                    break
-            if isinstance(sample, dict) and isinstance(result, dict):
-                result["__key__"] = sample.get("__key__")
-            yield result
-
-    return stage
-
-
-def rename(handler=reraise_exception, **kw):
-    def stage(data):
-        for sample in data:
-            try:
-                yield {
-                    k: getfirst(sample, v, missing_is_error=True) for k, v in kw.items()
-                }
-            except Exception as exn:
-                if handler(exn):
-                    continue
-                else:
-                    break
-
-    return stage
-
-
-def associate(associator, **kw):
-    def stage(data):
-        for sample in data:
-            if callable(associator):
-                extra = associator(sample["__key__"])
+    for sample in data:
+        assert isinstance(sample, dict), sample
+        try:
+            decoded = f(sample)
+        except Exception as exn:  # skipcq: PYL-W0703
+            if handler(exn):
+                continue
             else:
-                extra = associator.get(sample["__key__"], {})
-            sample.update(extra)  # destructive
-            yield sample
-
-    return stage
+                break
+        yield decoded
 
 
-def map_dict(handler=reraise_exception, **kw):
+decode = Curried(decode_)
+
+
+def map_(data, f, handler=reraise_exception):
+    for sample in data:
+        try:
+            result = f(sample)
+        except Exception as exn:
+            if handler(exn):
+                continue
+            else:
+                break
+        if isinstance(sample, dict) and isinstance(result, dict):
+            result["__key__"] = sample.get("__key__")
+        yield result
+
+
+map = Curried(map_)
+
+
+def rename_(data, handler=reraise_exception, **kw):
+    for sample in data:
+        try:
+            yield {k: getfirst(sample, v, missing_is_error=True) for k, v in kw.items()}
+        except Exception as exn:
+            if handler(exn):
+                continue
+            else:
+                break
+
+
+rename = Curried(rename_)
+
+
+def associate_(data, associator, **kw):
+    for sample in data:
+        if callable(associator):
+            extra = associator(sample["__key__"])
+        else:
+            extra = associator.get(sample["__key__"], {})
+        sample.update(extra)  # destructive
+        yield sample
+
+
+associate = Curried(associate_)
+
+
+def map_dict_(data, handler=reraise_exception, **kw):
     assert len(list(kw.keys())) > 0
-    for f in kw.values():
-        assert callable(f)
+    for key, f in kw.items():
+        assert callable(f), (key, f)
 
-    def stage(data):
-        for sample in data:
-            assert isinstance(sample, dict)
-            try:
-                for k, f in kw.items():
-                    sample[k] = f(sample[k])
-            except Exception as exn:
-                if handler(exn):
-                    continue
-                else:
-                    break
-            yield sample
-
-    return stage
+    for sample in data:
+        assert isinstance(sample, dict)
+        try:
+            for k, f in kw.items():
+                sample[k] = f(sample[k])
+        except Exception as exn:
+            if handler(exn):
+                continue
+            else:
+                break
+        yield sample
 
 
-def to_tuple(*args, handler=reraise_exception):
+map_dict = Curried(map_dict_)
+
+
+def to_tuple_(data, *args, handler=reraise_exception):
     if len(args) == 1 and isinstance(args[0], str) and " " in args[0]:
         args = args[0].split()
 
-    def stage(data):
-        for sample in data:
-            try:
-                yield tuple([getfirst(sample, f, missing_is_error=True) for f in args])
-            except Exception as exn:
-                if handler(exn):
-                    continue
-                else:
-                    break
-
-    return stage
+    for sample in data:
+        try:
+            yield tuple([getfirst(sample, f, missing_is_error=True) for f in args])
+        except Exception as exn:
+            if handler(exn):
+                continue
+            else:
+                break
 
 
-def map_tuple(*args, handler=reraise_exception):
-    def stage(data):
-        for f in args:
-            assert callable(f)
-        for sample in data:
-            assert isinstance(sample, (list, tuple))
-            assert len(args) == len(
-                sample
-            ), f"len(args) {len(args)} != len(sample) {len(sample)}"
-            sample = list(sample)
-            try:
-                for i in range(min(len(args), len(sample))):
-                    sample[i] = args[i](sample[i])
-            except Exception as exn:
-                if handler(exn):
-                    continue
-                else:
-                    break
-            yield tuple(sample)
-
-    return stage
+to_tuple = Curried(to_tuple_)
 
 
-def batch_tensors(l, expand=False):
-    if isinstance(l[0], np.ndarray):
+def map_tuple_(data, *args, handler=reraise_exception):
+    for f in args:
+        assert callable(f), f
+    for sample in data:
+        assert isinstance(sample, (list, tuple))
+        assert len(args) == len(
+            sample
+        ), f"len(args) {len(args)} != len(sample) {len(sample)}"
+        sample = list(sample)
+        try:
+            for i in range(min(len(args), len(sample))):
+                sample[i] = args[i](sample[i])
+        except Exception as exn:
+            if handler(exn):
+                continue
+            else:
+                break
+        yield tuple(sample)
+
+
+map_tuple = Curried(map_tuple_)
+
+
+def batch_tensors(tensors, expand=False):
+    if isinstance(tensors[0], np.ndarray):
         if not expand:
-            return np.ndarray(list(l))
+            return np.ndarray(list(tensors))
         else:
             raise Exception("unimplemented")
-    elif isinstance(l[0], TorchTensor):
+    elif isinstance(tensors[0], TorchTensor):
         import torch
+
         if not expand:
-            return torch.stack(list(l))
+            return torch.stack(list(tensors))
         else:
             raise Exception("unimplemented")
     else:
-        raise ValueError(f"{l}: cannot combine")
+        raise ValueError(f"{tensors}: cannot combine")
 
 
 def samples_to_batch(samples, combine_tensors=True, combine_scalars=True, expand=False):
@@ -386,8 +411,13 @@ def samples_to_batch(samples, combine_tensors=True, combine_scalars=True, expand
     return result
 
 
-def batched(
-    batchsize=20, combine_tensors=True, combine_scalars=True, partial=True, expand=False
+def batched_(
+    data,
+    batchsize=20,
+    combine_tensors=True,
+    combine_scalars=True,
+    partial=True,
+    expand=False,
 ):
     """Create batches of the given size.
 
@@ -399,26 +429,26 @@ def batched(
 
     """
 
-    def stage(data):
-        batch = []
-        for sample in data:
-            if len(batch) >= batchsize:
-                yield samples_to_batch(
-                    batch,
-                    combine_tensors=combine_tensors,
-                    combine_scalars=combine_scalars,
-                    expand=expand,
-                )
-                batch = []
-            batch.append(sample)
-        if len(batch) == 0:
-            return
-        elif len(batch) == batchsize or partial:
+    batch = []
+    for sample in data:
+        if len(batch) >= batchsize:
             yield samples_to_batch(
                 batch,
                 combine_tensors=combine_tensors,
                 combine_scalars=combine_scalars,
                 expand=expand,
             )
+            batch = []
+        batch.append(sample)
+    if len(batch) == 0:
+        return
+    elif len(batch) == batchsize or partial:
+        yield samples_to_batch(
+            batch,
+            combine_tensors=combine_tensors,
+            combine_scalars=combine_scalars,
+            expand=expand,
+        )
 
-    return stage
+
+batched = Curried(batched_)

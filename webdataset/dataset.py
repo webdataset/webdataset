@@ -23,6 +23,8 @@ import time
 import warnings
 from builtins import range
 
+# from functools import wraps
+
 import braceexpand
 from torch.utils.data import IterableDataset
 
@@ -112,7 +114,7 @@ def valid_sample(sample):
     )
 
 
-def group_by_keys(keys=base_plus_ext, lcase=True, suffixes=None):
+def group_by_keys_(data, keys=base_plus_ext, lcase=True, suffixes=None):
     """Returns function over iterator that groups key, value pairs into samples.
 
     keys: function that splits the key into key and extension (base_plus_ext)
@@ -120,34 +122,34 @@ def group_by_keys(keys=base_plus_ext, lcase=True, suffixes=None):
 
     """
 
-    def iterator(data):
-        current_sample = None
-        for fname, value in data:
-            prefix, suffix = keys(fname)
-            if trace:
-                print(
-                    prefix,
-                    suffix,
-                    current_sample.keys() if isinstance(current_sample, dict) else None,
-                )
-            if prefix is None:
-                continue
-            if lcase:
-                suffix = suffix.lower()
-            if current_sample is None or prefix != current_sample["__key__"]:
-                if valid_sample(current_sample):
-                    yield current_sample
-                current_sample = dict(__key__=prefix)
-            if suffix in current_sample:
-                raise ValueError(
-                    f"{fname}: duplicate file name in tar file {suffix} {current_sample.keys()}"
-                )
-            if suffixes is None or suffix in suffixes:
-                current_sample[suffix] = value
-        if valid_sample(current_sample):
-            yield current_sample
+    current_sample = None
+    for fname, value in data:
+        prefix, suffix = keys(fname)
+        if trace:
+            print(
+                prefix,
+                suffix,
+                current_sample.keys() if isinstance(current_sample, dict) else None,
+            )
+        if prefix is None:
+            continue
+        if lcase:
+            suffix = suffix.lower()
+        if current_sample is None or prefix != current_sample["__key__"]:
+            if valid_sample(current_sample):
+                yield current_sample
+            current_sample = dict(__key__=prefix)
+        if suffix in current_sample:
+            raise ValueError(
+                f"{fname}: duplicate file name in tar file {suffix} {current_sample.keys()}"
+            )
+        if suffixes is None or suffix in suffixes:
+            current_sample[suffix] = value
+    if valid_sample(current_sample):
+        yield current_sample
 
-    return iterator
+
+group_by_keys = filters.Curried(group_by_keys_)
 
 
 def tardata(fileobj, skip_meta=r"__[^/]*__($|/)", handler=reraise_exception):

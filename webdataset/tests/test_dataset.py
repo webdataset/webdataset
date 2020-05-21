@@ -6,6 +6,7 @@ import numpy as np
 import PIL
 import pytest
 import torch
+import pickle
 
 import webdataset.dataset as wds
 from webdataset import autodecode
@@ -15,6 +16,10 @@ remote_loc = "http://storage.googleapis.com/nvdata-openimages/"
 remote_shards = "openimages-train-0000{00..99}.tar"
 remote_shard = "openimages-train-000321.tar"
 remote_pattern = "openimages-train-{}.tar"
+
+
+def identity(x):
+    return x
 
 
 def count_samples_tuple(source, *args, n=1000):
@@ -153,18 +158,18 @@ def test_dataset_map_handler():
 
 def test_dataset_map_dict_handler():
 
-    ds = wds.Dataset(local_data).map_dict(png=lambda x: x, cls=lambda x: x)
+    ds = wds.Dataset(local_data).map_dict(png=identity, cls=identity)
     count_samples_tuple(ds)
 
     with pytest.raises(KeyError):
-        ds = wds.Dataset(local_data).map_dict(png=lambda x: x, cls2=lambda x: x)
+        ds = wds.Dataset(local_data).map_dict(png=identity, cls2=identity)
         count_samples_tuple(ds)
 
     def g(x):
         raise ValueError()
 
     with pytest.raises(ValueError):
-        ds = wds.Dataset(local_data).map_dict(png=g, cls=lambda x: x)
+        ds = wds.Dataset(local_data).map_dict(png=g, cls=identity)
         count_samples_tuple(ds)
 
 
@@ -387,7 +392,7 @@ def test_torchvision():
         wds.Dataset(remote_loc + remote_shards)
         .decode("pil")
         .to_tuple("jpg;png", "json")
-        .map_tuple(preproc, lambda x: x)
+        .map_tuple(preproc, identity)
     )
     for sample in ds:
         assert isinstance(sample[0], torch.Tensor), type(sample[0])
@@ -415,7 +420,7 @@ def test_batched():
         wds.Dataset(remote_loc + remote_shards)
         .decode("pil")
         .to_tuple("jpg;png", "json")
-        .map_tuple(preproc, lambda x: x)
+        .map_tuple(preproc, identity)
         .batched(7)
     )
     for sample in ds:
@@ -423,6 +428,7 @@ def test_batched():
         assert tuple(sample[0].size()) == (7, 3, 224, 224), sample[0].size()
         assert isinstance(sample[1], list), type(sample[1])
         break
+    pickle.dumps(ds)
 
 
 def test_chopped():
