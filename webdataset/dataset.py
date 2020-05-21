@@ -285,6 +285,25 @@ class Dataset(IterableDataset):
         self.pipeline.append(stage)
         return self
 
+    def batched(
+        self,
+        batchsize,
+        combine_tensors=True,
+        combine_scalars=True,
+        partial=True,
+        expand=False,
+    ):
+        self.pipeline.append(
+            filters.batched(
+                batchsize=batchsize,
+                combine_tensors=combine_tensors,
+                combine_scalars=combine_scalars,
+                partial=True,
+                expand=False,
+            )
+        )
+        return self
+
     def shuffle(self, size, **kw):
         """Shuffle the data."""
         if size == 0:

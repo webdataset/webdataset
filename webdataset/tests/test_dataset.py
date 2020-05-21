@@ -396,6 +396,35 @@ def test_torchvision():
         break
 
 
+def test_batched():
+    import torch
+    from torchvision import transforms
+
+    normalize = transforms.Normalize(
+        mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
+    )
+    preproc = transforms.Compose(
+        [
+            transforms.RandomResizedCrop(224),
+            transforms.RandomHorizontalFlip(),
+            transforms.ToTensor(),
+            normalize,
+        ]
+    )
+    ds = (
+        wds.Dataset(remote_loc + remote_shards)
+        .decode("pil")
+        .to_tuple("jpg;png", "json")
+        .map_tuple(preproc, lambda x: x)
+        .batched(7)
+    )
+    for sample in ds:
+        assert isinstance(sample[0], torch.Tensor), type(sample[0])
+        assert tuple(sample[0].size()) == (7, 3, 224, 224), sample[0].size()
+        assert isinstance(sample[1], list), type(sample[1])
+        break
+
+
 def test_chopped():
     from torchvision import datasets
 

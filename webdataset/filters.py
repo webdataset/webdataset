@@ -15,6 +15,7 @@ __all__ = "WebDataset tariterator default_handlers imagehandler".split()
 import sys
 import random
 from functools import reduce, wraps
+import numpy as np
 
 from .checks import checktype
 from . import autodecode
@@ -331,5 +332,105 @@ def map_tuple(*args, handler=reraise_exception):
                 else:
                     break
             yield tuple(sample)
+
+    return stage
+
+
+def samples_to_batch(samples, combine_tensors=True, combine_scalars=True, expand=False):
+    """Take a collection of samples (dictionaries) and create a batch.
+
+    If `tensors` is True, `ndarray` objects are combined into
+    tensor batches.
+
+    :param dict samples: list of samples
+    :param bool tensors: whether to turn lists of ndarrays into a single ndarray
+    :returns: single sample consisting of a batch
+    :rtype: dict
+
+    """
+    if expand:
+        return samples_to_batch_expanded(samples)
+    result = {k: [] for k in list(samples[0].keys())}
+    for i in range(len(samples)):
+        for k in list(result.keys()):
+            result[k].append(samples[i][k])
+    if combine_tensors is True:
+        tensor_names = [
+            x for x in list(result.keys()) if isinstance(result[x][0], np.ndarray)
+        ]
+        for k in tensor_names:
+            sizes = {a.shape for a in result[k]}
+            assert len(sizes) == 1, sizes
+            result[k] = np.array(result[k])
+    if combine_scalars is True:
+        scalar_names = [
+            x for x in list(result.keys()) if isinstance(result[x][0], (int, float))
+        ]
+        for k in scalar_names:
+            result[k] = np.array(result[k])
+    return result
+
+
+def samples_to_batch_expanded(samples):
+    """Take a collection of samples (dictionaries) and create a batch.
+
+    :param dict samples: list of samples
+    :returns: single sample consisting of a batch
+    :rtype: dict
+
+    """
+    result = {k: [] for k in list(samples[0].keys())}
+    for i in range(len(samples)):
+        for k in list(result.keys()):
+            result[k].append(samples[i][k])
+    tensor_names = [
+        x for x in list(result.keys()) if isinstance(result[x][0], np.ndarray)
+    ]
+    for k in tensor_names:
+        size = result[k][0].shape
+        for r in result[k][1:]:
+            size = tuple(np.maximum(size, r.shape))
+        output = np.zeros((len(result[k]),) + size)
+        for i, t in enumerate(result[k]):
+            sub = tuple([i] + [slice(0, x) for x in t.shape])
+            output[sub] = t
+        result[k] = output
+    return result
+
+
+def batched(
+    batchsize=20, combine_tensors=True, combine_scalars=True, partial=True, expand=False
+):
+    """Create batches of the given size.
+
+    :param data: iterator
+    :param batchsize: target batch size
+    :param tensors: automatically batch lists of ndarrays into ndarrays
+    :param partial: return partial batches
+    :returns: iterator
+
+    """
+
+    def stage(data):
+        batch = []
+        for sample in data:
+            if len(batch) >= batchsize:
+                yield samples_to_batch(
+                    batch,
+                    combine_tensors=combine_tensors,
+                    combine_scalars=combine_scalars,
+                    expand=expand,
+                )
+                batch = []
+            batch.append(sample)
+        if len(batch) == 0:
+            return
+        elif len(batch) == batchsize or partial:
+            yield samples_to_batch(
+                batch,
+                combine_tensors=combine_tensors,
+                combine_scalars=combine_scalars,
+                expand=expand,
+            )
 
     return stage
