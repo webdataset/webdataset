@@ -37,7 +37,7 @@ class Pipe:
         self,
         *args,
         mode=None,
-        timeout=3600.0,
+        timeout=7200.0,
         ignore_errors=False,
         ignore_status=[],
         **kw,
@@ -103,6 +103,20 @@ class Pipe:
         self.close()
 
 
+def set_options(obj, timeout=None, ignore_errors=None, ignore_status=None, handler=None):
+    if not isinstance(obj, Pipe):
+        return False
+    if timeout is not None:
+        obj.timeout = timeout
+    if ignore_errors is not None:
+        obj.ignore_errors = ignore_errors
+    if ignore_status is not None:
+        obj.ignore_status = ignore_status
+    if handler is not None:
+        obj.handler = handler
+    return True
+
+
 def gopen_objectio(url, mode="rb", bufsize=8192):
     import objectio
 
@@ -154,7 +168,7 @@ gopen_schemes = dict(
 )
 
 
-def gopen(url, mode="rb", bufsize=8192):
+def gopen(url, mode="rb", bufsize=8192, **kw):
     global fallback_gopen
     assert mode in ["rb", "wb"], mode
     if url == "-":
@@ -173,8 +187,8 @@ def gopen(url, mode="rb", bufsize=8192):
         return open(pr.path, mode, buffering=bufsize)
     handler = gopen_schemes["__default__"]
     handler = gopen_schemes.get(pr.scheme, handler)
-    return handler(url, mode, bufsize)
+    return handler(url, mode, bufsize, **kw)
 
 
-def reader(url):
-    return gopen(url, "rb")
+def reader(url, **kw):
+    return gopen(url, "rb", **kw)

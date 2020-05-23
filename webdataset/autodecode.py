@@ -96,11 +96,11 @@ def imagehandler(data, imagespec):
         result = np.asarray(img)
         checkmember(result.dtype, [np.uint8])
         if etype == "uint8":
-            result = result.transpose(2, 0, 1)
+            result = np.array(result.transpose(2, 0, 1))
             return torch.tensor(result)
         else:
-            result = result.transpose(2, 0, 1)
-            return torch.tensor(result).type(torch.float) / 255.0
+            result = np.array(result.transpose(2, 0, 1))
+            return torch.tensor(result) / 255.0
     return None
 
 

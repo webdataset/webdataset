@@ -11,6 +11,7 @@ import pickle
 import webdataset.dataset as wds
 from webdataset import autodecode
 
+
 local_data = "testdata/imagenet-000000.tgz"
 remote_loc = "http://storage.googleapis.com/nvdata-openimages/"
 remote_shards = "openimages-train-0000{00..99}.tar"
@@ -217,6 +218,8 @@ def test_raw():
 
 
 def test_rgb8_np_vs_torch():
+    import warnings
+    warnings.filterwarnings("error")
     ds = wds.Dataset(local_data).decode("rgb8").to_tuple("png;jpg", "cls")
     image, cls = next(iter(ds))
     assert isinstance(image, np.ndarray), type(image)
