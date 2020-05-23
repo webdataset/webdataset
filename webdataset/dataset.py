@@ -23,15 +23,13 @@ import time
 import warnings
 from builtins import range
 
-# from functools import wraps
-
 import braceexpand
 from torch.utils.data import IterableDataset
 
-from . import gopen
-from . import filters
+from . import filters, gopen
 from .checks import checkcallable
 
+# from functools import wraps
 trace = False
 
 debug_dataset = os.environ.get("WDS_DEBUG", 0)
@@ -272,12 +270,18 @@ class Dataset(IterableDataset):
         for epoch in range(self.epochs):
             for url in urls:
                 stream = None
-                with self.opener(url) as stream:
-                    files_of_archive = tardata(stream, handler=self.handler)
-                    for fname, content in files_of_archive:
-                        yield fname, content
-                        count += 1
-                    maybe_collect()
+                try:
+                    with self.opener(url) as stream:
+                        files_of_archive = tardata(stream, handler=self.handler)
+                        for fname, content in files_of_archive:
+                            yield fname, content
+                            count += 1
+                        maybe_collect()
+                except Exception as exn:
+                    if self.handler(exn):
+                        continue
+                    else:
+                        break
 
     def __iter__(self):
         return filters.pipeline(self.raw_iter(), *self.pipeline)
