@@ -236,6 +236,7 @@ class Dataset(IterableDataset):
         self.pipeline = (
             initial_pipeline if initial_pipeline is not None else [group_by_keys()]
         )
+        self.shard_hook = None
 
     def __len__(self):
         return self.length
@@ -269,6 +270,8 @@ class Dataset(IterableDataset):
         count = 0
         for epoch in range(self.epochs):
             for url in urls:
+                if self.shard_hook:
+                    self.shard_hook(url)
                 stream = None
                 try:
                     with self.opener(url) as stream:
