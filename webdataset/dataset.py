@@ -71,9 +71,9 @@ def warn_and_stop(exn):
     return False
 
 
-def identity(x):
-    """Identity function."""
-    return x
+def do_nothing(*args, **kw):
+    """Do nothing function."""
+    pass
 
 
 def maybe_collect():
@@ -229,14 +229,14 @@ class Dataset(IterableDataset):
         self.keys = keys
         self.suffixes = suffixes
         self.subset = None
-        self.shard_shuffle = identity
+        self.shard_shuffle = do_nothing
         self.handler = handler
         self.rng = random.Random()
         self.total = 0
         if prepare_for_worker is True:
             self.prepare_for_worker = self.shard_selection
         elif prepare_for_worker is False:
-            self.prepare_for_worker = identity
+            self.prepare_for_worker = do_nothing
         else:
             self.prepare_for_worker = prepare_for_worker
         self.pipeline = (
