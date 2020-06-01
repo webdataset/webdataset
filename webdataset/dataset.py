@@ -71,6 +71,11 @@ def warn_and_stop(exn):
     return False
 
 
+def identity(x):
+    """Identity function."""
+    return x
+
+
 def maybe_collect():
     """Running in notebooks, we tend to run out of memory due to
     weak references, and the collector doesn't seem to get triggered
@@ -224,22 +229,28 @@ class Dataset(IterableDataset):
         self.keys = keys
         self.suffixes = suffixes
         self.subset = None
-        self.do_shuffle = shuffle
+        self.shard_shuffle = identity
         self.handler = handler
         self.rng = random.Random()
+        self.total = 0
         if prepare_for_worker is True:
             self.prepare_for_worker = self.shard_selection
         elif prepare_for_worker is False:
-            self.prepare_for_worker = lambda: None
+            self.prepare_for_worker = identity
         else:
             self.prepare_for_worker = prepare_for_worker
         self.pipeline = (
             initial_pipeline if initial_pipeline is not None else [group_by_keys()]
         )
+        self.start_iter_hook = self.reseed
         self.shard_hook = None
 
     def __len__(self):
         return self.length
+
+    def reseed(self):
+        """Reseed RNG based on PID and time."""
+        self.rng.seed(int(os.getpid()) + int(time.time()*1000))
 
     def shard_selection(self):
         """Contains the logic for self.subset shard selection."""
@@ -262,11 +273,11 @@ class Dataset(IterableDataset):
 
     def raw_iter(self):
         """Iterate over samples."""
+        self.start_iter_hook()
         self.prepare_for_worker()
-        if self.do_shuffle:
-            self.rng.shuffle(self.urls)
         self.sample = 0
         urls = self.urls
+        self.shard_shuffle(urls)
         count = 0
         for epoch in range(self.epochs):
             for url in urls:
@@ -317,7 +328,7 @@ class Dataset(IterableDataset):
         """Shuffle the data."""
         if size == 0:
             return self
-        self.do_shuffle = True
+        self.shard_shuffle = self.rng.shuffle
         self.pipeline.append(filters.shuffle(size, rng=self.rng, **kw))
         return self
 
