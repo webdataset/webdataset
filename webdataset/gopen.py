@@ -170,6 +170,7 @@ gopen_schemes = dict(
 
 def gopen(url, mode="rb", bufsize=8192, **kw):
     global fallback_gopen
+    verbose = int(os.environ.get("GOPEN_VERBOSE", 0))
     assert mode in ["rb", "wb"], mode
     if url == "-":
         if mode == "rb":
@@ -179,6 +180,8 @@ def gopen(url, mode="rb", bufsize=8192, **kw):
         else:
             raise ValueError(f"unknown mode {mode}")
     pr = urlparse(url)
+    if verbose:
+        print(pr, file=sys.stderr)
     if pr.scheme == "":
         bufsize = int(os.environ.get("GOPEN_BUFFER", -1))
         return open(url, mode, buffering=bufsize)
