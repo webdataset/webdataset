@@ -67,6 +67,9 @@ class Pipe:
         """Checks the status variable and raises an exception if necessary."""
         if self.status is not None:
             self.status = self.proc.wait()
+            verbose = int(os.environ.get("GOPEN_VERBOSE", 0))
+            if verbose:
+                print(f"pipe exit [{self.status}] {self.args}", file=sys.stderr)
             if self.status not in self.ignore_status and not self.ignore_errors:
                 raise Exception(f"{self.args}: exit {self.status} (read)")
 
@@ -171,6 +174,8 @@ gopen_schemes = dict(
 def gopen(url, mode="rb", bufsize=8192, **kw):
     global fallback_gopen
     verbose = int(os.environ.get("GOPEN_VERBOSE", 0))
+    if verbose:
+        print("GOPEN", url, file=sys.stderr)
     assert mode in ["rb", "wb"], mode
     if url == "-":
         if mode == "rb":
@@ -180,8 +185,6 @@ def gopen(url, mode="rb", bufsize=8192, **kw):
         else:
             raise ValueError(f"unknown mode {mode}")
     pr = urlparse(url)
-    if verbose:
-        print(pr, file=sys.stderr)
     if pr.scheme == "":
         bufsize = int(os.environ.get("GOPEN_BUFFER", -1))
         return open(url, mode, buffering=bufsize)
