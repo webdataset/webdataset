@@ -426,6 +426,8 @@ class Dataset(IterableDataset, SampleIterator):
 
 
 class MPDataset(IterableDataset, Pipeline):
+    """Parallel dataset preprocessing using multiprocessing."""
+
     def __init__(self, dataset, length=None, workers=4, daemon=True):
         Pipeline.__init__(self)
         self.dataset = dataset
