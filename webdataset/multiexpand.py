@@ -1,6 +1,6 @@
 import sys
 import os
-import multiprocessing as mp
+import torch.multiprocessing as mp
 import queue
 
 

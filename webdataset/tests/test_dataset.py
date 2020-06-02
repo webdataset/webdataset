@@ -459,7 +459,7 @@ def test_chopped():
     assert count_samples_tuple(cds, n=500) == 250
 
 
-def test_mp():
+def no_test_mp():
     import torch
     from torchvision import transforms
 
@@ -488,7 +488,7 @@ def test_mp():
         break
 
 
-def test_mp_count():
+def no_test_mp_count():
     k = 11
     ds = wds.Dataset([local_data] * k).decode("pil").to_tuple("jpg;png", "cls")
     mpds = wds.MPDataset(ds, workers=4)
