@@ -35,7 +35,7 @@ def clean_jobs(jobs):
 
 
 def multiexpand(
-    inputs, f, extra=(), kw={}, nworkers=4, input_size=0, output_size=1024, daemon=False
+    inputs, f, extra=(), kw={}, nworkers=4, input_size=0, output_size=10000, daemon=False
 ):
     verbose = int(os.environ.get("MULTIEXPAND_VERBOSE", 0))
     input_queue = mp.Queue(input_size)
