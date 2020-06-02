@@ -219,6 +219,7 @@ def test_raw():
 
 def test_rgb8_np_vs_torch():
     import warnings
+
     warnings.filterwarnings("error")
     ds = wds.Dataset(local_data).decode("rgb8").to_tuple("png;jpg", "cls")
     image, cls = next(iter(ds))
@@ -456,3 +457,39 @@ def test_chopped():
     cds = wds.ChoppedDataset(ds, 250, nominal=77)
     assert len(cds) == 77
     assert count_samples_tuple(cds, n=500) == 250
+
+
+def test_mp():
+    import torch
+    from torchvision import transforms
+
+    normalize = transforms.Normalize(
+        mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
+    )
+    preproc = transforms.Compose(
+        [
+            transforms.RandomResizedCrop(224),
+            transforms.RandomHorizontalFlip(),
+            transforms.ToTensor(),
+            normalize,
+        ]
+    )
+    ds = (
+        wds.Dataset(remote_loc + remote_shards)
+        .decode("pil")
+        .to_tuple("jpg;png", "json")
+        .map_tuple(preproc, identity)
+    )
+    mpds = wds.MPDataset(ds, workers=4)
+    for sample in mpds:
+        assert isinstance(sample[0], torch.Tensor), type(sample[0])
+        assert tuple(sample[0].size()) == (3, 224, 224), sample[0].size()
+        assert isinstance(sample[1], list), type(sample[1])
+        break
+
+
+def test_mp_count():
+    k = 11
+    ds = wds.Dataset([local_data] * k).decode("pil").to_tuple("jpg;png", "cls")
+    mpds = wds.MPDataset(ds, workers=4)
+    assert count_samples_tuple(mpds) == 47 * k

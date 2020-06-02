@@ -425,6 +425,29 @@ class Dataset(IterableDataset, SampleIterator):
         return self.samples(urls)
 
 
+class MPDataset(IterableDataset, Pipeline):
+    def __init__(self, dataset, length=None, workers=4, daemon=True):
+        Pipeline.__init__(self)
+        self.dataset = dataset
+        self.length = length
+        self.workers = workers
+        self.daemon = daemon
+
+    def __len__(self):
+        return self.length
+
+    def __iter__(self):
+        from . import multiexpand
+
+        urls = self.dataset.urls
+        self.dataset.shard_selection = all_urls
+        self.dataset.shard_shuffle = do_nothing
+        source = multiexpand.multiexpand(
+            urls, self.dataset.samples, nworkers=self.workers, daemon=self.daemon
+        )
+        return filters.pipeline(source, *self.pipeline)
+
+
 class ResizedDataset(IterableDataset):
     """Change the actual and nominal length of an IterableDataset.
 
