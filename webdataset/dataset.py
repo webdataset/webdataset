@@ -367,11 +367,11 @@ def worker_urls(urls):
 
     worker_info = torch.utils.data.get_worker_info()
     if worker_info is not None:
-        rank = worker_info.id
-        world_size = worker_info.num_workers
-        if rank == 0 and len(urls) < world_size:
-            warnings.warn(f"num_workers {world_size} > num_shards {len(urls)}")
-        return urls[rank::world_size]
+        wid = worker_info.id
+        num_workers = worker_info.num_workers
+        if wid == 0 and len(urls) < num_workers:
+            warnings.warn(f"num_workers {num_workers} > num_shards {len(urls)}")
+        return urls[wid::num_workers]
     else:
         return urls
 

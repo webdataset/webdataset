@@ -19,6 +19,8 @@ from .dataset import (
     warn_and_continue,
     ignore_and_stop,
     warn_and_stop,
+    worker_urls,
+    all_urls
 )
 from .autodecode import default_handlers
 from .writer import ShardWriter, TarWriter
