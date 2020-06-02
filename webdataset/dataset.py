@@ -451,7 +451,7 @@ class MPDataset(IterableDataset, Pipeline):
             self.dataset.samples,
             nworkers=self.workers,
             daemon=self.daemon,
-            queue_size=self.queue_size,
+            output_size=self.queue_size,
         )
         return filters.pipeline(source, *self.pipeline)
 
