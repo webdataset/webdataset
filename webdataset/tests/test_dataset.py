@@ -360,7 +360,7 @@ def test_opener():
         ).stdout
 
     ds = (
-        wds.Dataset("{000000..000099}", opener=opener)
+        wds.Dataset("{000000..000099}", open_fn=opener)
         .shuffle(100)
         .to_tuple("jpg;png", "json")
     )
