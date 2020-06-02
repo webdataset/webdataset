@@ -12,6 +12,7 @@ from .dataset import (
     Dataset,
     ChoppedDataset,
     ResizedDataset,
+    MPDataset,
     reraise_exception,
     ignore_and_continue,
     warn_and_continue,
