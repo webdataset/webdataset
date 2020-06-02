@@ -429,9 +429,7 @@ class Dataset(IterableDataset, SampleIterator):
 class MPDataset(IterableDataset, Pipeline):
     """Parallel dataset preprocessing using multiprocessing."""
 
-    def __init__(
-        self, dataset, length=None, workers=4, daemon=True, queue_size=queue_size
-    ):
+    def __init__(self, dataset, length=None, workers=4, daemon=True, queue_size=10000):
         Pipeline.__init__(self)
         self.dataset = dataset
         self.length = length
