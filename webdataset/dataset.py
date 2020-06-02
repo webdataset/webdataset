@@ -253,6 +253,7 @@ class Pipeline:
         if rng is None:
             rng = random.Random()
         self.rng = rng
+        self.reseed_hook = self.reseed_rng
         self.shard_shuffle = rng.shuffle
         self.pipeline.append(filters.shuffle(size, rng=rng, **kw))
         return self
