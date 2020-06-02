@@ -42,6 +42,12 @@ class Curried2(object):
     def __call__(self, data):
         return self.f(data, *self.args, **self.kw)
 
+    def __str__(self):
+        return f"<{self.f.__name__} {self.args} {self.kw}>"
+
+    def __repr__(self):
+        return f"<{self.f.__name__} {self.args} {self.kw}>"
+
 
 class Curried(object):
     """Helper class for currying pipeline stages.

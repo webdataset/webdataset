@@ -27,7 +27,6 @@ import braceexpand
 from torch.utils.data import IterableDataset
 
 from . import filters, gopen
-from .checks import checkcallable
 
 # from functools import wraps
 trace = False
@@ -69,6 +68,25 @@ def warn_and_stop(exn):
     warnings.warn(repr(exn))
     time.sleep(0.5)
     return False
+
+
+def add_hook(fs, f):
+    assert callable(f)
+    if fs is None:
+        return [f]
+    if isinstance(fs, list):
+        return fs + [f]
+    assert callable(fs)
+    return [fs, f]
+
+
+def call_hook(fs, *args, **kw):
+    if fs is None:
+        return
+    if not isinstance(fs, list):
+        fs = [fs]
+    for f in fs:
+        f(*args, **kw)
 
 
 def do_nothing(*args, **kw):
@@ -192,135 +210,17 @@ def tardata(fileobj, skip_meta=r"__[^/]*__($|/)", handler=reraise_exception):
         handler(exn)
 
 
-class Dataset(IterableDataset):
-    """Iterate over sharded datasets.
+class Pipeline:
+    """Simple fluid pipeline builder.
 
-    This class combines several function: it is a container for a list of
-    shards, it is a container for a processing pipelines, and it handles
-    some bookkeeping related to DataLoader.
-
-    :param urls: shard spec or list of shards
-    :param key_fn: function to split file names into base plus extension
-    :param length: nominal length of dataset (returned by __len__)
-    :param open_fn: function called for opening a URL
-
-    Additional hooks (assignable):
-    - `self.shard_hook` - hook when a new shard is opened
-    - `self.start_iter_hook` - hook called at the start of an epoch (reseed rng)
-    - `self.shard_shuffle` - called to shuffle shards
-    - `self.rng` - random number generator for shuffling
-
+    This is a convenience class that allows common processing
+    pipelines to be built up with a fluid interface.
     """
 
-    def __init__(
-        self,
-        urls,
-        *,
-        key_fn=base_plus_ext,
-        length=None,
-        epochs=1,
-        open_fn=gopen.reader,
-        handler=reraise_exception,
-        prepare_for_worker=True,
-        initial_pipeline=None,
-    ):
-        if isinstance(open_fn, str):
-            self.open_fn = gopen.command_pipe(open_fn)
-        elif callable(open_fn):
-            self.open_fn = open_fn
-        else:
-            raise ValueError(f"{open_fn}: must be either str or callable")
-        checkcallable(self.open_fn)
-        if isinstance(urls, str):
-            urls = list(braceexpand.braceexpand(urls))
-        self.full_urls = self.urls = urls
-        self.length = length
-        self.epochs = epochs
-        self.key_fn = key_fn
-        self.handler = handler
-        self.rng = random.Random()
-        self.total = 0
-        self.shard_shuffle = do_nothing
-        self.start_iter_hook = self.reseed
-        self.shard_hook = do_nothing
-        self.set_worker_handler(False)
-        self.pipeline = [group_by_keys()] if initial_pipeline is None else initial_pipeline
-
-    def __len__(self):
-        """Return the nominal length of the dataset."""
-        return self.length
-
-    def reseed(self):
-        """Reseed RNG based on PID and time."""
-        seed = random.SystemRandom().random()
-        self.rng.seed(seed)
-
-    def raw_iter(self):
-        """Iterate over samples."""
-        self.start_iter_hook()
-        self.prepare_for_worker()
-        self.sample = 0
-        urls = self.urls
-        self.shard_shuffle(urls)
-        count = 0
-        for epoch in range(self.epochs):
-            for url in urls:
-                if self.shard_hook:
-                    self.shard_hook(url)
-                stream = None
-                try:
-                    with self.open_fn(url) as stream:
-                        files_of_archive = tardata(stream, handler=self.handler)
-                        for fname, content in files_of_archive:
-                            yield fname, content
-                            count += 1
-                        maybe_collect()
-                except Exception as exn:
-                    if self.handler(exn):
-                        continue
-                    else:
-                        break
-
-    def __iter__(self):
-        return filters.pipeline(self.raw_iter(), *self.pipeline)
-
-    def set_worker_handler(self, what):
-        """Set up logic for torch.utils.data.get_worker_info().
-
-        When True, splits shards by rank/world_size. When False,
-        doesn't split shards. When callable, just calls the function.
-        """
-        if what is True:
-            self.prepare_for_worker = self.shard_selection
-        elif what is False:
-            self.prepare_for_worker = do_nothing
-        else:
-            assert callable(what)
-            self.prepare_for_worker = what
-
-    def shard_selection(self):
-        """Contains the logic for shard selection based on worker_info."""
-        import torch
-        worker_info = torch.utils.data.get_worker_info()
-        if worker_info is not None:
-            rank = worker_info.id
-            world_size = worker_info.num_workers
-            if rank == 0 and len(self.full_urls) < world_size:
-                warnings.warn(f"num_workers {world_size} > num_shards {len(self.full_urls)}")
-            self.urls = self.full_urls[rank::world_size]
-        else:
-            self.urls = self.full_urls
-
-    def num_shards(self):
-        """Returns the total number of shards."""
-        return len(self.full_urls)
-
-    def shard_iter(self, url):
-        """Iterates over a single shard."""
-        if isinstance(url, int):
-            url = self.full_urls[url]
-        self.urls = [url]
-        return iter(self)
+    def __init__(self):
+        self.pipeline = []
+        self.rng = None
+        self.shard_shuffle = None
 
     def pipe(self, stage):
         """Add a pipline stage (a function taking an iterator and returning another iterator)."""
@@ -346,13 +246,20 @@ class Dataset(IterableDataset):
         )
         return self
 
-    def shuffle(self, size, **kw):
+    def shuffle(self, size, rng=None, **kw):
         """Shuffle the data."""
         if size == 0:
             return self
-        self.shard_shuffle = self.rng.shuffle
-        self.pipeline.append(filters.shuffle(size, rng=self.rng, **kw))
+        if rng is None:
+            rng = random.Random()
+        self.rng = rng
+        self.shard_shuffle = rng.shuffle
+        self.pipeline.append(filters.shuffle(size, rng=rng, **kw))
         return self
+
+    def reseed_rng(self):
+        seed = random.SystemRandom().random()
+        self.rng.seed(seed)
 
     def decode(self, decoder="rgb", handler=reraise_exception):
         """Decode the data with the given decoder."""
@@ -389,7 +296,133 @@ class Dataset(IterableDataset):
         self.pipeline.append(filters.map_tuple(*args, handler=handler))
         return self
 
-    # TODO: add batching here
+
+def make_opener(open_fn):
+    if isinstance(open_fn, str):
+        return gopen.command_pipe(open_fn)
+    elif callable(open_fn):
+        return open_fn
+    else:
+        raise ValueError(f"{open_fn}: must be either str or callable")
+
+
+class SampleIterator(Pipeline):
+    """Iterates over the samples of webdatasets using a given processing pipeline."""
+
+    def __init__(
+        self, initial_pipeline=None, tarhandler=reraise_exception, open_fn=gopen.reader
+    ):
+        Pipeline.__init__(self)
+        self.open_fn = make_opener(open_fn)
+        self.tarhandler = tarhandler
+        self.shard_hook = do_nothing
+        if initial_pipeline is None:
+            initial_pipeline = [group_by_keys()]
+        for stage in initial_pipeline:
+            self.pipe(stage)
+
+    def raw_samples(self, urls):
+        assert isinstance(urls, list)
+        for url in urls:
+            self.shard_hook()
+            stream = None
+            try:
+                with self.open_fn(url) as stream:
+                    files_of_archive = tardata(stream, handler=self.tarhandler)
+                    for fname, content in files_of_archive:
+                        yield fname, content
+                    maybe_collect()
+            except Exception as exn:
+                if self.tarhandler(exn):
+                    continue
+                else:
+                    break
+
+    def samples(self, urls):
+        if isinstance(urls, str):
+            urls = [urls]
+        assert isinstance(urls, list)
+        source = self.raw_samples(urls)
+        return filters.pipeline(source, *self.pipeline)
+
+
+def all_urls(urls):
+    """Returns all URLs.
+
+    Used as a shard selection function in Dataset."""
+    assert isinstance(urls, list)
+    assert isinstance(urls[0], str)
+    return urls
+
+
+def worker_urls(urls):
+    """Selects a subset of urls based on Torch get_worker_info.
+
+    Used as a shard selection function in Dataset."""
+    import torch
+
+    assert isinstance(urls, list)
+    assert isinstance(urls[0], str)
+
+    worker_info = torch.utils.data.get_worker_info()
+    if worker_info is not None:
+        rank = worker_info.id
+        world_size = worker_info.num_workers
+        if rank == 0 and len(urls) < world_size:
+            warnings.warn(f"num_workers {world_size} > num_shards {len(urls)}")
+        return urls[rank::world_size]
+    else:
+        return urls
+
+
+class Dataset(IterableDataset, SampleIterator):
+    """Iterate over sharded datasets.
+
+    This class combines several function: it is a container for a list of
+    shards, it is a container for a processing pipelines, and it handles
+    some bookkeeping related to DataLoader.
+    """
+
+    def __init__(
+        self,
+        urls,
+        *,
+        length=None,
+        open_fn=gopen.reader,
+        handler=reraise_exception,
+        tarhandler=None,
+        prepare_for_worker=True,
+        initial_pipeline=None,
+        shard_selection=all_urls,
+    ):
+        tarhandler = handler if tarhandler is None else tarhandler
+        IterableDataset.__init__(self)
+        SampleIterator.__init__(
+            self,
+            initial_pipeline=initial_pipeline,
+            tarhandler=tarhandler,
+            open_fn=open_fn,
+        )
+        if isinstance(urls, str):
+            urls = list(braceexpand.braceexpand(urls))
+        self.urls = urls
+        self.length = length
+        self.handler = handler
+        self.total = 0
+        self.shard_shuffle = do_nothing
+        self.shard_selection = all_urls
+        self.reseed_hook = do_nothing
+
+    def __len__(self):
+        """Return the nominal length of the dataset."""
+        return self.length
+
+    def __iter__(self):
+        urls = list(self.urls)
+        self.reseed_hook()
+        urls = self.shard_selection(urls)
+        self.shard_shuffle(urls)
+        return self.samples(urls)
 
 
 class ResizedDataset(IterableDataset):
