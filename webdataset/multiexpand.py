@@ -2,6 +2,7 @@ import sys
 import os
 import torch.multiprocessing as mp
 import queue
+import time
 
 
 def _parallel_job(i, f, input_queue, output_queue, extra, kw):
@@ -29,7 +30,7 @@ def clean_jobs(jobs):
         if j.is_alive():
             result.append(j)
         else:
-            j.join(0.1)
+            j.join()
     return result
 
 
@@ -55,13 +56,14 @@ def multiexpand(
     while len(jobs) > 0:
         if verbose > 9:
             print("MULTIEXPAND", count, jobs, file=sys.stderr)
-        while True:
-            try:
-                sample = output_queue.get(True, 0.01)
+        try:
+            while True:
+                sample = output_queue.get(False)
+                yield sample
                 if verbose and count % 1000 == 0:
                     print("MULTIEXPAND GOT", count, repr(sample)[:50], file=sys.stderr)
-            except queue.Empty:
-                break
-            yield sample
-            count += 1
+                count += 1
+        except queue.Empty:
+            pass
         jobs = clean_jobs(jobs)
+        time.sleep(0.01)
