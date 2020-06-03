@@ -394,7 +394,7 @@ class Dataset(IterableDataset, SampleIterator):
         tarhandler=None,
         prepare_for_worker=True,
         initial_pipeline=None,
-        shard_selection=all_urls,
+        shard_selection=worker_urls,
     ):
         tarhandler = handler if tarhandler is None else tarhandler
         IterableDataset.__init__(self)
@@ -411,7 +411,7 @@ class Dataset(IterableDataset, SampleIterator):
         self.handler = handler
         self.total = 0
         self.shard_shuffle = do_nothing
-        self.shard_selection = all_urls
+        self.shard_selection = shard_selection
         self.reseed_hook = do_nothing
 
     def __len__(self):
