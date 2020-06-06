@@ -12,7 +12,7 @@ import queue
 from . import filters
 
 
-verbose = int(os.environ.get("MDATASET_VERBOSE", 0))
+verbose = int(os.environ.get("MULTIDATASET_VERBOSE", 0))
 
 
 def D(*args):
@@ -55,11 +55,11 @@ class MultiDatasetIterator(IterableDataset):
         self.input_queue = mp.Queue(input_size)
         self.output_queue = mp.Queue(output_size)
         self.jobs = []
-        D("urls")
         urls = url_fn()
         if len(urls) == 0:
             warnings.warn(f"no urls in MultiDatasetIterator")
             return
+        D("urls", urls)
         for url in urls:
             self.input_queue.put(url)
         D("workers")

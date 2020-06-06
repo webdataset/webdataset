@@ -38,6 +38,7 @@ def count_samples(source, *args, n=1000):
 
 def test_multi():
     for k in [1, 4, 17]:
-        ds = wds.Dataset([f"pipe:cat {local_data}"]*k).decode().shuffle(5).to_tuple("png;jpg cls")
+        urls = [f"pipe:cat {local_data} # {i}" for i in range(k)]
+        ds = wds.Dataset(urls).decode().shuffle(5).to_tuple("png;jpg cls")
         mds = multi.MultiDataset(ds, workers=4)
         assert count_samples_tuple(mds) == 47*k
