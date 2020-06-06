@@ -39,7 +39,7 @@ def _parallel_job(i, f, input_queue, output_queue, extra=(), kw={}):
 class MultiDatasetIterator(IterableDataset):
     def __init__(
         self,
-        urls=[],
+        url_fn=None,
         factory=None,
         workers=4,
         input_size=0,
@@ -54,11 +54,15 @@ class MultiDatasetIterator(IterableDataset):
             )
         self.input_queue = mp.Queue(input_size)
         self.output_queue = mp.Queue(output_size)
+        self.jobs = []
         D("urls")
+        urls = url_fn()
+        if len(urls) == 0:
+            warnings.warn(f"no urls in MultiDatasetIterator")
+            return
         for url in urls:
             self.input_queue.put(url)
         D("workers")
-        self.jobs = []
         for i in range(workers):
             job = mp.Process(
                 target=_parallel_job,
@@ -108,13 +112,13 @@ class MultiDataset(IterableDataset, wds.Pipeline):
         if dataset is not None:
             assert urls is None and factory is None
             if isinstance(dataset, wds.Dataset):
-                urls = dataset.urls
+                url_fn = dataset.select_urls
                 factory = dataset.samples
             else:
                 raise ValueError(f"{type(dataset)}: don't know how to parallelize")
         self.nominal = nominal
         self.kw = dict(
-            urls=urls,
+            url_fn=url_fn,
             factory=factory,
             input_size=input_size,
             output_size=output_size,

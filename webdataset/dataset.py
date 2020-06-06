@@ -425,12 +425,16 @@ class Dataset(IterableDataset, SampleIterator):
         """Return the nominal length of the dataset."""
         return self.length
 
-    def __iter__(self):
+    def select_urls(self):
         urls = list(self.urls)
         self.reseed_hook()
         urls = self.node_selection(urls)
         urls = self.shard_selection(urls)
         urls = self.shard_shuffle(urls)
+        return urls
+
+    def __iter__(self):
+        urls = self.select_urls()
         return self.samples(urls)
 
 
