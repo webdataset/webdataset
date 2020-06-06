@@ -107,6 +107,7 @@ class MultiDataset(IterableDataset, wds.Pipeline):
         nominal=None,
     ):
         wds.Pipeline.__init__(self)
+        D("dataset", dataset)
         self.kw = dict(
             shard_fn=dataset.shard_fn,
             factory=dataset.samples,
