@@ -24,3 +24,4 @@ from .dataset import (
 )
 from .autodecode import default_handlers
 from .writer import ShardWriter, TarWriter
+from .multi import MultiDataset
