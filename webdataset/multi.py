@@ -33,6 +33,8 @@ def _parallel_job(i, f, input_queue, output_queue, extra=(), kw={}):
             assert isinstance(sample, (tuple, dict))
             output_queue.put(sample)
             count += 1
+    input_queue.close()
+    output_queue.close()
     D("job", i, "done")
 
 
@@ -88,12 +90,20 @@ class MultiDatasetIterator(IterableDataset):
                 self.jobs = [job for job in self.jobs if job.is_alive()]
                 D("timeout", len(self.jobs))
         raise StopIteration()
+        self.finish()
 
     def terminate(self):
         for job in self.jobs:
             job.terminate()
             job.join()
         self.jobs = []
+        self.finish()
+
+    def finish(self):
+        self.input_queue.close()
+        self.output_queue.close()
+        self.input_queue.join_thread()
+        self.output_queue.join_thread()
 
 
 class MultiDataset(IterableDataset, wds.Pipeline):
