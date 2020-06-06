@@ -12,14 +12,16 @@ or over HTTP connections.
 
 __all__ = "WebDataset tariterator default_handlers imagehandler".split()
 
-import sys
+import queue
 import random
+import sys
+import threading
 from functools import reduce
+
 import numpy as np
 
-from .checks import checktype
 from . import autodecode
-
+from .checks import checktype
 
 try:
     from torch import Tensor as TorchTensor
@@ -373,24 +375,7 @@ def map_tuple_(data, *args, handler=reraise_exception):
 map_tuple = Curried(map_tuple_)
 
 
-def batch_tensors(tensors, expand=False):
-    if isinstance(tensors[0], np.ndarray):
-        if not expand:
-            return np.ndarray(list(tensors))
-        else:
-            raise Exception("unimplemented")
-    elif isinstance(tensors[0], TorchTensor):
-        import torch
-
-        if not expand:
-            return torch.stack(list(tensors))
-        else:
-            raise Exception("unimplemented")
-    else:
-        raise ValueError(f"{tensors}: cannot combine")
-
-
-def samples_to_batch(samples, combine_tensors=True, combine_scalars=True, expand=False):
+def default_collation_fn(samples, combine_tensors=True, combine_scalars=True):
     """Take a collection of samples (dictionaries) and create a batch.
 
     If `tensors` is True, `ndarray` objects are combined into
@@ -408,9 +393,13 @@ def samples_to_batch(samples, combine_tensors=True, combine_scalars=True, expand
         if isinstance(b[0], (int, float)):
             if combine_scalars:
                 b = np.array(list(b))
-        elif isinstance(b[0], (TorchTensor, np.ndarray)):
+        elif isinstance(b[0], TorchTensor):
             if combine_tensors:
-                b = batch_tensors(b, expand=expand)
+                import torch
+                b = torch.stack(list(b))
+        elif isinstance(b[0], np.ndarray):
+            if combine_tensors:
+                b = np.ndarray(list(b))
         else:
             b = list(b)
         result.append(b)
@@ -420,10 +409,8 @@ def samples_to_batch(samples, combine_tensors=True, combine_scalars=True, expand
 def batched_(
     data,
     batchsize=20,
-    combine_tensors=True,
-    combine_scalars=True,
+    collation_fn=default_collation_fn,
     partial=True,
-    expand=False,
 ):
     """Create batches of the given size.
 
@@ -438,23 +425,24 @@ def batched_(
     batch = []
     for sample in data:
         if len(batch) >= batchsize:
-            yield samples_to_batch(
-                batch,
-                combine_tensors=combine_tensors,
-                combine_scalars=combine_scalars,
-                expand=expand,
-            )
+            yield collation_fn(batch)
             batch = []
         batch.append(sample)
     if len(batch) == 0:
         return
     elif len(batch) == batchsize or partial:
-        yield samples_to_batch(
-            batch,
-            combine_tensors=combine_tensors,
-            combine_scalars=combine_scalars,
-            expand=expand,
-        )
+        yield collation_fn(batch)
 
 
 batched = Curried(batched_)
+
+
+def unbatched_(data):
+    for sample in data:
+        assert isinstance(sample, (tuple, list)), sample
+        assert len(sample) > 0
+        for i in range(len(sample[0])):
+            yield tuple(x[i] for x in sample)
+
+
+unbatched = Curried(unbatched_)

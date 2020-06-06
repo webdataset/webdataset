@@ -228,22 +228,13 @@ class Pipeline:
         return self
 
     def batched(
-        self,
-        batchsize,
-        combine_tensors=True,
-        combine_scalars=True,
-        partial=True,
-        expand=False,
+        self, batchsize, partial=True,
     ):
-        self.pipeline.append(
-            filters.batched(
-                batchsize=batchsize,
-                combine_tensors=combine_tensors,
-                combine_scalars=combine_scalars,
-                partial=True,
-                expand=False,
-            )
-        )
+        self.pipeline.append(filters.batched(batchsize=batchsize, partial=True,))
+        return self
+
+    def unbatched(self):
+        self.pipeline.append(filters.unbatched())
         return self
 
     def shuffle(self, size, rng=None, **kw):
