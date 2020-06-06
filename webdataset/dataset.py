@@ -89,9 +89,24 @@ def call_hook(fs, *args, **kw):
         f(*args, **kw)
 
 
+def identity(x):
+    return x
+
+
 def do_nothing(*args, **kw):
     """Do nothing function."""
     pass
+
+
+class Shuffler:
+    """Make a shuffle function (avoid nesting for pickle)."""
+    def __init__(self, rng):
+        self.rng = rng
+
+    def __call__(self, lst):
+        lst = list(lst)
+        self.rng.shuffle(lst)
+        return lst
 
 
 def maybe_collect():
@@ -245,7 +260,7 @@ class Pipeline:
             rng = random.Random()
         self.rng = rng
         self.reseed_hook = self.reseed_rng
-        self.shard_shuffle = rng.shuffle
+        self.shard_shuffle = Shuffler(rng)
         self.pipeline.append(filters.shuffle(size, rng=rng, **kw))
         return self
 
@@ -401,9 +416,10 @@ class Dataset(IterableDataset, SampleIterator):
         self.length = length
         self.handler = handler
         self.total = 0
-        self.shard_shuffle = do_nothing
-        self.shard_selection = shard_selection
         self.reseed_hook = do_nothing
+        self.node_selection = identity
+        self.shard_selection = shard_selection
+        self.shard_shuffle = identity
 
     def __len__(self):
         """Return the nominal length of the dataset."""
@@ -412,8 +428,9 @@ class Dataset(IterableDataset, SampleIterator):
     def __iter__(self):
         urls = list(self.urls)
         self.reseed_hook()
+        urls = self.node_selection(urls)
         urls = self.shard_selection(urls)
-        self.shard_shuffle(urls)
+        urls = self.shard_shuffle(urls)
         return self.samples(urls)
 
 
