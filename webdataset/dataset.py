@@ -349,6 +349,7 @@ class SampleIterator(Pipeline):
         if isinstance(urls, str):
             urls = [urls]
         assert isinstance(urls, list)
+        self.sample_urls = urls
         source = self.raw_samples(urls)
         return filters.pipeline(source, *self.pipeline)
 
