@@ -10,7 +10,7 @@
 Open URLs by calling subcommands.
 """
 
-__all__ = "gopen scheme_to_command".split()
+__all__ = "gopen gopen_schemes".split()
 
 import os
 import sys
