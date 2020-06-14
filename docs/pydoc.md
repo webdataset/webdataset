@@ -1,4 +1,354 @@
 
+# Module `webdataset.multi`
+
+```
+Help on module webdataset.multi in webdataset:
+
+NAME
+    webdataset.multi
+
+CLASSES
+    torch.utils.data.dataset.IterableDataset(torch.utils.data.dataset.Dataset)
+        MultiDataset(torch.utils.data.dataset.IterableDataset, webdataset.dataset.Pipeline)
+        MultiDatasetIterator
+    webdataset.dataset.Pipeline(builtins.object)
+        MultiDataset(torch.utils.data.dataset.IterableDataset, webdataset.dataset.Pipeline)
+    
+    class MultiDataset(torch.utils.data.dataset.IterableDataset, webdataset.dataset.Pipeline)
+     |  MultiDataset(dataset, workers=4, output_size=10000, nominal=None, pin_memory=True)
+     |  
+     |  An iterable Dataset.
+     |  
+     |  All datasets that represent an iterable of data samples should subclass it.
+     |  Such form of datasets is particularly useful when data come from a stream.
+     |  
+     |  All subclasses should overwrite :meth:`__iter__`, which would return an
+     |  iterator of samples in this dataset.
+     |  
+     |  When a subclass is used with :class:`~torch.utils.data.DataLoader`, each
+     |  item in the dataset will be yielded from the :class:`~torch.utils.data.DataLoader`
+     |  iterator. When :attr:`num_workers > 0`, each worker process will have a
+     |  different copy of the dataset object, so it is often desired to configure
+     |  each copy independently to avoid having duplicate data returned from the
+     |  workers. :func:`~torch.utils.data.get_worker_info`, when called in a worker
+     |  process, returns information about the worker. It can be used in either the
+     |  dataset's :meth:`__iter__` method or the :class:`~torch.utils.data.DataLoader` 's
+     |  :attr:`worker_init_fn` option to modify each copy's behavior.
+     |  
+     |  Example 1: splitting workload across all workers in :meth:`__iter__`::
+     |  
+     |      >>> class MyIterableDataset(torch.utils.data.IterableDataset):
+     |      ...     def __init__(self, start, end):
+     |      ...         super(MyIterableDataset).__init__()
+     |      ...         assert end > start, "this example code only works with end >= start"
+     |      ...         self.start = start
+     |      ...         self.end = end
+     |      ...
+     |      ...     def __iter__(self):
+     |      ...         worker_info = torch.utils.data.get_worker_info()
+     |      ...         if worker_info is None:  # single-process data loading, return the full iterator
+     |      ...             iter_start = self.start
+     |      ...             iter_end = self.end
+     |      ...         else:  # in a worker process
+     |      ...             # split workload
+     |      ...             per_worker = int(math.ceil((self.end - self.start) / float(worker_info.num_workers)))
+     |      ...             worker_id = worker_info.id
+     |      ...             iter_start = self.start + worker_id * per_worker
+     |      ...             iter_end = min(iter_start + per_worker, self.end)
+     |      ...         return iter(range(iter_start, iter_end))
+     |      ...
+     |      >>> # should give same set of data as range(3, 7), i.e., [3, 4, 5, 6].
+     |      >>> ds = MyIterableDataset(start=3, end=7)
+     |  
+     |      >>> # Single-process loading
+     |      >>> print(list(torch.utils.data.DataLoader(ds, num_workers=0)))
+     |      [3, 4, 5, 6]
+     |  
+     |      >>> # Mult-process loading with two worker processes
+     |      >>> # Worker 0 fetched [3, 4].  Worker 1 fetched [5, 6].
+     |      >>> print(list(torch.utils.data.DataLoader(ds, num_workers=2)))
+     |      [3, 5, 4, 6]
+     |  
+     |      >>> # With even more workers
+     |      >>> print(list(torch.utils.data.DataLoader(ds, num_workers=20)))
+     |      [3, 4, 5, 6]
+     |  
+     |  Example 2: splitting workload across all workers using :attr:`worker_init_fn`::
+     |  
+     |      >>> class MyIterableDataset(torch.utils.data.IterableDataset):
+     |      ...     def __init__(self, start, end):
+     |      ...         super(MyIterableDataset).__init__()
+     |      ...         assert end > start, "this example code only works with end >= start"
+     |      ...         self.start = start
+     |      ...         self.end = end
+     |      ...
+     |      ...     def __iter__(self):
+     |      ...         return iter(range(self.start, self.end))
+     |      ...
+     |      >>> # should give same set of data as range(3, 7), i.e., [3, 4, 5, 6].
+     |      >>> ds = MyIterableDataset(start=3, end=7)
+     |  
+     |      >>> # Single-process loading
+     |      >>> print(list(torch.utils.data.DataLoader(ds, num_workers=0)))
+     |      [3, 4, 5, 6]
+     |      >>>
+     |      >>> # Directly doing multi-process loading yields duplicate data
+     |      >>> print(list(torch.utils.data.DataLoader(ds, num_workers=2)))
+     |      [3, 3, 4, 4, 5, 5, 6, 6]
+     |  
+     |      >>> # Define a `worker_init_fn` that configures each dataset copy differently
+     |      >>> def worker_init_fn(worker_id):
+     |      ...     worker_info = torch.utils.data.get_worker_info()
+     |      ...     dataset = worker_info.dataset  # the dataset copy in this worker process
+     |      ...     overall_start = dataset.start
+     |      ...     overall_end = dataset.end
+     |      ...     # configure the dataset to only process the split workload
+     |      ...     per_worker = int(math.ceil((overall_end - overall_start) / float(worker_info.num_workers)))
+     |      ...     worker_id = worker_info.id
+     |      ...     dataset.start = overall_start + worker_id * per_worker
+     |      ...     dataset.end = min(dataset.start + per_worker, overall_end)
+     |      ...
+     |  
+     |      >>> # Mult-process loading with the custom `worker_init_fn`
+     |      >>> # Worker 0 fetched [3, 4].  Worker 1 fetched [5, 6].
+     |      >>> print(list(torch.utils.data.DataLoader(ds, num_workers=2, worker_init_fn=worker_init_fn)))
+     |      [3, 5, 4, 6]
+     |  
+     |      >>> # With even more workers
+     |      >>> print(list(torch.utils.data.DataLoader(ds, num_workers=20, worker_init_fn=worker_init_fn)))
+     |      [3, 4, 5, 6]
+     |  
+     |  Method resolution order:
+     |      MultiDataset
+     |      torch.utils.data.dataset.IterableDataset
+     |      torch.utils.data.dataset.Dataset
+     |      webdataset.dataset.Pipeline
+     |      builtins.object
+     |  
+     |  Methods defined here:
+     |  
+     |  __init__(self, dataset, workers=4, output_size=10000, nominal=None, pin_memory=True)
+     |      Initialize self.  See help(type(self)) for accurate signature.
+     |  
+     |  __iter__(self)
+     |  
+     |  __len__(self)
+     |  
+     |  ----------------------------------------------------------------------
+     |  Methods inherited from torch.utils.data.dataset.IterableDataset:
+     |  
+     |  __add__(self, other)
+     |  
+     |  ----------------------------------------------------------------------
+     |  Methods inherited from torch.utils.data.dataset.Dataset:
+     |  
+     |  __getitem__(self, index)
+     |  
+     |  ----------------------------------------------------------------------
+     |  Data descriptors inherited from torch.utils.data.dataset.Dataset:
+     |  
+     |  __dict__
+     |      dictionary for instance variables (if defined)
+     |  
+     |  __weakref__
+     |      list of weak references to the object (if defined)
+     |  
+     |  ----------------------------------------------------------------------
+     |  Methods inherited from webdataset.dataset.Pipeline:
+     |  
+     |  batched(self, batchsize, partial=True)
+     |  
+     |  decode(self, decoder='rgb', handler=<function reraise_exception at 0x7f1b66dd6700>)
+     |      Decode the data with the given decoder.
+     |  
+     |  map(self, f, handler=<function reraise_exception at 0x7f1b66dd6700>)
+     |      Apply function `f` to each sample.
+     |  
+     |  map_dict(self, handler=<function reraise_exception at 0x7f1b66dd6700>, **kw)
+     |      Transform each sample by applying functions to corresponding fields.
+     |  
+     |  map_tuple(self, *args, handler=<function reraise_exception at 0x7f1b66dd6700>)
+     |      Apply a list of functions to the tuple.
+     |  
+     |  pipe(self, stage)
+     |      Add a pipline stage (a function taking an iterator and returning another iterator).
+     |  
+     |  rename(self, handler=<function reraise_exception at 0x7f1b66dd6700>, **kw)
+     |      Rename fields in the sample, dropping all unmatched fields.
+     |  
+     |  reseed_rng(self)
+     |  
+     |  select(self, predicate, **kw)
+     |      Select samples based on a predicate.
+     |  
+     |  shuffle(self, size, rng=None, **kw)
+     |      Shuffle the data.
+     |  
+     |  to_tuple(self, *args, handler=<function reraise_exception at 0x7f1b66dd6700>)
+     |      Extract fields from the sample in order and yield tuples.
+     |  
+     |  unbatched(self)
+    
+    class MultiDatasetIterator(torch.utils.data.dataset.IterableDataset)
+     |  MultiDatasetIterator(dataset=None, workers=4, output_size=100, pin_memory=True)
+     |  
+     |  An iterable Dataset.
+     |  
+     |  All datasets that represent an iterable of data samples should subclass it.
+     |  Such form of datasets is particularly useful when data come from a stream.
+     |  
+     |  All subclasses should overwrite :meth:`__iter__`, which would return an
+     |  iterator of samples in this dataset.
+     |  
+     |  When a subclass is used with :class:`~torch.utils.data.DataLoader`, each
+     |  item in the dataset will be yielded from the :class:`~torch.utils.data.DataLoader`
+     |  iterator. When :attr:`num_workers > 0`, each worker process will have a
+     |  different copy of the dataset object, so it is often desired to configure
+     |  each copy independently to avoid having duplicate data returned from the
+     |  workers. :func:`~torch.utils.data.get_worker_info`, when called in a worker
+     |  process, returns information about the worker. It can be used in either the
+     |  dataset's :meth:`__iter__` method or the :class:`~torch.utils.data.DataLoader` 's
+     |  :attr:`worker_init_fn` option to modify each copy's behavior.
+     |  
+     |  Example 1: splitting workload across all workers in :meth:`__iter__`::
+     |  
+     |      >>> class MyIterableDataset(torch.utils.data.IterableDataset):
+     |      ...     def __init__(self, start, end):
+     |      ...         super(MyIterableDataset).__init__()
+     |      ...         assert end > start, "this example code only works with end >= start"
+     |      ...         self.start = start
+     |      ...         self.end = end
+     |      ...
+     |      ...     def __iter__(self):
+     |      ...         worker_info = torch.utils.data.get_worker_info()
+     |      ...         if worker_info is None:  # single-process data loading, return the full iterator
+     |      ...             iter_start = self.start
+     |      ...             iter_end = self.end
+     |      ...         else:  # in a worker process
+     |      ...             # split workload
+     |      ...             per_worker = int(math.ceil((self.end - self.start) / float(worker_info.num_workers)))
+     |      ...             worker_id = worker_info.id
+     |      ...             iter_start = self.start + worker_id * per_worker
+     |      ...             iter_end = min(iter_start + per_worker, self.end)
+     |      ...         return iter(range(iter_start, iter_end))
+     |      ...
+     |      >>> # should give same set of data as range(3, 7), i.e., [3, 4, 5, 6].
+     |      >>> ds = MyIterableDataset(start=3, end=7)
+     |  
+     |      >>> # Single-process loading
+     |      >>> print(list(torch.utils.data.DataLoader(ds, num_workers=0)))
+     |      [3, 4, 5, 6]
+     |  
+     |      >>> # Mult-process loading with two worker processes
+     |      >>> # Worker 0 fetched [3, 4].  Worker 1 fetched [5, 6].
+     |      >>> print(list(torch.utils.data.DataLoader(ds, num_workers=2)))
+     |      [3, 5, 4, 6]
+     |  
+     |      >>> # With even more workers
+     |      >>> print(list(torch.utils.data.DataLoader(ds, num_workers=20)))
+     |      [3, 4, 5, 6]
+     |  
+     |  Example 2: splitting workload across all workers using :attr:`worker_init_fn`::
+     |  
+     |      >>> class MyIterableDataset(torch.utils.data.IterableDataset):
+     |      ...     def __init__(self, start, end):
+     |      ...         super(MyIterableDataset).__init__()
+     |      ...         assert end > start, "this example code only works with end >= start"
+     |      ...         self.start = start
+     |      ...         self.end = end
+     |      ...
+     |      ...     def __iter__(self):
+     |      ...         return iter(range(self.start, self.end))
+     |      ...
+     |      >>> # should give same set of data as range(3, 7), i.e., [3, 4, 5, 6].
+     |      >>> ds = MyIterableDataset(start=3, end=7)
+     |  
+     |      >>> # Single-process loading
+     |      >>> print(list(torch.utils.data.DataLoader(ds, num_workers=0)))
+     |      [3, 4, 5, 6]
+     |      >>>
+     |      >>> # Directly doing multi-process loading yields duplicate data
+     |      >>> print(list(torch.utils.data.DataLoader(ds, num_workers=2)))
+     |      [3, 3, 4, 4, 5, 5, 6, 6]
+     |  
+     |      >>> # Define a `worker_init_fn` that configures each dataset copy differently
+     |      >>> def worker_init_fn(worker_id):
+     |      ...     worker_info = torch.utils.data.get_worker_info()
+     |      ...     dataset = worker_info.dataset  # the dataset copy in this worker process
+     |      ...     overall_start = dataset.start
+     |      ...     overall_end = dataset.end
+     |      ...     # configure the dataset to only process the split workload
+     |      ...     per_worker = int(math.ceil((overall_end - overall_start) / float(worker_info.num_workers)))
+     |      ...     worker_id = worker_info.id
+     |      ...     dataset.start = overall_start + worker_id * per_worker
+     |      ...     dataset.end = min(dataset.start + per_worker, overall_end)
+     |      ...
+     |  
+     |      >>> # Mult-process loading with the custom `worker_init_fn`
+     |      >>> # Worker 0 fetched [3, 4].  Worker 1 fetched [5, 6].
+     |      >>> print(list(torch.utils.data.DataLoader(ds, num_workers=2, worker_init_fn=worker_init_fn)))
+     |      [3, 5, 4, 6]
+     |  
+     |      >>> # With even more workers
+     |      >>> print(list(torch.utils.data.DataLoader(ds, num_workers=20, worker_init_fn=worker_init_fn)))
+     |      [3, 4, 5, 6]
+     |  
+     |  Method resolution order:
+     |      MultiDatasetIterator
+     |      torch.utils.data.dataset.IterableDataset
+     |      torch.utils.data.dataset.Dataset
+     |      builtins.object
+     |  
+     |  Methods defined here:
+     |  
+     |  __init__(self, dataset=None, workers=4, output_size=100, pin_memory=True)
+     |      Initialize self.  See help(type(self)) for accurate signature.
+     |  
+     |  __iter__(self)
+     |  
+     |  __next__(self)
+     |  
+     |  terminate(self)
+     |  
+     |  ----------------------------------------------------------------------
+     |  Methods inherited from torch.utils.data.dataset.IterableDataset:
+     |  
+     |  __add__(self, other)
+     |  
+     |  ----------------------------------------------------------------------
+     |  Methods inherited from torch.utils.data.dataset.Dataset:
+     |  
+     |  __getitem__(self, index)
+     |  
+     |  ----------------------------------------------------------------------
+     |  Data descriptors inherited from torch.utils.data.dataset.Dataset:
+     |  
+     |  __dict__
+     |      dictionary for instance variables (if defined)
+     |  
+     |  __weakref__
+     |      list of weak references to the object (if defined)
+
+FUNCTIONS
+    D(*args)
+    
+    copy_and_delete_tensors(sample, pin_memory=True)
+    
+    maybe_copy(a, pin_memory)
+    
+    omp_warning()
+
+DATA
+    timeout = 0.1
+    verbose = 0
+
+FILE
+    /home/tmb/proj/webdataset/webdataset/multi.py
+
+
+
+```
+
 # Module `webdataset.__init__`
 
 ```
@@ -24,6 +374,77 @@ FILE
 
 ```
 
+# Module `webdataset.autodecode`
+
+```
+Help on module webdataset.autodecode in webdataset:
+
+NAME
+    webdataset.autodecode
+
+DESCRIPTION
+    Train PyTorch models directly from POSIX tar archive, locally
+    or over HTTP connections.
+
+FUNCTIONS
+    imagehandler(data, imagespec)
+        Decode image data using the given `imagespec`.
+        
+        The `imagespec` specifies whether the image is decoded
+        to numpy/torch/pi, decoded to uint8/float, and decoded
+        to l/rgb/rgba:
+        
+        - l8: numpy uint8 l
+        - rgb8: numpy uint8 rgb
+        - rgba8: numpy uint8 rgba
+        - l: numpy float l
+        - rgb: numpy float rgb
+        - rgba: numpy float rgba
+        - torchl8: torch uint8 l
+        - torchrgb8: torch uint8 rgb
+        - torchrgba8: torch uint8 rgba
+        - torchl: torch float l
+        - torchrgb: torch float rgb
+        - torch: torch float rgb
+        - torchrgba: torch float rgba
+        - pill: pil None l
+        - pil: pil None rgb
+        - pilrgb: pil None rgb
+        - pilrgba: pil None rgba
+
+DATA
+    __all__ = ['WebDataset', 'tariterator', 'default_handlers', 'imagehand...
+    default_handlers = {'l': {'class': <function maybe_int>, 'cls': <funct...
+
+FILE
+    /home/tmb/proj/webdataset/webdataset/autodecode.py
+
+
+
+```
+
+# Module `webdataset.filters`
+
+```
+Help on module webdataset.filters in webdataset:
+
+NAME
+    webdataset.filters
+
+DESCRIPTION
+    Train PyTorch models directly from POSIX tar archive, locally
+    or over HTTP connections.
+
+DATA
+    __all__ = ['WebDataset', 'tariterator', 'default_handlers', 'imagehand...
+
+FILE
+    /home/tmb/proj/webdataset/webdataset/filters.py
+
+
+
+```
+
 # Module `webdataset.dataset`
 
 ```
@@ -38,139 +459,100 @@ DESCRIPTION
 
 CLASSES
     torch.utils.data.dataset.IterableDataset(torch.utils.data.dataset.Dataset)
-        Dataset
-        webdataset.webdataset.WebDataset
+        Dataset(torch.utils.data.dataset.IterableDataset, SampleIterator)
+    SampleIterator(Pipeline)
+        Dataset(torch.utils.data.dataset.IterableDataset, SampleIterator)
     
-    class Dataset(torch.utils.data.dataset.IterableDataset)
-     |  Dataset(urls, *, keys=<function base_plus_ext at 0x7fd35cd940e0>, suffixes=None, length=None, epochs=1, opener=<function reader at 0x7fd35d0ee290>, handler=<function reraise_exception at 0x7fd36531c200>, shuffle=False, prepare_for_worker=True, initial_pipeline=None)
+    class Dataset(torch.utils.data.dataset.IterableDataset, SampleIterator)
+     |  Dataset(urls, *, length=None, open_fn=<function reader at 0x7f51876f2160>, handler=<function reraise_exception at 0x7f515b972700>, tarhandler=None, prepare_for_worker=True, initial_pipeline=None, shard_selection=<function worker_urls at 0x7f51876f3430>)
      |  
      |  Iterate over sharded datasets.
      |  
-     |  :param urls: shard spec or list of shards
-     |  :param prepare_for_worker: callable called in each worker before anything else is done
+     |  This class combines several function: it is a container for a list of
+     |  shards, it is a container for a processing pipelines, and it handles
+     |  some bookkeeping related to DataLoader.
      |  
      |  Method resolution order:
      |      Dataset
      |      torch.utils.data.dataset.IterableDataset
      |      torch.utils.data.dataset.Dataset
+     |      SampleIterator
+     |      Pipeline
      |      builtins.object
      |  
      |  Methods defined here:
      |  
-     |  __init__(self, urls, *, keys=<function base_plus_ext at 0x7fd35cd940e0>, suffixes=None, length=None, epochs=1, opener=<function reader at 0x7fd35d0ee290>, handler=<function reraise_exception at 0x7fd36531c200>, shuffle=False, prepare_for_worker=True, initial_pipeline=None)
+     |  __init__(self, urls, *, length=None, open_fn=<function reader at 0x7f51876f2160>, handler=<function reraise_exception at 0x7f515b972700>, tarhandler=None, prepare_for_worker=True, initial_pipeline=None, shard_selection=<function worker_urls at 0x7f51876f3430>)
      |      Initialize self.  See help(type(self)) for accurate signature.
      |  
      |  __iter__(self)
      |  
      |  __len__(self)
+     |      Return the nominal length of the dataset.
      |  
-     |  decode(self, decoder='rgb', handler=<function reraise_exception at 0x7fd36531c200>)
+     |  shard_fn(self)
+     |  
+     |  ----------------------------------------------------------------------
+     |  Methods inherited from torch.utils.data.dataset.IterableDataset:
+     |  
+     |  __add__(self, other)
+     |  
+     |  ----------------------------------------------------------------------
+     |  Methods inherited from torch.utils.data.dataset.Dataset:
+     |  
+     |  __getitem__(self, index)
+     |  
+     |  ----------------------------------------------------------------------
+     |  Data descriptors inherited from torch.utils.data.dataset.Dataset:
+     |  
+     |  __dict__
+     |      dictionary for instance variables (if defined)
+     |  
+     |  __weakref__
+     |      list of weak references to the object (if defined)
+     |  
+     |  ----------------------------------------------------------------------
+     |  Methods inherited from SampleIterator:
+     |  
+     |  raw_samples(self, urls)
+     |  
+     |  samples(self, urls)
+     |  
+     |  ----------------------------------------------------------------------
+     |  Methods inherited from Pipeline:
+     |  
+     |  batched(self, batchsize, partial=True)
+     |  
+     |  decode(self, decoder='rgb', handler=<function reraise_exception at 0x7f515b972700>)
      |      Decode the data with the given decoder.
      |  
-     |  map(self, f, handler=<function reraise_exception at 0x7fd36531c200>)
+     |  map(self, f, handler=<function reraise_exception at 0x7f515b972700>)
      |      Apply function `f` to each sample.
      |  
-     |  map_dict(self, handler=<function reraise_exception at 0x7fd36531c200>, **kw)
+     |  map_dict(self, handler=<function reraise_exception at 0x7f515b972700>, **kw)
      |      Transform each sample by applying functions to corresponding fields.
      |  
-     |  map_tuple(self, *args, handler=<function reraise_exception at 0x7fd36531c200>)
+     |  map_tuple(self, *args, handler=<function reraise_exception at 0x7f515b972700>)
      |      Apply a list of functions to the tuple.
      |  
      |  pipe(self, stage)
      |      Add a pipline stage (a function taking an iterator and returning another iterator).
      |  
-     |  raw_iter(self)
-     |      Iterate over samples.
-     |  
-     |  rename(self, handler=<function reraise_exception at 0x7fd36531c200>, **kw)
+     |  rename(self, handler=<function reraise_exception at 0x7f515b972700>, **kw)
      |      Rename fields in the sample, dropping all unmatched fields.
      |  
-     |  shard_selection(self)
-     |      Contains the logic for self.subset shard selection.
+     |  reseed_rng(self)
      |  
-     |  shuffle(self, size)
+     |  select(self, predicate, **kw)
+     |      Select samples based on a predicate.
+     |  
+     |  shuffle(self, size, rng=None, **kw)
      |      Shuffle the data.
      |  
-     |  to_tuple(self, *args, handler=<function reraise_exception at 0x7fd36531c200>)
+     |  to_tuple(self, *args, handler=<function reraise_exception at 0x7f515b972700>)
      |      Extract fields from the sample in order and yield tuples.
      |  
-     |  ----------------------------------------------------------------------
-     |  Methods inherited from torch.utils.data.dataset.IterableDataset:
-     |  
-     |  __add__(self, other)
-     |  
-     |  ----------------------------------------------------------------------
-     |  Methods inherited from torch.utils.data.dataset.Dataset:
-     |  
-     |  __getitem__(self, index)
-     |  
-     |  ----------------------------------------------------------------------
-     |  Data descriptors inherited from torch.utils.data.dataset.Dataset:
-     |  
-     |  __dict__
-     |      dictionary for instance variables (if defined)
-     |  
-     |  __weakref__
-     |      list of weak references to the object (if defined)
-    
-    class WebDataset(torch.utils.data.dataset.IterableDataset)
-     |  WebDataset(urls, *, extensions=None, decoder='rgb', transforms=None, pipeline=None, epochs=1, keys=<function base_plus_ext at 0x7fd35cd939e0>, opener=<function reader at 0x7fd35d0ee290>, verbose=False, shuffle=0, associate=None, prepare_for_worker=True, length=None, handler=<function reraise_exception at 0x7fd35d0f0830>)
-     |  
-     |  Iterate over sharded datasets.
-     |  
-     |  :param urls: shard spec or list of shards
-     |  :param extensions: extensions to extract (Default value = None, can be either list of lists or "a;b c")
-     |  :param decode: decoder to apply to files in tarfiles (Default value = True, based on extension)
-     |  :param transforms: list of functions to apply to unbatched samples (Default value = None)
-     |  :param pipeline: function that maps the iterator, e.g. for batching
-     |  :param opener: either a function that returns a stream or a string that is invoked via Popen
-     |  :param verbose: verbose output
-     |  :param shuffle: if >0, then shuffle shards, and shuffle samples with a buffer of the given size
-     |  :param associate: a callable or dictionary that returns additional information to associate with each sample
-     |  :param prepare_for_worker: callable called in each worker before anything else is done
-     |  :param extra_meta: associates subset info with each sample record
-     |  
-     |  The decoder can be True (default decoder), False (no decoder), a callable (called
-     |  decode the sample, or a dictionary mapping filename extensions to callables for
-     |  the decoding.
-     |  
-     |  Method resolution order:
-     |      WebDataset
-     |      torch.utils.data.dataset.IterableDataset
-     |      torch.utils.data.dataset.Dataset
-     |      builtins.object
-     |  
-     |  Methods defined here:
-     |  
-     |  __init__(self, urls, *, extensions=None, decoder='rgb', transforms=None, pipeline=None, epochs=1, keys=<function base_plus_ext at 0x7fd35cd939e0>, opener=<function reader at 0x7fd35d0ee290>, verbose=False, shuffle=0, associate=None, prepare_for_worker=True, length=None, handler=<function reraise_exception at 0x7fd35d0f0830>)
-     |      Initialize self.  See help(type(self)) for accurate signature.
-     |  
-     |  __iter__(self)
-     |      Iterate over samples.
-     |  
-     |  __len__(self)
-     |  
-     |  shard_selection(self)
-     |      Contains the logic for self.subset shard selection.
-     |  
-     |  ----------------------------------------------------------------------
-     |  Methods inherited from torch.utils.data.dataset.IterableDataset:
-     |  
-     |  __add__(self, other)
-     |  
-     |  ----------------------------------------------------------------------
-     |  Methods inherited from torch.utils.data.dataset.Dataset:
-     |  
-     |  __getitem__(self, index)
-     |  
-     |  ----------------------------------------------------------------------
-     |  Data descriptors inherited from torch.utils.data.dataset.Dataset:
-     |  
-     |  __dict__
-     |      dictionary for instance variables (if defined)
-     |  
-     |  __weakref__
-     |      list of weak references to the object (if defined)
+     |  unbatched(self)
 
 FUNCTIONS
     ignore_and_continue(exn)
@@ -189,10 +571,32 @@ FUNCTIONS
         Called in an exception handler to ignore any exception and stop further processing.
 
 DATA
-    __all__ = ['Dataset', 'WebDataset', 'tariterator', 'default_handlers',...
+    __all__ = ['Dataset', 'tariterator', 'default_handlers', 'imagehandler...
 
 FILE
     /home/tmb/proj/webdataset/webdataset/dataset.py
+
+
+
+```
+
+# Module `webdataset.gopen`
+
+```
+Help on module webdataset.gopen in webdataset:
+
+NAME
+    webdataset.gopen - Open URLs by calling subcommands.
+
+FUNCTIONS
+    gopen(url, mode='rb', bufsize=8192, **kw)
+
+DATA
+    __all__ = ['gopen', 'gopen_schemes']
+    gopen_schemes = {'__default__': <function gopen_objectio>, 'ftps': <fu...
+
+FILE
+    /home/tmb/proj/webdataset/webdataset/gopen.py
 
 
 
@@ -238,22 +642,82 @@ FILE
 
 ```
 
-# Module `webdataset.io`
+# Module `webdataset.tenbin`
 
 ```
-Help on module webdataset.io in webdataset:
+Help on module webdataset.tenbin in webdataset:
 
 NAME
-    webdataset.io - Open URLs by calling subcommands.
+    webdataset.tenbin - Binary tensor encodings for PyTorch and NumPy.
+
+DESCRIPTION
+    This defines efficient binary encodings for tensors. The format is 8 byte
+    aligned and can be used directly for computations when transmitted, say,
+    via RDMA. The format is supported by WebDataset with the `.ten` filename
+    extension. It is also used by Tensorcom, Tensorcom RDMA, and can be used
+    for fast tensor storage with LMDB and in disk files (which can be memory
+    mapped)
+    
+    Data is encoded as a series of chunks:
+    
+    - magic number (int64)
+    - length in bytes (int64)
+    - bytes (multiple of 64 bytes long)
+    
+    Arrays are a header chunk followed by a data chunk.
+    Header chunks have the following structure:
+    
+    - dtype (int64)
+    - 8 byte array name
+    - ndim (int64)
+    - dim[0]
+    - dim[1]
+    - ...
 
 FUNCTIONS
-    gopen(url, mode='rb', bufsize=8192)
+    load(fname, infos=False, nocheck=False)
+        Read a list of arrays from a file, with magics, length, and padding.
+    
+    read(stream, n=999999, infos=False)
+        Read a list of arrays from a stream, with magics, length, and padding.
+    
+    save(fname, *args, infos=None, nocheck=False)
+        Save a list of arrays to a file, with magics, length, and padding.
+    
+    sctp_recv(socket, infos=False, maxsize=100000000)
+        Receive arrays as an SCTP datagram.
+        
+        This is just a convenience function and illustration.
+        For more complex networking needs, you may want
+        to call sctp_recv and decode_buffer directly.
+    
+    sctp_send(socket, dest, l, infos=None)
+        Send arrays as an SCTP datagram.
+        
+        This is just a convenience function and illustration.
+        For more complex networking needs, you may want
+        to call encode_buffer and sctp_send directly.
+    
+    write(stream, l, infos=None)
+        Write a list of arrays to a stream, with magics, length, and padding.
+    
+    zrecv_multipart(socket, infos=False)
+        Receive arrays as a multipart ZMQ message.
+    
+    zrecv_single(socket, infos=False)
+        Receive arrays as a single part ZMQ message.
+    
+    zsend_multipart(socket, l, infos=None)
+        Send arrays as a multipart ZMQ message.
+    
+    zsend_single(socket, l, infos=None)
+        Send arrays as a single part ZMQ message.
 
 DATA
-    __all__ = ['gopen', 'scheme_to_command']
+    __all__ = ['read', 'write', 'save', 'load', 'zsend_single', 'zrecv_sin...
 
 FILE
-    /home/tmb/proj/webdataset/webdataset/io.py
+    /home/tmb/proj/webdataset/webdataset/tenbin.py
 
 
 
@@ -377,258 +841,6 @@ DATA
 
 FILE
     /home/tmb/proj/webdataset/webdataset/writer.py
-
-
-
-```
-
-# Module `webdataset.webdataset`
-
-```
-Help on module webdataset.webdataset in webdataset:
-
-NAME
-    webdataset.webdataset
-
-DESCRIPTION
-    Train PyTorch models directly from POSIX tar archive, locally
-    or over HTTP connections.
-
-CLASSES
-    torch.utils.data.dataset.IterableDataset(torch.utils.data.dataset.Dataset)
-        WebDataset
-    
-    class WebDataset(torch.utils.data.dataset.IterableDataset)
-     |  WebDataset(urls, *, extensions=None, decoder='rgb', transforms=None, pipeline=None, epochs=1, keys=<function base_plus_ext at 0x7fc0405949e0>, opener=<function reader at 0x7fc04f4b1290>, verbose=False, shuffle=0, associate=None, prepare_for_worker=True, length=None, handler=<function reraise_exception at 0x7fc04f4b9830>)
-     |  
-     |  Iterate over sharded datasets.
-     |  
-     |  :param urls: shard spec or list of shards
-     |  :param extensions: extensions to extract (Default value = None, can be either list of lists or "a;b c")
-     |  :param decode: decoder to apply to files in tarfiles (Default value = True, based on extension)
-     |  :param transforms: list of functions to apply to unbatched samples (Default value = None)
-     |  :param pipeline: function that maps the iterator, e.g. for batching
-     |  :param opener: either a function that returns a stream or a string that is invoked via Popen
-     |  :param verbose: verbose output
-     |  :param shuffle: if >0, then shuffle shards, and shuffle samples with a buffer of the given size
-     |  :param associate: a callable or dictionary that returns additional information to associate with each sample
-     |  :param prepare_for_worker: callable called in each worker before anything else is done
-     |  :param extra_meta: associates subset info with each sample record
-     |  
-     |  The decoder can be True (default decoder), False (no decoder), a callable (called
-     |  decode the sample, or a dictionary mapping filename extensions to callables for
-     |  the decoding.
-     |  
-     |  Method resolution order:
-     |      WebDataset
-     |      torch.utils.data.dataset.IterableDataset
-     |      torch.utils.data.dataset.Dataset
-     |      builtins.object
-     |  
-     |  Methods defined here:
-     |  
-     |  __init__(self, urls, *, extensions=None, decoder='rgb', transforms=None, pipeline=None, epochs=1, keys=<function base_plus_ext at 0x7fc0405949e0>, opener=<function reader at 0x7fc04f4b1290>, verbose=False, shuffle=0, associate=None, prepare_for_worker=True, length=None, handler=<function reraise_exception at 0x7fc04f4b9830>)
-     |      Initialize self.  See help(type(self)) for accurate signature.
-     |  
-     |  __iter__(self)
-     |      Iterate over samples.
-     |  
-     |  __len__(self)
-     |  
-     |  shard_selection(self)
-     |      Contains the logic for self.subset shard selection.
-     |  
-     |  ----------------------------------------------------------------------
-     |  Methods inherited from torch.utils.data.dataset.IterableDataset:
-     |  
-     |  __add__(self, other)
-     |  
-     |  ----------------------------------------------------------------------
-     |  Methods inherited from torch.utils.data.dataset.Dataset:
-     |  
-     |  __getitem__(self, index)
-     |  
-     |  ----------------------------------------------------------------------
-     |  Data descriptors inherited from torch.utils.data.dataset.Dataset:
-     |  
-     |  __dict__
-     |      dictionary for instance variables (if defined)
-     |  
-     |  __weakref__
-     |      list of weak references to the object (if defined)
-
-FUNCTIONS
-    tariterator(fileobj, keys=<function base_plus_ext at 0x7fc0405949e0>, decoder=True, suffixes=None, tar_errors=<function reraise_exception at 0x7fc04f4b9830>, decode_errors=<function reraise_exception at 0x7fc04f4b9830>)
-        Iterate through training samples stored in a sharded tar file.
-        
-        :param fileobj: a Python file-like object
-        :param check_sorted:  check whether the input is actually properly sorted (Default value = False)
-        :param keys:  key extraction function (Default value = base_plus_ext)
-        :param decoder: value decoding function (Default value = True)
-        
-        The key extraction function takes a string representing a pathname and
-        returns a pair (__key__, suffix).
-        
-        The decoder takes the entire sample as a dict and returns the
-        decoded sample as a dict.
-
-DATA
-    __all__ = ['Dataset', 'WebDataset', 'tariterator', 'default_handlers',...
-
-FILE
-    /home/tmb/proj/webdataset/webdataset/webdataset.py
-
-
-
-```
-
-# Module `webdataset.filters`
-
-```
-Help on module webdataset.filters in webdataset:
-
-NAME
-    webdataset.filters
-
-DESCRIPTION
-    Train PyTorch models directly from POSIX tar archive, locally
-    or over HTTP connections.
-
-DATA
-    __all__ = ['WebDataset', 'tariterator', 'default_handlers', 'imagehand...
-
-FILE
-    /home/tmb/proj/webdataset/webdataset/filters.py
-
-
-
-```
-
-# Module `webdataset.autodecode`
-
-```
-Help on module webdataset.autodecode in webdataset:
-
-NAME
-    webdataset.autodecode
-
-DESCRIPTION
-    Train PyTorch models directly from POSIX tar archive, locally
-    or over HTTP connections.
-
-FUNCTIONS
-    imagehandler(data, imagespec)
-        Decode image data using the given `imagespec`.
-        
-        The `imagespec` specifies whether the image is decoded
-        to numpy/torch/pi, decoded to uint8/float, and decoded
-        to l/rgb/rgba:
-        
-        - l8: numpy uint8 l
-        - rgb8: numpy uint8 rgb
-        - rgba8: numpy uint8 rgba
-        - l: numpy float l
-        - rgb: numpy float rgb
-        - rgba: numpy float rgba
-        - torchl8: torch uint8 l
-        - torchrgb8: torch uint8 rgb
-        - torchrgba8: torch uint8 rgba
-        - torchl: torch float l
-        - torchrgb: torch float rgb
-        - torch: torch float rgb
-        - torchrgba: torch float rgba
-        - pill: pil None l
-        - pil: pil None rgb
-        - pilrgb: pil None rgb
-        - pilrgba: pil None rgba
-
-DATA
-    __all__ = ['WebDataset', 'tariterator', 'default_handlers', 'imagehand...
-    default_handlers = {'l': {'class': <function maybe_int>, 'cls': <funct...
-
-FILE
-    /home/tmb/proj/webdataset/webdataset/autodecode.py
-
-
-
-```
-
-# Module `webdataset.tenbin`
-
-```
-Help on module webdataset.tenbin in webdataset:
-
-NAME
-    webdataset.tenbin - Binary tensor encodings for PyTorch and NumPy.
-
-DESCRIPTION
-    This defines efficient binary encodings for tensors. The format is 8 byte
-    aligned and can be used directly for computations when transmitted, say,
-    via RDMA. The format is supported by WebDataset with the `.ten` filename
-    extension. It is also used by Tensorcom, Tensorcom RDMA, and can be used
-    for fast tensor storage with LMDB and in disk files (which can be memory
-    mapped)
-    
-    Data is encoded as a series of chunks:
-    
-    - magic number (int64)
-    - length in bytes (int64)
-    - bytes (multiple of 64 bytes long)
-    
-    Arrays are a header chunk followed by a data chunk.
-    Header chunks have the following structure:
-    
-    - dtype (int64)
-    - 8 byte array name
-    - ndim (int64)
-    - dim[0]
-    - dim[1]
-    - ...
-
-FUNCTIONS
-    load(fname, infos=False, nocheck=False)
-        Read a list of arrays from a file, with magics, length, and padding.
-    
-    read(stream, n=999999, infos=False)
-        Read a list of arrays from a stream, with magics, length, and padding.
-    
-    save(fname, *args, infos=None, nocheck=False)
-        Save a list of arrays to a file, with magics, length, and padding.
-    
-    sctp_recv(socket, infos=False, maxsize=100000000)
-        Receive arrays as an SCTP datagram.
-        
-        This is just a convenience function and illustration.
-        For more complex networking needs, you may want
-        to call sctp_recv and decode_buffer directly.
-    
-    sctp_send(socket, dest, l, infos=None)
-        Send arrays as an SCTP datagram.
-        
-        This is just a convenience function and illustration.
-        For more complex networking needs, you may want
-        to call encode_buffer and sctp_send directly.
-    
-    write(stream, l, infos=None)
-        Write a list of arrays to a stream, with magics, length, and padding.
-    
-    zrecv_multipart(socket, infos=False)
-        Receive arrays as a multipart ZMQ message.
-    
-    zrecv_single(socket, infos=False)
-        Receive arrays as a single part ZMQ message.
-    
-    zsend_multipart(socket, l, infos=None)
-        Send arrays as a multipart ZMQ message.
-    
-    zsend_single(socket, l, infos=None)
-        Send arrays as a single part ZMQ message.
-
-DATA
-    __all__ = ['read', 'write', 'save', 'load', 'zsend_single', 'zrecv_sin...
-
-FILE
-    /home/tmb/proj/webdataset/webdataset/tenbin.py
 
 
 

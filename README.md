@@ -94,44 +94,6 @@ for sample in islice(dataset, 0, 3):
     
 
 
-
-```python
-dataset = (
-    wds.Dataset(url)
-    .shuffle(100)
-    .decode()
-    .rename(image="jpg;png", data="json")
-    .to_tuple("image", "data")
-)
-
-for image, data in islice(dataset, 0, 3):
-    print(image.shape, image.dtype, type(data))
-```
-
-    (768, 1024, 3) float32 <class 'list'>
-    (768, 1024, 3) float32 <class 'list'>
-    (683, 1024, 3) float32 <class 'list'>
-
-
-
-```python
-dataset = (
-    wds.Dataset(url)
-    .shuffle(100)
-    .decode()
-    .rename(image="jpg;png", data="json")
-    .to_tuple("image", "data")
-)
-
-for image, data in islice(dataset, 0, 3):
-    print(image.shape, image.dtype, type(data))
-```
-
-    (1024, 771, 3) float32 <class 'list'>
-    (575, 1024, 3) float32 <class 'list'>
-    (683, 1024, 3) float32 <class 'list'>
-
-
 There are common processing stages you can add to a dataset to make it a drop-in replacement for any existing dataset. For convenience, common operations are available through a "fluent" interface (as chained method calls).
 
 
@@ -140,17 +102,16 @@ dataset = (
     wds.Dataset(url)
     .shuffle(100)
     .decode()
-    .rename(image="jpg;png", data="json")
-    .to_tuple("image", "data")
+    .to_tuple("jpg;png", "json")
 )
 
 for image, data in islice(dataset, 0, 3):
     print(image.shape, image.dtype, type(data))
 ```
 
-    (699, 1024, 3) float32 <class 'list'>
-    (683, 1024, 3) float32 <class 'list'>
+    (762, 1024, 3) float32 <class 'list'>
     (768, 1024, 3) float32 <class 'list'>
+    (1024, 768, 3) float32 <class 'list'>
 
 
 Common operations:
@@ -176,6 +137,9 @@ Here is an example that uses `torchvision` data augmentation the same way you mi
 
 
 ```python
+def identity(x):
+    return x
+
 normalize = transforms.Normalize(
     mean=[0.485, 0.456, 0.406],
     std=[0.229, 0.224, 0.225])
@@ -191,9 +155,8 @@ dataset = (
     wds.Dataset(url)
     .shuffle(100)
     .decode("pil")
-    .rename(image="jpg;png", data="json")
-    .map_dict(image=preproc)
-    .to_tuple("image", "data")
+    .to_tuple("jpg;png", "json")
+    .map_tuple(preproc, identity)
 )
 
 for image, data in islice(dataset, 0, 3):
@@ -219,9 +182,8 @@ dataset = (
     wds.Dataset(url)
     .shuffle(100)
     .decode("pil")
-    .rename(image="jpg;png", data="json")
-    .map_dict(image=preproc)
-    .to_tuple("image", "data")
+    .to_tuple("jpg;png", "json")
+    .map_tuple(preproc, identity)
 )
 ```
 
@@ -240,6 +202,50 @@ images.shape
     torch.Size([16, 3, 224, 224])
 
 
+
+The recommended way of using `IterableDataset` with `DataLoader` is to do the batching explicitly in the `Dataset`. In addition, you need to set a nominal length for the `Dataset` in order to avoid warnings from `DataLoader`.
+
+
+```python
+url = "http://storage.googleapis.com/nvdata-openimages/openimages-train-{000000..000554}.tar"
+url = f"pipe:curl -L -s {url} || true"
+bs = 20
+
+dataset = (
+    wds.Dataset(url, length=int(1e9) // bs)
+    .shuffle(100)
+    .decode("pil")
+    .to_tuple("jpg;png", "json")
+    .map_tuple(preproc, identity)
+    .batched(20)
+)
+
+dataloader = torch.utils.data.DataLoader(dataset, num_workers=4, batch_size=None)
+images, targets = next(iter(dataloader))
+images.shape
+```
+
+
+
+
+    torch.Size([20, 3, 224, 224])
+
+
+
+The `ResizedDataset` is also helpful for connecting iterable datasets to `DataLoader`: it lets you set both a nominal and an actual epoch size; it will repeatedly iterate through the entire dataset and return data in chunks with the given epoch size.
+
+# Splitting Shards across Nodes and Workers
+
+Datasets are generally split across workers and processing nodes by shards. This is handled by `Dataset.shard_fn`. It will in turn call four hook functions in sequences:
+
+```Python
+self.reseed_hook()
+urls = self.node_selection(urls)   # hook for splitting up shards across nodes
+urls = self.shard_selection(urls)  # hook for splitting up shards across workers
+urls = self.shard_shuffle(urls)    # hook for shuffling the shards
+```
+
+You can put any function in there you like. By default `reseed_hook`, `node_selection` and `shard_shuffle` do nothing, while `shard_selection` uses PyTorch's worker globals for splitting up shards across workers. The `shard_shuffle` function is set to a random shuffle when you use the `.shuffle(...)` method on the `Dataset`.
 
 # Data Sources
 
@@ -302,9 +308,8 @@ def augment_wds(input, output, maxcount=999999999):
     src = (
         wds.Dataset(input)
         .decode("pil")
-        .rename(key="__key__", image="jpg;png", data="json")
-        .map_dict(image=preproc)
-        .to_tuple("key", "image", "data")
+        .to_tuple("__key__", "jpg;png", "json")
+        .map_tuple(identity, preproc, identity)
     )
     with wds.TarWriter(output) as dst:
         for key, image, data in islice(src, 0, maxcount):
@@ -372,8 +377,6 @@ For very large scale processing, it's easiest to submit separate jobs to a Kuber
 
 The [AIStore](http://github.com/NVIDIA/aistore) server provides an efficient backend for WebDataset; it functions like a combination of web server, content distribution network, P2P network, and distributed file system. Together, AIStore and WebDataset can serve input data from rotational drives distributed across many servers at the speed of local SSDs to many GPUs, at a fraction of the cost. We can easily achieve hundreds of MBytes/s of I/O per GPU even in large, distributed training jobs.
 
-The [tarp](http://github.com/tmbdev/tarp) utilities provide command line manipulation and processing of webdatasets and other tar files, including splitting, concatenation, and `xargs`-like functionality. (There is a Python prototype called [tarproc](http://github.com/tmbdev/tarproc) available as well.)
-
-For large scale ETL and preprocessing jobs, you can simply schedule Kubernetes Pods or Jobs to process shards in parallel. Workflow systems like Argo may be useful for that, or you may find [qupods](http://github.com/tmbdev/qupods) useful, since it will pace job submission and keep track of logs for you.
+The [tarproc](http://github.com/tmbdev/tarproc) utilities provide command line manipulation and processing of webdatasets and other tar files, including splitting, concatenation, and `xargs`-like functionality.
 
 The [tensorcom](http://github.com/tmbdev/tensorcom/) library provides fast three-tiered I/O; it can be inserted between [AIStore](http://github.com/NVIDIA/aistore) and [WebDataset](http://github.com/tmbdev/webdataset) to permit distributed data augmentation and I/O. It is particularly useful when data augmentation requires more CPU than the GPU server has available.
