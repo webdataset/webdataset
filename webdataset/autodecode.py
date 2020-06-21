@@ -14,12 +14,15 @@ __all__ = "WebDataset tariterator default_handlers imagehandler".split()
 
 import pickle
 import re
+import os
 
 import numpy as np
 import PIL
 import PIL.Image
 import simplejson
 import six
+import tempfile
+
 
 from .checks import checkmember, checktype, checknotnone, checkcallable
 
@@ -47,6 +50,40 @@ imagespecs = {
     "pilrgb": ("pil", None, "rgb"),
     "pilrgba": ("pil", None, "rgba"),
 }
+
+
+def torch_load_object(data):
+    pass
+
+
+class TorchVideoLoader:
+    def __init__(self, extension, **kw):
+        self.extension = extension
+        self.kw = kw
+
+    def __call__(self, data):
+        import torchvision.io
+
+        with tempfile.TemporaryDirectory() as dirname:
+            fname = os.path.join(dirname, f"file.{self.extension}")
+            with open(fname, "wb") as stream:
+                stream.write(data)
+            return torchvision.io.read_video(fname, **self.kw)
+
+
+class TorchAudioLoader:
+    def __init__(self, extension, **kw):
+        self.extension = extension
+        self.kw = kw
+
+    def __call__(self, data):
+        import torchvision.io
+
+        with tempfile.TemporaryDirectory() as dirname:
+            fname = os.path.join(dirname, f"file.{self.extension}")
+            with open(fname, "wb") as stream:
+                stream.write(data)
+            return torchvision.io.read_video(fname, **self.kw)
 
 
 def imagehandler(data, imagespec):
@@ -129,6 +166,12 @@ def make_handlers(imagetype):
         from . import tenbin
 
         handlers[extension] = tenbin.decode_buffer
+    for extension in ["pth"]:
+        handlers[extension] = torch_load_object
+    for extension in ["mp4", "ogg", "mjpeg", "avi", "mov", "h264"]:
+        handlers[extension] = TorchVideoLoader(extension)
+    for extension in ["flac", "mp3", "sox", "wav"]:
+        handlers[extension] = TorchAudioLoader(extension)
     try:
         import msgpack
 

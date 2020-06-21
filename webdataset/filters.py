@@ -12,10 +12,8 @@ or over HTTP connections.
 
 __all__ = "WebDataset tariterator default_handlers imagehandler".split()
 
-import queue
 import random
 import sys
-import threading
 from functools import reduce
 
 import numpy as np

@@ -234,6 +234,43 @@ images.shape
 
 The `ResizedDataset` is also helpful for connecting iterable datasets to `DataLoader`: it lets you set both a nominal and an actual epoch size; it will repeatedly iterate through the entire dataset and return data in chunks with the given epoch size.
 
+The WebDataset library also provides an alternative to `DataLoader` called `MultiDataset`. It distributes `IterableDatasets` across multiple workers and collects the results in a way very similar to `DataLoader`. Unlike `DataLoader`, you don't have to worry about calculating the epoch length, and you can configure the `MultiDataset` using the same interface as a WebDataset. For example, if you want to shuffle samples between the batches returned by individual workers, you can write:
+
+```Python
+dataloader = wds.MultiDataset(dataset, workers=4).unbatched().shuffle(1000).batched(128)
+```
+
+# Data Decoding
+
+WebDataset stores data in files contained inside `.tar` archives. This allows datasets to be stored in a bit-identical way to the way they are usually stored on disk. In addition, it allows WebDataset to take advantage of existing conventions and facilities for dealing with metadata and compression.
+
+Loading takes place in two steps: first, the binary contents of each file are read into memory, and then the files are decoded. Reading is carried out by the `webdataset.Dataset` class itself. You can decode using any function you like. If you invoke `webdataset.Dataset(...).map(my_decoder)`, then `my_decoder` will simply be called on a dictionary with full extensions as keys and binary vectors as values.
+
+In most cases, howeer, it's more convenient to use the `.decode` method, since it decodes images based on extensions. The `.decode` method takes one argument that specifies how decoding is to take place. That argument is a dictionary consisting of a last-extension string and a corresponding function for decoding a file with that extension. Note that samples in WebDataset are grouped based on the full extension, while decoding takes place based on the last extension. So, `sample.input.png` is represented in the sample with the key of `input.png`, but its last extension is `png`, which identifies it as an image file.
+
+There are a number of automatic decoders built in that already understand many common extensions (recommended formats are in bold face):
+
+- **jpg**, **ppm**, jpeg, img, image, pbm, pgm, png : image
+- **txt**, text, transcript                     : string
+- **cls**, cls2, class, count, index, inx, id   : integer
+- **pyd**, pickle                               : Python pickle (using `pickle.loads`)
+- **pth**                                       : Torch pickle (using `torch.load`)
+- **json**, jsn                                 : JSON encoded object (using `json.loads`)
+- **ten**, tb                                   : fast binary tensor format
+- **mp4**, **ogg**, **mjpeg**, avi, mov, h264                       : video (using torchvision `load`)
+- **flac**, **mp3**, sox                            : audio (using torchaudio `load`)
+
+You select a set of these by giving a string rather than dictionary as an argument to the `.decode` method. Strings of the form `<tensor-type><image-format><8bit>` are recognized, where `<tensor-type>` can be empty (NumPy), `torch`, or `pil`; `<image-format>` can be `l`, `rgb` (same as empty), or `rgba`, and `<8bit>` can either be empty (floating point values in the range from 0 to 1) or `8` (outputs `uint8` tensors). 
+
+Common and recommended arguments for `.decoder` are:
+
+- **pil** - for `torchvision` data augmentation
+- **rgb** - for NumPy-based data augmentation, forcing RGB inputs in the range 0..1, in CHW order
+- **torchrgb** - for torch-based data augmentation, forcing RGB format in the range 0..1, in CHW order
+- **torchrgb8** - for torch-based data augmentation, forcing RGB format using `uint8`, in CHW order
+- **l8** - for large grayscale images in HW order
+
+
 # Splitting Shards across Nodes and Workers
 
 Datasets are generally split across workers and processing nodes by shards. This is handled by `Dataset.shard_fn`. It will in turn call four hook functions in sequences:
@@ -245,7 +282,7 @@ urls = self.shard_selection(urls)  # hook for splitting up shards across workers
 urls = self.shard_shuffle(urls)    # hook for shuffling the shards
 ```
 
-You can put any function in there you like. By default `reseed_hook`, `node_selection` and `shard_shuffle` do nothing, while `shard_selection` uses PyTorch's worker globals for splitting up shards across workers. The `shard_shuffle` function is set to a random shuffle when you use the `.shuffle(...)` method on the `Dataset`.
+You can put any function in there you like. By default `reseed_hook`, `node_selection` and `shard_shuffle` do nothing, while `shard_selection` uses PyTorch's worker globals for splitting up shards across workers. The `shard_shuffle` function is set to a random shuffle when you use the `.shuffle(...)` method on the `Dataset`; if you want to override that, set it after configuring the `.shuffle` method.
 
 # Data Sources
 
@@ -325,6 +362,8 @@ def augment_wds(input, output, maxcount=999999999):
             dst.write(sample)
 ```
 
+Now run the augmentation pipeline:
+
 
 ```python
 url = "http://storage.googleapis.com/nvdata-openimages/openimages-train-000000.tar"
@@ -338,6 +377,8 @@ augment_wds(url, "_temp.tar", maxcount=5)
     ed600d57fcee4f94
     ff47e649b23f446d
 
+
+To verify that things worked correctly, let's look at the output file:
 
 
 ```bash

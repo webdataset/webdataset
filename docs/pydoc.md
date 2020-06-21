@@ -158,22 +158,22 @@ CLASSES
      |  
      |  batched(self, batchsize, partial=True)
      |  
-     |  decode(self, decoder='rgb', handler=<function reraise_exception at 0x7f1b66dd6700>)
+     |  decode(self, decoder='rgb', handler=<function reraise_exception at 0x7fd34997a700>)
      |      Decode the data with the given decoder.
      |  
-     |  map(self, f, handler=<function reraise_exception at 0x7f1b66dd6700>)
+     |  map(self, f, handler=<function reraise_exception at 0x7fd34997a700>)
      |      Apply function `f` to each sample.
      |  
-     |  map_dict(self, handler=<function reraise_exception at 0x7f1b66dd6700>, **kw)
+     |  map_dict(self, handler=<function reraise_exception at 0x7fd34997a700>, **kw)
      |      Transform each sample by applying functions to corresponding fields.
      |  
-     |  map_tuple(self, *args, handler=<function reraise_exception at 0x7f1b66dd6700>)
+     |  map_tuple(self, *args, handler=<function reraise_exception at 0x7fd34997a700>)
      |      Apply a list of functions to the tuple.
      |  
      |  pipe(self, stage)
      |      Add a pipline stage (a function taking an iterator and returning another iterator).
      |  
-     |  rename(self, handler=<function reraise_exception at 0x7f1b66dd6700>, **kw)
+     |  rename(self, handler=<function reraise_exception at 0x7fd34997a700>, **kw)
      |      Rename fields in the sample, dropping all unmatched fields.
      |  
      |  reseed_rng(self)
@@ -184,7 +184,7 @@ CLASSES
      |  shuffle(self, size, rng=None, **kw)
      |      Shuffle the data.
      |  
-     |  to_tuple(self, *args, handler=<function reraise_exception at 0x7f1b66dd6700>)
+     |  to_tuple(self, *args, handler=<function reraise_exception at 0x7fd34997a700>)
      |      Extract fields from the sample in order and yield tuples.
      |  
      |  unbatched(self)
@@ -414,7 +414,7 @@ FUNCTIONS
 
 DATA
     __all__ = ['WebDataset', 'tariterator', 'default_handlers', 'imagehand...
-    default_handlers = {'l': {'class': <function maybe_int>, 'cls': <funct...
+    default_handlers = {'l': {'avi': <webdataset.autodecode.TorchVideoLoad...
 
 FILE
     /home/tmb/proj/webdataset/webdataset/autodecode.py
@@ -464,7 +464,7 @@ CLASSES
         Dataset(torch.utils.data.dataset.IterableDataset, SampleIterator)
     
     class Dataset(torch.utils.data.dataset.IterableDataset, SampleIterator)
-     |  Dataset(urls, *, length=None, open_fn=<function reader at 0x7f51876f2160>, handler=<function reraise_exception at 0x7f515b972700>, tarhandler=None, prepare_for_worker=True, initial_pipeline=None, shard_selection=<function worker_urls at 0x7f51876f3430>)
+     |  Dataset(urls, *, length=None, open_fn=<function reader at 0x7f9fd898a550>, handler=<function reraise_exception at 0x7f9facbfc700>, tarhandler=None, prepare_for_worker=True, initial_pipeline=None, shard_selection=<function worker_urls at 0x7f9fd898b820>)
      |  
      |  Iterate over sharded datasets.
      |  
@@ -482,7 +482,7 @@ CLASSES
      |  
      |  Methods defined here:
      |  
-     |  __init__(self, urls, *, length=None, open_fn=<function reader at 0x7f51876f2160>, handler=<function reraise_exception at 0x7f515b972700>, tarhandler=None, prepare_for_worker=True, initial_pipeline=None, shard_selection=<function worker_urls at 0x7f51876f3430>)
+     |  __init__(self, urls, *, length=None, open_fn=<function reader at 0x7f9fd898a550>, handler=<function reraise_exception at 0x7f9facbfc700>, tarhandler=None, prepare_for_worker=True, initial_pipeline=None, shard_selection=<function worker_urls at 0x7f9fd898b820>)
      |      Initialize self.  See help(type(self)) for accurate signature.
      |  
      |  __iter__(self)
@@ -523,22 +523,22 @@ CLASSES
      |  
      |  batched(self, batchsize, partial=True)
      |  
-     |  decode(self, decoder='rgb', handler=<function reraise_exception at 0x7f515b972700>)
+     |  decode(self, decoder='rgb', handler=<function reraise_exception at 0x7f9facbfc700>)
      |      Decode the data with the given decoder.
      |  
-     |  map(self, f, handler=<function reraise_exception at 0x7f515b972700>)
+     |  map(self, f, handler=<function reraise_exception at 0x7f9facbfc700>)
      |      Apply function `f` to each sample.
      |  
-     |  map_dict(self, handler=<function reraise_exception at 0x7f515b972700>, **kw)
+     |  map_dict(self, handler=<function reraise_exception at 0x7f9facbfc700>, **kw)
      |      Transform each sample by applying functions to corresponding fields.
      |  
-     |  map_tuple(self, *args, handler=<function reraise_exception at 0x7f515b972700>)
+     |  map_tuple(self, *args, handler=<function reraise_exception at 0x7f9facbfc700>)
      |      Apply a list of functions to the tuple.
      |  
      |  pipe(self, stage)
      |      Add a pipline stage (a function taking an iterator and returning another iterator).
      |  
-     |  rename(self, handler=<function reraise_exception at 0x7f515b972700>, **kw)
+     |  rename(self, handler=<function reraise_exception at 0x7f9facbfc700>, **kw)
      |      Rename fields in the sample, dropping all unmatched fields.
      |  
      |  reseed_rng(self)
@@ -549,7 +549,7 @@ CLASSES
      |  shuffle(self, size, rng=None, **kw)
      |      Shuffle the data.
      |  
-     |  to_tuple(self, *args, handler=<function reraise_exception at 0x7f515b972700>)
+     |  to_tuple(self, *args, handler=<function reraise_exception at 0x7f9facbfc700>)
      |      Extract fields from the sample in order and yield tuples.
      |  
      |  unbatched(self)
