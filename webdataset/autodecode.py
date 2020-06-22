@@ -22,9 +22,13 @@ import PIL.Image
 import simplejson
 import six
 import tempfile
+import sys
 
 
 from .checks import checkmember, checktype, checknotnone, checkcallable
+
+
+check_present = int(os.environ.get("WDS_CHECK_DECODE", 0))
 
 
 class NoException(Exception):
@@ -53,7 +57,13 @@ imagespecs = {
 
 
 def torch_load_object(data):
-    pass
+    import io
+    import torch
+
+    print(">>> torch_load_object", data, file=sys.stderr)
+
+    stream = io.BytesIO(data)
+    return torch.load(stream)
 
 
 class TorchVideoLoader:
@@ -77,13 +87,14 @@ class TorchAudioLoader:
         self.kw = kw
 
     def __call__(self, data):
-        import torchvision.io
+        import torchaudio
 
         with tempfile.TemporaryDirectory() as dirname:
             fname = os.path.join(dirname, f"file.{self.extension}")
             with open(fname, "wb") as stream:
                 stream.write(data)
-            return torchvision.io.read_video(fname, **self.kw)
+            os.system(f"ls -l {fname}")
+            return torchaudio.load(fname, **self.kw)
 
 
 def imagehandler(data, imagespec):
@@ -168,9 +179,19 @@ def make_handlers(imagetype):
         handlers[extension] = tenbin.decode_buffer
     for extension in ["pth"]:
         handlers[extension] = torch_load_object
-    for extension in ["mp4", "ogg", "mjpeg", "avi", "mov", "h264"]:
+    for extension in [
+        "mp4",
+        "ogv",
+        "mjpeg",
+        "avi",
+        "mov",
+        "h264",
+        "mpg",
+        "webm",
+        "wmv",
+    ]:
         handlers[extension] = TorchVideoLoader(extension)
-    for extension in ["flac", "mp3", "sox", "wav"]:
+    for extension in ["flac", "mp3", "sox", "wav", "m4a", "ogg", "wma"]:
         handlers[extension] = TorchAudioLoader(extension)
     try:
         import msgpack
@@ -209,6 +230,8 @@ def decode_item_based_on_extension(data, tname, handlers):
     extension = re.sub(r".*\.", "", tname).lower()
     decoder = handlers.get(extension)
     if decoder is None:
+        if check_present:
+            raise Exception(f"{extension}: no decoder found")
         return data
     else:
         return decoder(data)

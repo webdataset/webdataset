@@ -58,6 +58,15 @@ def bytestr(data):
     return str(data).encode("ascii")
 
 
+def torch_save_object(data):
+    import io
+    import torch
+
+    stream = io.BytesIO()
+    torch.save(data, stream)
+    return stream.getvalue()
+
+
 def make_handlers():
     handlers = {}
     for extension in ["cls", "cls2", "class", "count", "index", "inx", "id"]:
@@ -72,6 +81,8 @@ def make_handlers():
         f(extension)
     for extension in ["pyd", "pickle"]:
         handlers[extension] = pickle.dumps
+    for extension in ["pth"]:
+        handlers[extension] = torch_save_object
     for extension in ["json", "jsn"]:
         handlers[extension] = lambda x: simplejson.dumps(x).encode("utf-8")
     for extension in ["ten", "tb"]:

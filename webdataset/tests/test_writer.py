@@ -30,6 +30,23 @@ def test_writer2(tmpdir):
         break
 
 
+def test_writer3(tmpdir):
+    with writer.TarWriter(f"{tmpdir}/writer3.tar") as sink:
+        sink.write(dict(__key__="a", pth=["abc"], pyd=dict(x=0)))
+    os.system(f"ls -l {tmpdir}")
+    os.system(f"tar tvf {tmpdir}/writer3.tar")
+    ftype = os.popen(f"file {tmpdir}/writer3.tar").read()
+    assert "compress" not in ftype, ftype
+
+    ds = wds.Dataset(f"{tmpdir}/writer3.tar").decode()
+    for sample in ds:
+        assert set(sample.keys()) == set("__key__ pth pyd".split())
+        assert isinstance(sample["pyd"], dict)
+        assert sample["pyd"] == dict(x=0)
+        assert isinstance(sample["pth"], list)
+        assert sample["pth"] == ["abc"]
+
+
 def test_writer_pipe(tmpdir):
     with writer.TarWriter(f"pipe:cat > {tmpdir}/writer3.tar") as sink:
         sink.write(dict(__key__="a", txt="hello", cls="3"))
