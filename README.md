@@ -83,15 +83,15 @@ for sample in islice(dataset, 0, 3):
     __key__ 'e39871fd9fd74f55'
     jpg b'\xff\xd8\xff\xe0\x00\x10JFIF\x00\x01\x01\x01\x01
     json b'[{"ImageID": "e39871fd9fd74f55", "Source": "xcli
-    
+
     __key__ 'f18b91585c4d3f3e'
     jpg b'\xff\xd8\xff\xe0\x00\x10JFIF\x00\x01\x01\x00\x00
     json b'[{"ImageID": "f18b91585c4d3f3e", "Source": "acti
-    
+
     __key__ 'ede6e66b2fb59aab'
     jpg b'\xff\xd8\xff\xe0\x00\x10JFIF\x00\x01\x01\x01\x00
     json b'[{"ImageID": "ede6e66b2fb59aab", "Source": "acti
-    
+
 
 
 There are common processing stages you can add to a dataset to make it a drop-in replacement for any existing dataset. For convenience, common operations are available through a "fluent" interface (as chained method calls).
@@ -166,6 +166,9 @@ for image, data in islice(dataset, 0, 3):
     torch.Size([3, 224, 224]) torch.float32 <class 'list'>
     torch.Size([3, 224, 224]) torch.float32 <class 'list'>
     torch.Size([3, 224, 224]) torch.float32 <class 'list'>
+
+
+You can find the full PyTorch ImageNet sample code converted to WebDataset at [tmbdev/pytorch-imagenet-wds](http://github.com/tmbdev/pytorch-imagenet-wds)
 
 
 # Sharding and Parallel I/O
@@ -260,7 +263,7 @@ There are a number of automatic decoders built in that already understand many c
 - **mp4**, **ogg**, **mjpeg**, avi, mov, h264                       : video (using torchvision `load`)
 - **flac**, **mp3**, sox                            : audio (using torchaudio `load`)
 
-You select a set of these by giving a string rather than dictionary as an argument to the `.decode` method. Strings of the form `<tensor-type><image-format><8bit>` are recognized, where `<tensor-type>` can be empty (NumPy), `torch`, or `pil`; `<image-format>` can be `l`, `rgb` (same as empty), or `rgba`, and `<8bit>` can either be empty (floating point values in the range from 0 to 1) or `8` (outputs `uint8` tensors). 
+You select a set of these by giving a string rather than dictionary as an argument to the `.decode` method. Strings of the form `<tensor-type><image-format><8bit>` are recognized, where `<tensor-type>` can be empty (NumPy), `torch`, or `pil`; `<image-format>` can be `l`, `rgb` (same as empty), or `rgba`, and `<8bit>` can either be empty (floating point values in the range from 0 to 1) or `8` (outputs `uint8` tensors).
 
 Common and recommended arguments for `.decoder` are:
 
