@@ -397,7 +397,7 @@ def default_collation_fn(samples, combine_tensors=True, combine_scalars=True):
                 b = torch.stack(list(b))
         elif isinstance(b[0], np.ndarray):
             if combine_tensors:
-                b = np.ndarray(list(b))
+                b = np.array(list(b))
         else:
             b = list(b)
         result.append(b)
