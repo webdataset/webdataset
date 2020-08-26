@@ -30,6 +30,15 @@ For the Github version:
 
 Documentation: [ReadTheDocs](http://webdataset.readthedocs.io)
 
+# Introductory Videos
+
+Here are some videos talking about WebDataset and large scale deep learning:
+
+- (https://www.youtube.com/watch?v=kNuA2wflygM)[Introduction to Large Scale Deep Learning]
+- (https://www.youtube.com/watch?v=mTv_ePYeBhs)[Loading Traiing Data with WebDataset]
+- (https://www.youtube.com/watch?v=v_PacO-3OGQ)[Creating Datasets in WebDataset Format]
+- (https://www.youtube.com/watch?v=kIv8zDpRUec)[Tools for Working with Large Datasets]
+
 # Using WebDataset
 
 WebDataset reads dataset that are stored as tar files, with the simple convention that files that belong together and make up a training sample share the same basename. WebDataset can read files from local disk or from any pipe, which allows it to access files using common cloud object stores.
