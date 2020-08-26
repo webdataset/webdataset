@@ -331,6 +331,10 @@ for index, (input, output) in dataset:
 sink.close()
 ```
 
+Storing data as Python pickles allows most common Python datatypes to be stored, it is lossless, and the format is fast to decode.
+However, it is uncompressed and cannot be read by non-Python programs. It's often better to choose other storage formats, e.g.,
+taking advantage of common image compression formats.
+
 If you know that the input is an image and the output is an integer class, you can also write something like this:
 
 ```Python
@@ -351,7 +355,6 @@ sink.close()
 The `assert` statements in that loop are not necessary, but they document and illustrate the expectations for this
 particular dataset. Generally, the ".jpg" encoder can actually encode a wide variety of array types as images. The
 ".cls" encoder always requires an integer for encoding.
-
 
 Here is how you can use `TarWriter` for writing a dataset without using an encoder:
 
