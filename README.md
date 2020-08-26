@@ -317,7 +317,43 @@ You can also create a WebDataset with library functions in this library:
 - `webdataset.TarWriter` takes dictionaries containing key value pairs and writes them to disk
 - `webdataset.ShardWriter` takes dictionaries containing key value pairs and writes them to disk as a series of shards
 
-Here is how you can use `TarWriter` for writing a dataset:
+Here is a quick way of converting an existing dataset into a WebDataset; this will store all tensors as Python pickles:
+
+```Python
+sink = wds.TarWriter("dest.tar")
+dataset = open_my_dataset()
+for index, (input, output) in dataset:
+    sink.write({
+        "__key__": "sample%06d" % index,
+        "input.pyd": input,
+        "output.pyd": output,
+    })
+sink.close()
+```
+
+If you know that the input is an image and the output is an integer class, you can also write something like this:
+
+```Python
+sink = wds.TarWriter("dest.tar")
+dataset = open_my_dataset()
+for index, (input, output) in dataset:
+    assert input.ndim == 3 and input.shape[2] == 3
+    assert input.dtype = np.float32 and np.amin(input) >= 0 and np.amax(input) <= 1
+    assert type(output) == int
+    sink.write({
+        "__key__": "sample%06d" % index,
+        "input.jpg": input,
+        "output.cls": output,
+    })
+sink.close()
+```
+
+The `assert` statements in that loop are not necessary, but they document and illustrate the expectations for this
+particular dataset. Generally, the ".jpg" encoder can actually encode a wide variety of array types as images. The
+".cls" encoder always requires an integer for encoding.
+
+
+Here is how you can use `TarWriter` for writing a dataset without using an encoder:
 
 ```Python
 sink = wds.TarWriter("dest.tar", encoder=False)
@@ -327,12 +363,14 @@ for basename in basenames:
     cls = lookup_cls(basename)
     sample = {
         "__key__": basename,
-        "png": image,
-        "cls": cls
+        "input.png": image,
+        "target.cls": cls
     }
     sink.write(sample)
 sink.close()
 ```
+
+Since no encoder is used, if you want to be able to read this data with the default decoder, `image` must contain a byte string corresponding to a PNG image (as indicated by the ".png" extension on its dictionary key), and `cls` must contain an integer encoded in ASCII (as indicated by the ".cls" extension on its dictionary key).
 
 # Writing Filters and Offline Augmentation
 
