@@ -89,7 +89,7 @@ def gendocs(c):
     "Generate docs."
 
     # convert IPython Notebooks
-    for nb in ["README.ipynb"] + glob.glob("docs/*.ipynb"):
+    for nb in glob.glob("docs/*.ipynb"):
         c.run(f"{ACTIVATE} jupyter nbconvert {nb} --to markdown")
     c.run(f"cp README.md docs/index.md")
 
