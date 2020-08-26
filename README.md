@@ -35,7 +35,7 @@ Documentation: [ReadTheDocs](http://webdataset.readthedocs.io)
 Here are some videos talking about WebDataset and large scale deep learning:
 
 - [Introduction to Large Scale Deep Learning](https://www.youtube.com/watch?v=kNuA2wflygM)
-- [Loading Traiing Data with WebDataset](https://www.youtube.com/watch?v=mTv_ePYeBhs)
+- [Loading Training Data with WebDataset](https://www.youtube.com/watch?v=mTv_ePYeBhs)
 - [Creating Datasets in WebDataset Format](https://www.youtube.com/watch?v=v_PacO-3OGQ)
 - [Tools for Working with Large Datasets](https://www.youtube.com/watch?v=kIv8zDpRUec)
 
