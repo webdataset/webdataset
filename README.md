@@ -482,3 +482,4 @@ You can find the full PyTorch ImageNet sample code converted to WebDataset at [t
 - refactor `autodecode.py`; allow for cascade of decoders
 - add single file decompression to `autodecode.py`
 - integrate Tensorcom library
+- key rewriting / custom key grouping
