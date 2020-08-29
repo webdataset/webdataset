@@ -93,7 +93,6 @@ class TorchAudioLoader:
             fname = os.path.join(dirname, f"file.{self.extension}")
             with open(fname, "wb") as stream:
                 stream.write(data)
-            os.system(f"ls -l {fname}")
             return torchaudio.load(fname, **self.kw)
 
 
