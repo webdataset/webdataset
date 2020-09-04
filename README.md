@@ -4,11 +4,23 @@
 # WebDataset
 
 WebDataset is a PyTorch Dataset (IterableDataset) implementation providing
-efficient access to datasets stored in POSIX tar archives.
+efficient access to datasets stored in POSIX tar archives and uses only sequential/streaming
+data access. This brings substantial performance advantage in many compute environments, and it
+is essential for very large scale training.
 
-Storing data in POSIX tar archives greatly speeds up I/O operations on
-rotational storage and on networked file systems because it permits all
-I/O operations to operate as large sequential reads and writes.
+WebDataset implements standard PyTorch `IterableDataset` interface and works with the PyTorch `DataLoader`.
+Access to datasets is as simple as:
+
+```Python
+dataset = wds.Dataset(url).shuffle(1000).decode("pil").to_tuple("jpg;png", "json").map(augment)
+dataloader = torch.utils.data.DataLoader(dataset, num_workers=4, batch_size=16)
+
+for inputs, outputs in dataloader:
+    ...
+```
+
+In that code snippet, `url` can refer to a local file, a local HTTP server, a cloud storage object, an object
+on an object store, or even the output of arbitrary command pipelines.
 
 WebDataset fulfills a similar function to Tensorflow's TFRecord/tf.Example
 classes, but it is much easier to adopt because it does not actually
