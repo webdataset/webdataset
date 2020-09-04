@@ -30,6 +30,12 @@ For the Github version:
 
 Documentation: [ReadTheDocs](http://webdataset.readthedocs.io)
 
+Examples:
+
+- [loading videos](https://github.com/tmbdev/webdataset/blob/master/docs/video-loading-example.ipynb)
+- [splitting raw videos into clips for training](https://github.com/tmbdev/webdataset/blob/master/docs/ytsamples-split.ipynb)
+- [converting the Falling Things dataset](https://github.com/tmbdev/webdataset/blob/master/docs/falling-things-make-shards.ipynb)
+
 # Introductory Videos
 
 Here are some videos talking about WebDataset and large scale deep learning:
