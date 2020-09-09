@@ -128,7 +128,7 @@ There are common processing stages you can add to a dataset to make it a drop-in
 dataset = (
     wds.Dataset(url)
     .shuffle(100)
-    .decode()
+    .decode("rgb")
     .to_tuple("jpg;png", "json")
 )
 
@@ -144,7 +144,7 @@ for image, data in islice(dataset, 0, 3):
 Common operations:
 
 - `shuffle(n)`: shuffle the dataset with a buffer of size `n`; also shuffles shards (see below)
-- `decode([type])`: automatically decode files; the `type` determines desired outputs for images, video, and audio: `pil`, `rgb`, `rgb8`, `rgbtorch`, etc.
+- `decode(decoder, ...)`: automatically decode files (most commonly, you can just specify `"pil"`, `"rgb"`, `"rgb8"`, `"rgbtorch"`, etc.)
 - `rename(new="old1;old2", ...)`: rename fields
 - `map(f)`: apply `f` to each sample
 - `map_dict(key=f, ...)`: apply `f` to its corresponding key
@@ -274,31 +274,33 @@ dataloader = wds.MultiDataset(dataset, workers=4).unbatched().shuffle(1000).batc
 
 WebDataset stores data in files contained inside `.tar` archives. This allows datasets to be stored in a bit-identical way to the way they are usually stored on disk. In addition, it allows WebDataset to take advantage of existing conventions and facilities for dealing with metadata and compression.
 
-Loading takes place in two steps: first, the binary contents of each file are read into memory, and then the files are decoded. Reading is carried out by the `webdataset.Dataset` class itself. You can decode using any function you like. If you invoke `webdataset.Dataset(...).map(my_decoder)`, then `my_decoder` will simply be called on a dictionary with full extensions as keys and binary vectors as values.
+Loading takes place in two steps: first, the binary contents of each file are read into memory, and then the files are decoded. Reading is carried out by the `webdataset.Dataset` class itself. 
+Decoding is just a special form of mapping; you can use `webdataset.Dataset(...).map(my_decoder)` to do all your decoding. In fact, you can do this after the default decoders run if you like.
 
-In most cases, howeer, it's more convenient to use the `.decode` method, since it decodes images based on extensions. The `.decode` method takes one argument that specifies how decoding is to take place. That argument is a dictionary consisting of a last-extension string and a corresponding function for decoding a file with that extension. Note that samples in WebDataset are grouped based on the full extension, while decoding takes place based on the last extension. So, `sample.input.png` is represented in the sample with the key of `input.png`, but its last extension is `png`, which identifies it as an image file.
+The `.decode(handler1, handler2, ...)` method makes common decoding operations easier, however. It is a special mapping that will call `handler1`, `handler2`, etc. in sequence until one of them returns not None. The two arguments to each handler are the full extension for the sample field and the binary data.
 
-There are a number of automatic decoders built in that already understand many common extensions (recommended formats are in bold face):
+For convenience, there is some extra functionality:
 
-- **jpg**, **ppm**, jpeg, img, image, pbm, pgm, png : image
-- **txt**, text, transcript                     : string
-- **cls**, cls2, class, count, index, inx, id   : integer
-- **pyd**, pickle                               : Python pickle (using `pickle.loads`)
-- **pth**                                       : Torch pickle (using `torch.load`)
-- **json**, jsn                                 : JSON encoded object (using `json.loads`)
-- **ten**, tb                                   : fast binary tensor format
-- **mp4**, **ogg**, **mjpeg**, avi, mov, h264                       : video (using torchvision `load`)
-- **flac**, **mp3**, sox                            : audio (using torchaudio `load`)
-
-You select a set of these by giving a string rather than dictionary as an argument to the `.decode` method. Strings of the form `<tensor-type><image-format><8bit>` are recognized, where `<tensor-type>` can be empty (NumPy), `torch`, or `pil`; `<image-format>` can be `l`, `rgb` (same as empty), or `rgba`, and `<8bit>` can either be empty (floating point values in the range from 0 to 1) or `8` (outputs `uint8` tensors).
+- basic handlers always exist for 
+    - **pyd**, pickle                               : Python pickle (using `pickle.loads`)
+    - **pth**                                       : Torch pickle (using `torch.load`)
+    - **json**, jsn                                 : JSON encoded object (using `json.loads`)
+    - **ten**, tb                                   : fast uncompressed binary tensor format
+    - **txt**, text, transcript                     : string
+    - **cls**, cls2, class, count, index, inx, id   : integer
+- for image decoders, you can use a shorthand of the form "(torch|pil|)(l|rgb|rgba)(8|)" to decode into Torch tensors, PIL images, or NumPy arrays (default);
+to decode into grayscale, RGB, or RGBA images; to decode into `uint8` or `float`; this method will handle
+    - this will handle these extenisons: **jpg**, **ppm**, jpeg, img, image, pbm, pgm, png
+- you can specify a pair `(extension, function)` to invoke `function` as the decoder for keys whose extension matches one of the space separated extensions
 
 Common and recommended arguments for `.decoder` are:
 
-- **pil** - for `torchvision` data augmentation
-- **rgb** - for NumPy-based data augmentation, forcing RGB inputs in the range 0..1, in CHW order
-- **torchrgb** - for torch-based data augmentation, forcing RGB format in the range 0..1, in CHW order
-- **torchrgb8** - for torch-based data augmentation, forcing RGB format using `uint8`, in CHW order
-- **l8** - for large grayscale images in HW order
+- .decode("**pil")** - for `torchvision` data augmentation
+- .decode("**rgb")** - for NumPy-based data augmentation, forcing RGB inputs in the range 0..1, in CHW order
+- .decode(autodecode.torchvision, "torchrgb") - torchvideo and Torch RGB images (**handles: mp4**, **ogg**, **mjpeg**, avi, mov, h264)
+- .decode(autodecode.torchaudio, "torchrgb") - torchaudio and Torch RGB images (handles: flac, mp3, sox)
+- .decode(("jpg", myjpgdecoder), "rgb") - handle .jpg extensions specially, default to other decoders for other types
+- .decode(("my.jpg", myjpgdecoder), "rgb") - handle just components with filenames ending in .my.jpg specially
 
 
 # Splitting Shards across Nodes and Workers

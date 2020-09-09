@@ -19,21 +19,61 @@ import os
 import numpy as np
 import PIL
 import PIL.Image
-import simplejson
-import six
+import json
 import tempfile
-import sys
+import io
 
 
-from .checks import checkmember, checktype, checknotnone, checkcallable
+from .checks import checkmember, checknotnone
 
 
 check_present = int(os.environ.get("WDS_CHECK_DECODE", 0))
 
 
-class NoException(Exception):
-    pass
+################################################################
+# handle basic datatypes
+################################################################
 
+
+def basichandlers(key, data):
+
+    print("BASIC", key)
+
+    extension = re.sub(r".*[.]", "", key)
+
+    if extension in "txt text transcript":
+        return data.decode("utf-8")
+
+    if extension in "cls cls2 class count index inx id".split():
+        try:
+            return int(data)
+        except ValueError:
+            return None
+
+    if extension in "json jsn":
+        return json.loads(data)
+
+    if extension in "pyd pickle".split():
+        return pickle.loads(data)
+
+    if extension in "pth".split():
+        import io
+        import torch
+        stream = io.BytesIO(data)
+        return torch.load(stream)
+
+    if extension in "ten tb".split():
+        from . import tenbin
+        return tenbin.decode_buffer(data)
+
+    if extension in "mp msgpack msg".split():
+        import msgpack
+        return msgpack.unpackb(data)
+
+
+################################################################
+# handle images
+################################################################
 
 imagespecs = {
     "l8": ("numpy", "uint8", "l"),
@@ -56,47 +96,19 @@ imagespecs = {
 }
 
 
-def torch_load_object(data):
-    import io
-    import torch
+def handle_extension(extensions, f):
+    extensions = extensions.lower().split()
 
-    print(">>> torch_load_object", data, file=sys.stderr)
+    def g(key, data):
+        extension = re.sub(r".*[.]", "", key)
+        if extension.lower() not in extensions:
+            return None
+        return f(data)
 
-    stream = io.BytesIO(data)
-    return torch.load(stream)
-
-
-class TorchVideoLoader:
-    def __init__(self, extension, **kw):
-        self.extension = extension
-        self.kw = kw
-
-    def __call__(self, data):
-        import torchvision.io
-
-        with tempfile.TemporaryDirectory() as dirname:
-            fname = os.path.join(dirname, f"file.{self.extension}")
-            with open(fname, "wb") as stream:
-                stream.write(data)
-            return torchvision.io.read_video(fname, **self.kw)
+    return g
 
 
-class TorchAudioLoader:
-    def __init__(self, extension, **kw):
-        self.extension = extension
-        self.kw = kw
-
-    def __call__(self, data):
-        import torchaudio
-
-        with tempfile.TemporaryDirectory() as dirname:
-            fname = os.path.join(dirname, f"file.{self.extension}")
-            with open(fname, "wb") as stream:
-                stream.write(data)
-            return torchaudio.load(fname, **self.kw)
-
-
-def imagehandler(data, imagespec):
+class ImageHandler:
     """Decode image data using the given `imagespec`.
 
     The `imagespec` specifies whether the image is decoded
@@ -122,189 +134,116 @@ def imagehandler(data, imagespec):
     - pilrgba: pil None rgba
 
     """
-    checkmember(imagespec, list(imagespecs.keys()), "unknown image specification")
-    atype, etype, mode = imagespecs[imagespec.lower()]
-    with six.BytesIO(data) as stream:
-        img = PIL.Image.open(stream)
-        img.load()
-        img = img.convert(mode.upper())
-    if atype == "pil":
-        return img
-    elif atype == "numpy":
-        result = np.asarray(img)
-        checkmember(result.dtype, [np.uint8])
-        if etype == "uint8":
-            return result
-        else:
-            return result.astype("f") / 255.0
-    elif atype == "torch":
-        import torch
+    def __init__(self, imagespec):
+        checkmember(imagespec, list(imagespecs.keys()), "unknown image specification")
+        self.imagespec = imagespec.lower()
 
-        result = np.asarray(img)
-        checkmember(result.dtype, [np.uint8])
-        if etype == "uint8":
-            result = np.array(result.transpose(2, 0, 1))
-            return torch.tensor(result)
-        else:
-            result = np.array(result.transpose(2, 0, 1))
-            return torch.tensor(result) / 255.0
-    return None
+    def __call__(self, key, data):
+        extension = re.sub(r".*[.]", "", key)
+        if extension.lower() not in "jpg jpeg png ppm pgm pbm pnm".split():
+            return None
+        imagespec = self.imagespec
+        atype, etype, mode = imagespecs[imagespec]
+        with io.BytesIO(data) as stream:
+            img = PIL.Image.open(stream)
+            img.load()
+            img = img.convert(mode.upper())
+        if atype == "pil":
+            return img
+        elif atype == "numpy":
+            result = np.asarray(img)
+            checkmember(result.dtype, [np.uint8])
+            if etype == "uint8":
+                return result
+            else:
+                return result.astype("f") / 255.0
+        elif atype == "torch":
+            import torch
 
-
-def maybe_int(data):
-    """Try to turn data into an int; if it fails, return data."""
-    try:
-        return int(data)
-    except ValueError:
-        return data
-
-
-def make_handlers(imagetype):
-    """Preload the default_handlers table."""
-    handlers = {}
-    for extension in ["cls", "cls2", "class", "count", "index", "inx", "id"]:
-        handlers[extension] = maybe_int
-    for extension in ["txt", "text", "transcript"]:
-        handlers[extension] = lambda x: x.decode("utf-8")
-    for extension in ["png", "jpg", "jpeg", "img", "image", "pbm", "pgm", "ppm"]:
-        handlers[extension] = lambda data: imagehandler(data, imagetype)
-    for extension in ["pyd", "pickle"]:
-        handlers[extension] = pickle.loads
-    for extension in ["json", "jsn"]:
-        handlers[extension] = simplejson.loads
-    for extension in ["ten", "tb"]:
-        from . import tenbin
-
-        handlers[extension] = tenbin.decode_buffer
-    for extension in ["pth"]:
-        handlers[extension] = torch_load_object
-    for extension in [
-        "mp4",
-        "ogv",
-        "mjpeg",
-        "avi",
-        "mov",
-        "h264",
-        "mpg",
-        "webm",
-        "wmv",
-    ]:
-        handlers[extension] = TorchVideoLoader(extension)
-    for extension in ["flac", "mp3", "sox", "wav", "m4a", "ogg", "wma"]:
-        handlers[extension] = TorchAudioLoader(extension)
-    try:
-        import msgpack
-
-        for extension in ["mp", "msgpack", "msg"]:
-            handlers[extension] = msgpack.unpackb
-    except ImportError:
-        pass
-    return handlers
+            result = np.asarray(img)
+            checkmember(result.dtype, [np.uint8])
+            if etype == "uint8":
+                result = np.array(result.transpose(2, 0, 1))
+                return torch.tensor(result)
+            else:
+                result = np.array(result.transpose(2, 0, 1))
+                return torch.tensor(result) / 255.0
+        return None
 
 
-default_handlers = {key: make_handlers(key) for key in imagespecs.keys()}
-"""A mapping of filename extensions to loading functions.
-
-You can modify this to suit your needs.
-
-E.g.,
-
-```Python
-    default_handlers["mp4"] = my_mp4_decoder
-```
-
-will call `my_mp4_decoder` in order to decode files ending in `.mp4`.
-The decoder takes a single argument, a bytestring, and returns the decoded
-object that is returned as part of a sample by `WebDataset`.
-"""
+################################################################
+# torch video
+################################################################
 
 
-def decode_item_based_on_extension(data, tname, handlers):
-    # Unicode change. If it is alread an unicode string,
-    # no decoding (Byte->Unicode req)
-    if isinstance(data, (int, float, str)):
-        return data
-    checktype(data, bytes)
-    checktype(tname, str)
-    extension = re.sub(r".*\.", "", tname).lower()
-    decoder = handlers.get(extension)
-    if decoder is None:
-        if check_present:
-            raise Exception(f"{extension}: no decoder found")
-        return data
-    else:
-        return decoder(data)
+def torchvideo(key, data):
+    extension = re.sub(r".*[.]", "", key)
+    if extension not in "mp4 ogv mjpeg avi mov h264 mpg webm wmv".split():
+        return None
+
+    import torchvision.io
+
+    with tempfile.TemporaryDirectory() as dirname:
+        fname = os.path.join(dirname, f"file.{extension}")
+        with open(fname, "wb") as stream:
+            stream.write(data)
+        return torchvision.io.read_video(fname)
 
 
-def decode_sample_based_on_extensions(sample, handlers):
-    """Autodecode a sample, using extensions as guide for how to decode.
-
-    Args:
-    sample: dictionary representing sample
-    imagetype: format for images (gray, rgb, rgba, PIL; rgb8=8 bit)
-    """
-    result = {}
-    assert isinstance(sample, dict)
-    for k, v in list(sample.items()):
-        if k[0] == "_":
-            if isinstance(v, bytes):
-                v = v.decode("utf-8")
-            result[k] = v
-            continue
-        checknotnone(v)
-        result[k] = decode_item_based_on_extension(v, k, handlers=handlers)
-    return result
+################################################################
+# torchaudio
+################################################################
 
 
-def make_decoder(spec):
-    if spec is True:
-        spec = "rgb"
-    if spec is False or spec is None:
+def torchaudio(key, data):
+    extension = re.sub(r".*[.]", "", key)
+    if extension not in ["flac", "mp3", "sox", "wav", "m4a", "ogg", "wma"]:
+        return None
 
-        def decoder(x):
-            return x
+    import torchaudio
 
-    elif callable(spec):
-        decoder = spec
-    elif isinstance(spec, dict):
-
-        def decoder(sample):
-            return decode_sample_based_on_extensions(sample, spec)
-
-    elif isinstance(spec, str):
-        handlers = default_handlers.get(spec)
-        checknotnone(handlers, spec)
-
-        def decoder(sample):
-            return decode_sample_based_on_extensions(sample, handlers)
-
-    else:
-        raise ValueError(f"{spec}: unknown decoder spec")
-    checkcallable(decoder, "could not make a callable decoder")
-    return decoder
+    with tempfile.TemporaryDirectory() as dirname:
+        fname = os.path.join(dirname, f"file.{extension}")
+        with open(fname, "wb") as stream:
+            stream.write(data)
+        return torchaudio.load(fname)
 
 
-def reraise_exception(exn):
-    raise exn
+################################################################
+# a sample decoder
+################################################################
 
 
-def apply_decoder(decoder=make_decoder(True), handler=reraise_exception):
-    """Decode samples by invoking the decoder with error handling.
+class Decoder:
+    """Decode samples using a list of handlers.
 
-        decode: decoder function
-        errors: True, "warn", or False
-
+    For each key/data item, this iterates through the list of
+    handlers until some handler returns something other than None.
     """
 
-    def iterator(data):
-        for sample in data:
-            try:
-                decoded = decoder(sample)
-            except Exception as exn:  # skipcq: PYL-W0703
-                if handler(exn):
-                    continue
-                else:
-                    break
-            yield decoded
+    def __init__(self, handlers):
+        self.handlers = handlers
 
-    return iterator
+    def decode1(self, key, data):
+        for f in self.handlers:
+            result = f(key, data)
+            if result is not None:
+                return result
+        return data
+
+    def decode(self, sample):
+        result = {}
+        assert isinstance(sample, dict), sample
+        for k, v in list(sample.items()):
+            if k[0] == "_":
+                if isinstance(v, bytes):
+                    v = v.decode("utf-8")
+                result[k] = v
+                continue
+            checknotnone(v)
+            result[k] = self.decode1(k, v)
+        return result
+
+    def __call__(self, sample):
+        assert isinstance(sample, dict), (len(sample), sample)
+        return self.decode(sample)

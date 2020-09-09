@@ -9,7 +9,6 @@ import torch
 import pickle
 
 import webdataset.dataset as wds
-from webdataset import autodecode
 
 
 local_data = "testdata/imagenet-000000.tgz"
@@ -84,13 +83,11 @@ def test_dataset_eof_handler():
 def test_dataset_decode_nohandler():
     count = [0]
 
-    decoder = autodecode.make_decoder("rgb")
-
-    def faulty_decoder(sample):
+    def faulty_decoder(key, data):
         if count[0] % 2 == 0:
             raise ValueError("nothing")
         else:
-            return decoder(sample)
+            return data
         count[0] += 1
 
     with pytest.raises(ValueError):
@@ -114,17 +111,17 @@ def test_dataset_decode_handler():
     count = [0]
     good = [0]
 
-    decoder = autodecode.make_decoder("rgb")
-
-    def faulty_decoder(sample):
+    def faulty_decoder(key, data):
+        if "png" not in key:
+            return data
         count[0] += 1
         if count[0] % 2 == 0:
             raise ValueError("nothing")
         else:
             good[0] += 1
-            return decoder(sample)
+            return data
 
-    ds = wds.Dataset(local_data).decode(faulty_decoder, wds.ignore_and_continue)
+    ds = wds.Dataset(local_data).decode(faulty_decoder, handler=wds.ignore_and_continue)
     result = count_samples_tuple(ds)
     assert count[0] == 47
     assert good[0] == 24
@@ -185,7 +182,7 @@ def test_dataset_shuffle_decode_rename_extract():
     assert count_samples_tuple(ds) == 47
     image, cls = next(iter(ds))
     assert isinstance(image, np.ndarray), image
-    assert isinstance(cls, int)
+    assert isinstance(cls, int), type(cls)
 
 
 def test_dataset_len():
@@ -309,16 +306,13 @@ def test_dataloader():
 
 
 def test_handlers():
-    handlers = dict(autodecode.default_handlers["rgb"])
 
-    def decode_jpg_and_resize(data):
+    def mydecoder(data):
         return PIL.Image.open(io.BytesIO(data)).resize((128, 128))
-
-    handlers["jpg"] = decode_jpg_and_resize
 
     ds = (
         wds.Dataset(remote_loc + remote_shard)
-        .decode(handlers)
+        .decode(("jpg", mydecoder))
         .to_tuple("jpg;png", "json")
     )
 
@@ -328,8 +322,8 @@ def test_handlers():
 
 
 def test_decoder():
-    def mydecoder(sample):
-        return {k: len(v) for k, v in sample.items()}
+    def mydecoder(key, sample):
+        return len(sample)
 
     ds = (
         wds.Dataset(remote_loc + remote_shard)

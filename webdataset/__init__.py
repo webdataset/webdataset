@@ -22,6 +22,5 @@ from .dataset import (
     worker_urls,
     all_urls
 )
-from .autodecode import default_handlers
 from .writer import ShardWriter, TarWriter
 from .multi import MultiDataset
