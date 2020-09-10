@@ -37,8 +37,6 @@ check_present = int(os.environ.get("WDS_CHECK_DECODE", 0))
 
 def basichandlers(key, data):
 
-    print("BASIC", key)
-
     extension = re.sub(r".*[.]", "", key)
 
     if extension in "txt text transcript":
