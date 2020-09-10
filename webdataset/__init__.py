@@ -24,3 +24,4 @@ from .dataset import (
 )
 from .writer import ShardWriter, TarWriter
 from .multi import MultiDataset
+from .autodecode import imagehandler, torch_video, torch_audio, Decoder

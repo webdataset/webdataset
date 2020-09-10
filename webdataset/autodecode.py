@@ -187,12 +187,16 @@ class ImageHandler:
         return None
 
 
+def imagehandler(imagespec):
+    return ImageHandler(imagespec)
+
+
 ################################################################
 # torch video
 ################################################################
 
 
-def torchvideo(key, data):
+def torch_video(key, data):
     extension = re.sub(r".*[.]", "", key)
     if extension not in "mp4 ogv mjpeg avi mov h264 mpg webm wmv".split():
         return None
@@ -211,7 +215,7 @@ def torchvideo(key, data):
 ################################################################
 
 
-def torchaudio(key, data):
+def torch_audio(key, data):
     extension = re.sub(r".*[.]", "", key)
     if extension not in ["flac", "mp3", "sox", "wav", "m4a", "ogg", "wma"]:
         return None
