@@ -12,6 +12,7 @@ import webdataset.dataset as wds
 
 
 local_data = "testdata/imagenet-000000.tgz"
+compressed = "testdata/compressed.tar"
 remote_loc = "http://storage.googleapis.com/nvdata-openimages/"
 remote_shards = "openimages-train-0000{00..99}.tar"
 remote_shard = "openimages-train-000321.tar"
@@ -212,6 +213,13 @@ def test_raw():
     image, cls = next(iter(ds))
     assert isinstance(image, bytes)
     assert isinstance(cls, bytes)
+
+
+def test_gz():
+    ds = wds.Dataset(compressed).decode()
+    sample = next(iter(ds))
+    print(sample)
+    assert sample["txt.gz"] == "hello\n", sample
 
 
 def test_rgb8_np_vs_torch():

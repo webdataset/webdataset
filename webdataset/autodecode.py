@@ -228,6 +228,34 @@ def torch_audio(key, data):
 
 
 ################################################################
+# special class for continuing decoding
+################################################################
+
+
+class Continue:
+    """Special class for continuing decoding.
+
+    This is mostly used for decompression, as in:
+
+        def decompressor(key, data):
+            if key.endswith(".gz"):
+                return Continue(key[:-3], decompress(data))
+            return None
+    """
+
+    def __init__(self, key, data):
+        self.key, self.data = key, data
+
+
+def gzfilter(key, data):
+    import gzip
+    if not key.endswith(".gz"):
+        return None
+    decompressed = gzip.open(io.BytesIO(data)).read()
+    return Continue(key[:-3], decompressed)
+
+
+################################################################
 # a sample decoder
 ################################################################
 
@@ -245,6 +273,9 @@ class Decoder:
     def decode1(self, key, data):
         for f in self.handlers:
             result = f(key, data)
+            if isinstance(result, Continue):
+                key, data = result.key, result.data
+                continue
             if result is not None:
                 return result
         return data

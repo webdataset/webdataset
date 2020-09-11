@@ -100,6 +100,7 @@ def do_nothing(*args, **kw):
 
 class Shuffler:
     """Make a shuffle function (avoid nesting for pickle)."""
+
     def __init__(self, rng):
         self.rng = rng
 
@@ -268,14 +269,22 @@ class Pipeline:
         seed = random.SystemRandom().random()
         self.rng.seed(seed)
 
-    def decode(self, *args, handler=reraise_exception):
+    def decode(
+        self,
+        *args,
+        handler=reraise_exception,
+        pre=[autodecode.gzfilter],
+        post=[autodecode.basichandlers],
+    ):
         """Decode the data with the given decoder."""
-        handlers = list(args)
+        handlers = pre + list(args) + post
         # special case for images (backwards compatibility)
         for i in range(len(handlers)):
             if isinstance(handlers[i], tuple) and isinstance(handlers[i][0], str):
                 assert callable(handlers[i][1]), handlers[i][1]
-                handlers[i] = autodecode.handle_extension(handlers[i][0], handlers[i][1])
+                handlers[i] = autodecode.handle_extension(
+                    handlers[i][0], handlers[i][1]
+                )
             elif isinstance(handlers[i], str):
                 handlers[i] = autodecode.ImageHandler(handlers[i])
         for f in handlers:
@@ -283,7 +292,6 @@ class Pipeline:
         # always provide basichandlers; if you don't want it,
         # either map Decoder yourself, or override the types
         # you don't want decoded
-        handlers += [autodecode.basichandlers]
         decoder = autodecode.Decoder(handlers)
         self.pipeline.append(filters.map(decoder, handler=handler))
         return self
