@@ -111,6 +111,23 @@ class MultiDatasetIterator(IterableDataset):
 
 
 class MultiDataset(IterableDataset, wds.Pipeline):
+    """MultiDataset is an experimental, generalized, pipeline-based alternative to DataLoader.
+
+    The DataLoader class is complex and has some problems, in particular when
+    it comes to working with IterableDatasets. MultiDataset is an experimental
+    class showing what DataLoader might be replaced with in the future.
+
+    Among other differences, MultiDataset handles splitting of samples among
+    workers differently from DataLoader, and it also handles determining
+    dataset length differently.
+
+    So, for now, you want to use DataLoader if your training framework
+    requires it, but you will have to deal with the limitations in DataLoader
+    for IterableDataset. On the other hand, MultiDataset is a good choice in
+    containers (since it doesn't use shared memory) or if you want a simpler
+    way of controlling the assignment of shards to processes.
+    """
+
     def __init__(
         self, dataset, workers=4, output_size=10000, nominal=None, pin_memory=True,
     ):
@@ -126,3 +143,4 @@ class MultiDataset(IterableDataset, wds.Pipeline):
 
     def __len__(self):
         return self.nominal
+
