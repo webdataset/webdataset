@@ -44,6 +44,7 @@ def main(args):
         print("sample keys:")
         for key, count in skeys.most_common():
             print(key, count)
+        print()
 
 
 if __name__ == "__main__":
