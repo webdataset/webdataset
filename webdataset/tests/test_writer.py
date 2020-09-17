@@ -1,5 +1,7 @@
 import os
 
+import numpy as np
+
 import webdataset.dataset as wds
 from webdataset import writer
 
@@ -45,6 +47,27 @@ def test_writer3(tmpdir):
         assert sample["pyd"] == dict(x=0)
         assert isinstance(sample["pth"], list)
         assert sample["pth"] == ["abc"]
+
+
+def test_writer4(tmpdir):
+    with writer.TarWriter(f"{tmpdir}/writer4.tar") as sink:
+        sink.write(dict(__key__="a", ten=np.zeros((3, 3)), tb=[np.ones(1), np.ones(2)]))
+    os.system(f"ls -l {tmpdir}")
+    os.system(f"tar tvf {tmpdir}/writer4.tar")
+    ftype = os.popen(f"file {tmpdir}/writer4.tar").read()
+    assert "compress" not in ftype, ftype
+
+    ds = wds.Dataset(f"{tmpdir}/writer4.tar").decode()
+    for sample in ds:
+        assert set(sample.keys()) == set("__key__ tb ten".split())
+        assert isinstance(sample["ten"], list)
+        assert isinstance(sample["ten"][0], np.ndarray)
+        assert sample["ten"][0].shape == (3, 3)
+        assert isinstance(sample["tb"], list)
+        assert len(sample["tb"]) == 2
+        assert len(sample["tb"][0]) == 1
+        assert len(sample["tb"][1]) == 2
+        assert sample["tb"][0][0] == 1.0
 
 
 def test_writer_pipe(tmpdir):

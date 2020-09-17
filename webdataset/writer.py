@@ -90,9 +90,9 @@ def make_handlers():
 
         def f(x):  # skipcq: PYL-E0102
             if isinstance(x, list):
-                return tenbin.encode_buffer(x)
+                return memoryview(tenbin.encode_buffer(x))
             else:
-                return tenbin.encode_buffer([x])
+                return memoryview(tenbin.encode_buffer([x]))
 
         handlers[extension] = f
     try:
@@ -253,7 +253,7 @@ class TarWriter:
         for k, v in list(obj.items()):
             if k[0] == "_":
                 continue
-            if not isinstance(v, bytes):
+            if not isinstance(v, (bytes, bytearray, memoryview)):
                 raise ValueError(
                     f"{k} doesn't map to a bytes after encoding ({type(v)})"
                 )
@@ -273,7 +273,7 @@ class TarWriter:
             ti.mode = self.mode
             ti.uname = self.user
             ti.gname = self.group
-            if not isinstance(v, (bytes)):
+            if not isinstance(v, (bytes, bytearray, memoryview)):
                 raise ValueError(f"converter didn't yield bytes: {k}, {type(v)}")
             stream = io.BytesIO(v)
             self.tarstream.addfile(ti, stream)
