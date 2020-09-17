@@ -61,7 +61,7 @@ def _parallel_job(dataset, i, n, output_queue):
     while output_queue.qsize() > 0:
         time.sleep(1.0)
     output_queue.close()
-    D("job", i, "done", dataset.sample_urls)
+    D("job", i, "done", getattr(dataset, "sample_urls", None))
 
 
 class MultiDatasetIterator(IterableDataset):
@@ -133,7 +133,12 @@ class MultiDataset(IterableDataset, wds.Pipeline):
     ):
         wds.Pipeline.__init__(self)
         D("dataset", dataset)
-        self.kw = dict(dataset=dataset, workers=workers, output_size=output_size, pin_memory=pin_memory,)
+        self.kw = dict(
+            dataset=dataset,
+            workers=workers,
+            output_size=output_size,
+            pin_memory=pin_memory,
+        )
         self.nominal = nominal
 
     def __iter__(self):
@@ -143,4 +148,3 @@ class MultiDataset(IterableDataset, wds.Pipeline):
 
     def __len__(self):
         return self.nominal
-
