@@ -52,11 +52,21 @@ def copy_and_delete_tensors(sample, pin_memory=True):
     return result
 
 
-def _parallel_job(dataset, i, n, output_queue):
+def wait(output_queue, prefetch):
+    if prefetch <= 0:
+        return None
+
+    while output_queue.qsize() >= prefetch:
+        time.sleep(0.1)
+
+
+def _parallel_job(dataset, i, n, prefetch, output_queue):
     D("job", i, "started")
     dataset.shard_selection = lambda x: x[i::n]
     for sample in dataset:
         output_queue.put(sample)
+        wait(output_queue, prefetch)
+
     D("job", i, "waiting")
     while output_queue.qsize() > 0:
         time.sleep(1.0)
@@ -66,7 +76,7 @@ def _parallel_job(dataset, i, n, output_queue):
 
 class MultiDatasetIterator(IterableDataset):
     def __init__(
-        self, dataset=None, workers=4, output_size=100, pin_memory=True,
+        self, dataset=None, workers=4, output_size=100, pin_memory=True, prefetch=-1
     ):
         IterableDataset.__init__(self)
         omp_warning()
@@ -76,7 +86,7 @@ class MultiDatasetIterator(IterableDataset):
         for i in range(workers):
             job = mp.Process(
                 target=_parallel_job,
-                args=(dataset, i, workers, self.output_queue),
+                args=(dataset, i, workers, prefetch, self.output_queue),
                 daemon=True,
             )
             self.jobs.append(job)
@@ -109,6 +119,9 @@ class MultiDatasetIterator(IterableDataset):
             time.sleep(1.0)
             job.join()
 
+    def __del__(self):
+        self.terminate()
+
 
 class MultiDataset(IterableDataset, wds.Pipeline):
     """MultiDataset is an experimental, generalized, pipeline-based alternative to DataLoader.
@@ -129,7 +142,7 @@ class MultiDataset(IterableDataset, wds.Pipeline):
     """
 
     def __init__(
-        self, dataset, workers=4, output_size=10000, nominal=None, pin_memory=True,
+        self, dataset, workers=4, output_size=10000, nominal=None, pin_memory=True, prefetch=-1
     ):
         wds.Pipeline.__init__(self)
         D("dataset", dataset)
@@ -138,6 +151,7 @@ class MultiDataset(IterableDataset, wds.Pipeline):
             workers=workers,
             output_size=output_size,
             pin_memory=pin_memory,
+            prefetch=prefetch
         )
         self.nominal = nominal
 
