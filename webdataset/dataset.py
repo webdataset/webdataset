@@ -246,7 +246,7 @@ class Pipeline:
     def batched(
         self, batchsize, partial=True,
     ):
-        self.pipeline.append(filters.batched(batchsize=batchsize, partial=True,))
+        self.pipeline.append(filters.batched(batchsize=batchsize, partial=partial,))
         return self
 
     def unbatched(self):
