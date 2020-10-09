@@ -264,11 +264,19 @@ images.shape
 
 The `ResizedDataset` is also helpful for connecting iterable datasets to `DataLoader`: it lets you set both a nominal and an actual epoch size; it will repeatedly iterate through the entire dataset and return data in chunks with the given epoch size.
 
-The WebDataset library also provides an alternative to `DataLoader` called `MultiDataset`. It distributes `IterableDatasets` across multiple workers and collects the results in a way very similar to `DataLoader`. Unlike `DataLoader`, you don't have to worry about calculating the epoch length, and you can configure the `MultiDataset` using the same interface as a WebDataset. For example, if you want to shuffle samples between the batches returned by individual workers, you can write:
+# MultiDataset
+
+WebDataset works fine with the existing `DataLoader` class. The WebDataset library also provides an experimental alternative to `DataLoader` called `MultiDataset`. It distributes `IterableDatasets` across multiple workers and collects the results in a way very similar to `DataLoader`. Unlike `DataLoader`, you don't have to worry about calculating the epoch length, and you can configure the `MultiDataset` using the same interface as a WebDataset. For example, if you want to shuffle samples between the batches returned by individual workers, you can write:
 
 ```Python
 dataloader = wds.MultiDataset(dataset, workers=4).unbatched().shuffle(1000).batched(128)
 ```
+
+Altogether, you have three choices with WebDataset for multi-core loading and data augmentation:
+
+- use the standard PyTorch `DataLoader` class; you should probably start here
+- use the WebDataset `MultiDataset`; this is simpler internally and more flexible than `DataLoader`, but it's less widely used
+- use the [Tensorcom](gighub.com/nvlabs/tmbdev) library; this allows multicore and distributed augmentation, separate startup and scaling of loading and training, and broadcasting of training data to multiple jobs (e.g. for hyperparameter searches) 
 
 # Data Decoding
 
