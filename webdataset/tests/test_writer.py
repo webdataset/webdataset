@@ -3,6 +3,7 @@ import os
 import numpy as np
 
 import webdataset.dataset as wds
+from webdataset import fluid
 from webdataset import writer
 
 
@@ -13,7 +14,7 @@ def test_writer(tmpdir):
     ftype = os.popen(f"file {tmpdir}/writer.tar").read()
     assert "compress" not in ftype, ftype
 
-    ds = wds.Dataset(f"{tmpdir}/writer.tar")
+    ds = fluid.Dataset(f"{tmpdir}/writer.tar")
     for sample in ds:
         assert set(sample.keys()) == set("__key__ txt cls".split())
         break
@@ -26,7 +27,7 @@ def test_writer2(tmpdir):
     ftype = os.popen(f"file {tmpdir}/writer2.tgz").read()
     assert "compress" in ftype, ftype
 
-    ds = wds.Dataset(f"{tmpdir}/writer2.tgz")
+    ds = fluid.Dataset(f"{tmpdir}/writer2.tgz")
     for sample in ds:
         assert set(sample.keys()) == set("__key__ txt cls".split())
         break
@@ -40,7 +41,7 @@ def test_writer3(tmpdir):
     ftype = os.popen(f"file {tmpdir}/writer3.tar").read()
     assert "compress" not in ftype, ftype
 
-    ds = wds.Dataset(f"{tmpdir}/writer3.tar").decode()
+    ds = fluid.Dataset(f"{tmpdir}/writer3.tar").decode()
     for sample in ds:
         assert set(sample.keys()) == set("__key__ pth pyd".split())
         assert isinstance(sample["pyd"], dict)
@@ -57,7 +58,7 @@ def test_writer4(tmpdir):
     ftype = os.popen(f"file {tmpdir}/writer4.tar").read()
     assert "compress" not in ftype, ftype
 
-    ds = wds.Dataset(f"{tmpdir}/writer4.tar").decode()
+    ds = fluid.Dataset(f"{tmpdir}/writer4.tar").decode()
     for sample in ds:
         assert set(sample.keys()) == set("__key__ tb ten".split())
         assert isinstance(sample["ten"], list)
@@ -74,7 +75,7 @@ def test_writer_pipe(tmpdir):
     with writer.TarWriter(f"pipe:cat > {tmpdir}/writer3.tar") as sink:
         sink.write(dict(__key__="a", txt="hello", cls="3"))
     os.system(f"ls -l {tmpdir}")
-    ds = wds.Dataset(f"pipe:cat {tmpdir}/writer3.tar")
+    ds = fluid.Dataset(f"pipe:cat {tmpdir}/writer3.tar")
     for sample in ds:
         assert set(sample.keys()) == set("__key__ txt cls".split())
         break

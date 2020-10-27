@@ -271,6 +271,7 @@ class Decoder:
         self.handlers = handlers
 
     def decode1(self, key, data):
+        key = "." + key
         for f in self.handlers:
             result = f(key, data)
             if isinstance(result, Continue):
