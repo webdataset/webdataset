@@ -260,6 +260,10 @@ def gzfilter(key, data):
 ################################################################
 
 
+default_pre_handlers = [gzfilter]
+default_post_handlers = [basichandlers]
+
+
 class Decoder:
     """Decode samples using a list of handlers.
 
@@ -267,8 +271,12 @@ class Decoder:
     handlers until some handler returns something other than None.
     """
 
-    def __init__(self, handlers):
-        self.handlers = handlers
+    def __init__(self, handlers, pre=None, post=None):
+        if pre is None:
+            pre = default_pre_handlers
+        if post is None:
+            post = default_post_handlers
+        self.handlers = pre + handlers + post
 
     def decode1(self, key, data):
         key = "." + key

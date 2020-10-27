@@ -109,14 +109,15 @@ class Shorthands:
     def decode(
         self,
         *args,
-        pre=[autodecode.gzfilter],
-        post=[autodecode.basichandlers],
+        pre=None,
+        post=None,
         handler=reraise_exception,
     ):
+        # for backwards compatibility
         handlers = [
             autodecode.ImageHandler(h) if isinstance(h, str) else h for h in args
         ]
-        decoder = autodecode.Decoder(pre + handlers + post)
+        decoder = autodecode.Decoder(handlers, pre=pre, post=post)
         return self.map(decoder, handler=handler)
 
     def rename(self, handler=reraise_exception, **kw):
