@@ -140,6 +140,7 @@ class Shorthands:
 
 class Processor(IterableDataset, Composable, Shorthands):
     def __init__(self, f, *args, length=True, source=None, **kw):
+        super().__init__()
         assert callable(f)
         self.source = source
         self.f = f

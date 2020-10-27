@@ -12,7 +12,7 @@ WebDataset implements standard PyTorch `IterableDataset` interface and works wit
 Access to datasets is as simple as:
 
 ```Python
-dataset = wds.Dataset(url).shuffle(1000).decode("pil").to_tuple("jpg;png", "json").map(augment)
+dataset = wds.WebDataset(url).shuffle(1000).decode("torchrgb").to_tuple("jpg;png", "json")
 dataloader = torch.utils.data.DataLoader(dataset, num_workers=4, batch_size=16)
 
 for inputs, outputs in dataloader:
@@ -30,15 +30,11 @@ augmentation code remains unchanged.
 
 # Installation and Documentation
 
-```Bash
     $ pip install webdataset
-```
 
 For the Github version:
 
-```Bash
     $ pip install git+https://github.com/tmbdev/webdataset.git
-```
 
 Documentation: [ReadTheDocs](http://webdataset.readthedocs.io)
 
@@ -84,6 +80,7 @@ curl -s http://storage.googleapis.com/nvdata-openimages/openimages-train-000000.
 %pylab inline
 
 import torch
+from torch.utils.data import IterableDataset
 from torchvision import transforms
 import webdataset as wds
 from itertools import islice
@@ -95,11 +92,11 @@ url = f"pipe:curl -L -s {url} || true"
     Populating the interactive namespace from numpy and matplotlib
 
 
-WebDatasets are an implementation of PyTorch `IterableDataset` and fully compatible with PyTorch input pipelines. By default, WebDataset just iterates through the files in a tar file without decoding anything, returning related files in each sample.
+For starters, let's use the `webdataset.Dataset` class to illustrate how the `webdataset` library works.
 
 
 ```python
-dataset = wds.Dataset(url)
+dataset = wds.WebDataset(url)
 
 for sample in islice(dataset, 0, 3):
     for key, value in sample.items():
@@ -110,15 +107,15 @@ for sample in islice(dataset, 0, 3):
     __key__ 'e39871fd9fd74f55'
     jpg b'\xff\xd8\xff\xe0\x00\x10JFIF\x00\x01\x01\x01\x01
     json b'[{"ImageID": "e39871fd9fd74f55", "Source": "xcli
-
+    
     __key__ 'f18b91585c4d3f3e'
     jpg b'\xff\xd8\xff\xe0\x00\x10JFIF\x00\x01\x01\x00\x00
     json b'[{"ImageID": "f18b91585c4d3f3e", "Source": "acti
-
+    
     __key__ 'ede6e66b2fb59aab'
     jpg b'\xff\xd8\xff\xe0\x00\x10JFIF\x00\x01\x01\x01\x00
     json b'[{"ImageID": "ede6e66b2fb59aab", "Source": "acti
-
+    
 
 
 There are common processing stages you can add to a dataset to make it a drop-in replacement for any existing dataset. For convenience, common operations are available through a "fluent" interface (as chained method calls).
@@ -126,7 +123,7 @@ There are common processing stages you can add to a dataset to make it a drop-in
 
 ```python
 dataset = (
-    wds.Dataset(url)
+    wds.WebDataset(url)
     .shuffle(100)
     .decode("rgb")
     .to_tuple("jpg;png", "json")
@@ -136,12 +133,12 @@ for image, data in islice(dataset, 0, 3):
     print(image.shape, image.dtype, type(data))
 ```
 
-    (762, 1024, 3) float32 <class 'list'>
     (768, 1024, 3) float32 <class 'list'>
-    (1024, 768, 3) float32 <class 'list'>
+    (768, 768, 3) float32 <class 'list'>
+    (1024, 1024, 3) float32 <class 'list'>
 
 
-Common operations:
+The `webdataset.Dataset` class has some common operations:
 
 - `shuffle(n)`: shuffle the dataset with a buffer of size `n`; also shuffles shards (see below)
 - `decode(decoder, ...)`: automatically decode files (most commonly, you can just specify `"pil"`, `"rgb"`, `"rgb8"`, `"rgbtorch"`, etc.)
@@ -179,7 +176,7 @@ preproc = transforms.Compose([
 ])
 
 dataset = (
-    wds.Dataset(url)
+    wds.WebDataset(url)
     .shuffle(100)
     .decode("pil")
     .to_tuple("jpg;png", "json")
@@ -197,7 +194,6 @@ for image, data in islice(dataset, 0, 3):
 
 You can find the full PyTorch ImageNet sample code converted to WebDataset at [tmbdev/pytorch-imagenet-wds](http://github.com/tmbdev/pytorch-imagenet-wds)
 
-
 # Sharding and Parallel I/O
 
 In order to be able to shuffle data better and to process and load data in parallel, it is a good idea to shard it; that is, to split up the dataset into several `.tar` files.
@@ -209,7 +205,7 @@ WebDataset uses standard UNIX brace notation for sharded dataset. For example, t
 url = "http://storage.googleapis.com/nvdata-openimages/openimages-train-{000000..000554}.tar"
 url = f"pipe:curl -L -s {url} || true"
 dataset = (
-    wds.Dataset(url)
+    wds.WebDataset(url)
     .shuffle(100)
     .decode("pil")
     .to_tuple("jpg;png", "json")
@@ -233,6 +229,18 @@ images.shape
 
 
 
+
+```python
+torch.Size([16, 3, 224, 224])
+```
+
+
+
+
+    torch.Size([16, 3, 224, 224])
+
+
+
 The recommended way of using `IterableDataset` with `DataLoader` is to do the batching explicitly in the `Dataset`. In addition, you need to set a nominal length for the `Dataset` in order to avoid warnings from `DataLoader`.
 
 
@@ -242,7 +250,7 @@ url = f"pipe:curl -L -s {url} || true"
 bs = 20
 
 dataset = (
-    wds.Dataset(url, length=int(1e9) // bs)
+    wds.WebDataset(url, length=int(1e9) // bs)
     .shuffle(100)
     .decode("pil")
     .to_tuple("jpg;png", "json")
@@ -264,86 +272,16 @@ images.shape
 
 The `ResizedDataset` is also helpful for connecting iterable datasets to `DataLoader`: it lets you set both a nominal and an actual epoch size; it will repeatedly iterate through the entire dataset and return data in chunks with the given epoch size.
 
-# MultiDataset
-
-WebDataset works fine with the existing `DataLoader` class. The WebDataset library also provides an experimental alternative to `DataLoader` called `MultiDataset`. It distributes `IterableDatasets` across multiple workers and collects the results in a way very similar to `DataLoader`. Unlike `DataLoader`, you don't have to worry about calculating the epoch length, and you can configure the `MultiDataset` using the same interface as a WebDataset. For example, if you want to shuffle samples between the batches returned by individual workers, you can write:
-
-```Python
-dataloader = wds.MultiDataset(dataset, workers=4).unbatched().shuffle(1000).batched(128)
-```
-
-Altogether, you have three choices with WebDataset for multi-core loading and data augmentation:
-
-- use the standard PyTorch `DataLoader` class; you should probably start here
-- use the WebDataset `MultiDataset`; this is simpler internally and more flexible than `DataLoader`, but it's less widely used
-- use the [Tensorcom](gighub.com/nvlabs/tmbdev) library; this allows multicore and distributed augmentation, separate startup and scaling of loading and training, and broadcasting of training data to multiple jobs (e.g. for hyperparameter searches) 
-
 # Data Decoding
 
-WebDataset stores data in files contained inside `.tar` archives. This allows datasets to be stored in a bit-identical way to the way they are usually stored on disk. In addition, it allows WebDataset to take advantage of existing conventions and facilities for dealing with metadata and compression.
-
-Loading takes place in two steps: first, the binary contents of each file are read into memory, and then the files are decoded. Reading is carried out by the `webdataset.Dataset` class itself. 
-Decoding is just a special form of mapping; you can use `webdataset.Dataset(...).map(my_decoder)` to do all your decoding. In fact, you can do this after the default decoders run if you like.
-
-The `.decode(handler1, handler2, ...)` method makes common decoding operations easier, however. It is a special mapping that will call `handler1`, `handler2`, etc. in sequence until one of them returns not None. The two arguments to each handler are the full extension for the sample field and the binary data.
-
-For convenience, there is some extra functionality:
-
-- basic handlers always exist for 
-    - **pyd**, pickle                               : Python pickle (using `pickle.loads`)
-    - **pth**                                       : Torch pickle (using `torch.load`)
-    - **json**, jsn                                 : JSON encoded object (using `json.loads`)
-    - **ten**, tb                                   : fast uncompressed binary tensor format
-    - **txt**, text, transcript                     : string
-    - **cls**, cls2, class, count, index, inx, id   : integer
-- for image decoders, you can use a shorthand of the form "(torch|pil|)(l|rgb|rgba)(8|)" to decode into Torch tensors, PIL images, or NumPy arrays (default);
-to decode into grayscale, RGB, or RGBA images; to decode into `uint8` or `float`; this method will handle
-    - this will handle these extenisons: **jpg**, **ppm**, jpeg, img, image, pbm, pgm, png
-- you can specify a pair `(extension, function)` to invoke `function` as the decoder for keys whose extension matches one of the space separated extensions
-
-Common and recommended arguments for `.decoder` are:
-
-- .decode("**pil")** - for `torchvision` data augmentation
-- .decode("**rgb")** - for NumPy-based data augmentation, forcing RGB inputs in the range 0..1, in CHW order
-- .decode(autodecode.torchvision, "torchrgb") - torchvideo and Torch RGB images (**handles: mp4**, **ogg**, **mjpeg**, avi, mov, h264)
-- .decode(autodecode.torchaudio, "torchrgb") - torchaudio and Torch RGB images (handles: flac, mp3, sox)
-- .decode(("jpg", myjpgdecoder), "rgb") - handle .jpg extensions specially, default to other decoders for other types
-- .decode(("my.jpg", myjpgdecoder), "rgb") - handle just components with filenames ending in .my.jpg specially
-
-
-# Splitting Shards across Nodes and Workers
-
-Datasets are generally split across workers and processing nodes by shards. This is handled by `Dataset.shard_fn`. It will in turn call four hook functions in sequences:
-
-```Python
-self.reseed_hook()
-urls = self.node_selection(urls)   # hook for splitting up shards across nodes
-urls = self.shard_selection(urls)  # hook for splitting up shards across workers
-urls = self.shard_shuffle(urls)    # hook for shuffling the shards
-```
-
-You can put any function in there you like. By default `reseed_hook`, `node_selection` and `shard_shuffle` do nothing, while `shard_selection` uses PyTorch's worker globals for splitting up shards across workers. The `shard_shuffle` function is set to a random shuffle when you use the `.shuffle(...)` method on the `Dataset`; if you want to override that, set it after configuring the `.shuffle` method.
-
-# Data Sources
-
-When creating a dataset with `webdataset.Dataset(url)`, the URL can be:
-
-- the string "-", referring to stdin
-- a UNIX path, opened as a regular file
-- a URL-like string with the schema "pipe:"; such URLs are opened with `subprocess.Popen`. For example:
-    - `pipe:curl -s -L http://server/file` accesses a file via HTTP
-    - `pipe:gsutil cat gs://bucket/file` accesses a file on GCS
-    - `pipe:az cp --container bucket --name file --file /dev/stdout` accesses a file on Azure
-    - `pipe:ssh host cat file` accesses a file via `ssh`
-- any other URL-like string with another schema; such URLs are passed to the `objectio` libraries if it is installed
-
-It might seem at first glance to be "more efficient" to use built-in Python libraries for accessing object stores rather than subprocesses, but efficient object store access from Python really requires spawning a separate process anyway, so this approach to accessing object stores is not only convenient, it also is as efficient as we can make it in Python.
+(to be written)
 
 # Creating a WebDataset
 
 Since WebDatasets are just regular tar files, you can usually create them by just using the `tar` command. All you have to do is to arrange for any files that should be in the same sample to share the same basename. Many datasets already come that way. For those, you can simply create a WebDataset with
 
-```Bash
+
+```python
 $ tar --sort=name -cf dataset.tar dataset/
 ```
 
@@ -356,7 +294,8 @@ You can also create a WebDataset with library functions in this library:
 
 Here is a quick way of converting an existing dataset into a WebDataset; this will store all tensors as Python pickles:
 
-```Python
+
+```python
 sink = wds.TarWriter("dest.tar")
 dataset = open_my_dataset()
 for index, (input, output) in dataset:
@@ -374,7 +313,8 @@ taking advantage of common image compression formats.
 
 If you know that the input is an image and the output is an integer class, you can also write something like this:
 
-```Python
+
+```python
 sink = wds.TarWriter("dest.tar")
 dataset = open_my_dataset()
 for index, (input, output) in dataset:
@@ -395,7 +335,8 @@ particular dataset. Generally, the ".jpg" encoder can actually encode a wide var
 
 Here is how you can use `TarWriter` for writing a dataset without using an encoder:
 
-```Python
+
+```python
 sink = wds.TarWriter("dest.tar", encoder=False)
 for basename in basenames:
     with open(f"{basename}.png", "rb") as stream):
@@ -452,38 +393,46 @@ url = f"pipe:curl -L -s {url} || true"
 augment_wds(url, "_temp.tar", maxcount=5)
 ```
 
-    e39871fd9fd74f55
-    f18b91585c4d3f3e
-    ede6e66b2fb59aab
-    ed600d57fcee4f94
-    ff47e649b23f446d
 
+```python
+e39871fd9fd74f55
+f18b91585c4d3f3e
+ede6e66b2fb59aab
+ed600d57fcee4f94
+ff47e649b23f446d
+
+```
 
 To verify that things worked correctly, let's look at the output file:
 
 
 ```bash
 %%bash
+%%bash
 tar tf _temp.tar
 ```
 
-    e39871fd9fd74f55.cls
-    e39871fd9fd74f55.png
-    f18b91585c4d3f3e.cls
-    f18b91585c4d3f3e.png
-    ede6e66b2fb59aab.cls
-    ede6e66b2fb59aab.png
-    ed600d57fcee4f94.cls
-    ed600d57fcee4f94.png
-    ff47e649b23f446d.cls
-    ff47e649b23f446d.png
 
+```python
+e39871fd9fd74f55.cls
+e39871fd9fd74f55.png
+f18b91585c4d3f3e.cls
+f18b91585c4d3f3e.png
+ede6e66b2fb59aab.cls
+ede6e66b2fb59aab.png
+ed600d57fcee4f94.cls
+ed600d57fcee4f94.png
+ff47e649b23f446d.cls
+ff47e649b23f446d.png
+
+```
 
 If you want to preprocess the entire OpenImages dataset with a process like this, you can use your favorite job queueing or worflow system.
 
 For example, using Dask, you could process all 554 shards in parallel using code like this:
 
-```Python
+
+```python
 shards = braceexpand.braceexpand("{000000..000554}")
 inputs = [f"gs://bucket/openimages-{shard}.tar" for shard in shards]
 outputs = [f"gs://bucket2/openimages-augmented-{shard}.tar" for shard in shards]
@@ -494,6 +443,172 @@ dask.compute(*results)
 Note that the data is streaming from and to Google Cloud Storage buckets, so very little local storage is required on each worker.
 
 For very large scale processing, it's easiest to submit separate jobs to a Kubernetes cluster using the Kubernetes `Job` template, or using a workflow engine like Argo.
+
+# WebDataset = Composition of Iterable Datasets
+
+The `webdataset` library is really just a collection of useful pipeline stages that you can put together in many different ways, and the `webdataset.Dataset` class is just a convenient wrapper for building up a pipeline.
+
+A `Dataset` defined like:
+    
+```Python
+wds.Dataset(url).shuffle(100).decode("pil")
+```
+
+is actually a composition of multiple classes:
+
+```Python
+dataset = DecodeProcessor(ShuffleProcessor(Dataset(url), 100))
+```
+
+or, equivalently:
+
+```Python
+raw = Dataset(url)
+shuffled = ShuffleProcessor(raw, 100)
+dataset = DecodeProcessor(shuffled)
+```
+
+Here, `Dataset`, `ShuffleProcessor`, and `DecodeProcessor` are just `IterableDataset` implementations that take other `IterableDataset` implementations as a source.
+
+You can implement these processing classes directly by subclassing `IterableDataset`, but that's kind of repetitive too. In fact, at the heart of almost every `IterableDataset` is a function that maps an input iterator to an output iterator. Here is a simple processor that augments samples by adding noise:
+
+
+```python
+def augment_sample(source, noise=0.01):
+    for inputs, targets in source:
+        inputs += torch.randn_like(inputs) * noise
+        yield inputs, targets
+```
+
+You can turn this into an `IterableDataset` by writing a wrapper:
+
+
+```python
+class AugmentSampleProcessor(IterableDataset):
+    
+    def __init__(self, source_dataset, noise=0.01):
+        self.source_dataset = source_dataset
+        self.noise = noise
+        
+    def __iter__(self):
+        return augment_sample(iter(source_dataset), noise=self.noise)
+    
+    def __len__(self):
+        return len(self.source_dataset)
+```
+
+Since this gets kind of tedious to write over and over again, the `webdataset` library just provides a wrapper that automates this for you:
+
+
+```python
+AugmentSampleProcessor = wds.Processor(augment_sample, noise=0.01)
+isinstance(AugmentSampleProcessor, IterableDataset)
+```
+
+
+
+
+    True
+
+
+
+And as a further shorthand, you can actually create processing chains with the `.then` method.
+
+
+```python
+dataset = (
+    wds.WebDataset(url)
+    .then(wds.shuffle, 100)
+    .then(wds.decode, "pil")
+    .then(augment_sample, noise=0.01)
+)
+```
+
+Or you can compose a dataset using the `.compose` method:
+
+
+```python
+dataset = (
+    wds.WebDataset(url)
+    .then(wds.shuffle, 100)
+    .then(wds.decode, "pil")
+    .compose(AugmentSampleProcessor)
+)
+```
+
+In fact, `webdataset.WebDataset` is just a shorthand for a simple processing pipeline:
+
+
+```python
+dataset = (
+    wds.ShardList(url)
+    .then(wds.url_opener)
+    .then(wds.tar_file_expander)
+    .then(wds.group_by_keys)
+)
+```
+
+
+```python
+next(iter(dataset)).keys()
+```
+
+
+
+
+    dict_keys(['__key__', 'jpg', 'json'])
+
+
+
+The stages in this processing pipeline are:
+
+- `ShardList` generates an iterator of URLs; you may need to modify this to generate different shard subsets for multinode computation
+- `url_opener` opens each URL in turn and returns a bytestream
+- `tarfile_expander` takes each bytestream in its input and generates an iterator over the tar files in that stream
+- `group_by_keys` groups files together into training samples
+
+In addition to those tar-file related processing functions, there are additional processing functions for common dataset operations:
+
+- `info` -- provide info about training samples from an IterableDataset
+- `shuffle` -- shuffle the IterableDataset
+- `select` -- select samples from the IterableDataset
+- `decode` -- apply decoding functions to each key-value pair in a sample
+- `map` -- apply a mapping function to each sample
+- `rename` -- rename the keys in key-value pairs in a sample
+- `map_dict` -- apply functions to selected key-value pairs
+- `to_tuple` -- convert dictionary-based samples to tuple-based samples
+- `map_tuple` -- apply functions to the elements of each tuple-based sample
+- `batched` -- batch samples together using a collation functions
+- `unbatched` -- unbatch batched samples
+
+Use `help(wds.batched)` etc. to get more information on each function.
+
+Whether you prefer `WebDataset` or `Dataset` is a matter of style.
+
+# Splitting Shards across Nodes and Workers
+
+Unlike traditional PyTorch `Dataset` instances, `WebDataset` splits data across nodes at the shard level. This functionality is handled inside the `ShardList` class. To customize splitting data across nodes, you can either write your own `ShardList` function, or you can give the `ShardList` class a `splitter=` argument when you create it. The `splitter` function should select a subset of shards from the given list of shards based on the current node and worker ID.
+
+# Data Sources
+
+The `ShardList` class takes either a string or a list of URLs as an argument. If it is given a string, the string is expanded using the `braceexpand` library. So, the following are equivalent:
+
+```Python
+ShardList("dataset-{000..001}.tar")
+ShardList(["dataset-000.tar", "dataset-001.tar"])
+```
+
+The url strings in a shard list are handled by default by the `webdataset.url_opener` filter. It recognizes three simple kinds of strings: "-", "/path/to/file", and "pipe:command":
+
+- the string "-", referring to stdin
+- a UNIX path, opened as a regular file
+- a URL-like string with the schema "pipe:"; such URLs are opened with `subprocess.Popen`. For example:
+    - `pipe:curl -s -L http://server/file` accesses a file via HTTP
+    - `pipe:gsutil cat gs://bucket/file` accesses a file on GCS
+    - `pipe:az cp --container bucket --name file --file /dev/stdout` accesses a file on Azure
+    - `pipe:ssh host cat file` accesses a file via `ssh`
+
+It might seem at first glance to be "more efficient" to use built-in Python libraries for accessing object stores rather than subprocesses, but efficient object store access from Python really requires spawning a separate process anyway, so this approach to accessing object stores is not only convenient, it also is as efficient as we can make it in Python.
 
 # Related Libraries and Software
 
