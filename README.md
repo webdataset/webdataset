@@ -8,6 +8,9 @@ efficient access to datasets stored in POSIX tar archives and uses only sequenti
 data access. This brings substantial performance advantage in many compute environments, and it
 is essential for very large scale training.
 
+While WebDataset scales to very large problems, it also works well with smaller datasets and simplifies
+creation, management, and distribution of training data for deep learning.
+
 WebDataset implements standard PyTorch `IterableDataset` interface and works with the PyTorch `DataLoader`.
 Access to datasets is as simple as:
 
@@ -134,8 +137,8 @@ for image, data in islice(dataset, 0, 3):
 ```
 
     (768, 1024, 3) float32 <class 'list'>
-    (768, 768, 3) float32 <class 'list'>
-    (1024, 1024, 3) float32 <class 'list'>
+    (542, 1024, 3) float32 <class 'list'>
+    (1024, 768, 3) float32 <class 'list'>
 
 
 The `webdataset.Dataset` class has some common operations:
@@ -194,24 +197,73 @@ for image, data in islice(dataset, 0, 3):
 
 You can find the full PyTorch ImageNet sample code converted to WebDataset at [tmbdev/pytorch-imagenet-wds](http://github.com/tmbdev/pytorch-imagenet-wds)
 
+# How it Works
+
+WebDataset is powerful and it may look complex from the outside, but its structure is quite simple: most of
+the code consists of functions mapping an input iterator to an output iterator:
+
+```Python
+def add_noise(source, noise=0.01):
+    for inputs, targets in source:
+        inputs = inputs + noise * torch.randn_like(inputs)
+        yield inputs, targets
+```
+
+To write new processing stages, a function like this is all you ever have to write. 
+The rest is really bookkeeping: we need to be able
+to repeatedly invoke functions like this for every epoch, and we need to chain them together.
+
+To turn a function like that into an `IterableDataset`, and chain it with an existing dataset, you can use the `webdataset.Processor` class:
+
+```Python
+noisy_dataset = webdataset.Processor(add_noise, noise=0.02)(dataset)
+```
+
+The `webdataset.WebDataset` class is just a wrapper for `Processor` with a default initial processing pipeline and some convenience methods.  Full expanded, the above pipeline can be written as:
+
+```Python
+dataset = wds.ShardList(url)
+dataset = wds.Processor(wds.url_opener)(dataset)
+dataset = wds.Processor(wds.tar_file_expander)(dataset)
+dataset = wds.Processor(wds.group_by_keys)(dataset)
+dataset = wds.Processor(wds.shuffle, 100)(dataset)
+dataset = wds.Processor(wds.decode, "torchrgb")(dataset)
+noisy_dataset = wds.Processor(wds.augment_sample, noise=0.02)(dataset)
+```
+
+`wds.Processor` is just an `IterableDataset` instance; you can use it wherever you might use an `IterableDataset` and mix the two styles freely.
+
+For example, you can reuse WebDataset processors with existing `IterableDataset` implementations, for example if you want shuffling, caching, or batching with them. Let's say you have a class `MySqlIterableDataset` that iterates over samples from an SQL database and you want to shuffle and batch the results. You can write:
+
+```Python
+dataset = MySqlIterableDataset(database_connection)
+dataset = wds.Processor(wds.shuffle, 100)(dataset)
+dataset = wds.Processor(wds.batch, 16)(dataset)
+noisy_dataset = wds.Processor(wds.augment_sample, noise=0.02)(dataset)
+```
+
 # Sharding and Parallel I/O
 
-In order to be able to shuffle data better and to process and load data in parallel, it is a good idea to shard it; that is, to split up the dataset into several `.tar` files.
+WebDataset datasets are usually split into many shards; this is both to achieve parallel I/O and to shuffle data.
 
-WebDataset uses standard UNIX brace notation for sharded dataset. For example, the OpenImages dataset consists of 554 shards, each containing about 1 Gbyte of images. You can open the entire dataset as follows.
+Sets of shards can be given as a list of files, or they can be written using the brace notation, as in `openimages-train-{000000..000554}.tar`.
+
+For example, the OpenImages dataset consists of 554 shards, each containing about 1 Gbyte of images. You can open the entire dataset as follows.
 
 
 ```python
 url = "http://storage.googleapis.com/nvdata-openimages/openimages-train-{000000..000554}.tar"
 url = f"pipe:curl -L -s {url} || true"
 dataset = (
-    wds.WebDataset(url)
+    wds.WebDataset(url, shardshuffle=True)
     .shuffle(100)
     .decode("pil")
     .to_tuple("jpg;png", "json")
     .map_tuple(preproc, identity)
 )
 ```
+
+Note the explicit use of both `shardshuffle=True` (for shuffling the shards) and the `.shuffle` processor (for shuffling samples inline).
 
 When used with a standard Torch `DataLoader`, this will now perform parallel I/O and preprocessing.
 
@@ -229,19 +281,7 @@ images.shape
 
 
 
-
-```python
-torch.Size([16, 3, 224, 224])
-```
-
-
-
-
-    torch.Size([16, 3, 224, 224])
-
-
-
-The recommended way of using `IterableDataset` with `DataLoader` is to do the batching explicitly in the `Dataset`. In addition, you need to set a nominal length for the `Dataset` in order to avoid warnings from `DataLoader`.
+The recommended way of using `IterableDataset` with `DataLoader` is to do the batching explicitly in the `Dataset`. You can also set a nominal length for a dataset.
 
 
 ```python
@@ -274,14 +314,49 @@ The `ResizedDataset` is also helpful for connecting iterable datasets to `DataLo
 
 # Data Decoding
 
-(to be written)
+Data decoding is a special kind of transformations of samples. You could simply write a decoding function like this:
+
+```Python
+def my_sample_decoder(sample):
+    result = dict(__key__=sample["__key__"])
+    for key, value in sample.items():
+        if key == "png" or key.endswith(".png"):
+            result[key] = mageio.imread(io.BytesIO(value))
+        elif ...:
+            ...
+    return result
+
+dataset = wds.Processor(wds.map, my_sample_decoder)(dataset)
+```
+
+This gets tedious, though, and it also unnecessarily hardcodes the sample's keys into the processing pipeline. To help with this, there is a helper class that simplifies this kind of code. The primary use of `Decoder` is for decoding compressed image, video, and audio formats, as well as unzipping `.gz` files.
+
+Here is an example of automatically decoding `.png` images with `imread` and using the default `torch_video` and `torch_audio` decoders for video and audio:
+
+```Python
+def my_png_decoder(key, value):
+    if not key.endswith(".png"):
+        return None
+    assert isinstance(value, bytes)
+    return imageio.imread(io.BytesIO(value))
+
+dataset = wds.Decoder(my_png_decoder, wds.torch_video, wds.torch_audio)(dataset)
+```
+
+You can use whatever criteria you like for deciding how to decode values in samples. When used with standard `WebDataset` format files, the keys are the full extensions of the file names inside a `.tar` file. For consistency, it's recommended that you primarily rely on the extensions (e.g., `.png`, `.mp4`) to decide which decoders to use. There is a special helper function that simplifies this:
+
+```Python
+def my_decoder(value):
+    return imageio.imread(io.BytesIO(value))
+    
+dataset = wds.Decoder(wds.handle_extension(".png", my_decoder))(dataset)
+```
 
 # Creating a WebDataset
 
 Since WebDatasets are just regular tar files, you can usually create them by just using the `tar` command. All you have to do is to arrange for any files that should be in the same sample to share the same basename. Many datasets already come that way. For those, you can simply create a WebDataset with
 
-
-```python
+```
 $ tar --sort=name -cf dataset.tar dataset/
 ```
 
@@ -294,8 +369,7 @@ You can also create a WebDataset with library functions in this library:
 
 Here is a quick way of converting an existing dataset into a WebDataset; this will store all tensors as Python pickles:
 
-
-```python
+```Python
 sink = wds.TarWriter("dest.tar")
 dataset = open_my_dataset()
 for index, (input, output) in dataset:
@@ -313,8 +387,7 @@ taking advantage of common image compression formats.
 
 If you know that the input is an image and the output is an integer class, you can also write something like this:
 
-
-```python
+```Python
 sink = wds.TarWriter("dest.tar")
 dataset = open_my_dataset()
 for index, (input, output) in dataset:
@@ -335,8 +408,7 @@ particular dataset. Generally, the ".jpg" encoder can actually encode a wide var
 
 Here is how you can use `TarWriter` for writing a dataset without using an encoder:
 
-
-```python
+```Python
 sink = wds.TarWriter("dest.tar", encoder=False)
 for basename in basenames:
     with open(f"{basename}.png", "rb") as stream):
@@ -365,7 +437,7 @@ def extract_class(data):
 
 def augment_wds(input, output, maxcount=999999999):
     src = (
-        wds.Dataset(input)
+        wds.WebDataset(input)
         .decode("pil")
         .to_tuple("__key__", "jpg;png", "json")
         .map_tuple(identity, preproc, identity)
@@ -393,46 +465,38 @@ url = f"pipe:curl -L -s {url} || true"
 augment_wds(url, "_temp.tar", maxcount=5)
 ```
 
+    e39871fd9fd74f55
+    f18b91585c4d3f3e
+    ede6e66b2fb59aab
+    ed600d57fcee4f94
+    ff47e649b23f446d
 
-```python
-e39871fd9fd74f55
-f18b91585c4d3f3e
-ede6e66b2fb59aab
-ed600d57fcee4f94
-ff47e649b23f446d
-
-```
 
 To verify that things worked correctly, let's look at the output file:
 
 
 ```bash
 %%bash
-%%bash
 tar tf _temp.tar
 ```
 
+    e39871fd9fd74f55.cls
+    e39871fd9fd74f55.png
+    f18b91585c4d3f3e.cls
+    f18b91585c4d3f3e.png
+    ede6e66b2fb59aab.cls
+    ede6e66b2fb59aab.png
+    ed600d57fcee4f94.cls
+    ed600d57fcee4f94.png
+    ff47e649b23f446d.cls
+    ff47e649b23f446d.png
 
-```python
-e39871fd9fd74f55.cls
-e39871fd9fd74f55.png
-f18b91585c4d3f3e.cls
-f18b91585c4d3f3e.png
-ede6e66b2fb59aab.cls
-ede6e66b2fb59aab.png
-ed600d57fcee4f94.cls
-ed600d57fcee4f94.png
-ff47e649b23f446d.cls
-ff47e649b23f446d.png
-
-```
 
 If you want to preprocess the entire OpenImages dataset with a process like this, you can use your favorite job queueing or worflow system.
 
 For example, using Dask, you could process all 554 shards in parallel using code like this:
 
-
-```python
+```Python
 shards = braceexpand.braceexpand("{000000..000554}")
 inputs = [f"gs://bucket/openimages-{shard}.tar" for shard in shards]
 outputs = [f"gs://bucket2/openimages-augmented-{shard}.tar" for shard in shards]
@@ -444,123 +508,11 @@ Note that the data is streaming from and to Google Cloud Storage buckets, so ver
 
 For very large scale processing, it's easiest to submit separate jobs to a Kubernetes cluster using the Kubernetes `Job` template, or using a workflow engine like Argo.
 
-# WebDataset = Composition of Iterable Datasets
+# Common Processors
 
-The `webdataset` library is really just a collection of useful pipeline stages that you can put together in many different ways, and the `webdataset.Dataset` class is just a convenient wrapper for building up a pipeline.
+Recall that processors are just functions that take an iterator as an argument and return another iterator (they get turned into an `IterableDataset` by wrapping them with `webdataset.Processor`).
 
-A `Dataset` defined like:
-    
-```Python
-wds.Dataset(url).shuffle(100).decode("pil")
-```
-
-is actually a composition of multiple classes:
-
-```Python
-dataset = DecodeProcessor(ShuffleProcessor(Dataset(url), 100))
-```
-
-or, equivalently:
-
-```Python
-raw = Dataset(url)
-shuffled = ShuffleProcessor(raw, 100)
-dataset = DecodeProcessor(shuffled)
-```
-
-Here, `Dataset`, `ShuffleProcessor`, and `DecodeProcessor` are just `IterableDataset` implementations that take other `IterableDataset` implementations as a source.
-
-You can implement these processing classes directly by subclassing `IterableDataset`, but that's kind of repetitive too. In fact, at the heart of almost every `IterableDataset` is a function that maps an input iterator to an output iterator. Here is a simple processor that augments samples by adding noise:
-
-
-```python
-def augment_sample(source, noise=0.01):
-    for inputs, targets in source:
-        inputs += torch.randn_like(inputs) * noise
-        yield inputs, targets
-```
-
-You can turn this into an `IterableDataset` by writing a wrapper:
-
-
-```python
-class AugmentSampleProcessor(IterableDataset):
-    
-    def __init__(self, source_dataset, noise=0.01):
-        self.source_dataset = source_dataset
-        self.noise = noise
-        
-    def __iter__(self):
-        return augment_sample(iter(source_dataset), noise=self.noise)
-    
-    def __len__(self):
-        return len(self.source_dataset)
-```
-
-Since this gets kind of tedious to write over and over again, the `webdataset` library just provides a wrapper that automates this for you:
-
-
-```python
-AugmentSampleProcessor = wds.Processor(augment_sample, noise=0.01)
-isinstance(AugmentSampleProcessor, IterableDataset)
-```
-
-
-
-
-    True
-
-
-
-And as a further shorthand, you can actually create processing chains with the `.then` method.
-
-
-```python
-dataset = (
-    wds.WebDataset(url)
-    .then(wds.shuffle, 100)
-    .then(wds.decode, "pil")
-    .then(augment_sample, noise=0.01)
-)
-```
-
-Or you can compose a dataset using the `.compose` method:
-
-
-```python
-dataset = (
-    wds.WebDataset(url)
-    .then(wds.shuffle, 100)
-    .then(wds.decode, "pil")
-    .compose(AugmentSampleProcessor)
-)
-```
-
-In fact, `webdataset.WebDataset` is just a shorthand for a simple processing pipeline:
-
-
-```python
-dataset = (
-    wds.ShardList(url)
-    .then(wds.url_opener)
-    .then(wds.tar_file_expander)
-    .then(wds.group_by_keys)
-)
-```
-
-
-```python
-next(iter(dataset)).keys()
-```
-
-
-
-
-    dict_keys(['__key__', 'jpg', 'json'])
-
-
-
-The stages in this processing pipeline are:
+The basic processors used for decoding WebDataset format files are:
 
 - `ShardList` generates an iterator of URLs; you may need to modify this to generate different shard subsets for multinode computation
 - `url_opener` opens each URL in turn and returns a bytestream
