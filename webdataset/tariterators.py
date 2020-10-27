@@ -73,35 +73,6 @@ def shardlist(urls, *, shuffle=False):
         yield dict(url=url)
 
 
-def split_by_worker(urls):
-    """Selects a subset of urls based on Torch get_worker_info.
-
-    Used as a shard selection function in Dataset."""
-    import torch
-
-    urls = [url for url in urls]
-
-    assert isinstance(urls, list)
-    assert isinstance(urls[0], dict)
-    assert "url" in urls[0]
-
-    worker_info = torch.utils.data.get_worker_info()
-    if worker_info is not None:
-        wid = worker_info.id
-        num_workers = worker_info.num_workers
-        if wid == 0 and len(urls) < num_workers:
-            warnings.warn(f"num_workers {num_workers} > num_shards {len(urls)}")
-        for sample in urls[wid::num_workers]:
-            assert isinstance(sample, dict)
-            assert "url" in sample
-            yield dict(url=sample["url"], worker=wid)
-    else:
-        for i, sample in enumerate(urls):
-            assert isinstance(sample, dict)
-            assert "url" in sample
-            yield dict(url=sample["url"], worker=0)
-
-
 def url_opener(data, handler=reraise_exception, **kw):
     """Given a stream of url names (packaged in `dict(url=url)`), yield opened streams."""
     for sample in data:

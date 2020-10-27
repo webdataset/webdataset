@@ -129,31 +129,31 @@ def transformer(transformers):
 ###
 
 
-def map_stream(data, f=None, handler=reraise_exception):
-    """Map entire samples using the given function.
-
-    data: iterator
-    f: function from samples to samples
-    returns: iterator over transformed samples
-
-    """
-
-    if f is None:
-
-        def f(x):  # skipcq: PYL-E0102
-            return x
-
-    for sample in data:
-        try:
-            result = f(sample)
-        except Exception as exn:
-            if handler(exn):
-                continue
-            else:
-                break
-        if isinstance(sample, dict) and isinstance(result, dict):
-            result["__key__"] = sample.get("__key__")
-        yield result
+# def map_stream(data, f=None, handler=reraise_exception):
+#     """Map entire samples using the given function.
+# 
+#     data: iterator
+#     f: function from samples to samples
+#     returns: iterator over transformed samples
+# 
+#     """
+# 
+#     if f is None:
+# 
+#         def f(x):  # skipcq: PYL-E0102
+#             return x
+# 
+#     for sample in data:
+#         try:
+#             result = f(sample)
+#         except Exception as exn:
+#             if handler(exn):
+#                 continue
+#             else:
+#                 break
+#         if isinstance(sample, dict) and isinstance(result, dict):
+#             result["__key__"] = sample.get("__key__")
+#         yield result
 
 
 def info(data, fmt=None, n=3, every=-1, width=50, stream=sys.stderr, name=""):
