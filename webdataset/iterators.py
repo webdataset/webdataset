@@ -207,8 +207,8 @@ def select(data, predicate):
             yield sample
 
 
-def decode(data, decoder="rgb", handler=reraise_exception):
-    f = autodecode.make_decoder(decoder)
+def decode(data, *args, handler=reraise_exception, **kw):
+    f = autodecode.Decoder(list(args), **kw)
 
     for sample in data:
         assert isinstance(sample, dict), sample

@@ -149,8 +149,13 @@ class Processor(IterableDataset, Composable, Shorthands):
         self.kw = kw
         self.length = length
 
+    def on(self, source):
+        self.source = source
+        return self
+
     def __call__(self, source):
         self.source = source
+        return self
 
     def __iter__(self):
         assert (

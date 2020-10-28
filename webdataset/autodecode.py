@@ -67,6 +67,11 @@ def basichandlers(key, data):
     if extension in "mp msgpack msg".split():
         import msgpack
         return msgpack.unpackb(data)
+    
+    if extension in "npy".split():
+        import numpy.lib.format
+        stream = io.BytesIO(data)
+        return numpy.lib.format.read_array(stream)
 
 
 ################################################################
@@ -276,6 +281,9 @@ class Decoder:
             pre = default_pre_handlers
         if post is None:
             post = default_post_handlers
+        assert all(callable(h) for h in handlers), f"one of {handlers} not callable"
+        assert all(callable(h) for h in pre), f"one of {pre} not callable"
+        assert all(callable(h) for h in post), f"one of {post} not callable"
         self.handlers = pre + handlers + post
 
     def decode1(self, key, data):
