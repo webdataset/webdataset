@@ -20,7 +20,7 @@ MODULES = [re.sub("/", ".", name) for name in MODULES if name[0] != "_"]
 
 
 @task
-def virtualenv(c):
+def venv(c):
     "Build the virtualenv."
     c.run(f"git config core.hooksPath .githooks")
     c.run(f"test -d {VENV} || python3 -m venv {VENV}")

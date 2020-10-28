@@ -1,5 +1,6 @@
 coverage
 jupyter
+jupyterlab
 licenseheaders
 mkdocs
 pytest
