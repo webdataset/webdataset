@@ -15,6 +15,8 @@ WebDataset implements standard PyTorch `IterableDataset` interface and works wit
 Access to datasets is as simple as:
 
 ```Python
+import webdataset as wds
+
 dataset = wds.WebDataset(url).shuffle(1000).decode("torchrgb").to_tuple("jpg;png", "json")
 dataloader = torch.utils.data.DataLoader(dataset, num_workers=4, batch_size=16)
 
@@ -136,9 +138,9 @@ for image, data in islice(dataset, 0, 3):
     print(image.shape, image.dtype, type(data))
 ```
 
-    (768, 1024, 3) float32 <class 'list'>
-    (542, 1024, 3) float32 <class 'list'>
+    (701, 1024, 3) float32 <class 'list'>
     (1024, 768, 3) float32 <class 'list'>
+    (1024, 683, 3) float32 <class 'list'>
 
 
 The `webdataset.Dataset` class has some common operations:
@@ -275,9 +277,61 @@ images.shape
 ```
 
 
+    ---------------------------------------------------------------------------
+
+    RuntimeError                              Traceback (most recent call last)
+
+    <ipython-input-7-45431386c528> in <module>
+          1 dataloader = torch.utils.data.DataLoader(dataset, num_workers=4, batch_size=16)
+    ----> 2 images, targets = next(iter(dataloader))
+          3 images.shape
 
 
-    torch.Size([16, 3, 224, 224])
+    ~/proj/webdataset/venv/lib/python3.8/site-packages/torch/utils/data/dataloader.py in __next__(self)
+        433         if self._sampler_iter is None:
+        434             self._reset()
+    --> 435         data = self._next_data()
+        436         self._num_yielded += 1
+        437         if self._dataset_kind == _DatasetKind.Iterable and \
+
+
+    ~/proj/webdataset/venv/lib/python3.8/site-packages/torch/utils/data/dataloader.py in _next_data(self)
+       1083             else:
+       1084                 del self._task_info[idx]
+    -> 1085                 return self._process_data(data)
+       1086 
+       1087     def _try_put_index(self):
+
+
+    ~/proj/webdataset/venv/lib/python3.8/site-packages/torch/utils/data/dataloader.py in _process_data(self, data)
+       1109         self._try_put_index()
+       1110         if isinstance(data, ExceptionWrapper):
+    -> 1111             data.reraise()
+       1112         return data
+       1113 
+
+
+    ~/proj/webdataset/venv/lib/python3.8/site-packages/torch/_utils.py in reraise(self)
+        426             # have message field
+        427             raise self.exc_type(message=msg)
+    --> 428         raise self.exc_type(msg)
+        429 
+        430 
+
+
+    RuntimeError: Caught RuntimeError in DataLoader worker process 0.
+    Original Traceback (most recent call last):
+      File "/home/tmb/proj/webdataset/venv/lib/python3.8/site-packages/torch/utils/data/_utils/worker.py", line 198, in _worker_loop
+        data = fetcher.fetch(index)
+      File "/home/tmb/proj/webdataset/venv/lib/python3.8/site-packages/torch/utils/data/_utils/fetch.py", line 35, in fetch
+        return self.collate_fn(data)
+      File "/home/tmb/proj/webdataset/venv/lib/python3.8/site-packages/torch/utils/data/_utils/collate.py", line 83, in default_collate
+        return [default_collate(samples) for samples in transposed]
+      File "/home/tmb/proj/webdataset/venv/lib/python3.8/site-packages/torch/utils/data/_utils/collate.py", line 83, in <listcomp>
+        return [default_collate(samples) for samples in transposed]
+      File "/home/tmb/proj/webdataset/venv/lib/python3.8/site-packages/torch/utils/data/_utils/collate.py", line 81, in default_collate
+        raise RuntimeError('each element in list of batch should be of equal size')
+    RuntimeError: each element in list of batch should be of equal size
 
 
 
@@ -302,13 +356,6 @@ dataloader = torch.utils.data.DataLoader(dataset, num_workers=4, batch_size=None
 images, targets = next(iter(dataloader))
 images.shape
 ```
-
-
-
-
-    torch.Size([20, 3, 224, 224])
-
-
 
 The `ResizedDataset` is also helpful for connecting iterable datasets to `DataLoader`: it lets you set both a nominal and an actual epoch size; it will repeatedly iterate through the entire dataset and return data in chunks with the given epoch size.
 
@@ -352,7 +399,162 @@ def my_decoder(value):
 dataset = wds.Decoder(wds.handle_extension(".png", my_decoder))(dataset)
 ```
 
+# Utility for "Smaller" Datasets and Desktop Computing
+
+WebDataset is an ideal solution for training on petascale datasets kept on high performance distributed data stores like AIStore, AWS/S3, and Google Cloud. Compared to data center GPU servers, desktop machines have much slower network connections, but training jobs on desktop machines often also use much smaller datasets.
+
+WebDataset also is very useful for such smaller datasets, and it can easily be used for developing and testing on small datasets and then scaling up to large datasets by simply using more shards.
+
+There are several different ways in which WebDataset is useful for desktop usage.
+
+## Direct Copying of Shards
+
+Let's take the OpenImages dataset as an example; it's half a terabyte large. For development and testing, you may not want to download the entire dataset, but you may also not want to use the dataset remotely. With WebDataset, you can just download a small number of shards and use them during development.
+
+
+```python
+!curl -L -s http://storage.googleapis.com/nvdata-openimages/openimages-train-000000.tar > /tmp/openimages-train-000000.tar
+```
+
+
+```python
+dataset = wds.WebDataset("/tmp/openimages-train-000000.tar")
+repr(next(iter(dataset)))[:200]
+```
+
+
+
+
+    "{'__key__': 'e39871fd9fd74f55', 'jpg': b'\\xff\\xd8\\xff\\xe0\\x00\\x10JFIF\\x00\\x01\\x01\\x01\\x01:\\x01:\\x00\\x00\\xff\\xdb\\x00C\\x00\\x06\\x04\\x05\\x06\\x05\\x04\\x06\\x06\\x05\\x06\\x07\\x07\\x06\\x08\\n\\x10\\n\\n\\t\\t\\n\\x14\\x0e"
+
+
+
+Note that the WebDataset class works the same way on local files as it does on remote files. Furthermore, unlike other kinds of dataset formats and archive formats, downloaded datasets are immediately useful and don't need to be unpacked.
+
+## Automatic Shard Caching
+
+Downloading a few shards manually is useful for development and testing. But WebDataset permits us to automate downloading and caching of shards. This is accomplished by giving a `cache_dir` argument to the WebDataset constructor.
+
+Here, we make two passes through the dataset, using the cached version on the second pass.
+
+Note that caching happens in parallel with iterating through the dataset. This means that if you write a WebDataset-based I/O pipeline, training starts immediately; the training job does not have to wait for any shards to download first.
+
+Automatic shard caching is useful for distributing deep learning code, for academic computer labs, and for cloud computing.
+
+
+```python
+!rm -rf ./cache
+
+dataset = wds.WebDataset(url, cache_dir="./cache")
+
+print("=== first pass")
+
+for sample in dataset:
+    pass
+
+print("=== second pass")
+
+for i, sample in enumerate(dataset):
+    for key, value in sample.items():
+        print(key, repr(value)[:50])
+    print()
+    if i >= 3: break
+        
+!ls -l ./cache
+```
+
+    [caching <webdataset.gopen.Pipe object at 0x7f767465bf40> at ./cache/82d02c03-bb0d-3796-81b8-03deb601ab2b.~3996278~ ]
+
+
+    === first pass
+
+
+    [done caching ./cache/82d02c03-bb0d-3796-81b8-03deb601ab2b ]
+    [finished ./cache/82d02c03-bb0d-3796-81b8-03deb601ab2b]
+    [opening cached ./cache/82d02c03-bb0d-3796-81b8-03deb601ab2b ]
+
+
+    === second pass
+    __key__ 'e39871fd9fd74f55'
+    jpg b'\xff\xd8\xff\xe0\x00\x10JFIF\x00\x01\x01\x01\x01
+    json b'[{"ImageID": "e39871fd9fd74f55", "Source": "xcli
+    
+    __key__ 'f18b91585c4d3f3e'
+    jpg b'\xff\xd8\xff\xe0\x00\x10JFIF\x00\x01\x01\x00\x00
+    json b'[{"ImageID": "f18b91585c4d3f3e", "Source": "acti
+    
+    __key__ 'ede6e66b2fb59aab'
+    jpg b'\xff\xd8\xff\xe0\x00\x10JFIF\x00\x01\x01\x01\x00
+    json b'[{"ImageID": "ede6e66b2fb59aab", "Source": "acti
+    
+    __key__ 'ed600d57fcee4f94'
+    jpg b'\xff\xd8\xff\xe0\x00\x10JFIF\x00\x01\x01\x01\x01
+    json b'[{"ImageID": "ed600d57fcee4f94", "Source": "acti
+    
+    total 987924
+    -rw-rw-r-- 1 tmb tmb 1011630080 Oct 28 22:40 82d02c03-bb0d-3796-81b8-03deb601ab2b
+
+
+## Automatic Sample Caching
+
+WebDataset also provides a way of caching training samples directly. This works with samples coming from any IterableDataset as input. The cache is stored in an SQLite3 database.
+
+Sample-based caching is implemented by the `DBCache` class. You specify a filename for the database and the maximum number of samples you want to cache. Samples will initially be read from the original IterableDataset, but after either the samples run out or the maximum number of samples has been reached, subsequently, samples will be served from the database cache stored on local disk. The database cache persists between invocations of the job.
+
+Automatic sample caching is useful for developing and testing deep learning jobs, as well as for caching data coming from slow IterableDataset sources, such as network-based database connections or other slower data sources.
+
+You can add or remove the caching stage at will (e.g., to switch between testing and production), without affecting the rest of the code at all.
+
+
+```python
+!rm -rf ./cache.db
+
+dataset = wds.WebDataset(url).compose(wds.DBCache, "./cache.db", 1000)
+
+print("=== first pass")
+
+for sample in dataset:
+    pass
+
+print("=== second pass")
+
+for i, sample in enumerate(dataset):
+    for key, value in sample.items():
+        print(key, repr(value)[:50])
+    print()
+    if i >= 3: break
+        
+!ls -l ./cache.db
+```
+
+    [DBCache opened ./cache.db size 1000 total 0]
+    === first pass
+    [DBCache total 0 size 1000 more caching]
+    [DBCache finished caching total 1000 (size 1000)]
+    === second pass
+    [DBCache starting dbiter total 1000 size 1000]
+    __key__ 'e39871fd9fd74f55'
+    jpg b'\xff\xd8\xff\xe0\x00\x10JFIF\x00\x01\x01\x01\x01
+    json b'[{"ImageID": "e39871fd9fd74f55", "Source": "xcli
+    
+    __key__ 'f18b91585c4d3f3e'
+    jpg b'\xff\xd8\xff\xe0\x00\x10JFIF\x00\x01\x01\x00\x00
+    json b'[{"ImageID": "f18b91585c4d3f3e", "Source": "acti
+    
+    __key__ 'ede6e66b2fb59aab'
+    jpg b'\xff\xd8\xff\xe0\x00\x10JFIF\x00\x01\x01\x01\x00
+    json b'[{"ImageID": "ede6e66b2fb59aab", "Source": "acti
+    
+    __key__ 'ed600d57fcee4f94'
+    jpg b'\xff\xd8\xff\xe0\x00\x10JFIF\x00\x01\x01\x01\x01
+    json b'[{"ImageID": "ed600d57fcee4f94", "Source": "acti
+    
+    -rw-r--r-- 1 tmb tmb 485199872 Oct 28 22:52 ./cache.db
+
+
 # Creating a WebDataset
+
+## Using `tar`
 
 Since WebDatasets are just regular tar files, you can usually create them by just using the `tar` command. All you have to do is to arrange for any files that should be in the same sample to share the same basename. Many datasets already come that way. For those, you can simply create a WebDataset with
 
@@ -360,7 +562,22 @@ Since WebDatasets are just regular tar files, you can usually create them by jus
 $ tar --sort=name -cf dataset.tar dataset/
 ```
 
-If your dataset has some other directory layout, you can either rearrange the files on disk, or you can use `tar --transform` to get the right kinds of names in your tar file.
+If your dataset has some other directory layout, you may need a different file name in the archive from the name on disk. You can use the `--transform` argument to GNU tar to transform file names. You can also use the `-T` argument to read the files from a text file and embed other options in that text file.
+
+## The `tarp create` Command
+
+The [`tarp`](https://github.com/tmbdev/tarp) command is a little utility for manipulating `tar` archives. Its `create` subcommand makes it particularly simple to construct tar archives from files. The `tarp create` command takes a recipe for building
+a tar archive that contains lines of the form:
+
+```
+archive-name-1 source-name-1
+archive-name-2 source-name-2
+...
+```
+
+The source name can either be a file, "text:something", or "pipe:something".
+
+## Programmatically in Python
 
 You can also create a WebDataset with library functions in this library:
 
@@ -572,9 +789,3 @@ The [tensorcom](http://github.com/tmbdev/tensorcom/) library provides fast three
 
 You can find the full PyTorch ImageNet sample code converted to WebDataset at [tmbdev/pytorch-imagenet-wds](http://github.com/tmbdev/pytorch-imagenet-wds)
 
-# TODO
-
-- refactor `autodecode.py`; allow for cascade of decoders
-- add single file decompression to `autodecode.py`
-- integrate Tensorcom library
-- key rewriting / custom key grouping

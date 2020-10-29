@@ -23,10 +23,12 @@ from torch.utils.data import IterableDataset
 from . import tariterators
 from . import iterators
 from . import autodecode
+from . import shardcache
 from .utils import reraise_exception
 
 
 class Composable:
+
     def then(self, f, *args, length=True, **kw):
         """Compose this processor with a new processor defined by a function.
 
@@ -48,7 +50,7 @@ class Composable:
         The constructor should be of the form `__init__(self, source_dataset, ...)`
         """
         assert callable(constructor)
-        return constructor(self, *args, **kw)
+        return constructor(*args, **kw)(self)
 
 
 def split_by_worker(urls):
@@ -178,16 +180,21 @@ class Processor(IterableDataset, Composable, Shorthands):
 def WebDataset(
     urls,
     shardshuffle=True,
+    cache_dir=None,
+    cache_size=1e15,
+    cache_name=shardcache.shard_uuid,
+    cache_verbose=True,
     splitter=split_by_worker,
     handler=reraise_exception,
     length=None,
 ):
-    return (
-        ShardList(urls, shuffle=shardshuffle, splitter=splitter)
-        .then(tariterators.url_opener, handler=handler)
-        .then(tariterators.tar_file_expander, length=None, handler=handler)
-        .then(tariterators.group_by_keys, length=length)
-    )
+    result = ShardList(urls, shuffle=shardshuffle, splitter=splitter)
+    result = result.then(tariterators.url_opener, handler=handler)
+    if cache_dir is not None:
+        result = result.then(shardcache.cache_shards, cache_dir=cache_dir, cache_size=cache_size, cache_name=cache_name, verbose=cache_verbose)
+    result = result.then(tariterators.tar_file_expander, length=None, handler=handler)
+    result = result.then(tariterators.group_by_keys, length=length)
+    return result
 
 
 class ResizedDataset(IterableDataset):
