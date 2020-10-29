@@ -142,7 +142,7 @@ def tar_file_expander(data, handler=reraise_exception):
                 break
 
 
-def group_by_keys(data, keys=base_plus_ext, lcase=True, suffixes=None):
+def group_by_keys(data, keys=base_plus_ext, lcase=True, suffixes=None, handler=None):
     """Returns function over iterator that groups key, value pairs into samples.
 
     keys: function that splits the key into key and extension (base_plus_ext)

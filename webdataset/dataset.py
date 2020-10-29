@@ -28,6 +28,8 @@ from .utils import reraise_exception
 
 
 class Composable:
+    def __init__(self):
+        super().__init__()
 
     def then(self, f, *args, length=True, **kw):
         """Compose this processor with a new processor defined by a function.
@@ -42,7 +44,8 @@ class Composable:
         """
         assert callable(f)
         assert "source" not in kw
-        return Processor(f, *args, length=length, source=self, **kw)
+        # print("Processor", args, kw)
+        return Processor(f, *args, **kw)(self)
 
     def compose(self, constructor, *args, **kw):
         """Compose this processor with another IterableDataset.
@@ -75,8 +78,10 @@ def split_by_worker(urls):
 
 
 class ShardList(IterableDataset, Composable):
-    def __init__(self, urls, shuffle=False, splitter=split_by_worker):
+    def __init__(self, urls, shuffle=False, splitter=split_by_worker, length=None):
+        super().__init__()
         self.shuffle = shuffle
+        self.length = length
         if isinstance(urls, str):
             urls = list(braceexpand.braceexpand(urls))
         else:
@@ -94,8 +99,16 @@ class ShardList(IterableDataset, Composable):
         for url in urls:
             yield dict(url=url)
 
+    def __len__(self):
+        if self.length is None:
+            raise ValueError("length requested, but no length specified for ShardIterator")
+        return self.length
+
 
 class Shorthands:
+    def __init__(self):
+        super().__init__()
+
     def batched(self, batchsize, partial=True):
         return self.then(iterators.batched, batchsize=batchsize, partial=partial)
 
@@ -109,11 +122,7 @@ class Shorthands:
         return self.then(iterators.map, f, handler=handler)
 
     def decode(
-        self,
-        *args,
-        pre=None,
-        post=None,
-        handler=reraise_exception,
+        self, *args, pre=None, post=None, handler=reraise_exception,
     ):
         # for backwards compatibility
         handlers = [
@@ -123,13 +132,13 @@ class Shorthands:
         return self.map(decoder, handler=handler)
 
     def rename(self, handler=reraise_exception, **kw):
-        return self.then(iterators.rename, handler=handler, **kw)
+        return self.then(iterators.rename, handler=handler, _kwa=kw)
 
     def map_dict(self, handler=reraise_exception, **kw):
-        return self.then(iterators.map_dict, handler=handler, **kw)
+        return self.then(iterators.map_dict, handler=handler, _kwa=kw)
 
     def select(self, predicate, **kw):
-        return self.then(iterators.select, predicate, **kw)
+        return self.then(iterators.select, predicate, _kwa=kw)
 
     def to_tuple(self, *args, handler=reraise_exception):
         return self.then(iterators.to_tuple, *args, handler=handler)
@@ -138,22 +147,19 @@ class Shorthands:
         return self.then(iterators.map_tuple, *args, handler=handler)
 
     def pipe(self, f, *args, **kw):
-        return self.then(f, *args, **kw)
+        return self.then(f, *args, _kwa=kw)
 
 
 class Processor(IterableDataset, Composable, Shorthands):
-    def __init__(self, f, *args, length=True, source=None, **kw):
+    def __init__(self, f, *args, _kwa={}, length=True, **kw):
         super().__init__()
         assert callable(f)
-        self.source = source
         self.f = f
         self.args = args
-        self.kw = kw
+        self.kw = dict(_kwa)
+        self.kw.update(kw)
         self.length = length
-
-    def on(self, source):
-        self.source = source
-        return self
+        self.source = None
 
     def __call__(self, source):
         self.source = source
@@ -188,10 +194,16 @@ def WebDataset(
     handler=reraise_exception,
     length=None,
 ):
-    result = ShardList(urls, shuffle=shardshuffle, splitter=splitter)
+    result = ShardList(urls, shuffle=shardshuffle, splitter=splitter, length=length)
     result = result.then(tariterators.url_opener, handler=handler)
     if cache_dir is not None:
-        result = result.then(shardcache.cache_shards, cache_dir=cache_dir, cache_size=cache_size, cache_name=cache_name, verbose=cache_verbose)
+        result = result.then(
+            shardcache.cache_shards,
+            cache_dir=cache_dir,
+            cache_size=cache_size,
+            cache_name=cache_name,
+            verbose=cache_verbose,
+        )
     result = result.then(tariterators.tar_file_expander, length=None, handler=handler)
     result = result.then(tariterators.group_by_keys, length=length)
     return result
@@ -213,6 +225,7 @@ class ResizedDataset(IterableDataset):
     """
 
     def __init__(self, dataset, length=None, nominal=None):
+        super().__init__()
         self.dataset = dataset
         if length is None:
             length = len(dataset)

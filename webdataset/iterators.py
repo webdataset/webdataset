@@ -168,7 +168,7 @@ def info(data, fmt=None, n=3, every=-1, width=50, stream=sys.stderr, name=""):
         yield sample
 
 
-def shuffle(data, bufsize=1000, initial=100, rng=random):
+def shuffle(data, bufsize=1000, initial=100, rng=random, handler=None):
     """Shuffle the data in the stream.
 
     This uses a buffer of size `bufsize`. Shuffling at
@@ -294,12 +294,10 @@ def map_tuple(data, *args, handler=reraise_exception):
         assert callable(f), f
     for sample in data:
         assert isinstance(sample, (list, tuple))
-        assert len(args) == len(
-            sample
-        ), f"len(args) {len(args)} != len(sample) {len(sample)}"
         sample = list(sample)
+        n = min(len(args), len(sample))
         try:
-            for i in range(min(len(args), len(sample))):
+            for i in range(n):
                 sample[i] = args[i](sample[i])
         except Exception as exn:
             if handler(exn):

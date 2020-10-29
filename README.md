@@ -138,9 +138,9 @@ for image, data in islice(dataset, 0, 3):
     print(image.shape, image.dtype, type(data))
 ```
 
-    (701, 1024, 3) float32 <class 'list'>
-    (1024, 768, 3) float32 <class 'list'>
+    (830, 1024, 3) float32 <class 'list'>
     (1024, 683, 3) float32 <class 'list'>
+    (734, 1024, 3) float32 <class 'list'>
 
 
 The `webdataset.Dataset` class has some common operations:
@@ -261,79 +261,57 @@ dataset = (
     .shuffle(100)
     .decode("pil")
     .to_tuple("jpg;png", "json")
-    .map_tuple(preproc, identity)
+    #.map_tuple(preproc)
+    .then(wds.map_tuple, preproc)
 )
+next(iter(dataset))
 ```
+
+
+
+
+    (tensor([[[-0.9705, -0.8335, -0.6109,  ..., -1.2274, -1.1760, -1.1075],
+              [-0.7308, -0.6452, -0.4568,  ..., -1.2788, -1.2274, -1.2103],
+              [-0.6452, -0.6623, -0.5938,  ..., -1.2788, -1.2959, -1.2617],
+              ...,
+              [-1.3130, -1.2274, -1.2103,  ..., -1.7754, -1.7925, -1.7754],
+              [-0.9705, -1.0219, -1.1075,  ..., -1.7412, -1.7412, -1.7583],
+              [-0.8507, -0.8678, -0.9534,  ..., -1.7069, -1.7240, -1.8097]],
+     
+             [[-0.6877, -0.5826, -0.4776,  ..., -0.6352, -0.5476, -0.4951],
+              [-0.6001, -0.5126, -0.3200,  ..., -0.7227, -0.6702, -0.6001],
+              [-0.4776, -0.4601, -0.2850,  ..., -0.7402, -0.7227, -0.6702],
+              ...,
+              [-1.3004, -1.1604, -1.1954,  ..., -1.7906, -1.8256, -1.7556],
+              [-0.8452, -0.8452, -0.9853,  ..., -1.7731, -1.8081, -1.8256],
+              [-0.6176, -0.6702, -0.8102,  ..., -1.7731, -1.8256, -1.8431]],
+     
+             [[-1.0724, -1.0201, -0.9853,  ..., -0.5844, -0.5147, -0.5321],
+              [-1.0724, -1.0201, -0.9504,  ..., -0.6018, -0.5321, -0.5495],
+              [-1.0376, -1.0027, -0.9156,  ..., -0.6193, -0.6541, -0.6541],
+              ...,
+              [-0.5321, -0.5321, -0.5495,  ..., -1.2990, -1.3339, -1.3513],
+              [-0.3055, -0.3578, -0.4101,  ..., -1.2990, -1.3164, -1.2990],
+              [-0.1661, -0.1835, -0.2707,  ..., -1.2990, -1.3513, -1.2816]]]),
+     [{'ImageID': '7a2bf6fc253d362c',
+       'Source': 'xclick',
+       'LabelName': '/m/07j7r',
+       'Confidence': '1',
+       'XMin': '0.000000',
+       'XMax': '0.998264',
+       'YMin': '0.000000',
+       'YMax': '0.340278',
+       'IsOccluded': '0',
+       'IsTruncated': '1',
+       'IsGroupOf': '0',
+       'IsDepiction': '1',
+       'IsInside': '0'}])
+
+
 
 Note the explicit use of both `shardshuffle=True` (for shuffling the shards) and the `.shuffle` processor (for shuffling samples inline).
 
 When used with a standard Torch `DataLoader`, this will now perform parallel I/O and preprocessing.
-
-
-```python
-dataloader = torch.utils.data.DataLoader(dataset, num_workers=4, batch_size=16)
-images, targets = next(iter(dataloader))
-images.shape
-```
-
-
-    ---------------------------------------------------------------------------
-
-    RuntimeError                              Traceback (most recent call last)
-
-    <ipython-input-7-45431386c528> in <module>
-          1 dataloader = torch.utils.data.DataLoader(dataset, num_workers=4, batch_size=16)
-    ----> 2 images, targets = next(iter(dataloader))
-          3 images.shape
-
-
-    ~/proj/webdataset/venv/lib/python3.8/site-packages/torch/utils/data/dataloader.py in __next__(self)
-        433         if self._sampler_iter is None:
-        434             self._reset()
-    --> 435         data = self._next_data()
-        436         self._num_yielded += 1
-        437         if self._dataset_kind == _DatasetKind.Iterable and \
-
-
-    ~/proj/webdataset/venv/lib/python3.8/site-packages/torch/utils/data/dataloader.py in _next_data(self)
-       1083             else:
-       1084                 del self._task_info[idx]
-    -> 1085                 return self._process_data(data)
-       1086 
-       1087     def _try_put_index(self):
-
-
-    ~/proj/webdataset/venv/lib/python3.8/site-packages/torch/utils/data/dataloader.py in _process_data(self, data)
-       1109         self._try_put_index()
-       1110         if isinstance(data, ExceptionWrapper):
-    -> 1111             data.reraise()
-       1112         return data
-       1113 
-
-
-    ~/proj/webdataset/venv/lib/python3.8/site-packages/torch/_utils.py in reraise(self)
-        426             # have message field
-        427             raise self.exc_type(message=msg)
-    --> 428         raise self.exc_type(msg)
-        429 
-        430 
-
-
-    RuntimeError: Caught RuntimeError in DataLoader worker process 0.
-    Original Traceback (most recent call last):
-      File "/home/tmb/proj/webdataset/venv/lib/python3.8/site-packages/torch/utils/data/_utils/worker.py", line 198, in _worker_loop
-        data = fetcher.fetch(index)
-      File "/home/tmb/proj/webdataset/venv/lib/python3.8/site-packages/torch/utils/data/_utils/fetch.py", line 35, in fetch
-        return self.collate_fn(data)
-      File "/home/tmb/proj/webdataset/venv/lib/python3.8/site-packages/torch/utils/data/_utils/collate.py", line 83, in default_collate
-        return [default_collate(samples) for samples in transposed]
-      File "/home/tmb/proj/webdataset/venv/lib/python3.8/site-packages/torch/utils/data/_utils/collate.py", line 83, in <listcomp>
-        return [default_collate(samples) for samples in transposed]
-      File "/home/tmb/proj/webdataset/venv/lib/python3.8/site-packages/torch/utils/data/_utils/collate.py", line 81, in default_collate
-        raise RuntimeError('each element in list of batch should be of equal size')
-    RuntimeError: each element in list of batch should be of equal size
-
-
 
 The recommended way of using `IterableDataset` with `DataLoader` is to do the batching explicitly in the `Dataset`. You can also set a nominal length for a dataset.
 
@@ -352,10 +330,22 @@ dataset = (
     .batched(20)
 )
 
+def collate(l):
+    print(len(l), l[0])
+    assert False
+    return l
+
 dataloader = torch.utils.data.DataLoader(dataset, num_workers=4, batch_size=None)
 images, targets = next(iter(dataloader))
 images.shape
 ```
+
+
+
+
+    torch.Size([20, 3, 224, 224])
+
+
 
 The `ResizedDataset` is also helpful for connecting iterable datasets to `DataLoader`: it lets you set both a nominal and an actual epoch size; it will repeatedly iterate through the entire dataset and return data in chunks with the given epoch size.
 
@@ -445,6 +435,8 @@ Automatic shard caching is useful for distributing deep learning code, for acade
 ```python
 !rm -rf ./cache
 
+# just using one URL for demonstration
+url = "http://storage.googleapis.com/nvdata-openimages/openimages-train-000000.tar"
 dataset = wds.WebDataset(url, cache_dir="./cache")
 
 print("=== first pass")
@@ -463,15 +455,15 @@ for i, sample in enumerate(dataset):
 !ls -l ./cache
 ```
 
-    [caching <webdataset.gopen.Pipe object at 0x7f767465bf40> at ./cache/82d02c03-bb0d-3796-81b8-03deb601ab2b.~3996278~ ]
+    [caching <webdataset.gopen.Pipe object at 0x7f7007f46160> at ./cache/9fd87fa8-d42e-3be4-a3a6-839de961b98a.~2853747~ ]
 
 
     === first pass
 
 
-    [done caching ./cache/82d02c03-bb0d-3796-81b8-03deb601ab2b ]
-    [finished ./cache/82d02c03-bb0d-3796-81b8-03deb601ab2b]
-    [opening cached ./cache/82d02c03-bb0d-3796-81b8-03deb601ab2b ]
+    [done caching ./cache/9fd87fa8-d42e-3be4-a3a6-839de961b98a ]
+    [finished ./cache/9fd87fa8-d42e-3be4-a3a6-839de961b98a]
+    [opening cached ./cache/9fd87fa8-d42e-3be4-a3a6-839de961b98a ]
 
 
     === second pass
@@ -492,7 +484,7 @@ for i, sample in enumerate(dataset):
     json b'[{"ImageID": "ed600d57fcee4f94", "Source": "acti
     
     total 987924
-    -rw-rw-r-- 1 tmb tmb 1011630080 Oct 28 22:40 82d02c03-bb0d-3796-81b8-03deb601ab2b
+    -rw-rw-r-- 1 tmb tmb 1011630080 Oct 29 02:22 9fd87fa8-d42e-3be4-a3a6-839de961b98a
 
 
 ## Automatic Sample Caching
@@ -549,7 +541,7 @@ for i, sample in enumerate(dataset):
     jpg b'\xff\xd8\xff\xe0\x00\x10JFIF\x00\x01\x01\x01\x01
     json b'[{"ImageID": "ed600d57fcee4f94", "Source": "acti
     
-    -rw-r--r-- 1 tmb tmb 485199872 Oct 28 22:52 ./cache.db
+    -rw-r--r-- 1 tmb tmb 485199872 Oct 29 02:22 ./cache.db
 
 
 # Creating a WebDataset
@@ -789,3 +781,8 @@ The [tensorcom](http://github.com/tmbdev/tensorcom/) library provides fast three
 
 You can find the full PyTorch ImageNet sample code converted to WebDataset at [tmbdev/pytorch-imagenet-wds](http://github.com/tmbdev/pytorch-imagenet-wds)
 
+
+
+```python
+
+```
