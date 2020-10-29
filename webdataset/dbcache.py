@@ -1,3 +1,4 @@
+import sys
 import torch
 from torch.utils.data import IterableDataset
 import sqlite3
@@ -26,7 +27,7 @@ class DBCache(IterableDataset):
         else:
             self.size = size
         if self.verbose:
-            print(f"[DBCache opened {dbname} size {self.size} total {self.total}]")
+            print(f"[DBCache opened {dbname} size {self.size} total {self.total}]", file=sys.stderr, flush=True)
 
     def __call__(self, source):
         self.source = source
@@ -50,7 +51,7 @@ class DBCache(IterableDataset):
 
     def dbiter(self):
         if self.verbose:
-            print(f"[DBCache starting dbiter total {self.total} size {self.size}]")
+            print(f"[DBCache starting dbiter total {self.total} size {self.size}]", file=sys.stderr, flush=True)
         query = "select data from cache"
         if self.shuffle:
             query += " order by random()"
@@ -71,7 +72,7 @@ class DBCache(IterableDataset):
             return
 
         if self.verbose:
-            print(f"[DBCache total {self.total} size {self.size} more caching]")
+            print(f"[DBCache total {self.total} size {self.size} more caching]", file=sys.stderr, flush=True)
 
         for sample in self.source:
             if self.total >= self.size:
@@ -92,5 +93,5 @@ class DBCache(IterableDataset):
         self.db.commit()
 
         if self.verbose:
-            print(f"[DBCache finished caching total {self.total} (size {self.size})]")
+            print(f"[DBCache finished caching total {self.total} (size {self.size})]", file=sys.stderr, flush=True)
             self.setmeta("size", self.total)

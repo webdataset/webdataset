@@ -1,5 +1,7 @@
 import warnings
 import time
+import re
+import importlib
 
 __all__ = "reraise_exception ignore_and_continue ignore_and_stop warn_and_stop add_hook call_hook".split()
 
@@ -59,3 +61,18 @@ def identity(x):
 def do_nothing(*args, **kw):
     """Do nothing function."""
     pass
+
+
+def safe_eval(s, expr="{}"):
+    if re.sub("[^A-Za-z0-9_]", "", s) != s:
+        raise ValueError(f"safe_eval: illegal characters in: '{s}'")
+    return eval(expr.format(s))
+
+
+def lookup_sym(sym, modules):
+    for mname in modules:
+        module = importlib.import_module(mname, package="webdataset")
+        result = getattr(module, sym, None)
+        if result is not None:
+            return result
+    return None

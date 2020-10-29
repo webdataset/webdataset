@@ -14,6 +14,7 @@ __all__ = """Dataset tariterator default_handlers imagehandler
 reraise_exception ignore_and_continue warn_and_continue ignore_and_stop warn_and_stop
 """.split()
 
+import os
 import random
 import warnings
 
@@ -24,7 +25,15 @@ from . import tariterators
 from . import iterators
 from . import autodecode
 from . import shardcache
-from .utils import reraise_exception
+from .utils import reraise_exception, lookup_sym, safe_eval
+
+
+default_cache_dir = os.path.expanduser(
+    os.environ.get("WEBDATASET_CACHE", "~/.wds_cache")
+)
+default_cache_name = lookup_sym(os.environ.get('WEBDATASET_CACHE_NAME', 'shard_uuid'), ".shardcache".split())
+default_cache_verbose = int(safe_eval(os.environ.get("WEBDATASET_CACHE_VERBOSE", "1")))
+default_cache_size = int(float(safe_eval(os.environ.get("WEBDATASET_CACHE_SIZE", "1e15"))))
 
 
 class Composable:
@@ -101,7 +110,9 @@ class ShardList(IterableDataset, Composable):
 
     def __len__(self):
         if self.length is None:
-            raise ValueError("length requested, but no length specified for ShardIterator")
+            raise ValueError(
+                "length requested, but no length specified for ShardIterator"
+            )
         return self.length
 
 
@@ -187,9 +198,9 @@ def WebDataset(
     urls,
     shardshuffle=True,
     cache_dir=None,
-    cache_size=1e15,
-    cache_name=shardcache.shard_uuid,
-    cache_verbose=True,
+    cache_size=default_cache_size,
+    cache_name=default_cache_name,
+    cache_verbose=default_cache_verbose,
     splitter=split_by_worker,
     handler=reraise_exception,
     length=None,
@@ -197,6 +208,8 @@ def WebDataset(
     result = ShardList(urls, shuffle=shardshuffle, splitter=splitter, length=length)
     result = result.then(tariterators.url_opener, handler=handler)
     if cache_dir is not None:
+        if cache_dir is True:
+            cache_dir = default_cache_dir
         result = result.then(
             shardcache.cache_shards,
             cache_dir=cache_dir,
