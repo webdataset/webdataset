@@ -17,8 +17,6 @@ import re
 import os
 
 import numpy as np
-import PIL
-import PIL.Image
 import json
 import tempfile
 import io
@@ -57,19 +55,23 @@ def basichandlers(key, data):
     if extension in "pth".split():
         import io
         import torch
+
         stream = io.BytesIO(data)
         return torch.load(stream)
 
     if extension in "ten tb".split():
         from . import tenbin
+
         return tenbin.decode_buffer(data)
 
     if extension in "mp msgpack msg".split():
         import msgpack
+
         return msgpack.unpackb(data)
-    
+
     if extension in "npy".split():
         import numpy.lib.format
+
         stream = io.BytesIO(data)
         return numpy.lib.format.read_array(stream)
 
@@ -120,7 +122,7 @@ def handle_extension(extensions, f):
             target = target.split(".")
             if len(target) > len(extension):
                 continue
-            if extension[-len(target):] == target:
+            if extension[-len(target) :] == target:
                 return f(data)
         return None
 
@@ -153,11 +155,13 @@ class ImageHandler:
     - pilrgba: pil None rgba
 
     """
+
     def __init__(self, imagespec):
         checkmember(imagespec, list(imagespecs.keys()), "unknown image specification")
         self.imagespec = imagespec.lower()
 
     def __call__(self, key, data):
+        import PIL.Image
         extension = re.sub(r".*[.]", "", key)
         if extension.lower() not in "jpg jpeg png ppm pgm pbm pnm".split():
             return None
@@ -254,6 +258,7 @@ class Continue:
 
 def gzfilter(key, data):
     import gzip
+
     if not key.endswith(".gz"):
         return None
     decompressed = gzip.open(io.BytesIO(data)).read()

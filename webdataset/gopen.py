@@ -120,12 +120,6 @@ def set_options(obj, timeout=None, ignore_errors=None, ignore_status=None, handl
     return True
 
 
-def gopen_objectio(url, mode="rb", bufsize=8192):
-    import objectio
-
-    return objectio.gopen(url, mode)
-
-
 def gopen_file(url, mode="rb", bufsize=8192):
     return open(url, mode)
 
@@ -160,8 +154,12 @@ def gopen_curl(url, mode="rb", bufsize=8192):
         raise ValueError(f"{mode}: unknown mode")
 
 
+def gopen_error(url, *args, **kw):
+    raise ValueError(f"{url}: no gopen handler defined")
+
+
 gopen_schemes = dict(
-    __default__=gopen_objectio,
+    __default__=gopen_error,
     pipe=gopen_pipe,
     http=gopen_curl,
     https=gopen_curl,

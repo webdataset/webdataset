@@ -2,7 +2,6 @@ import sys
 import os.path
 import io
 import uuid
-from itertools import islice
 
 
 def guess_shard(path):
@@ -24,7 +23,15 @@ class CacheStream(io.RawIOBase):
         os.unlink(self.tempname) if os.path.exists(self.tempname) else None
         self.cache = open(self.tempname, "wb")
         if verbose:
-            print("[caching", stream, "at", self.tempname, "]", file=sys.stderr, flush=True)
+            print(
+                "[caching",
+                stream,
+                "at",
+                self.tempname,
+                "]",
+                file=sys.stderr,
+                flush=True,
+            )
 
     def close(self, complete=False):
         self.stream.close()
@@ -42,7 +49,6 @@ class CacheStream(io.RawIOBase):
     def read(self, n):
         data = self.stream.read(n)
         self.cache.write(data)
-        assert os.path.exists(self.tempname), self.tempname ###
         if data is None or len(data) < n:
             self.close(complete=True)
         self.last = ("read", n, len(data) if data is not None else None)
@@ -57,7 +63,9 @@ class CacheStream(io.RawIOBase):
         return n
 
 
-def cache_shards(urls, cache_dir="./data", cache_size=1e15, cache_name=guess_shard, verbose=False):
+def cache_shards(
+    urls, cache_dir="./data", cache_size=1e15, cache_name=guess_shard, verbose=False
+):
     global _cache
     if not os.path.exists(cache_dir):
         os.makedirs(cache_dir)
@@ -74,4 +82,3 @@ def cache_shards(urls, cache_dir="./data", cache_size=1e15, cache_name=guess_sha
             yield dict(url=url, stream=open(cache_path, "rb"))
     if verbose:
         print(f"[finished {cache_path}]", file=sys.stderr, flush=True)
-        

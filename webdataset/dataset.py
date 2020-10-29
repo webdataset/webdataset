@@ -208,7 +208,7 @@ def WebDataset(
     result = ShardList(urls, shuffle=shardshuffle, splitter=splitter, length=length)
     result = result.then(tariterators.url_opener, handler=handler)
     if cache_dir is not None:
-        if cache_dir is True:
+        if cache_dir is True or cache_dir == "yes":
             cache_dir = default_cache_dir
         result = result.then(
             shardcache.cache_shards,

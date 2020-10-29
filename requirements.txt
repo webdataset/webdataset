@@ -1,11 +1,3 @@
-objectio
-simplejson
 braceexpand
-msgpack
-pyyaml
 numpy
 torch
-Pillow
-torchvision
-matplotlib
-lmdb
