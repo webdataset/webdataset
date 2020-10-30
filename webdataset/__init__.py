@@ -23,8 +23,17 @@ from .utils import (
     ignore_and_stop,
     warn_and_stop,
 )
-from .writer import ShardWriter, TarWriter
-from .autodecode import imagehandler, torch_video, torch_audio, Decoder, gzfilter
+from .writer import ShardWriter, TarWriter, torch_dumps
+from .autodecode import (
+    Continue,
+    handle_extension,
+    torch_loads,
+    imagehandler,
+    torch_video,
+    torch_audio,
+    Decoder,
+    gzfilter,
+)
 from .tariterators import (
     url_opener,
     tar_file_iterator,

@@ -11,6 +11,7 @@ import pickle
 import re
 import tarfile
 import time
+import json
 
 import numpy as np
 import PIL
@@ -57,7 +58,7 @@ def bytestr(data):
     return str(data).encode("ascii")
 
 
-def torch_save_object(data):
+def torch_dumps(data):
     import io
     import torch
 
@@ -81,7 +82,7 @@ def make_handlers():
     for extension in ["pyd", "pickle"]:
         handlers[extension] = pickle.dumps
     for extension in ["pth"]:
-        handlers[extension] = torch_save_object
+        handlers[extension] = torch_dumps
     for extension in ["json", "jsn"]:
         handlers[extension] = lambda x: json.dumps(x).encode("utf-8")
     for extension in ["ten", "tb"]:

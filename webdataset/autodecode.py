@@ -33,6 +33,14 @@ check_present = int(os.environ.get("WDS_CHECK_DECODE", 0))
 ################################################################
 
 
+def torch_loads(data):
+    import io
+    import torch
+
+    stream = io.BytesIO(data)
+    return torch.load(stream)
+
+
 def basichandlers(key, data):
 
     extension = re.sub(r".*[.]", "", key)
@@ -53,11 +61,7 @@ def basichandlers(key, data):
         return pickle.loads(data)
 
     if extension in "pth".split():
-        import io
-        import torch
-
-        stream = io.BytesIO(data)
-        return torch.load(stream)
+        return torch_loads(data)
 
     if extension in "ten tb".split():
         from . import tenbin

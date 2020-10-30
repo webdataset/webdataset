@@ -28,12 +28,14 @@ from . import shardcache
 from .utils import reraise_exception, lookup_sym, safe_eval
 
 
-default_cache_dir = os.path.expanduser(
-    os.environ.get("WEBDATASET_CACHE", "")
+default_cache_dir = os.path.expanduser(os.environ.get("WEBDATASET_CACHE", ""))
+default_cache_name = lookup_sym(
+    os.environ.get("WEBDATASET_CACHE_NAME", "shard_uuid"), ".shardcache".split()
 )
-default_cache_name = lookup_sym(os.environ.get('WEBDATASET_CACHE_NAME', 'shard_uuid'), ".shardcache".split())
 default_cache_verbose = int(safe_eval(os.environ.get("WEBDATASET_CACHE_VERBOSE", "1")))
-default_cache_size = int(float(safe_eval(os.environ.get("WEBDATASET_CACHE_SIZE", "1e15"))))
+default_cache_size = int(
+    float(safe_eval(os.environ.get("WEBDATASET_CACHE_SIZE", "1e15")))
+)
 
 
 class Composable:
@@ -87,22 +89,32 @@ def split_by_worker(urls):
 
 
 class ShardList(IterableDataset, Composable):
-    def __init__(self, urls, shuffle=False, splitter=split_by_worker, length=None):
+    def __init__(
+        self,
+        urls,
+        shuffle=False,
+        nodesplitter=None,
+        splitter=split_by_worker,
+        length=None,
+    ):
         super().__init__()
         self.shuffle = shuffle
         self.length = length
+        self.nodesplitter = nodesplitter
+        self.splitter = splitter
         if isinstance(urls, str):
             urls = list(braceexpand.braceexpand(urls))
         else:
             urls = list(urls)
-        if splitter is not None:
-            self.urls = list(splitter(urls))
-        else:
-            self.urls = urls
+        self.urls = urls
         assert isinstance(self.urls[0], str)
 
     def __iter__(self):
         urls = list(self.urls)
+        if self.nodesplitter is not None:
+            urls = list(self.nodesplitter(urls))
+        if self.splitter is not None:
+            urls = list(self.splitter(urls))
         if self.shuffle:
             random.shuffle(urls)
         for url in urls:
@@ -202,10 +214,17 @@ def WebDataset(
     cache_name=default_cache_name,
     cache_verbose=default_cache_verbose,
     splitter=split_by_worker,
+    nodesplitter=None,
     handler=reraise_exception,
     length=None,
 ):
-    result = ShardList(urls, shuffle=shardshuffle, splitter=splitter, length=length)
+    result = ShardList(
+        urls,
+        shuffle=shardshuffle,
+        splitter=splitter,
+        nodesplitter=nodesplitter,
+        length=length,
+    )
     result = result.then(tariterators.url_opener, handler=handler)
     if cache_dir != "":
         result = result.then(

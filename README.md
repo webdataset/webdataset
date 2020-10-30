@@ -39,7 +39,7 @@ augmentation code remains unchanged.
 - [How It Works](docs/howitworks.ipynb)
 - [Sharding](docs/sharding.ipynb)
 - [Decoding](docs/decoding.ipynb)
-- [Desktop Usage](docs/desktop.ipynb)
+- [Desktop Usage and Caching](docs/desktop.ipynb)
 - [Creating Datasets in WebDataset Format](docs/creating.ipynb)
 - [Writing WebDataset from Python](docs/writing.ipynb)
 - [Multinode Training](docs/multinode.ipynb)
