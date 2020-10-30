@@ -29,7 +29,7 @@ from .utils import reraise_exception, lookup_sym, safe_eval
 
 
 default_cache_dir = os.path.expanduser(
-    os.environ.get("WEBDATASET_CACHE", "~/.wds_cache")
+    os.environ.get("WEBDATASET_CACHE", "")
 )
 default_cache_name = lookup_sym(os.environ.get('WEBDATASET_CACHE_NAME', 'shard_uuid'), ".shardcache".split())
 default_cache_verbose = int(safe_eval(os.environ.get("WEBDATASET_CACHE_VERBOSE", "1")))
@@ -197,7 +197,7 @@ class Processor(IterableDataset, Composable, Shorthands):
 def WebDataset(
     urls,
     shardshuffle=True,
-    cache_dir=None,
+    cache_dir=default_cache_dir,
     cache_size=default_cache_size,
     cache_name=default_cache_name,
     cache_verbose=default_cache_verbose,
@@ -207,9 +207,7 @@ def WebDataset(
 ):
     result = ShardList(urls, shuffle=shardshuffle, splitter=splitter, length=length)
     result = result.then(tariterators.url_opener, handler=handler)
-    if cache_dir is not None:
-        if cache_dir is True or cache_dir == "yes":
-            cache_dir = default_cache_dir
+    if cache_dir != "":
         result = result.then(
             shardcache.cache_shards,
             cache_dir=cache_dir,

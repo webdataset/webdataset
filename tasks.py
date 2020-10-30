@@ -29,6 +29,11 @@ def venv(c):
 
 
 @task
+def virtualenv(c):
+    return venv(c)
+
+
+@task
 def test(c):
     "Run the tests."
     c.run(f"{ACTIVATE}{PYTHON3} -m pytest")

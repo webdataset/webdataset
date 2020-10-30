@@ -1,4 +1,6 @@
 coverage
+matplotlib
+torchvision
 jupyter
 jupyterlab
 licenseheaders

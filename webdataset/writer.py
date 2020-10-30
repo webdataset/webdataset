@@ -14,7 +14,6 @@ import time
 
 import numpy as np
 import PIL
-import simplejson
 
 from . import gopen
 
@@ -84,7 +83,7 @@ def make_handlers():
     for extension in ["pth"]:
         handlers[extension] = torch_save_object
     for extension in ["json", "jsn"]:
-        handlers[extension] = lambda x: simplejson.dumps(x).encode("utf-8")
+        handlers[extension] = lambda x: json.dumps(x).encode("utf-8")
     for extension in ["ten", "tb"]:
         from . import tenbin
 
