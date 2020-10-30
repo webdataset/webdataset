@@ -1,7 +1,7 @@
 [![Test](https://github.com/tmbdev/webdataset/workflows/Test/badge.svg)](https://github.com/tmbdev/webdataset/actions?query=workflow%3ATest)
 [![DeepSource](https://static.deepsource.io/deepsource-badge-light-mini.svg)](https://deepsource.io/gh/tmbdev/webdataset/?ref=repository-badge)
 
-<font size=+2 color="red">Please have a look at the [development branch](https://github.com/tmbdev/webdataset/tree/dev) for the latest features and documentation.</font>
+**Please have a look at the [development branch](https://github.com/tmbdev/webdataset/tree/dev) for the latest features and documentation.**
 
 # WebDataset
 
