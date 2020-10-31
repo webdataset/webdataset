@@ -35,14 +35,13 @@ augmentation code remains unchanged.
 
 # Documentation
 
-- [Getting Started](docs/gettingstarted.ipynb)
-- [How It Works](docs/howitworks.ipynb)
-- [Sharding](docs/sharding.ipynb)
-- [Decoding](docs/decoding.ipynb)
-- [Desktop Usage and Caching](docs/desktop.ipynb)
-- [Creating Datasets in WebDataset Format](docs/creating.ipynb)
-- [Writing WebDataset from Python](docs/writing.ipynb)
-- [Multinode Training](docs/multinode.ipynb)
+- [Getting Started](docs/gettingstarted.ipynb) -- a simple demonstration of how to use WebDataset
+- [How It Works](docs/howitworks.ipynb) -- WebDataset is just a collection of PyTorch IterableDataset implementations
+- [Decoding](docs/decoding.ipynb) -- WebDataset uses file-based representations internally and its Decoder makes turning these into PyTorch tensors easy
+- [Desktop Usage and Caching](docs/desktop.ipynb) -- WebDataset is great for desktop development and supports built-in caching
+- [Creating Datasets in WebDataset Format](docs/creating.ipynb) -- there are a variety of tools for creating datasets in WebDataset format
+- [Writing WebDataset from Python](docs/writing.ipynb) -- you can write WebDataset datasets directly from Python
+- [Multinode Training](docs/multinode.ipynb) -- what you need to know to handle distributed, multi-node training with WebDataset
 
 # Installation
 
