@@ -11,6 +11,8 @@ from .fluid import Dataset
 from .dataset import (
     split_by_worker,
     ShardList,
+    Composable,
+    Shorthands,
     WebDataset,
     Processor,
     ChoppedDataset,
@@ -23,6 +25,7 @@ from .utils import (
     ignore_and_stop,
     warn_and_stop,
 )
+from .gopen import gopen, gopen_schemes
 from .writer import ShardWriter, TarWriter, torch_dumps
 from .autodecode import (
     Continue,
