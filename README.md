@@ -42,6 +42,7 @@ augmentation code remains unchanged.
 - [Creating Datasets in WebDataset Format](docs/creating.ipynb) -- there are a variety of tools for creating datasets in WebDataset format
 - [Writing WebDataset from Python](docs/writing.ipynb) -- you can write WebDataset datasets directly from Python
 - [Multinode Training](docs/multinode.ipynb) -- what you need to know to handle distributed, multi-node training with WebDataset
+- [Data Sources](docs/sources.ipynb) -- accessing data on local disks, on web servers, or in cloud storage buckets
 
 # Installation
 
