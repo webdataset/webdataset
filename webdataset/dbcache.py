@@ -14,9 +14,11 @@ class DBCache(IterableDataset):
     def __init__(self, dbname, size, source=None, shuffle=False, verbose=True):
         self.dbname = dbname
         self.source = source
+        self.verbose = verbose
+        if dbname is None:
+            return
         self.db = sqlite3.connect(dbname)
         self.shuffle = shuffle
-        self.verbose = verbose
         self.db.execute(
             """create table if not exists cache (key text primary key, data blob)"""
         )
@@ -66,6 +68,10 @@ class DBCache(IterableDataset):
         ).fetchone()[0]
 
     def __iter__(self):
+
+        if self.dbname is None:
+            yield from iter(self.source)
+            return
 
         if self.total >= self.size:
             yield from self.dbiter()

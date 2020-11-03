@@ -67,6 +67,9 @@ def cache_shards(
     urls, cache_dir="./data", cache_size=1e15, cache_name=guess_shard, verbose=False
 ):
     global _cache
+    if cache_dir is None:
+        yield from urls
+        return
     if not os.path.exists(cache_dir):
         os.makedirs(cache_dir)
     for shard in urls:

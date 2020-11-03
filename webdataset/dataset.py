@@ -25,6 +25,7 @@ from . import tariterators
 from . import iterators
 from . import autodecode
 from . import shardcache
+from . import dbcache
 from .utils import reraise_exception, lookup_sym, safe_eval
 
 
@@ -171,6 +172,9 @@ class Shorthands:
 
     def pipe(self, f, *args, **kw):
         return self.then(f, *args, _kwa=kw)
+
+    def dbcache(self, fname, size):
+        return self.compose(dbcache.DBCache, fname, size)
 
 
 class Processor(IterableDataset, Composable, Shorthands):
