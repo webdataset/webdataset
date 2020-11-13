@@ -57,7 +57,7 @@ class Composable:
         assert callable(f)
         assert "source" not in kw
         # print("Processor", args, kw)
-        return Processor(f, *args, **kw)(self)
+        return Processor(self, f, *args, **kw)
 
     def compose(self, constructor, *args, **kw):
         """Compose this processor with another IterableDataset.
@@ -65,7 +65,7 @@ class Composable:
         The constructor should be of the form `__init__(self, source_dataset, ...)`
         """
         assert callable(constructor)
-        return constructor(*args, **kw)(self)
+        return constructor(*args, **kw).source_(self)
 
 
 def split_by_worker(urls):
@@ -178,17 +178,17 @@ class Shorthands:
 
 
 class Processor(IterableDataset, Composable, Shorthands):
-    def __init__(self, f, *args, _kwa={}, length=True, **kw):
+    def __init__(self, source, f, *args, _kwa={}, length=True, **kw):
         super().__init__()
         assert callable(f)
+        self.source = source
         self.f = f
         self.args = args
         self.kw = dict(_kwa)
         self.kw.update(kw)
         self.length = length
-        self.source = None
 
-    def __call__(self, source):
+    def source_(self, source):
         self.source = source
         return self
 
