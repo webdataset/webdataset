@@ -26,6 +26,8 @@ def venv(c):
     c.run(f"test -d {VENV} || python3 -m venv {VENV}")
     c.run(f"{ACTIVATE}{PIP} install -r requirements.dev.txt")
     c.run(f"{ACTIVATE}{PIP} install -r requirements.txt")
+    c.run(f"jupyter labextension install @jupyter-widgets/jupyterlab-manager")
+    c.run(f"jupyter labextension install @bokeh/jupyter_bokeh")
 
 
 @task

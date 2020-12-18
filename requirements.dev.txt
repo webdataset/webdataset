@@ -12,3 +12,7 @@ nbconvert
 keyring
 twine
 pynvim
+dask
+graphviz
+fsspec
+bokeh>=0.13.0
