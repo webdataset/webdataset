@@ -221,9 +221,6 @@ def test_gz():
 
 
 def test_rgb8_np_vs_torch():
-    import warnings
-
-    warnings.filterwarnings("error")
     ds = fluid.Dataset(local_data).decode("rgb8").to_tuple("png;jpg", "cls")
     image, cls = next(iter(ds))
     assert isinstance(image, np.ndarray), type(image)
