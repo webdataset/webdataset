@@ -193,11 +193,13 @@ RUN . venv/bin/activate; python3 -m pytest
 pypi_test = """
 FROM webdatasettest-base
 ENV SHELL=/bin/bash
-RUN git clone https://git@github.com/tmbdev/webdataset.git /tmp/webdataset
 WORKDIR /tmp/webdataset
 RUN ln -s /tmp/venv .
 RUN . venv/bin/activate; pip install --no-cache-dir pytest
-RUN . venv/bin/activate; pip install --no-cache-dir -r requirements.txt
+RUN . venv/bin/activate; pip install --no-cache-dir webdataset
+RUN git clone https://git@github.com/tmbdev/webdataset.git /tmp/webdataset-github
+RUN cp -av /tmp/webdataset-github/webdataset/tests tests
+RUN cp -av /tmp/webdataset-github/testdata testdata
 RUN . venv/bin/activate; python3 -m pytest
 """
 
