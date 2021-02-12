@@ -62,6 +62,11 @@ def test_dataset_pipe_cat():
     assert count_samples_tuple(ds) == 47
 
 
+def test_slice():
+    ds = fluid.Dataset(local_data).slice(10)
+    assert count_samples_tuple(ds) == 10
+
+
 def test_dataset_eof():
     import tarfile
 
@@ -220,7 +225,11 @@ def test_gz():
     assert sample["txt.gz"] == "hello\n", sample
 
 
+@pytest.mark.skip(reason="need to figure out unraisableexceptionwarning")
 def test_rgb8_np_vs_torch():
+    import warnings
+
+    warnings.filterwarnings("error")
     ds = fluid.Dataset(local_data).decode("rgb8").to_tuple("png;jpg", "cls")
     image, cls = next(iter(ds))
     assert isinstance(image, np.ndarray), type(image)

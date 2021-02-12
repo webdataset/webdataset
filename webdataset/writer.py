@@ -249,7 +249,7 @@ class TarWriter:
         total = 0
         obj = self.encoder(obj)
         if "__key__" not in obj:
-            raise ValueError(f"object must contain a __key__")
+            raise ValueError("object must contain a __key__")
         for k, v in list(obj.items()):
             if k[0] == "_":
                 continue
@@ -291,7 +291,9 @@ class ShardWriter:
 
     """
 
-    def __init__(self, pattern, maxcount=100000, maxsize=3e9, post=None, **kw):
+    def __init__(
+        self, pattern, maxcount=100000, maxsize=3e9, post=None, start_shard=0, **kw
+    ):
         self.verbose = 1
         self.kw = kw
         self.maxcount = maxcount
@@ -299,7 +301,7 @@ class ShardWriter:
         self.post = post
 
         self.tarstream = None
-        self.shard = 0
+        self.shard = start_shard
         self.pattern = pattern
         self.total = 0
         self.count = 0

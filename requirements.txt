@@ -1,3 +1,5 @@
 braceexpand
 numpy
 torch
+torchvision
+pytest

@@ -17,6 +17,7 @@ reraise_exception ignore_and_continue warn_and_continue ignore_and_stop warn_and
 import os
 import random
 import warnings
+import itertools as itt
 
 import braceexpand
 from torch.utils.data import IterableDataset
@@ -93,7 +94,7 @@ class ShardList(IterableDataset, Composable):
     def __init__(
         self,
         urls,
-        shuffle=False,
+        shuffle=lambda x: None,
         nodesplitter=None,
         splitter=split_by_worker,
         length=None,
@@ -116,7 +117,9 @@ class ShardList(IterableDataset, Composable):
             urls = list(self.nodesplitter(urls))
         if self.splitter is not None:
             urls = list(self.splitter(urls))
-        if self.shuffle:
+        if callable(self.shuffle):
+            self.shuffle(urls)
+        elif self.shuffle:
             random.shuffle(urls)
         for url in urls:
             yield dict(url=url)
@@ -175,6 +178,9 @@ class Shorthands:
 
     def dbcache(self, fname, size):
         return self.compose(dbcache.DBCache, fname, size)
+
+    def slice(self, *args):
+        return self.pipe(itt.islice, *args)
 
 
 class Processor(IterableDataset, Composable, Shorthands):

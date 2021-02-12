@@ -2,6 +2,7 @@ import warnings
 import time
 import re
 import importlib
+import itertools as itt
 
 __all__ = "reraise_exception ignore_and_continue ignore_and_stop warn_and_stop add_hook call_hook".split()
 
@@ -35,32 +36,9 @@ def warn_and_stop(exn):
     return False
 
 
-def add_hook(fs, f):
-    assert callable(f)
-    if fs is None:
-        return [f]
-    if isinstance(fs, list):
-        return fs + [f]
-    assert callable(fs)
-    return [fs, f]
-
-
-def call_hook(fs, *args, **kw):
-    if fs is None:
-        return
-    if not isinstance(fs, list):
-        fs = [fs]
-    for f in fs:
-        f(*args, **kw)
-
-
 def identity(x):
+    """The identity function."""
     return x
-
-
-def do_nothing(*args, **kw):
-    """Do nothing function."""
-    pass
 
 
 def safe_eval(s, expr="{}"):
@@ -70,9 +48,17 @@ def safe_eval(s, expr="{}"):
 
 
 def lookup_sym(sym, modules):
+    """Looks up a symbol in a list of modules."""
     for mname in modules:
         module = importlib.import_module(mname, package="webdataset")
         result = getattr(module, sym, None)
         if result is not None:
             return result
     return None
+
+
+def repeatedly(loader, nepochs=999999999, nbatches=999999999999):
+    """Repeatedly returns batches from a DataLoader."""
+    for epoch in range(nepochs):
+        for sample in itt.islice(loader, nbatches):
+            yield sample

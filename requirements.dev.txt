@@ -15,4 +15,6 @@ pynvim
 dask
 graphviz
 fsspec
+jupyter
+jupyterlab
 bokeh>=0.13.0

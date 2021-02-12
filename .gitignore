@@ -16,3 +16,13 @@ temp
 build
 venv
 EXTRA
+cache.db
+cache
+*.md
+*_files
+dask-worker-space
+*.db
+test-*.ipynb
+try-*.ipynb
+docs/webdataset
+*.mdb
