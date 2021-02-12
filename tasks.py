@@ -160,7 +160,7 @@ def twine_pypi_release(c):
 
 
 base_container = f"""
-FROM ubuntu:19.10
+FROM ubuntu:20.04
 ENV LC_ALL=C
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get -qqy update
@@ -179,19 +179,18 @@ RUN . venv/bin/activate; pip install --no-cache-dir torch==1.4.0+cpu -f https://
 RUN . venv/bin/activate; pip install --no-cache-dir torchvision==0.5.0+cpu -f https://download.pytorch.org/whl/torch_stable.html
 """
 
-github_test = f"""
+github_test = """
 FROM webdatasettest-base
 ENV SHELL=/bin/bash
-COPY . /tmp/webdataset
+RUN git clone https://git@github.com/tmbdev/webdataset.git /tmp/webdataset
 WORKDIR /tmp/webdataset
-RUN ls -l
 RUN ln -s /tmp/venv .
 RUN . venv/bin/activate; pip install --no-cache-dir pytest
 RUN . venv/bin/activate; pip install --no-cache-dir -r requirements.txt
 RUN . venv/bin/activate; python3 -m pytest
 """
 
-pypi_test = f"""
+pypi_test = """
 FROM webdatasettest-base
 ENV SHELL=/bin/bash
 RUN git clone https://git@github.com/tmbdev/webdataset.git /tmp/webdataset
@@ -203,13 +202,15 @@ RUN . venv/bin/activate; python3 -m pytest
 """
 
 
-def docker_build(c, instructions, files=[], nocache=False):
+def docker_build(c, instructions, tag=None, files=[], nocache=False):
     with tempfile.TemporaryDirectory() as dir:
         with open(dir + "/Dockerfile", "w") as stream:
             stream.write(instructions)
         for fname in files:
             shutil.copy(fname, dir + "/.")
         flags = "--no-cache" if nocache else ""
+        if tag is not None:
+            flags += f" -t {tag}"
         c.run(f"cd {dir} && docker build {flags} .")
 
 
@@ -220,18 +221,20 @@ def here(s):
 @task
 def dockerbase(c):
     "Build a base container."
-    docker_build(c, base_container)
+    docker_build(c, base_container, tag="webdatasettest-base")
 
 
 @task(dockerbase)
 def githubtest(c):
     "Test the latest version on Github in a docker container."
+    dockerbase(c)
     docker_build(c, github_test, nocache=True)
 
 
 @task
 def pypitest(c):
     "Test the latest version on PyPI in a docker container."
+    dockerbase(c)
     docker_build(c, pypi_test, nocache=True)
 
 
