@@ -94,7 +94,7 @@ class ShardList(IterableDataset, Composable):
     def __init__(
         self,
         urls,
-        shuffle=lambda x: None,
+        shuffle=False,
         nodesplitter=None,
         splitter=split_by_worker,
         length=None,
@@ -143,6 +143,8 @@ class Shorthands:
         return self.then(iterators.unbatched)
 
     def shuffle(self, size, **kw):
+        if size < 1:
+            return self
         return self.then(iterators.shuffle, size, **kw)
 
     def map(self, f, handler=reraise_exception):
