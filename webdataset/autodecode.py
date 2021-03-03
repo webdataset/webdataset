@@ -218,7 +218,7 @@ def torch_video(key, data):
         fname = os.path.join(dirname, f"file.{extension}")
         with open(fname, "wb") as stream:
             stream.write(data)
-        return torchvision.io.read_video(fname)
+        return torchvision.io.read_video(fname, pts_unit="sec")
 
 
 ################################################################
