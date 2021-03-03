@@ -2,11 +2,7 @@ braceexpand
 numpy
 torch
 pytest
-<<<<<<< HEAD
 
 # these are optional, but most users will want them
 Pillow
 torchvision
-=======
-Pillow
->>>>>>> 657f54ea884f56b870f59723eeeab5dd2dd0d85a
