@@ -1,5 +1,8 @@
 braceexpand
 numpy
 torch
-torchvision
 pytest
+
+# these are optional, but most users will want them
+Pillow
+torchvision

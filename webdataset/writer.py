@@ -14,7 +14,6 @@ import time
 import json
 
 import numpy as np
-import PIL
 
 from . import gopen
 
@@ -28,6 +27,7 @@ def imageencoder(image, format="PNG"):  # skipcq: PYL-W0622
     :param format: compression format (PNG, JPEG, PPM)
 
     """
+    import PIL
     if isinstance(image, np.ndarray):
         if image.dtype in [np.dtype("f"), np.dtype("d")]:
             if not (np.amin(image) > -0.001 and np.amax(image) < 1.001):
