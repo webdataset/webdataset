@@ -57,8 +57,35 @@ def lookup_sym(sym, modules):
     return None
 
 
-def repeatedly(loader, nepochs=999999999, nbatches=999999999999):
+def repeatedly0(loader, nepochs=999999999, nbatches=999999999999):
     """Repeatedly returns batches from a DataLoader."""
     for epoch in range(nepochs):
         for sample in itt.islice(loader, nbatches):
             yield sample
+
+
+def guess_batchsize(batch):
+    return len(batch[0])
+
+
+def repeatedly(
+    source, nepochs=None, nbatches=None, nsamples=None, batchsize=guess_batchsize
+):
+    """Repeatedly yield samples from an iterator."""
+    epoch = 0
+    batch = 0
+    total = 0
+    while True:
+        for sample in source:
+            yield sample
+            print(batch)
+            batch += 1
+            if nbatches is not None and batch >= nbatches:
+                return
+            if nsamples is not None:
+                total += guess_batchsize(sample)
+                if total >= nsamples:
+                    return
+        epoch += 1
+        if nepochs is not None and epoch >= nepochs:
+            return
