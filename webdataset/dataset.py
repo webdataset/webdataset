@@ -20,13 +20,14 @@ import warnings
 import itertools as itt
 
 import braceexpand
-from torch.utils.data import IterableDataset
+from torch.utils.data import IterableDataset, DataLoader
 
 from . import tariterators
 from . import iterators
 from . import autodecode
 from . import shardcache
 from . import dbcache
+from . import utils
 from .utils import reraise_exception, lookup_sym, safe_eval
 
 
@@ -43,6 +44,10 @@ default_cache_size = int(
 class Composable:
     def __init__(self):
         super().__init__()
+
+    def source_(self, source):
+        self.source = source
+        return self
 
     def then(self, f, *args, length=True, **kw):
         """Compose this processor with a new processor defined by a function.
@@ -184,6 +189,17 @@ class Shorthands:
     def slice(self, *args):
         return self.pipe(itt.islice, *args)
 
+    def repeat(self, nepochs=None, nbatches=None, nsamples=None, batchsize=utils.guess_batchsize):
+        return self.compose(Repeatedly, nepochs=nepochs, nbatches=nbatches, nsamples=nsamples, batchsize=batchsize)
+
+
+class Repeatedly(IterableDataset, Composable, Shorthands):
+    def __init__(self, **kw):
+        self.kw = kw
+
+    def __iter__(self):
+        return utils.repeatedly(self.source, **self.kw)
+
 
 class Processor(IterableDataset, Composable, Shorthands):
     def __init__(self, source, f, *args, _kwa={}, length=True, **kw):
@@ -249,6 +265,10 @@ def WebDataset(
     result = result.then(tariterators.tar_file_expander, length=None, handler=handler)
     result = result.then(tariterators.group_by_keys, length=length)
     return result
+
+
+def WebLoader(*args, **kw):
+    return Processor(DataLoader(*args, **kw), utils.identity)
 
 
 class ResizedDataset(IterableDataset):

@@ -492,3 +492,39 @@ def test_chopped():
     cds = wds.ChoppedDataset(ds, 250, nominal=77)
     assert len(cds) == 77
     assert count_samples_tuple(cds, n=500) == 250
+
+
+def test_repeat():
+    ds = wds.WebDataset(local_data)
+    assert count_samples_tuple(ds.repeat(nepochs=2)) == 47 * 2
+
+
+def test_repeat2():
+    ds = wds.WebDataset(local_data).batched(2)
+    assert count_samples_tuple(ds.repeat(nbatches=20)) == 20
+
+
+def test_repeat3():
+    ds = wds.WebDataset(local_data).batched(2)
+    assert count_samples_tuple(ds.repeat(nsamples=7)) == 4
+
+
+def test_webloader():
+    ds = wds.WebDataset(local_data)
+    dl = wds.WebLoader(ds, num_workers=4, batch_size=3)
+    nsamples = count_samples_tuple(dl)
+    assert nsamples == (47+2)//3, nsamples
+
+
+def test_webloader_repeat():
+    ds = wds.WebDataset(local_data)
+    dl = wds.WebLoader(ds, num_workers=4, batch_size=3).repeat(nepochs=2)
+    nsamples = count_samples_tuple(dl)
+    assert nsamples == 2 * (47+2)//3, nsamples
+
+
+def test_webloader_unbatched():
+    ds = wds.WebDataset(local_data).to_tuple("png", "cls")
+    dl = wds.WebLoader(ds, num_workers=4, batch_size=3).unbatched()
+    nsamples = count_samples_tuple(dl)
+    assert nsamples == 47, nsamples
