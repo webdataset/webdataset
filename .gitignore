@@ -26,3 +26,5 @@ test-*.ipynb
 try-*.ipynb
 docs/webdataset
 *.mdb
+dist
+webdataset.egg-info
