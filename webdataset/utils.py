@@ -79,7 +79,6 @@ def repeatedly(
         for sample in source:
             yield sample
             batch += 1
-            print(batch, sample)
             if nbatches is not None and batch >= nbatches:
                 return
             if nsamples is not None:
