@@ -14,6 +14,7 @@ from .dataset import (
     Composable,
     Shorthands,
     WebDataset,
+    WebLoader,
     Processor,
     ChoppedDataset,
     ResizedDataset,
