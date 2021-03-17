@@ -156,7 +156,11 @@ class Shorthands:
         return self.then(iterators.map, f, handler=handler)
 
     def decode(
-        self, *args, pre=None, post=None, handler=reraise_exception,
+        self,
+        *args,
+        pre=None,
+        post=None,
+        handler=reraise_exception,
     ):
         # for backwards compatibility
         handlers = [
@@ -189,8 +193,20 @@ class Shorthands:
     def slice(self, *args):
         return self.pipe(itt.islice, *args)
 
-    def repeat(self, nepochs=None, nbatches=None, nsamples=None, batchsize=utils.guess_batchsize):
-        return self.compose(Repeatedly, nepochs=nepochs, nbatches=nbatches, nsamples=nsamples, batchsize=batchsize)
+    def repeat(
+        self,
+        nepochs=None,
+        nbatches=None,
+        nsamples=None,
+        batchsize=utils.guess_batchsize,
+    ):
+        return self.compose(
+            Repeatedly,
+            nepochs=nepochs,
+            nbatches=nbatches,
+            nsamples=nsamples,
+            batchsize=batchsize,
+        )
 
 
 class Repeatedly(IterableDataset, Composable, Shorthands):
@@ -199,6 +215,9 @@ class Repeatedly(IterableDataset, Composable, Shorthands):
 
     def __iter__(self):
         return utils.repeatedly(self.source, **self.kw)
+
+    def __len__(self):
+        return len(self.source)
 
 
 class Processor(IterableDataset, Composable, Shorthands):
