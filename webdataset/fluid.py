@@ -48,7 +48,6 @@ class Dataset(IterableDataset):
             cache_verbose=cache_verbose
         )
 
-
     def __getattr__(self, name):
         if not hasattr(self.dataset, name):
             raise AttributeError()
