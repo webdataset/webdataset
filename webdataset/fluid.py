@@ -30,6 +30,10 @@ class Dataset(IterableDataset):
         splitter=dataset.split_by_worker,
         handler=reraise_exception,
         shuffle=False,
+        cache_dir=dataset.default_cache_dir,
+        cache_size=dataset.default_cache_size,
+        cache_name=dataset.default_cache_name,
+        cache_verbose=dataset.default_cache_verbose
     ):
         super().__init__()
         self.dataset = dataset.WebDataset(
@@ -38,7 +42,12 @@ class Dataset(IterableDataset):
             splitter=splitter,
             handler=handler,
             length=length,
+            cache_dir=cache_dir,
+            cache_size=cache_size,
+            cache_name=cache_name,
+            cache_verbose=cache_verbose
         )
+
 
     def __getattr__(self, name):
         if not hasattr(self.dataset, name):
