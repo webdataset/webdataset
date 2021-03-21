@@ -42,7 +42,7 @@ class Dataset(IterableDataset):
         cache_verbose=default_cache_verbose
     ):
         super().__init__()
-        self.dataset = WebDataset(
+        self._dataset = WebDataset(
             urls,
             shardshuffle=shuffle,
             splitter=splitter,
@@ -55,15 +55,15 @@ class Dataset(IterableDataset):
         )
 
     def __getattr__(self, name):
-        if not hasattr(self.dataset, name):
+        if not hasattr(self._dataset, name):
             raise AttributeError()
         def f(*args, **kw):
-            self.dataset = getattr(self.dataset, name)(*args, **kw)
+            self._dataset = getattr(self._dataset, name)(*args, **kw)
             return self
         return f
 
     def __iter__(self):
-        return iter(self.dataset)
+        return iter(self._dataset)
 
     def __len__(self):
-        return len(self.dataset)
+        return len(self._dataset)
