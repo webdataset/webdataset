@@ -131,18 +131,18 @@ def transformer(transformers):
 
 # def map_stream(data, f=None, handler=reraise_exception):
 #     """Map entire samples using the given function.
-# 
+#
 #     data: iterator
 #     f: function from samples to samples
 #     returns: iterator over transformed samples
-# 
+#
 #     """
-# 
+#
 #     if f is None:
-# 
+#
 #         def f(x):  # skipcq: PYL-E0102
 #             return x
-# 
+#
 #     for sample in data:
 #         try:
 #             result = f(sample)
@@ -340,7 +340,10 @@ def default_collation_fn(samples, combine_tensors=True, combine_scalars=True):
 
 
 def batched(
-    data, batchsize=20, collation_fn=default_collation_fn, partial=True,
+    data,
+    batchsize=20,
+    collation_fn=default_collation_fn,
+    partial=True,
 ):
     """Create batches of the given size.
 

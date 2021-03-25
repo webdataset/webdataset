@@ -285,7 +285,8 @@ class Decoder:
     handlers until some handler returns something other than None.
     """
 
-    def __init__(self, handlers, pre=None, post=None):
+    def __init__(self, handlers, pre=None, post=None, only=None):
+        self.only = only if only is None else set(only)
         if pre is None:
             pre = default_pre_handlers
         if post is None:
@@ -310,6 +311,8 @@ class Decoder:
         result = {}
         assert isinstance(sample, dict), sample
         for k, v in list(sample.items()):
+            if self.only is not None and k not in self.only:
+                continue
             if k[0] == "_":
                 if isinstance(v, bytes):
                     v = v.decode("utf-8")
