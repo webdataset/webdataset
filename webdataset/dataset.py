@@ -74,6 +74,29 @@ class Composable:
         return constructor(*args, **kw).source_(self)
 
 
+def split_by_node(urls, group=None):
+    """Selects a subset of urls based on Torch node info
+
+    Used as a shard selection function in Dataset."""
+    import torch
+
+    urls = [url for url in urls]
+
+    assert isinstance(urls, list)
+
+    if not torch.distributed.is_available() or not torch.distributed.is_initialized():
+        return urls
+
+    rank = torch.distributed.get_rank(group=group)
+    size = torch.distributed.get_world_size(group=group)
+    if size > 1:
+        if wid == 0 and len(urls) < size:
+            warnings.warn(f"world_size {size} > num_shards {len(urls)}")
+        return urls[rank::size]
+    else:
+        return urls
+
+
 def split_by_worker(urls):
     """Selects a subset of urls based on Torch get_worker_info.
 
@@ -107,6 +130,8 @@ class ShardList(IterableDataset, Composable):
         super().__init__()
         self.shuffle = shuffle
         self.length = length
+        if nodesplitter is True:
+            nodesplitter = split_by_node
         self.nodesplitter = nodesplitter
         self.splitter = splitter
         if isinstance(urls, str):
