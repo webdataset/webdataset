@@ -31,6 +31,10 @@ class DBCache(IterableDataset):
         if self.verbose:
             print(f"[DBCache opened {dbname} size {self.size} total {self.total}]", file=sys.stderr, flush=True)
 
+    def source_(self, source):
+        self.source = source
+        return self
+    
     def __call__(self, source):
         self.source = source
         return self

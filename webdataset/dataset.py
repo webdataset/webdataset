@@ -166,8 +166,8 @@ class Shorthands:
     def __init__(self):
         super().__init__()
 
-    def batched(self, batchsize, partial=True):
-        return self.then(iterators.batched, batchsize=batchsize, partial=partial)
+    def batched(self, batchsize, collation_fn=iterators.default_collation_fn, partial=True):
+        return self.then(iterators.batched, batchsize=batchsize, collation_fn=collation_fn, partial=partial)
 
     def unbatched(self):
         return self.then(iterators.unbatched)
