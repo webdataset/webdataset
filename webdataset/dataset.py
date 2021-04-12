@@ -90,7 +90,7 @@ def split_by_node(urls, group=None):
     rank = torch.distributed.get_rank(group=group)
     size = torch.distributed.get_world_size(group=group)
     if size > 1:
-        if wid == 0 and len(urls) < size:
+        if rank == 0 and len(urls) < size:
             warnings.warn(f"world_size {size} > num_shards {len(urls)}")
         return urls[rank::size]
     else:
@@ -123,7 +123,7 @@ class ShardList(IterableDataset, Composable):
         self,
         urls,
         shuffle=False,
-        nodesplitter=None,
+        nodesplitter=True,
         splitter=split_by_worker,
         length=None,
     ):
@@ -286,7 +286,7 @@ def WebDataset(
     cache_name=default_cache_name,
     cache_verbose=default_cache_verbose,
     splitter=split_by_worker,
-    nodesplitter=None,
+    nodesplitter=True,
     handler=reraise_exception,
     length=None,
 ):
