@@ -18,6 +18,10 @@ from subprocess import PIPE, Popen
 from urllib.parse import urlparse
 
 
+# global used for printing additional node information during verbose output
+nodeinfo = ""
+
+
 class Pipe:
     """Wrapper class for subprocess.Pipe.
 
@@ -69,9 +73,9 @@ class Pipe:
             self.status = self.proc.wait()
             verbose = int(os.environ.get("GOPEN_VERBOSE", 0))
             if verbose:
-                print(f"pipe exit [{self.status}] {self.args}", file=sys.stderr)
+                print(f"pipe exit [{self.status}] {self.args} {nodeinfo}", file=sys.stderr)
             if self.status not in self.ignore_status and not self.ignore_errors:
-                raise Exception(f"{self.args}: exit {self.status} (read)")
+                raise Exception(f"{self.args}: exit {self.status} (read) {nodeinfo}")
 
     def read(self, *args, **kw):
         """Wraps stream.read and checks status."""
@@ -173,7 +177,7 @@ def gopen(url, mode="rb", bufsize=8192, **kw):
     global fallback_gopen
     verbose = int(os.environ.get("GOPEN_VERBOSE", 0))
     if verbose:
-        print("GOPEN", url, file=sys.stderr)
+        print("GOPEN", url, nodeinfo, file=sys.stderr)
     assert mode in ["rb", "wb"], mode
     if url == "-":
         if mode == "rb":

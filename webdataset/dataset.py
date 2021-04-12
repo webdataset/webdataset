@@ -28,6 +28,7 @@ from . import autodecode
 from . import shardcache
 from . import dbcache
 from . import utils
+from . import gopen
 from .utils import reraise_exception, lookup_sym, safe_eval
 
 
@@ -90,6 +91,7 @@ def split_by_node(urls, group=None):
     rank = torch.distributed.get_rank(group=group)
     size = torch.distributed.get_world_size(group=group)
     if size > 1:
+        gopen.nodeinfo = f"[{rank} of {size}]"
         if rank == 0 and len(urls) < size:
             warnings.warn(f"world_size {size} > num_shards {len(urls)}")
         return urls[rank::size]
