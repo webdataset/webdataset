@@ -19,7 +19,7 @@ from urllib.parse import urlparse
 
 
 # global used for printing additional node information during verbose output
-nodeinfo = ""
+info = {}
 
 
 class Pipe:
@@ -73,9 +73,9 @@ class Pipe:
             self.status = self.proc.wait()
             verbose = int(os.environ.get("GOPEN_VERBOSE", 0))
             if verbose:
-                print(f"pipe exit [{self.status}] {self.args} {nodeinfo}", file=sys.stderr)
+                print(f"pipe exit [{self.status}] {self.args} {info}", file=sys.stderr)
             if self.status not in self.ignore_status and not self.ignore_errors:
-                raise Exception(f"{self.args}: exit {self.status} (read) {nodeinfo}")
+                raise Exception(f"{self.args}: exit {self.status} (read) {info}")
 
     def read(self, *args, **kw):
         """Wraps stream.read and checks status."""
@@ -177,7 +177,7 @@ def gopen(url, mode="rb", bufsize=8192, **kw):
     global fallback_gopen
     verbose = int(os.environ.get("GOPEN_VERBOSE", 0))
     if verbose:
-        print("GOPEN", url, nodeinfo, file=sys.stderr)
+        print("GOPEN", url, info, file=sys.stderr)
     assert mode in ["rb", "wb"], mode
     if url == "-":
         if mode == "rb":

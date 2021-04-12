@@ -75,28 +75,35 @@ class Composable:
         return constructor(*args, **kw).source_(self)
 
 
-def split_by_node(urls, group=None):
-    """Selects a subset of urls based on Torch node info
+class SplitByNode:
 
-    Used as a shard selection function in Dataset."""
-    import torch
+    def __init__(self, group=None):
+        self.rank = -1
+        self.size = -1
+        try:
+            import torch
+            if not torch.distributed.is_available() or not torch.distributed.is_initialized():
+                return
+        except Exception as e:
+            print(e)
+            return
+        self.rank = torch.distributed.get_rank(group=group)
+        self.size = torch.distributed.get_world_size(group=group)
 
-    urls = [url for url in urls]
-
-    assert isinstance(urls, list)
-
-    if not torch.distributed.is_available() or not torch.distributed.is_initialized():
-        return urls
-
-    rank = torch.distributed.get_rank(group=group)
-    size = torch.distributed.get_world_size(group=group)
-    if size > 1:
-        gopen.nodeinfo = f"[{rank} of {size}]"
-        if rank == 0 and len(urls) < size:
-            warnings.warn(f"world_size {size} > num_shards {len(urls)}")
-        return urls[rank::size]
-    else:
-        return urls
+    def __call__(self, urls):
+        urls = [url for url in urls]
+        assert isinstance(urls, list)
+        if self.size > 1:
+            import socket
+            gopen.info["rank"] = self.rank
+            gopen.info["size"] = self.size
+            gopen.info["host"] = socket.hostname()
+            gopen.info["pid"] = os.getpid()
+            if self.rank == 0 and len(urls) < self.size:
+                warnings.warn(f"world_size {self.size} > num_shards {len(urls)}")
+            return urls[self.rank::self.size]
+        else:
+            return urls
 
 
 def split_by_worker(urls):
@@ -113,6 +120,8 @@ def split_by_worker(urls):
     if worker_info is not None:
         wid = worker_info.id
         num_workers = worker_info.num_workers
+        gopen.info["worker_id"] = wid
+        gopen.info["num_workers"] = num_workers
         if wid == 0 and len(urls) < num_workers:
             warnings.warn(f"num_workers {num_workers} > num_shards {len(urls)}")
         return urls[wid::num_workers]
@@ -133,7 +142,7 @@ class ShardList(IterableDataset, Composable):
         self.shuffle = shuffle
         self.length = length
         if nodesplitter is True:
-            nodesplitter = split_by_node
+            nodesplitter = SplitByNode()
         self.nodesplitter = nodesplitter
         self.splitter = splitter
         if isinstance(urls, str):
