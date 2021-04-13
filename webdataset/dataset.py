@@ -97,7 +97,7 @@ class SplitByNode:
             import socket
             gopen.info["rank"] = self.rank
             gopen.info["size"] = self.size
-            gopen.info["host"] = socket.hostname()
+            gopen.info["host"] = socket.gethostname()
             gopen.info["pid"] = os.getpid()
             if self.rank == 0 and len(urls) < self.size:
                 warnings.warn(f"world_size {self.size} > num_shards {len(urls)}")
