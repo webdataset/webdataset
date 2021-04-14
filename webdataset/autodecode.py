@@ -28,6 +28,9 @@ from .checks import checkmember, checknotnone
 check_present = int(os.environ.get("WDS_CHECK_DECODE", 0))
 
 
+image_extensions = "jpg jpeg png ppm pgm pbm pnm".split()
+
+
 ################################################################
 # handle basic datatypes
 ################################################################
@@ -160,14 +163,16 @@ class ImageHandler:
 
     """
 
-    def __init__(self, imagespec):
+    def __init__(self, imagespec, extensions=image_extensions):
         checkmember(imagespec, list(imagespecs.keys()), "unknown image specification")
         self.imagespec = imagespec.lower()
+        self.extensions = extensions
 
     def __call__(self, key, data):
         import PIL.Image
+
         extension = re.sub(r".*[.]", "", key)
-        if extension.lower() not in "jpg jpeg png ppm pgm pbm pnm".split():
+        if extension.lower() not in self.extensions:
             return None
         imagespec = self.imagespec
         atype, etype, mode = imagespecs[imagespec]
