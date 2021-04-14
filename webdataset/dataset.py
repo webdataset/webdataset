@@ -87,6 +87,14 @@ class SplitByNode:
         except Exception as e:
             print(e)
             return
+        if group is None:
+            # group = torch.distributed.group.WORLD
+            try:
+                # some versions of torch don't like group=None
+                import torch.distributed.distributed_c10d
+                group = torch.distributed.distributed_c10d._default_pg
+            except:
+                pass
         self.rank = torch.distributed.get_rank(group=group)
         self.size = torch.distributed.get_world_size(group=group)
 
