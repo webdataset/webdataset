@@ -204,13 +204,14 @@ class Shorthands:
         *args,
         pre=None,
         post=None,
+        only=None,
         handler=reraise_exception,
     ):
         # for backwards compatibility
         handlers = [
             autodecode.ImageHandler(h) if isinstance(h, str) else h for h in args
         ]
-        decoder = autodecode.Decoder(handlers, pre=pre, post=post)
+        decoder = autodecode.Decoder(handlers, pre=pre, post=post, only=only)
         return self.map(decoder, handler=handler)
 
     def rename(self, handler=reraise_exception, **kw):
