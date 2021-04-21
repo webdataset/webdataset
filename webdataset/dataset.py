@@ -87,6 +87,14 @@ class SplitByNode:
         except Exception as e:
             print(e)
             return
+        if group is None:
+            # group = torch.distributed.group.WORLD
+            try:
+                # some versions of torch don't like group=None
+                import torch.distributed.distributed_c10d
+                group = torch.distributed.distributed_c10d._default_pg
+            except:
+                pass
         self.rank = torch.distributed.get_rank(group=group)
         self.size = torch.distributed.get_world_size(group=group)
 
@@ -196,13 +204,14 @@ class Shorthands:
         *args,
         pre=None,
         post=None,
+        only=None,
         handler=reraise_exception,
     ):
         # for backwards compatibility
         handlers = [
             autodecode.ImageHandler(h) if isinstance(h, str) else h for h in args
         ]
-        decoder = autodecode.Decoder(handlers, pre=pre, post=post)
+        decoder = autodecode.Decoder(handlers, pre=pre, post=post, only=only)
         return self.map(decoder, handler=handler)
 
     def rename(self, handler=reraise_exception, **kw):
