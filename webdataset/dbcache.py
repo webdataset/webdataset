@@ -19,9 +19,7 @@ class DBCache(IterableDataset):
             return
         self.db = sqlite3.connect(dbname)
         self.shuffle = shuffle
-        self.db.execute(
-            """create table if not exists cache (key text primary key, data blob)"""
-        )
+        self.db.execute("""create table if not exists cache (key text primary key, data blob)""")
         self.db.execute("""create table if not exists meta (key text, value text)""")
         self.total = self.db.execute("select count(*) from cache").fetchone()[0]
         if self.getmeta("size") is not None:
@@ -29,12 +27,14 @@ class DBCache(IterableDataset):
         else:
             self.size = size
         if self.verbose:
-            print(f"[DBCache opened {dbname} size {self.size} total {self.total}]", file=sys.stderr, flush=True)
+            print(
+                f"[DBCache opened {dbname} size {self.size} total {self.total}]", file=sys.stderr, flush=True
+            )
 
     def source_(self, source):
         self.source = source
         return self
-    
+
     def __call__(self, source):
         self.source = source
         return self
@@ -57,7 +57,9 @@ class DBCache(IterableDataset):
 
     def dbiter(self):
         if self.verbose:
-            print(f"[DBCache starting dbiter total {self.total} size {self.size}]", file=sys.stderr, flush=True)
+            print(
+                f"[DBCache starting dbiter total {self.total} size {self.size}]", file=sys.stderr, flush=True
+            )
         query = "select data from cache"
         if self.shuffle:
             query += " order by random()"
@@ -92,9 +94,7 @@ class DBCache(IterableDataset):
             data = stream.getbuffer()
             key = sample.get("__key__") if "__key__" in sample else get_uuid(data)
             if not self.key_exists(key):
-                self.db.execute(
-                    "insert into cache (key, data) values (?, ?)", (key, data)
-                )
+                self.db.execute("insert into cache (key, data) values (?, ?)", (key, data))
                 self.total += 1
                 if self.total % 10 == 0:
                     self.db.commit()
@@ -103,5 +103,9 @@ class DBCache(IterableDataset):
         self.db.commit()
 
         if self.verbose:
-            print(f"[DBCache finished caching total {self.total} (size {self.size})]", file=sys.stderr, flush=True)
+            print(
+                f"[DBCache finished caching total {self.total} (size {self.size})]",
+                file=sys.stderr,
+                flush=True,
+            )
             self.setmeta("size", self.total)
