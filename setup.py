@@ -36,5 +36,5 @@ setuptools.setup(
     packages=["webdataset"],
     python_requires=">=3.6",
     scripts=scripts,
-    install_requires="braceexpand numpy torch".split()
+    install_requires="braceexpand numpy".split()
 )
