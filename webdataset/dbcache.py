@@ -1,10 +1,12 @@
 import sys
-import torch
-from torch.utils.data import IterableDataset
 import sqlite3
 import io
 import uuid
 
+try:
+    from torch.utils.data import IterableDataset
+except:
+    from .mock import IterableDataset
 
 def get_uuid(data):
     return str(uuid.uuid3(uuid.NAMESPACE_URL, data))
@@ -56,6 +58,7 @@ class DBCache(IterableDataset):
         return self.size
 
     def dbiter(self):
+        import torch
         if self.verbose:
             print(
                 f"[DBCache starting dbiter total {self.total} size {self.size}]", file=sys.stderr, flush=True
@@ -74,6 +77,7 @@ class DBCache(IterableDataset):
         ).fetchone()[0]
 
     def __iter__(self):
+        import torch
 
         if self.dbname is None:
             yield from iter(self.source)

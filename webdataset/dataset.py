@@ -20,7 +20,6 @@ import warnings
 import itertools as itt
 
 import braceexpand
-from torch.utils.data import IterableDataset, DataLoader
 
 from . import tariterators
 from . import iterators
@@ -30,6 +29,12 @@ from . import dbcache
 from . import utils
 from . import gopen
 from .utils import reraise_exception, lookup_sym, safe_eval
+
+
+try:
+    from torch.utils.data import IterableDataset, DataLoader
+except:
+    from .mock import IterableDataset, DataLoader
 
 
 default_cache_dir = os.path.expanduser(os.environ.get("WEBDATASET_CACHE", ""))

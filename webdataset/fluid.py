@@ -11,8 +11,6 @@
 
 __all__ = """FluidPipes Dataset""".split()
 
-from torch.utils.data import IterableDataset
-
 from . import autodecode
 from . import iterators
 from . import tariterators
@@ -25,6 +23,12 @@ from .dataset import (
     default_cache_verbose
 )
 from .utils import reraise_exception
+
+try:
+    from torch.utils.data import IterableDataset
+except:
+    from .mock import IterableDataset
+
 
 
 class Dataset(IterableDataset):
