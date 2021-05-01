@@ -18,7 +18,7 @@ import os
 import random
 import warnings
 import itertools as itt
-
+import socket
 import braceexpand
 
 from . import tariterators
@@ -29,6 +29,7 @@ from . import dbcache
 from . import utils
 from . import gopen
 from .utils import reraise_exception, lookup_sym, safe_eval
+from .workerenv import split_by_worker, split_by_node
 
 
 try:
@@ -38,13 +39,9 @@ except:
 
 
 default_cache_dir = os.path.expanduser(os.environ.get("WEBDATASET_CACHE", ""))
-default_cache_name = lookup_sym(
-    os.environ.get("WEBDATASET_CACHE_NAME", "shard_uuid"), ".shardcache".split()
-)
+default_cache_name = lookup_sym(os.environ.get("WEBDATASET_CACHE_NAME", "shard_uuid"), ".shardcache".split())
 default_cache_verbose = int(safe_eval(os.environ.get("WEBDATASET_CACHE_VERBOSE", "1")))
-default_cache_size = int(
-    float(safe_eval(os.environ.get("WEBDATASET_CACHE_SIZE", "1e15")))
-)
+default_cache_size = int(float(safe_eval(os.environ.get("WEBDATASET_CACHE_SIZE", "1e15"))))
 
 
 class Composable:
@@ -80,82 +77,19 @@ class Composable:
         return constructor(*args, **kw).source_(self)
 
 
-class SplitByNode:
-
-    def __init__(self, group=None):
-        self.rank = -1
-        self.size = -1
-        try:
-            import torch
-            if not torch.distributed.is_available() or not torch.distributed.is_initialized():
-                return
-        except Exception as e:
-            print(e)
-            return
-        if group is None:
-            # group = torch.distributed.group.WORLD
-            try:
-                # some versions of torch don't like group=None
-                import torch.distributed.distributed_c10d
-                group = torch.distributed.distributed_c10d._default_pg
-            except:
-                pass
-        self.rank = torch.distributed.get_rank(group=group)
-        self.size = torch.distributed.get_world_size(group=group)
-
-    def __call__(self, urls):
-        urls = [url for url in urls]
-        assert isinstance(urls, list)
-        if self.size > 1:
-            import socket
-            gopen.info["rank"] = self.rank
-            gopen.info["size"] = self.size
-            gopen.info["host"] = socket.gethostname()
-            gopen.info["pid"] = os.getpid()
-            if self.rank == 0 and len(urls) < self.size:
-                warnings.warn(f"world_size {self.size} > num_shards {len(urls)}")
-            return urls[self.rank::self.size]
-        else:
-            return urls
-
-
-def split_by_worker(urls):
-    """Selects a subset of urls based on Torch get_worker_info.
-
-    Used as a shard selection function in Dataset."""
-    import torch
-
-    urls = [url for url in urls]
-
-    assert isinstance(urls, list)
-
-    worker_info = torch.utils.data.get_worker_info()
-    if worker_info is not None:
-        wid = worker_info.id
-        num_workers = worker_info.num_workers
-        gopen.info["worker_id"] = wid
-        gopen.info["num_workers"] = num_workers
-        if wid == 0 and len(urls) < num_workers:
-            warnings.warn(f"num_workers {num_workers} > num_shards {len(urls)}")
-        return urls[wid::num_workers]
-    else:
-        return urls
-
-
 class ShardList(IterableDataset, Composable):
     def __init__(
         self,
         urls,
         shuffle=False,
-        nodesplitter=True,
+        nodesplitter=split_by_node,
         splitter=split_by_worker,
         length=None,
     ):
         super().__init__()
         self.shuffle = shuffle
         self.length = length
-        if nodesplitter is True:
-            nodesplitter = SplitByNode()
+        nodesplitter = split_by_node if nodesplitter is True else nodesplitter
         self.nodesplitter = nodesplitter
         self.splitter = splitter
         if isinstance(urls, str):
@@ -180,9 +114,7 @@ class ShardList(IterableDataset, Composable):
 
     def __len__(self):
         if self.length is None:
-            raise ValueError(
-                "length requested, but no length specified for ShardIterator"
-            )
+            raise ValueError("length requested, but no length specified for ShardIterator")
         return self.length
 
 
@@ -213,9 +145,7 @@ class Shorthands:
         handler=reraise_exception,
     ):
         # for backwards compatibility
-        handlers = [
-            autodecode.ImageHandler(h) if isinstance(h, str) else h for h in args
-        ]
+        handlers = [autodecode.ImageHandler(h) if isinstance(h, str) else h for h in args]
         decoder = autodecode.Decoder(handlers, pre=pre, post=post, only=only)
         return self.map(decoder, handler=handler)
 
@@ -286,9 +216,7 @@ class Processor(IterableDataset, Composable, Shorthands):
         return self
 
     def __iter__(self):
-        assert (
-            self.source is not None
-        ), f"must set source before calling iter {self.f} {self.args} {self.kw}"
+        assert self.source is not None, f"must set source before calling iter {self.f} {self.args} {self.kw}"
         assert callable(self.f), self.f
         return self.f(iter(self.source), *self.args, **self.kw)
 

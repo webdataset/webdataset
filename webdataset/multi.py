@@ -31,9 +31,8 @@ def reader(dsfun, urls, sockname, keywords, index=-1):
 
 class MultiLoader:
 
-    def __init__(self, dsfun, urls, keywords={}, workers=4, verbose=False, keepold=False):
-        self.dsfun = dsfun
-        self.urls = urls
+    def __init__(self, dataset, workers=4, verbose=False, keepold=False):
+        self.dataset = dataset
         self.keywords = keywords
         self.workers = workers
         self.verbose = verbose
