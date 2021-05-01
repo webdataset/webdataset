@@ -3,11 +3,12 @@ torchvision
 torchaudio
 jupyterlab
 pytest
+torch
+torchvision
+
 #Pillow
 #numpy
 #scipy
-#torch
-#torchvision
 #matplotlib
 #mkdocs
 #nbconvert
