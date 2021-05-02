@@ -56,7 +56,7 @@ class MultiLoader:
     def __iter__(self):
         if not self.nokill:
             self.kill()
-        self.sockname = "ipc://" + prefix + str(uuid.uuid4())
+        self.sockname = "ipc://" + self.prefix + str(uuid.uuid4())
         self.socket = self.ctx.socket(zmq.PULL)
         self.socket.bind(self.sockname)
         if self.verbose:
