@@ -30,7 +30,7 @@ def reader(dataset, sockname, index):
 
 class MultiLoader:
 
-    def __init__(self, dataset, workers=4, verbose=False, nokill=False):
+    def __init__(self, dataset, workers=4, verbose=False, nokill=False, prefix="/tmp/_multi-"):
         self.dataset = dataset
         self.workers = workers
         self.verbose = verbose
@@ -38,6 +38,7 @@ class MultiLoader:
         self.socket = None
         self.ctx = zmq.Context.instance()
         self.nokill = nokill
+        self.prefix = prefix
 
     def kill(self):
         for pid in self.pids:
@@ -55,7 +56,7 @@ class MultiLoader:
     def __iter__(self):
         if not self.nokill:
             self.kill()
-        self.sockname = "ipc://" + str(uuid.uuid4())
+        self.sockname = "ipc://" + prefix + str(uuid.uuid4())
         self.socket = self.ctx.socket(zmq.PULL)
         self.socket.bind(self.sockname)
         if self.verbose:
