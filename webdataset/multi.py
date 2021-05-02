@@ -16,13 +16,12 @@ class Finished:
         self.__dict__.update(kw)
 
 
-def reader(dsfun, urls, sockname, keywords, index=-1):
+def reader(dataset, sockname, index):
     global the_protocol
     ctx = zmq.Context.instance()
     sock = ctx.socket(zmq.PUSH)
     sock.connect(sockname)
-    ds = dsfun(urls, **keywords)
-    for sample in ds:
+    for sample in dataset:
         data = pickle.dumps(sample, protocol=the_protocol)
         sock.send(data)
     sock.send(pickle.dumps(Finished(index=index)))
@@ -31,15 +30,14 @@ def reader(dsfun, urls, sockname, keywords, index=-1):
 
 class MultiLoader:
 
-    def __init__(self, dataset, workers=4, verbose=False, keepold=False):
+    def __init__(self, dataset, workers=4, verbose=False, nokill=False):
         self.dataset = dataset
-        self.keywords = keywords
         self.workers = workers
         self.verbose = verbose
         self.pids = []
         self.socket = None
         self.ctx = zmq.Context.instance()
-        self.keepold = keepold
+        self.nokill = nokill
 
     def kill(self):
         for pid in self.pids:
@@ -55,7 +53,7 @@ class MultiLoader:
         self.socket = None
 
     def __iter__(self):
-        if not self.keepold:
+        if not self.nokill:
             self.kill()
         self.sockname = "ipc://" + str(uuid.uuid4())
         self.socket = self.ctx.socket(zmq.PULL)
@@ -64,7 +62,7 @@ class MultiLoader:
             print("#", self.sockname)
         self.pids = [None] * self.workers
         for index in range(self.workers):
-            args = (self.dsfun, self.urls, self.sockname, self.keywords, index)
+            args = (self.dataset, self.sockname, index)
             self.pids[index] = mp.Process(target=reader, args=args)
         all_pids.update(self.pids)
         for pid in self.pids:
