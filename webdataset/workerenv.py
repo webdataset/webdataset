@@ -77,8 +77,8 @@ def get_worker_environment():
     try:
         worker_environment = TorchWorkerEnvironment()
         return worker_environment
-    except Exception as e:
-        print(e)
+    except ModuleNotFoundError:
+        pass
     worker_environment = WorkerEnvironment()
     return worker_environment
 
