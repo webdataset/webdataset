@@ -67,8 +67,8 @@ class TorchWorkerEnvironment(WorkerEnvironment):
                 self.rank = torch.distributed.get_rank(group=group)
                 self.world_size = torch.distributed.get_world_size(group=group)
             except:
-                self.rank = os.environ["RANK"]
-                self.world_size = os.environ["WORLD_SIZE"]
+                self.rank = int(os.environ["RANK"])
+                self.world_size = int(os.environ["WORLD_SIZE"])
 
         worker_info = torch.utils.data.get_worker_info()
 
