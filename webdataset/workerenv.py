@@ -32,6 +32,9 @@ from .utils import reraise_exception, lookup_sym, safe_eval
 worker_environment = None
 
 
+too_few_shards_warning = int(os.environ.get("WDS_WARNINGS", 1))
+
+
 def worker_id():
     return socket.gethostname(), os.getpid()
 
@@ -96,7 +99,7 @@ def split_by_node(urls, env=None):
     gopen.info["size"] = env.world_size
     gopen.info["host"] = socket.gethostname()
     gopen.info["pid"] = os.getpid()
-    if env.rank == 0 and len(urls) < env.world_size:
+    if too_few_shards_warning and env.rank == 0 and len(urls) < env.world_size:
         warnings.warn(f"world_size {env.world_size} > num_shards {len(urls)}")
     return urls[env.rank :: env.world_size]
 
@@ -110,6 +113,6 @@ def split_by_worker(urls, env=None):
     assert isinstance(urls, list)
     gopen.info["worker_id"] = env.worker
     gopen.info["num_workers"] = env.nworkers
-    if env.worker == 0 and len(urls) < env.nworkers:
+    if too_few_shards_warning and env.worker == 0 and len(urls) < env.nworkers:
         warnings.warn(f"num_workers {env.nworkers} > num_shards {len(urls)}")
     return urls[env.worker :: env.nworkers]
