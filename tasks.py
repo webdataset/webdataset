@@ -31,8 +31,17 @@ def venv(c):
 
 @task
 def virtualenv(c):
-    "Build the virtualenv (minimal)."
+    "Build the virtualenv."
     venv(c)
+
+
+@task
+def minenv(c):
+    "Build the virtualenv (minimal)."
+    c.run(f"git config core.hooksPath .githooks")
+    c.run(f"test -d {VENV} || python3 -m venv {VENV}")
+    c.run(f"{ACTIVATE}{PIP} install -r requirements.txt")
+    print("done")
 
 
 @task

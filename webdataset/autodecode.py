@@ -12,15 +12,14 @@ or over HTTP connections.
 
 __all__ = "WebDataset tariterator default_handlers imagehandler".split()
 
+import io
+import json
+import os
 import pickle
 import re
-import os
+import tempfile
 
 import numpy as np
-import json
-import tempfile
-import io
-
 
 from .checks import checkmember, checknotnone
 

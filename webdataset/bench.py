@@ -1,8 +1,8 @@
 import argparse
 import time
 from collections import Counter
-from . import dataset
 
+from . import dataset
 
 class TotalSize:
 

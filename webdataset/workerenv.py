@@ -59,9 +59,13 @@ class TorchWorkerEnvironment(WorkerEnvironment):
         super().__init__()
 
         if torch.distributed.is_available() and torch.distributed.is_initialized():
-            group = torch.distributed.distributed_c10d._default_pg
-            self.rank = torch.distributed.get_rank(group=group)
-            self.world_size = torch.distributed.get_world_size(group=group)
+            try:
+                group = torch.distributed.distributed_c10d._default_pg
+                self.rank = torch.distributed.get_rank(group=group)
+                self.world_size = torch.distributed.get_world_size(group=group)
+            except:
+                self.rank = os.environ["RANK"]
+                self.world_size = os.environ["WORLD_SIZE"]
 
         worker_info = torch.utils.data.get_worker_info()
 

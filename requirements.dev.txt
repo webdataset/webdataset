@@ -6,6 +6,13 @@ pytest
 torch
 torchvision
 
+isort
+black
+mypy
+flake8
+pydocstyle
+bandit
+
 #Pillow
 #numpy
 #scipy

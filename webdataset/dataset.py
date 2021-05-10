@@ -14,23 +14,17 @@ __all__ = """Dataset tariterator default_handlers imagehandler
 reraise_exception ignore_and_continue warn_and_continue ignore_and_stop warn_and_stop
 """.split()
 
+import itertools as itt
 import os
 import random
-import warnings
-import itertools as itt
 import socket
+import warnings
+
 import braceexpand
 
-from . import tariterators
-from . import iterators
-from . import autodecode
-from . import shardcache
-from . import dbcache
-from . import utils
-from . import gopen
-from .utils import reraise_exception, lookup_sym, safe_eval
-from .workerenv import split_by_worker, split_by_node
-
+from . import autodecode, dbcache, gopen, iterators, shardcache, tariterators, utils
+from .utils import lookup_sym, reraise_exception, safe_eval
+from .workerenv import split_by_node, split_by_worker
 
 try:
     from torch.utils.data import IterableDataset, DataLoader
