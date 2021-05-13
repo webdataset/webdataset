@@ -9,7 +9,6 @@ __all__ = "tenbin dataset writer".split()
 from . import tenbin
 from .fluid import Dataset
 from .dataset import (
-    split_by_worker,
     ShardList,
     Composable,
     Shorthands,
@@ -19,6 +18,10 @@ from .dataset import (
     ChoppedDataset,
     ResizedDataset,
     MockDataset,
+)
+from .workerenv import (
+    split_by_node,
+    split_by_worker,
 )
 from .utils import (
     reraise_exception,

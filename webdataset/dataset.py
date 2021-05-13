@@ -17,18 +17,16 @@ reraise_exception ignore_and_continue warn_and_continue ignore_and_stop warn_and
 import itertools as itt
 import os
 import random
-import socket
-import warnings
 
 import braceexpand
 
-from . import autodecode, dbcache, gopen, iterators, shardcache, tariterators, utils
+from . import autodecode, dbcache, iterators, shardcache, tariterators, utils
 from .utils import lookup_sym, reraise_exception, safe_eval
 from .workerenv import split_by_node, split_by_worker
 
 try:
     from torch.utils.data import IterableDataset, DataLoader
-except:
+except ModuleNotFoundError:
     from .mock import IterableDataset, DataLoader
 
 
