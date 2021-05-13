@@ -182,6 +182,16 @@ class Shorthands:
             batchsize=batchsize,
         )
 
+    def test(self, length=None, checker=None, generator=None, mocklength=None, mock=False):
+        return self.compose(
+            DatasetOutput,
+            length=length,
+            checker=checker,
+            generator=generator,
+            mocklength=mocklength,
+            mock=mock,
+        )
+
 
 class Repeatedly(IterableDataset, Composable, Shorthands):
     def __init__(self, **kw):
@@ -260,6 +270,45 @@ def WebDataset(
 
 def WebLoader(*args, **kw):
     return Processor(DataLoader(*args, **kw), utils.identity)
+
+
+class DatasetTest(IterableDataset, Composable, Shorthands):
+    """Perform final checks on an IterableDataset and permit easy mock tests."""
+
+    def __init__(self, length=None, checker=None, generator=None, mocklength=10000, mock=False):
+        super().__init__()
+        self.source = None
+        self.length = length
+        self.checker = checker
+        self.mock = mock
+        self.mocklength = mocklength
+        self.generator = generator
+
+
+    def __len__(self):
+        if self.mock:
+            return self.mocklength
+        elif self.length is True:
+            return len(self.source)
+        elif isinstance(self.length, int):
+            return self.length
+        elif callable(self.length):
+            return self.length(self.source)
+        else:
+            raise ValueError(f"{self.length}: not a valid length specification")
+
+    def __iter__(self):
+        if self.mock:
+            if not callable(self.generator):
+                for i in range(self.mocklength):
+                    yield self.generator
+            else:
+                return self.generator()
+        else:
+            for sample in self.source:
+                if self.checker is not None:
+                    self.checker(sample)
+                yield sample
 
 
 class ResizedDataset(IterableDataset):

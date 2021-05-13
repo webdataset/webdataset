@@ -132,6 +132,23 @@ def test_dataset_decode_handler():
     assert result == 24
 
 
+def test_dataset_test():
+    obj = ("hello", "world")
+    ds = wds.WebDataset(local_data).shuffle(5).to_tuple("png;jpg cls").test(generator=obj)
+    assert count_samples_tuple(ds) == 47
+
+
+def test_dataset_mock():
+    obj = ("hello", "world")
+    ds = wds.WebDataset(local_data).shuffle(5).to_tuple("png;jpg cls").test(generator=obj)
+    assert count_samples_tuple(ds) == 47
+    ds.mocklength = 99
+    ds.mock = True
+    assert count_samples_tuple(ds) == 99
+    sample = next(iter(ds))
+    assert sample == obj
+
+
 def test_dataset_rename_handler():
 
     ds = fluid.Dataset(local_data).rename(image="png;jpg", cls="cls")
@@ -528,3 +545,4 @@ def test_webloader_unbatched():
     dl = wds.WebLoader(ds, num_workers=4, batch_size=3).unbatched()
     nsamples = count_samples_tuple(dl)
     assert nsamples == 47, nsamples
+
