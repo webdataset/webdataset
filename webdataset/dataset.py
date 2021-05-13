@@ -127,11 +127,14 @@ class ShardList(IterableDataset, Composable):
 
 class BatchedLength:
     # we make this a class rather than a closure so that it can be pickled
-    def __init__(self, y):
+    def __init__(self, y, partial: bool):
         self.y = y
+        self.partial = partial
 
     def __call__(self, x):
-        return len(x) // self.y
+        # Add +1 when partial batch is allowed
+        partial_batch = len(x) % self.y > 0  # True or False
+        return len(x) // self.y + (1 if self.partial and partial_batch else 0)
 
 
 class Shorthands:
@@ -139,7 +142,7 @@ class Shorthands:
         super().__init__()
 
     def batched(self, batchsize, collation_fn=iterators.default_collation_fn, partial=True):
-        length = BatchedLength(batchsize)
+        length = BatchedLength(batchsize, partial)
         return self.then(
             iterators.batched, length=length, batchsize=batchsize, collation_fn=collation_fn, partial=partial
         )
