@@ -134,15 +134,15 @@ def test_dataset_decode_handler():
 
 def test_dataset_test():
     obj = ("hello", "world")
-    ds = wds.WebDataset(local_data).shuffle(5).to_tuple("png;jpg cls").test(generator=obj)
+    ds = wds.WebDataset(local_data).shuffle(5).to_tuple("png;jpg cls").test(mock_sample=obj)
     assert count_samples_tuple(ds) == 47
 
 
 def test_dataset_mock():
     obj = ("hello", "world")
-    ds = wds.WebDataset(local_data).shuffle(5).to_tuple("png;jpg cls").test(generator=obj)
+    ds = wds.WebDataset(local_data).shuffle(5).to_tuple("png;jpg cls").test(mock_sample=obj)
     assert count_samples_tuple(ds) == 47
-    ds.mocklength = 99
+    ds.mock_length = 99
     ds.mock = True
     assert count_samples_tuple(ds) == 99
     sample = next(iter(ds))

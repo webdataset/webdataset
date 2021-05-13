@@ -182,13 +182,13 @@ class Shorthands:
             batchsize=batchsize,
         )
 
-    def test(self, length=None, checker=None, generator=None, mocklength=None, mock=False):
+    def test(self, length=None, checker=None, mock_sample=None, mock_length=None, mock=False):
         return self.compose(
-            DatasetOutput,
+            DatasetTest,
             length=length,
             checker=checker,
-            generator=generator,
-            mocklength=mocklength,
+            mock_sample=mock_sample,
+            mock_length=mock_length,
             mock=mock,
         )
 
@@ -275,19 +275,19 @@ def WebLoader(*args, **kw):
 class DatasetTest(IterableDataset, Composable, Shorthands):
     """Perform final checks on an IterableDataset and permit easy mock tests."""
 
-    def __init__(self, length=None, checker=None, generator=None, mocklength=10000, mock=False):
+    def __init__(self, length=None, checker=None, mock_sample=None, mock_length=10000, mock=False):
         super().__init__()
         self.source = None
         self.length = length
         self.checker = checker
         self.mock = mock
-        self.mocklength = mocklength
-        self.generator = generator
+        self.mock_length = mock_length
+        self.mock_sample = mock_sample
 
 
     def __len__(self):
         if self.mock:
-            return self.mocklength
+            return self.mock_length
         elif self.length is True:
             return len(self.source)
         elif isinstance(self.length, int):
@@ -299,11 +299,11 @@ class DatasetTest(IterableDataset, Composable, Shorthands):
 
     def __iter__(self):
         if self.mock:
-            if not callable(self.generator):
-                for i in range(self.mocklength):
-                    yield self.generator
+            if not callable(self.mock_sample):
+                for i in range(self.mock_length):
+                    yield self.mock_sample
             else:
-                return self.generator()
+                return self.mock_sample()
         else:
             for sample in self.source:
                 if self.checker is not None:
