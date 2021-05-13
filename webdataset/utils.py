@@ -68,9 +68,7 @@ def guess_batchsize(batch):
     return len(batch[0])
 
 
-def repeatedly(
-    source, nepochs=None, nbatches=None, nsamples=None, batchsize=guess_batchsize
-):
+def repeatedly(source, nepochs=None, nbatches=None, nsamples=None, batchsize=guess_batchsize):
     """Repeatedly yield samples from an iterator."""
     epoch = 0
     batch = 0

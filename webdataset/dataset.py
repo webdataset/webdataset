@@ -73,7 +73,7 @@ class Composable:
         assert callable(f)
         assert "source" not in kw
         # print("Processor", args, kw)
-        return Processor(self, f, *args, **kw)
+        return Processor(self, f, length=length, *args, **kw)
 
     def compose(self, constructor, *args, **kw):
         """Compose this processor with another IterableDataset.
@@ -125,15 +125,25 @@ class ShardList(IterableDataset, Composable):
         return self.length
 
 
+
+class BatchedLength:
+    # we make this a class rather than a closure so that it can be pickled
+    def __init__(self, y):
+        self.y = y
+
+    def __call__(self, x):
+        return len(x) // self.y
+
 class Shorthands:
     def __init__(self):
         super().__init__()
 
     def batched(self, batchsize, collation_fn=iterators.default_collation_fn, partial=True):
-        return self.then(iterators.batched, batchsize=batchsize, collation_fn=collation_fn, partial=partial)
+        length = BatchedLength(batchsize)
+        return self.then(iterators.batched, length=length, batchsize=batchsize, collation_fn=collation_fn, partial=partial)
 
-    def unbatched(self):
-        return self.then(iterators.unbatched)
+    def unbatched(self, length=None):
+        return self.then(iterators.unbatched, length=length)
 
     def shuffle(self, size, **kw):
         if size < 1:
@@ -204,6 +214,17 @@ class Shorthands:
             mock_length=mock_length,
             mock=mock,
         )
+
+    def node_equalize(self, length):
+        import torch.distributed
+
+        world_size = 1
+        if torch.distributed.is_initialized():
+            world_size = torch.distributed.get_world_size()
+        numbatches = length // world_size
+        result = self.repeat(999999999).slice(numbatches)
+        result.length = numbatches
+        return result
 
 
 class Repeatedly(IterableDataset, Composable, Shorthands):
@@ -278,13 +299,6 @@ def WebDataset(
         )
     result = result.then(tariterators.tar_file_expander, length=None, handler=handler)
     result = result.then(tariterators.group_by_keys, length=length)
-    return result
-
-
-def WebDatastream(urls, length=None, **kw):
-    result = WebDataset(urls, nodesplitter=utils.identity, **kw).repeat(999999999)
-    if length is not None:
-        result = result.slice(length)
     return result
 
 

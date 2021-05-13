@@ -57,9 +57,9 @@ def test_mock():
     assert count_samples_tuple(ds) == 193
 
 
-def test_stream():
-    ds = wds.WebDatastream(local_data, 211)
-    assert count_samples_tuple(ds) == 211
+def test_node_equalize():
+    ds = wds.WebDataset(local_data).node_equalize(733)
+    assert count_samples_tuple(ds) == 733
 
 
 def test_dataset_shuffle_extract():
@@ -86,9 +86,7 @@ def test_dataset_eof():
 
 
 def test_dataset_eof_handler():
-    ds = fluid.Dataset(
-        f"pipe:dd if={local_data} bs=1024 count=10", handler=utils.ignore_and_stop
-    )
+    ds = fluid.Dataset(f"pipe:dd if={local_data} bs=1024 count=10", handler=utils.ignore_and_stop)
     assert count_samples(ds) < 47
 
 
@@ -133,9 +131,7 @@ def test_dataset_decode_handler():
             good[0] += 1
             return data
 
-    ds = fluid.Dataset(local_data).decode(
-        faulty_decoder, handler=utils.ignore_and_continue
-    )
+    ds = fluid.Dataset(local_data).decode(faulty_decoder, handler=utils.ignore_and_continue)
     result = count_samples_tuple(ds)
     assert count[0] == 47
     assert good[0] == 24
@@ -366,11 +362,7 @@ def test_decoder():
     def mydecoder(key, sample):
         return len(sample)
 
-    ds = (
-        fluid.Dataset(remote_loc + remote_shard)
-        .decode(mydecoder)
-        .to_tuple("jpg;png", "json")
-    )
+    ds = fluid.Dataset(remote_loc + remote_shard).decode(mydecoder).to_tuple("jpg;png", "json")
     for sample in ds:
         assert isinstance(sample[0], int)
         break
@@ -400,11 +392,7 @@ def test_shard_syntax():
 
 
 def test_pipe():
-    ds = (
-        fluid.Dataset(f"pipe:curl -s '{remote_loc}{remote_shards}'")
-        .shuffle(100)
-        .to_tuple("jpg;png", "json")
-    )
+    ds = fluid.Dataset(f"pipe:curl -s '{remote_loc}{remote_shards}'").shuffle(100).to_tuple("jpg;png", "json")
     assert count_samples_tuple(ds, n=10) == 10
 
 
@@ -412,9 +400,7 @@ def test_torchvision():
     import torch
     from torchvision import transforms
 
-    normalize = transforms.Normalize(
-        mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
-    )
+    normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
     preproc = transforms.Compose(
         [
             transforms.RandomResizedCrop(224),
@@ -440,9 +426,7 @@ def test_batched():
     import torch
     from torchvision import transforms
 
-    normalize = transforms.Normalize(
-        mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
-    )
+    normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
     preproc = transforms.Compose(
         [
             transforms.RandomResizedCrop(224),
@@ -451,18 +435,15 @@ def test_batched():
             normalize,
         ]
     )
-    ds = (
-        fluid.Dataset(remote_loc + remote_shards)
-        .decode("pil")
-        .to_tuple("jpg;png", "json")
-        .map_tuple(preproc, identity)
-        .batched(7)
-    )
+    raw = wds.WebDataset(remote_loc + remote_shards)
+    ds = raw.decode("pil").to_tuple("jpg;png", "json").map_tuple(preproc, identity).batched(7)
     for sample in ds:
         assert isinstance(sample[0], torch.Tensor), type(sample[0])
         assert tuple(sample[0].size()) == (7, 3, 224, 224), sample[0].size()
         assert isinstance(sample[1], list), type(sample[1])
         break
+    raw.length = 721
+    assert len(ds) == 721 // 7
     pickle.dumps(ds)
 
 
@@ -470,9 +451,7 @@ def test_unbatched():
     import torch
     from torchvision import transforms
 
-    normalize = transforms.Normalize(
-        mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
-    )
+    normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
     preproc = transforms.Compose(
         [
             transforms.RandomResizedCrop(224),
@@ -540,14 +519,14 @@ def test_webloader():
     ds = wds.WebDataset(local_data)
     dl = wds.WebLoader(ds, num_workers=4, batch_size=3)
     nsamples = count_samples_tuple(dl)
-    assert nsamples == (47+2)//3, nsamples
+    assert nsamples == (47 + 2) // 3, nsamples
 
 
 def test_webloader_repeat():
     ds = wds.WebDataset(local_data)
     dl = wds.WebLoader(ds, num_workers=4, batch_size=3).repeat(nepochs=2)
     nsamples = count_samples_tuple(dl)
-    assert nsamples == 2 * (47+2)//3, nsamples
+    assert nsamples == 2 * (47 + 2) // 3, nsamples
 
 
 def test_webloader_unbatched():
@@ -555,4 +534,3 @@ def test_webloader_unbatched():
     dl = wds.WebLoader(ds, num_workers=4, batch_size=3).unbatched()
     nsamples = count_samples_tuple(dl)
     assert nsamples == 47, nsamples
-
