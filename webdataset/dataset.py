@@ -217,7 +217,7 @@ class Shorthands:
             mock=mock,
         )
 
-    def node_equalize(self, length):
+    def ddp_equalize(self, length):
         import torch.distributed
 
         world_size = 1

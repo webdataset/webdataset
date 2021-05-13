@@ -56,8 +56,8 @@ def test_mock():
     assert count_samples_tuple(ds) == 193
 
 
-def test_node_equalize():
-    ds = wds.WebDataset(local_data).node_equalize(733)
+def test_ddp_equalize():
+    ds = wds.WebDataset(local_data).ddp_equalize(733)
     assert count_samples_tuple(ds) == 733
 
 
