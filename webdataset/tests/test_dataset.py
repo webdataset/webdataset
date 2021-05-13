@@ -7,7 +7,6 @@ import torch
 import pickle
 
 import webdataset.dataset as wds
-from webdataset import fluid
 from webdataset import utils
 from webdataset import autodecode
 
@@ -48,7 +47,7 @@ def count_samples(source, *args, n=1000):
 
 
 def test_dataset():
-    ds = fluid.Dataset(local_data)
+    ds = wds.WebDataset(local_data)
     assert count_samples_tuple(ds) == 47
 
 
@@ -63,17 +62,17 @@ def test_node_equalize():
 
 
 def test_dataset_shuffle_extract():
-    ds = fluid.Dataset(local_data).shuffle(5).to_tuple("png;jpg cls")
+    ds = wds.WebDataset(local_data).shuffle(5).to_tuple("png;jpg cls")
     assert count_samples_tuple(ds) == 47
 
 
 def test_dataset_pipe_cat():
-    ds = fluid.Dataset(f"pipe:cat {local_data}").shuffle(5).to_tuple("png;jpg cls")
+    ds = wds.WebDataset(f"pipe:cat {local_data}").shuffle(5).to_tuple("png;jpg cls")
     assert count_samples_tuple(ds) == 47
 
 
 def test_slice():
-    ds = fluid.Dataset(local_data).slice(10)
+    ds = wds.WebDataset(local_data).slice(10)
     assert count_samples_tuple(ds) == 10
 
 
@@ -81,12 +80,12 @@ def test_dataset_eof():
     import tarfile
 
     with pytest.raises(tarfile.ReadError):
-        ds = fluid.Dataset(f"pipe:dd if={local_data} bs=1024 count=10").shuffle(5)
+        ds = wds.WebDataset(f"pipe:dd if={local_data} bs=1024 count=10").shuffle(5)
         assert count_samples(ds) == 47
 
 
 def test_dataset_eof_handler():
-    ds = fluid.Dataset(f"pipe:dd if={local_data} bs=1024 count=10", handler=utils.ignore_and_stop)
+    ds = wds.WebDataset(f"pipe:dd if={local_data} bs=1024 count=10", handler=utils.ignore_and_stop)
     assert count_samples(ds) < 47
 
 
@@ -101,19 +100,19 @@ def test_dataset_decode_nohandler():
         count[0] += 1
 
     with pytest.raises(ValueError):
-        ds = fluid.Dataset(local_data).decode(faulty_decoder)
+        ds = wds.WebDataset(local_data).decode(faulty_decoder)
         count_samples_tuple(ds)
 
 
 def test_dataset_missing_totuple_raises():
     with pytest.raises(ValueError):
-        ds = fluid.Dataset(local_data).to_tuple("foo", "bar")
+        ds = wds.WebDataset(local_data).to_tuple("foo", "bar")
         count_samples_tuple(ds)
 
 
 def test_dataset_missing_rename_raises():
     with pytest.raises(ValueError):
-        ds = fluid.Dataset(local_data).rename(x="foo", y="bar")
+        ds = wds.WebDataset(local_data).rename(x="foo", y="bar")
         count_samples_tuple(ds)
 
 
@@ -131,7 +130,7 @@ def test_dataset_decode_handler():
             good[0] += 1
             return data
 
-    ds = fluid.Dataset(local_data).decode(faulty_decoder, handler=utils.ignore_and_continue)
+    ds = wds.WebDataset(local_data).decode(faulty_decoder, handler=utils.ignore_and_continue)
     result = count_samples_tuple(ds)
     assert count[0] == 47
     assert good[0] == 24
@@ -157,11 +156,11 @@ def test_dataset_mock():
 
 def test_dataset_rename_handler():
 
-    ds = fluid.Dataset(local_data).rename(image="png;jpg", cls="cls")
+    ds = wds.WebDataset(local_data).rename(image="png;jpg", cls="cls")
     count_samples_tuple(ds)
 
     with pytest.raises(ValueError):
-        ds = fluid.Dataset(local_data).rename(image="missing", cls="cls")
+        ds = wds.WebDataset(local_data).rename(image="missing", cls="cls")
         count_samples_tuple(ds)
 
 
@@ -173,34 +172,34 @@ def test_dataset_map_handler():
     def g(x):
         raise ValueError()
 
-    ds = fluid.Dataset(local_data).map(f)
+    ds = wds.WebDataset(local_data).map(f)
     count_samples_tuple(ds)
 
     with pytest.raises(ValueError):
-        ds = fluid.Dataset(local_data).map(g)
+        ds = wds.WebDataset(local_data).map(g)
         count_samples_tuple(ds)
 
 
 def test_dataset_map_dict_handler():
 
-    ds = fluid.Dataset(local_data).map_dict(png=identity, cls=identity)
+    ds = wds.WebDataset(local_data).map_dict(png=identity, cls=identity)
     count_samples_tuple(ds)
 
     with pytest.raises(KeyError):
-        ds = fluid.Dataset(local_data).map_dict(png=identity, cls2=identity)
+        ds = wds.WebDataset(local_data).map_dict(png=identity, cls2=identity)
         count_samples_tuple(ds)
 
     def g(x):
         raise ValueError()
 
     with pytest.raises(ValueError):
-        ds = fluid.Dataset(local_data).map_dict(png=g, cls=identity)
+        ds = wds.WebDataset(local_data).map_dict(png=g, cls=identity)
         count_samples_tuple(ds)
 
 
 def test_dataset_shuffle_decode_rename_extract():
     ds = (
-        fluid.Dataset(local_data)
+        wds.WebDataset(local_data)
         .shuffle(5)
         .decode("rgb")
         .rename(image="png;jpg", cls="cls")
@@ -213,12 +212,12 @@ def test_dataset_shuffle_decode_rename_extract():
 
 
 def test_dataset_len():
-    ds = fluid.Dataset(local_data, length=100)
+    ds = wds.WebDataset(local_data, length=100)
     assert len(ds) == 100
 
 
 def test_rgb8():
-    ds = fluid.Dataset(local_data).decode("rgb8").to_tuple("png;jpg", "cls")
+    ds = wds.WebDataset(local_data).decode("rgb8").to_tuple("png;jpg", "cls")
     assert count_samples_tuple(ds) == 47
     image, cls = next(iter(ds))
     assert isinstance(image, np.ndarray), type(image)
@@ -227,14 +226,14 @@ def test_rgb8():
 
 
 def test_pil():
-    ds = fluid.Dataset(local_data).decode("pil").to_tuple("jpg;png", "cls")
+    ds = wds.WebDataset(local_data).decode("pil").to_tuple("jpg;png", "cls")
     assert count_samples_tuple(ds) == 47
     image, cls = next(iter(ds))
     assert isinstance(image, PIL.Image.Image)
 
 
 def test_raw():
-    ds = fluid.Dataset(local_data).to_tuple("jpg;png", "cls")
+    ds = wds.WebDataset(local_data).to_tuple("jpg;png", "cls")
     assert count_samples_tuple(ds) == 47
     image, cls = next(iter(ds))
     assert isinstance(image, bytes)
@@ -242,7 +241,7 @@ def test_raw():
 
 
 def test_gz():
-    ds = fluid.Dataset(compressed).decode()
+    ds = wds.WebDataset(compressed).decode()
     sample = next(iter(ds))
     print(sample)
     assert sample["txt.gz"] == "hello\n", sample
@@ -253,11 +252,11 @@ def test_rgb8_np_vs_torch():
     import warnings
 
     warnings.filterwarnings("error")
-    ds = fluid.Dataset(local_data).decode("rgb8").to_tuple("png;jpg", "cls")
+    ds = wds.WebDataset(local_data).decode("rgb8").to_tuple("png;jpg", "cls")
     image, cls = next(iter(ds))
     assert isinstance(image, np.ndarray), type(image)
     assert isinstance(cls, int), type(cls)
-    ds = fluid.Dataset(local_data).decode("torchrgb8").to_tuple("png;jpg", "cls")
+    ds = wds.WebDataset(local_data).decode("torchrgb8").to_tuple("png;jpg", "cls")
     image2, cls2 = next(iter(ds))
     assert isinstance(image2, torch.Tensor), type(image2)
     assert isinstance(cls, int), type(cls)
@@ -266,9 +265,9 @@ def test_rgb8_np_vs_torch():
 
 
 def test_float_np_vs_torch():
-    ds = fluid.Dataset(local_data).decode("rgb").to_tuple("png;jpg", "cls")
+    ds = wds.WebDataset(local_data).decode("rgb").to_tuple("png;jpg", "cls")
     image, cls = next(iter(ds))
-    ds = fluid.Dataset(local_data).decode("torchrgb").to_tuple("png;jpg", "cls")
+    ds = wds.WebDataset(local_data).decode("torchrgb").to_tuple("png;jpg", "cls")
     image2, cls2 = next(iter(ds))
     assert (image == image2.permute(1, 2, 0).numpy()).all(), (image.shape, image2.shape)
     assert cls == cls2
@@ -281,7 +280,7 @@ def test_float_np_vs_torch():
 #     def associate(key):
 #         return dict(MY_EXTRA_DATA=extra_data[key])
 
-#     ds = fluid.Dataset(local_data).associate(associate)
+#     ds = wds.WebDataset(local_data).associate(associate)
 
 #     for sample in ds:
 #         assert "MY_EXTRA_DATA" in sample.keys()
@@ -304,7 +303,7 @@ def test_tenbin():
 
 
 def test_tenbin_dec():
-    ds = fluid.Dataset("testdata/tendata.tar").decode().to_tuple("ten")
+    ds = wds.WebDataset("testdata/tendata.tar").decode().to_tuple("ten")
     assert count_samples_tuple(ds) == 100
     for sample in ds:
         xs, ys = sample[0]
@@ -335,7 +334,7 @@ def test_tenbin_dec():
 def test_dataloader():
     import torch
 
-    ds = fluid.Dataset(remote_loc + remote_shards)
+    ds = wds.WebDataset(remote_loc + remote_shards)
     dl = torch.utils.data.DataLoader(ds, num_workers=4)
     assert count_samples_tuple(dl, n=100) == 100
 
@@ -345,7 +344,7 @@ def test_handlers():
         return PIL.Image.open(io.BytesIO(data)).resize((128, 128))
 
     ds = (
-        fluid.Dataset(remote_loc + remote_shard)
+        wds.WebDataset(remote_loc + remote_shard)
         .decode(
             autodecode.handle_extension("jpg", mydecoder),
             autodecode.handle_extension("png", mydecoder),
@@ -362,7 +361,7 @@ def test_decoder():
     def mydecoder(key, sample):
         return len(sample)
 
-    ds = fluid.Dataset(remote_loc + remote_shard).decode(mydecoder).to_tuple("jpg;png", "json")
+    ds = wds.WebDataset(remote_loc + remote_shard).decode(mydecoder).to_tuple("jpg;png", "json")
     for sample in ds:
         assert isinstance(sample[0], int)
         break
@@ -370,7 +369,7 @@ def test_decoder():
 
 def test_shard_syntax():
     print(remote_loc, remote_shards)
-    ds = fluid.Dataset(remote_loc + remote_shards).decode().to_tuple("jpg;png", "json")
+    ds = wds.WebDataset(remote_loc + remote_shards).decode().to_tuple("jpg;png", "json")
     assert count_samples_tuple(ds, n=10) == 10
 
 
@@ -384,7 +383,7 @@ def test_shard_syntax():
 #         ).stdout
 #
 #     ds = (
-#         fluid.Dataset("{000000..000099}", open_fn=opener)
+#         wds.WebDataset("{000000..000099}", open_fn=opener)
 #         .shuffle(100)
 #         .to_tuple("jpg;png", "json")
 #     )
@@ -392,7 +391,7 @@ def test_shard_syntax():
 
 
 def test_pipe():
-    ds = fluid.Dataset(f"pipe:curl -s '{remote_loc}{remote_shards}'").shuffle(100).to_tuple("jpg;png", "json")
+    ds = wds.WebDataset(f"pipe:curl -s '{remote_loc}{remote_shards}'").shuffle(100).to_tuple("jpg;png", "json")
     assert count_samples_tuple(ds, n=10) == 10
 
 
@@ -410,7 +409,7 @@ def test_torchvision():
         ]
     )
     ds = (
-        fluid.Dataset(remote_loc + remote_shards)
+        wds.WebDataset(remote_loc + remote_shards)
         .decode("pil")
         .to_tuple("jpg;png", "json")
         .map_tuple(preproc, identity)
@@ -461,7 +460,7 @@ def test_unbatched():
         ]
     )
     ds = (
-        fluid.Dataset(remote_loc + remote_shards)
+        wds.WebDataset(remote_loc + remote_shards)
         .decode("pil")
         .to_tuple("jpg;png", "json")
         .map_tuple(preproc, identity)
