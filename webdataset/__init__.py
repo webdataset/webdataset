@@ -18,6 +18,7 @@ from .dataset import (
     Processor,
     ChoppedDataset,
     ResizedDataset,
+    MockDataset,
 )
 from .utils import (
     reraise_exception,

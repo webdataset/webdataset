@@ -38,6 +38,19 @@ default_cache_verbose = int(safe_eval(os.environ.get("WEBDATASET_CACHE_VERBOSE",
 default_cache_size = int(float(safe_eval(os.environ.get("WEBDATASET_CACHE_SIZE", "1e15"))))
 
 
+class MockDataset(IterableDataset):
+    def __init__(self, sample, length):
+        self.sample = sample
+        self.length = length
+
+    def __len__(self):
+        return self.length
+
+    def __iter__(self):
+        for i in range(self.length):
+            yield self.sample
+
+
 class Composable:
     def __init__(self):
         super().__init__()
@@ -283,7 +296,6 @@ class DatasetTest(IterableDataset, Composable, Shorthands):
         self.mock = mock
         self.mock_length = mock_length
         self.mock_sample = mock_sample
-
 
     def __len__(self):
         if self.mock:

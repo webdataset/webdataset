@@ -52,6 +52,11 @@ def test_dataset():
     assert count_samples_tuple(ds) == 47
 
 
+def test_mock():
+    ds = wds.MockDataset((True, True), 193)
+    assert count_samples_tuple(ds) == 193
+
+
 def test_dataset_shuffle_extract():
     ds = fluid.Dataset(local_data).shuffle(5).to_tuple("png;jpg cls")
     assert count_samples_tuple(ds) == 47
