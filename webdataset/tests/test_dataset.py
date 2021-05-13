@@ -57,6 +57,11 @@ def test_mock():
     assert count_samples_tuple(ds) == 193
 
 
+def test_stream():
+    ds = wds.WebDatastream(local_data, 211)
+    assert count_samples_tuple(ds) == 211
+
+
 def test_dataset_shuffle_extract():
     ds = fluid.Dataset(local_data).shuffle(5).to_tuple("png;jpg cls")
     assert count_samples_tuple(ds) == 47

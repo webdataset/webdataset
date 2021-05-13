@@ -281,6 +281,13 @@ def WebDataset(
     return result
 
 
+def WebDatastream(urls, length=None, **kw):
+    result = WebDataset(urls, nodesplitter=utils.identity, **kw).repeat(999999999)
+    if length is not None:
+        result = result.slice(length)
+    return result
+
+
 def WebLoader(*args, **kw):
     return Processor(DataLoader(*args, **kw), utils.identity)
 
