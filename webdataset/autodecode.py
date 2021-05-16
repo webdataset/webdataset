@@ -18,6 +18,7 @@ import os
 import pickle
 import re
 import tempfile
+from functools import partial
 
 import numpy as np
 
@@ -107,6 +108,17 @@ imagespecs = {
 }
 
 
+def _g(key, data, f, extensions):
+    extension = key.lower().split(".")
+    for target in extensions:
+        target = target.split(".")
+        if len(target) > len(extension):
+            continue
+        if extension[-len(target):] == target:
+            return f(data)
+    return None
+
+
 def handle_extension(extensions, f):
     """Returns a decoder function for the list of extensions.
 
@@ -121,18 +133,9 @@ def handle_extension(extensions, f):
     handle_extension("seg.jpg", special_case_jpg)  # invoked only for file.seg.jpg
     """
     extensions = extensions.lower().split()
-
-    def g(key, data):
-        extension = key.lower().split(".")
-        for target in extensions:
-            target = target.split(".")
-            if len(target) > len(extension):
-                continue
-            if extension[-len(target) :] == target:
-                return f(data)
-        return None
-
-    return g
+    # _g can't be a local function since pickle doesn't support local functions. Pickle is used by Pytorch dataloader
+    # when loading data with multiple workers.
+    return partial(_g, f=f, extensions=extensions)
 
 
 class ImageHandler:
