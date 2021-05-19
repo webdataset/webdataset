@@ -1,41 +1,8 @@
 """Miscellaneous utility functions."""
 
-import warnings
-import time
 import re
 import importlib
 import itertools as itt
-
-__all__ = "reraise_exception ignore_and_continue ignore_and_stop warn_and_stop add_hook call_hook".split()
-
-
-def reraise_exception(exn):
-    """Call in an exception handler to re-raise the exception."""
-    raise exn
-
-
-def ignore_and_continue(exn):
-    """Call in an exception handler to ignore any exception and continue."""
-    return True
-
-
-def warn_and_continue(exn):
-    """Call in an exception handler to ignore any exception, isssue a warning, and continue."""
-    warnings.warn(repr(exn))
-    time.sleep(0.5)
-    return True
-
-
-def ignore_and_stop(exn):
-    """Call in an exception handler to ignore any exception and stop further processing."""
-    return False
-
-
-def warn_and_stop(exn):
-    """Call in an exception handler to ignore any exception and stop further processing."""
-    warnings.warn(repr(exn))
-    time.sleep(0.5)
-    return False
 
 
 def identity(x):

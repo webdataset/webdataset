@@ -4,7 +4,7 @@
 # See the LICENSE file for licensing terms (BSD-style).
 #
 
-__all__ = "TarWriter ShardWriter".split()
+"""Classes and functions for writing tar files and WebDataset files."""
 
 import io
 import pickle
@@ -28,12 +28,11 @@ def imageencoder(image, format="PNG"):  # skipcq: PYL-W0622
 
     """
     import PIL
+
     if isinstance(image, np.ndarray):
         if image.dtype in [np.dtype("f"), np.dtype("d")]:
             if not (np.amin(image) > -0.001 and np.amax(image) < 1.001):
-                raise ValueError(
-                    f"image values out of range {np.amin(image)} {np.amax(image)}"
-                )
+                raise ValueError(f"image values out of range {np.amin(image)} {np.amax(image)}")
             image = np.clip(image, 0.0, 1.0)
             image = np.array(image * 255.0, "uint8")
         image = PIL.Image.fromarray(image)
@@ -51,6 +50,12 @@ def imageencoder(image, format="PNG"):  # skipcq: PYL-W0622
 
 
 def bytestr(data):
+    """Convert data into a bytestring.
+
+    Uses str and ASCII encoding for data that isn't already in string format.
+
+    :param data: data
+    """
     if isinstance(data, bytes):
         return data
     if isinstance(data, str):
@@ -59,6 +64,12 @@ def bytestr(data):
 
 
 def torch_dumps(data):
+    """Dump data into a bytestring using torch.dumps.
+
+    This delays importing torch until needed.
+
+    :param data: data to be dumped
+    """
     import io
     import torch
 
@@ -68,6 +79,7 @@ def torch_dumps(data):
 
 
 def make_handlers():
+    """Create a list of handlers for encoding data."""
     handlers = {}
     for extension in ["cls", "cls2", "class", "count", "index", "inx", "id"]:
         handlers[extension] = lambda x: str(x).encode("ascii")
@@ -76,6 +88,10 @@ def make_handlers():
     for extension in ["png", "jpg", "jpeg", "img", "image", "pbm", "pgm", "ppm"]:
 
         def f(extension_):
+            """f.
+
+            :param extension_:
+            """
             handlers[extension] = lambda data: imageencoder(data, extension_)
 
         f(extension)
@@ -109,6 +125,12 @@ default_handlers = {"default": make_handlers()}
 
 
 def encode_based_on_extension1(data, tname, handlers):
+    """Encode data based on its extension and a dict of handlers.
+
+    :param data: data
+    :param tname: file extension
+    :param handlers: handlers
+    """
     if tname[0] == "_":
         if not isinstance(data, str):
             raise ValueError("the values of metadata must be of string type")
@@ -125,15 +147,23 @@ def encode_based_on_extension1(data, tname, handlers):
 
 
 def encode_based_on_extension(sample, handlers):
-    return {
-        k: encode_based_on_extension1(v, k, handlers) for k, v in list(sample.items())
-    }
+    """Encode an entire sample with a collection of handlers.
+
+    :param sample: data sample (a dict)
+    :param handlers: handlers for encoding
+    """
+    return {k: encode_based_on_extension1(v, k, handlers) for k, v in list(sample.items())}
 
 
 def make_encoder(spec):
+    """Make an encoder function from a specification.
+
+    :param spec: specification
+    """
     if spec is False or spec is None:
 
         def encoder(x):
+            """Do not encode at all."""
             return x
 
     elif callable(spec):
@@ -141,6 +171,7 @@ def make_encoder(spec):
     elif isinstance(spec, dict):
 
         def encoder(sample):
+            """Encode based on extension."""
             return encode_based_on_extension(sample, spec)
 
     elif isinstance(spec, str) or spec is True:
@@ -151,6 +182,7 @@ def make_encoder(spec):
             raise ValueError(f"no handler found for {spec}")
 
         def encoder(sample):
+            """Encode based on extension."""
             return encode_based_on_extension(sample, handlers)
 
     else:
@@ -194,6 +226,16 @@ class TarWriter:
         encoder=True,
         keep_meta=False,
     ):
+        """Create a tar writer.
+
+        :param fileobj: stream to write data to
+        :param user: user for tar files
+        :param group: group for tar files
+        :param mode: mode for tar files
+        :param compress: desired compression
+        :param encoder: encoder function
+        :param keep_meta: keep metadata (entries starting with "_")
+        """
         if isinstance(fileobj, str):
             if compress is False:
                 tarmode = "w|"
@@ -217,9 +259,11 @@ class TarWriter:
         self.compress = compress
 
     def __enter__(self):
+        """Enter context."""
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
+        """Exit context."""
         self.close()
 
     def close(self):
@@ -228,16 +272,6 @@ class TarWriter:
         if self.own_fileobj is not None:
             self.own_fileobj.close()
             self.own_fileobj = None
-
-    def dwrite(self, key, **kw):
-        """Convenience function for `write`.
-
-        Takes key as the first argument and key-value pairs for the rest.
-        Replaces "_" with ".".
-        """
-        obj = dict(__key__=key)
-        obj.update({k.replace("_", "."): v for k, v in kw.items()})
-        self.write(obj)
 
     def write(self, obj):
         """Write a dictionary to the tar file.
@@ -254,9 +288,7 @@ class TarWriter:
             if k[0] == "_":
                 continue
             if not isinstance(v, (bytes, bytearray, memoryview)):
-                raise ValueError(
-                    f"{k} doesn't map to a bytes after encoding ({type(v)})"
-                )
+                raise ValueError(f"{k} doesn't map to a bytes after encoding ({type(v)})")
         key = obj["__key__"]
         for k in sorted(obj.keys()):
             if k == "__key__":
@@ -282,18 +314,16 @@ class TarWriter:
 
 
 class ShardWriter:
-    """Like TarWriter but splits into multiple shards.
+    """Like TarWriter but splits into multiple shards."""
 
-    :param pattern: output file pattern
-    :param maxcount: maximum number of records per shard (Default value = 100000)
-    :param maxsize: maximum size of each shard (Default value = 3e9)
-    :param kw: other options passed to TarWriter
+    def __init__(self, pattern, maxcount=100000, maxsize=3e9, post=None, start_shard=0, **kw):
+        """Create a ShardWriter.
 
-    """
-
-    def __init__(
-        self, pattern, maxcount=100000, maxsize=3e9, post=None, start_shard=0, **kw
-    ):
+        :param pattern: output file pattern
+        :param maxcount: maximum number of records per shard (Default value = 100000)
+        :param maxsize: maximum size of each shard (Default value = 3e9)
+        :param kw: other options passed to TarWriter
+        """
         self.verbose = 1
         self.kw = kw
         self.maxcount = maxcount
@@ -310,6 +340,7 @@ class ShardWriter:
         self.next_stream()
 
     def next_stream(self):
+        """Close the current stream and move to the next."""
         self.finish()
         self.fname = self.pattern % self.shard
         if self.verbose:
@@ -327,11 +358,11 @@ class ShardWriter:
         self.size = 0
 
     def write(self, obj):
-        if (
-            self.tarstream is None
-            or self.count >= self.maxcount
-            or self.size >= self.maxsize
-        ):
+        """Write a sample.
+
+        :param obj: sample to be written
+        """
+        if self.tarstream is None or self.count >= self.maxcount or self.size >= self.maxsize:
             self.next_stream()
         size = self.tarstream.write(obj)
         self.count += 1
@@ -339,6 +370,7 @@ class ShardWriter:
         self.size += size
 
     def finish(self):
+        """Finish all writing (use close instead)."""
         if self.tarstream is not None:
             self.tarstream.close()
             assert self.fname is not None
@@ -347,6 +379,7 @@ class ShardWriter:
             self.tarstream = None
 
     def close(self):
+        """Close the stream."""
         self.finish()
         del self.tarstream
         del self.shard
@@ -354,7 +387,9 @@ class ShardWriter:
         del self.size
 
     def __enter__(self):
+        """Enter context."""
         return self
 
     def __exit__(self, *args, **kw):
+        """Exit context."""
         self.close()

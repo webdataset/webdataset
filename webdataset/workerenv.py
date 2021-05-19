@@ -6,6 +6,7 @@
 #
 
 """Functions related to splitting datasets by node and worker.
+
 This follows the PyTorch model of magic global functions and environment
 settings and supplies the default node and worker splitting functions.
 This is provided mainly because PyTorch users expect something like this
@@ -14,20 +15,11 @@ is via explicit functions.
 """
 
 import os
-import random
 import warnings
-import itertools as itt
 import socket
-import braceexpand
 
-from . import tariterators
-from . import iterators
-from . import autodecode
-from . import shardcache
-from . import dbcache
-from . import utils
 from . import gopen
-from .utils import reraise_exception, lookup_sym, safe_eval
+
 
 worker_environment = None
 
@@ -36,11 +28,15 @@ too_few_shards_warning = int(os.environ.get("WDS_WARNINGS", 1))
 
 
 def worker_id():
+    """Return an identifier for the current worker."""
     return socket.gethostname(), os.getpid()
 
 
 class WorkerEnvironment:
+    """Encapsulates the runtime environment of the worker."""
+
     def __init__(self, rank=0, world_size=1, worker=0, nworkers=1):
+        """Initialize the worker environment."""
         self.identity = worker_id()
         self.rank = rank
         self.world_size = world_size
@@ -48,6 +44,7 @@ class WorkerEnvironment:
         self.nworkers = nworkers
 
     def __str__(self):
+        """__str__."""
         return (
             f"WorkerEnvironment(rank={self.rank}, world_size={self.world_size}, "
             + f"worker={self.worker}, nworkers={self.nworkers})"
@@ -55,7 +52,13 @@ class WorkerEnvironment:
 
 
 class TorchWorkerEnvironment(WorkerEnvironment):
+    """TorchWorkerEnvironment."""
+
     def __init__(self, group=None):
+        """Initialize the worker environment for Torch.
+
+        :param group: torch.distributed group for determining rank/size
+        """
         import torch
         import torch.distributed
 
@@ -75,6 +78,7 @@ class TorchWorkerEnvironment(WorkerEnvironment):
 
 
 def get_worker_environment():
+    """Get the current worker environment."""
     global worker_environment
     if worker_environment is not None and worker_environment.identity == worker_id():
         return worker_environment
@@ -88,9 +92,10 @@ def get_worker_environment():
 
 
 def split_by_node(urls, env=None):
-    """Selects a subset of urls based on node info.
+    """Select a subset of urls based on node info.
 
-    Used as a shard selection function in Dataset."""
+    Used as a shard selection function in Dataset.
+    """
     env = env or get_worker_environment()
     urls = [url for url in urls]
     assert isinstance(urls, list)
@@ -106,9 +111,10 @@ def split_by_node(urls, env=None):
 
 
 def split_by_worker(urls, env=None):
-    """Selects a subset of urls based on worker info.
+    """Select a subset of urls based on worker info.
 
-    Used as a shard selection function in Dataset."""
+    Used as a shard selection function in Dataset.
+    """
     env = env or get_worker_environment()
     urls = [url for url in urls]
     assert isinstance(urls, list)

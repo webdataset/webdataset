@@ -11,10 +11,6 @@
 Code works locally or over HTTP connections.
 """
 
-__all__ = """Dataset tariterator default_handlers imagehandler
-reraise_exception ignore_and_continue warn_and_continue ignore_and_stop warn_and_stop
-""".split()
-
 import itertools as itt
 import os
 import random
@@ -22,7 +18,8 @@ import random
 import braceexpand
 
 from . import autodecode, dbcache, iterators, shardcache, tariterators, utils
-from .utils import lookup_sym, reraise_exception, safe_eval
+from .utils import lookup_sym, safe_eval
+from .handlers import reraise_exception
 from .workerenv import split_by_node, split_by_worker
 
 try:

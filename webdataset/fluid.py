@@ -18,7 +18,7 @@ from .dataset import (
     default_cache_size,
     default_cache_verbose,
 )
-from .utils import reraise_exception
+from .handlers import reraise_exception
 
 try:
     from torch.utils.data import IterableDataset

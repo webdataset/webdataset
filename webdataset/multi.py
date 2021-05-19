@@ -1,4 +1,10 @@
-import webdataset as wds
+"""An alternative to DataLoader using ZMQ.
+
+This implements MultiLoader, an alternative to DataLoader when torch
+is not available. Subprocesses communicate with the loader through
+ZMQ, provided for high performance multithreaded queueing.
+"""
+
 import multiprocessing as mp
 import zmq
 import pickle
@@ -11,12 +17,21 @@ the_protocol = pickle.HIGHEST_PROTOCOL
 all_pids = weakref.WeakSet()
 
 
-class Finished:
+class EOF:
+    """A class that indicates that a data stream is finished."""
+
     def __init__(self, **kw):
+        """Initialize the class with the kw as instance variables."""
         self.__dict__.update(kw)
 
 
 def reader(dataset, sockname, index):
+    """Read samples from the dataset and send them over the socket.
+
+    :param dataset: source dataset
+    :param sockname: name for the socket to send data to
+    :param index: index for this reader, using to indicate EOF
+    """
     global the_protocol
     ctx = zmq.Context.instance()
     sock = ctx.socket(zmq.PUSH)
@@ -24,13 +39,25 @@ def reader(dataset, sockname, index):
     for sample in dataset:
         data = pickle.dumps(sample, protocol=the_protocol)
         sock.send(data)
-    sock.send(pickle.dumps(Finished(index=index)))
+    sock.send(pickle.dumps(EOF(index=index)))
     sock.close()
 
 
 class MultiLoader:
+    """Alternative to PyTorch DataLoader based on ZMQ."""
 
     def __init__(self, dataset, workers=4, verbose=False, nokill=False, prefix="/tmp/_multi-"):
+        """Create a MultiLoader for a dataset.
+
+        This creates ZMQ sockets, spawns `workers` subprocesses, and has them send data
+        to the socket.
+
+        :param dataset: source dataset
+        :param workers: number of workers
+        :param verbose: report progress verbosely
+        :param nokill: don't kill old processes when restarting (allows multiple loaders)
+        :param prefix: directory prefix for the ZMQ socket
+        """
         self.dataset = dataset
         self.workers = workers
         self.verbose = verbose
@@ -41,6 +68,7 @@ class MultiLoader:
         self.prefix = prefix
 
     def kill(self):
+        """kill."""
         for pid in self.pids:
             if pid is None:
                 continue
@@ -54,6 +82,7 @@ class MultiLoader:
         self.socket = None
 
     def __iter__(self):
+        """Return an iterator over this dataloader."""
         if not self.nokill:
             self.kill()
         self.sockname = "ipc://" + self.prefix + str(uuid.uuid4())
@@ -72,7 +101,7 @@ class MultiLoader:
         while self.pids.count(None) < len(self.pids):
             data = self.socket.recv()
             sample = pickle.loads(data)
-            if isinstance(sample, Finished):
+            if isinstance(sample, EOF):
                 if self.verbose:
                     print("# subprocess finished", sample.index)
                 self.pids[sample.index].join(1.0)
@@ -80,29 +109,3 @@ class MultiLoader:
             else:
                 yield sample
             count += 1
-
-
-class DistSender:
-    def __init__(self, sockname):
-        self.sockname = sockname
-        self.ctx = zmq.Context.instance()
-        self.sock = self.ctx.socket(zmq.PUSH)
-        self.sock.connect(sockname)
-
-    def send(self, sample):
-        data = pickle.dumps(sample, protocol=the_protocol)
-        self.sock.send(data)
-
-
-class DistLoader:
-    def __init__(self, sockname):
-        self.sockname = sockname
-
-    def __iter__(self):
-        self.ctx = zmq.Context.instance()
-        sock = self.ctx.socket(zmq.PULL)
-        sock.bind(self.sockname)
-        while True:
-            data = sock.recv()
-            sample = pickle.loads(data)
-            yield sample

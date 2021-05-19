@@ -9,6 +9,7 @@ import pickle
 import webdataset.dataset as wds
 from webdataset import utils
 from webdataset import autodecode
+from webdataset import handlers
 
 
 local_data = "testdata/imagenet-000000.tgz"
@@ -85,7 +86,7 @@ def test_dataset_eof():
 
 
 def test_dataset_eof_handler():
-    ds = wds.WebDataset(f"pipe:dd if={local_data} bs=1024 count=10", handler=utils.ignore_and_stop)
+    ds = wds.WebDataset(f"pipe:dd if={local_data} bs=1024 count=10", handler=handlers.ignore_and_stop)
     assert count_samples(ds) < 47
 
 
@@ -130,7 +131,7 @@ def test_dataset_decode_handler():
             good[0] += 1
             return data
 
-    ds = wds.WebDataset(local_data).decode(faulty_decoder, handler=utils.ignore_and_continue)
+    ds = wds.WebDataset(local_data).decode(faulty_decoder, handler=handlers.ignore_and_continue)
     result = count_samples_tuple(ds)
     assert count[0] == 47
     assert good[0] == 24
