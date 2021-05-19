@@ -1,3 +1,5 @@
+"""Cache training samples in an SQLite3 database."""
+
 import io
 import sqlite3
 import sys
@@ -6,15 +8,30 @@ import uuid
 
 try:
     from torch.utils.data import IterableDataset
-except:
+except ModuleNotFoundError:
     from .mock import IterableDataset
 
+
 def get_uuid(data):
+    """Compute a UUID for data.
+
+    :param data: byte array
+    """
     return str(uuid.uuid3(uuid.NAMESPACE_URL, data))
 
 
 class DBCache(IterableDataset):
+    """An IterableDataset that caches its inputs."""
+
     def __init__(self, dbname, size, source=None, shuffle=False, verbose=True):
+        """Create a DBCache for the given file name and of the given size.
+
+        :param dbname: file name
+        :param size: number of samples to be cached
+        :param source: data source
+        :param shuffle: shuffle data on return
+        :param verbose: print progress messages
+        """
         self.dbname = dbname
         self.source = source
         self.verbose = verbose
@@ -35,14 +52,18 @@ class DBCache(IterableDataset):
             )
 
     def source_(self, source):
-        self.source = source
-        return self
+        """Set the dataset source for this cache.
 
-    def __call__(self, source):
+        :param source: an IterableDataset
+        """
         self.source = source
         return self
 
     def getmeta(self, key):
+        """Get the metadata for the given key.
+
+        :param key: key to be retrieved
+        """
         l = list(self.db.execute("select value from meta where key=?", (key,)))
         if len(l) == 0:
             return None
@@ -50,16 +71,24 @@ class DBCache(IterableDataset):
         return l[0][0]
 
     def setmeta(self, key, value):
+        """Set the metadata for the given key.
+
+        :param key: key
+        :param value: value to be set (a string)
+        """
         self.db.execute(
             "insert or replace into meta (key, value) values (?, ?)",
             (str(key), str(value)),
         )
 
     def __len__(self):
+        """Return the number of samples in the cache."""
         return self.size
 
     def dbiter(self):
+        """Iterate over the samples in the cache."""
         import torch
+
         if self.verbose:
             print(
                 f"[DBCache starting dbiter total {self.total} size {self.size}]", file=sys.stderr, flush=True
@@ -73,11 +102,24 @@ class DBCache(IterableDataset):
                 yield obj
 
     def key_exists(self, key):
+        """Check whether a key exists in the database.
+
+        :param key: key
+        """
         return self.db.execute(
             "select exists(select key from cache where key = ? limit 1)", (key,)
         ).fetchone()[0]
 
     def __iter__(self):
+        """Iterate over the samples in the dataset.
+
+        If no cache is defined, just iterates over the source dataset.
+
+        If a cache is set and it is full, iterates over the samples in the cache.
+
+        If a cache is set and not full, adds samples to the cache from the source
+        and yields them.
+        """
         import torch
 
         if self.dbname is None:
