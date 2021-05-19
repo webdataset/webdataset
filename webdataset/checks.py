@@ -5,6 +5,7 @@
 # See the LICENSE file for licensing terms (BSD-style).
 #
 
+"""A collection of simple runtime checks."""
 
 
 def checktype(value, types, msg=""):

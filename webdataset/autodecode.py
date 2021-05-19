@@ -33,7 +33,7 @@ image_extensions = "jpg jpeg png ppm pgm pbm pnm".split()
 
 
 def torch_loads(data):
-    """A wrapper around torch_loads that imports torch only when needed.
+    """Load data using torch.loads, importing torch only if needed.
 
     :param data: data to be decoded
     """

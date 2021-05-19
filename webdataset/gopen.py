@@ -6,9 +6,7 @@
 #
 
 
-"""
-Open URLs by calling subcommands.
-"""
+"""Open URLs by calling subcommands."""
 
 __all__ = "gopen gopen_schemes".split()
 
@@ -46,6 +44,7 @@ class Pipe:
         ignore_status=[],
         **kw,
     ):
+        """Create an IO Pipe."""
         self.ignore_errors = ignore_errors
         self.ignore_status = [0] + ignore_status
         self.timeout = timeout
@@ -63,12 +62,12 @@ class Pipe:
         self.status = None
 
     def check_status(self):
-        """Calls poll on the process and handles any errors."""
+        """Poll the process and handle any errors."""
         self.status = self.proc.poll()
         self.handle_status()
 
     def handle_status(self):
-        """Checks the status variable and raises an exception if necessary."""
+        """Check the status variable and raise an exception if necessary."""
         if self.status is not None:
             self.status = self.proc.wait()
             verbose = int(os.environ.get("GOPEN_VERBOSE", 0))
@@ -78,25 +77,26 @@ class Pipe:
                 raise Exception(f"{self.args}: exit {self.status} (read) {info}")
 
     def read(self, *args, **kw):
-        """Wraps stream.read and checks status."""
+        """Wrap stream.read and checks status."""
         result = self.stream.read(*args, **kw)
         self.check_status()
         return result
 
     def write(self, *args, **kw):
+        """Wrap stream.write and checks status."""
         result = self.stream.write(*args, **kw)
         self.check_status()
         return result
 
     def readLine(self, *args, **kw):
-        """Wraps stream.readLine and checks status."""
+        """Wrap stream.readLine and checks status."""
         result = self.stream.readLine(*args, **kw)
         self.status = self.proc.poll()
         self.check_status()
         return result
 
     def close(self):
-        """Wraps stream.close, waits for the subprocess, and handles errors."""
+        """Wrap stream.close, wait for the subprocess, and handle errors."""
         self.stream.close()
         self.status = self.proc.wait(self.timeout)
         self.handle_status()
@@ -111,6 +111,17 @@ class Pipe:
 
 
 def set_options(obj, timeout=None, ignore_errors=None, ignore_status=None, handler=None):
+    """Set options for Pipes.
+
+    This function can be called on any stream. It will set pipe options only
+    when its argument is a pipe.
+
+    :param obj: any kind of stream
+    :param timeout: desired timeout
+    :param ignore_errors: desired ignore_errors setting
+    :param ignore_status: desired ignore_status setting
+    :param handler: desired error handler
+    """
     if not isinstance(obj, Pipe):
         return False
     if timeout is not None:
@@ -125,10 +136,24 @@ def set_options(obj, timeout=None, ignore_errors=None, ignore_status=None, handl
 
 
 def gopen_file(url, mode="rb", bufsize=8192):
+    """Open a file.
+
+    This works for local files, files over HTTP, and pipe: files.
+
+    :param url: URL to be opened
+    :param mode: mode to open it with
+    :param bufsize: requested buffer size
+    """
     return open(url, mode)
 
 
 def gopen_pipe(url, mode="rb", bufsize=8192):
+    """Use gopen to open a pipe.
+
+    :param url: a pipe: URL
+    :param mode: desired mode
+    :param bufsize: desired buffer size
+    """
     assert url.startswith("pipe:")
     cmd = url[5:]
     if mode[0] == "r":
@@ -144,6 +169,12 @@ def gopen_pipe(url, mode="rb", bufsize=8192):
 
 
 def gopen_curl(url, mode="rb", bufsize=8192):
+    """Open a URL with `curl`.
+
+    :param url: url (usually, http:// etc.)
+    :param mode: file mode
+    :param bufsize: buffer size
+    """
     if mode[0] == "r":
         cmd = f"curl -s -L '{url}'"
         return Pipe(
@@ -159,9 +190,16 @@ def gopen_curl(url, mode="rb", bufsize=8192):
 
 
 def gopen_error(url, *args, **kw):
+    """Raise a value error.
+
+    :param url: url
+    :param args: other arguments
+    :param kw: other keywords
+    """
     raise ValueError(f"{url}: no gopen handler defined")
 
 
+"""A dispatch table mapping URL schemes to handlers."""
 gopen_schemes = dict(
     __default__=gopen_error,
     pipe=gopen_pipe,
@@ -174,6 +212,23 @@ gopen_schemes = dict(
 
 
 def gopen(url, mode="rb", bufsize=8192, **kw):
+    """Open the URL.
+
+    This uses the `gopen_schemes` dispatch table to dispatch based
+    on scheme.
+
+    Support for the following schemes is built-in: pipe, file,
+    http, https, sftp, ftps, scp.
+
+    When no scheme is given the url is treated as a file.
+
+    You can use the OPEN_VERBOSE argument to get info about
+    files being opened.
+
+    :param url: the source URL
+    :param mode: the mode ("rb", "r")
+    :param bufsize: the buffer size
+    """
     global fallback_gopen
     verbose = int(os.environ.get("GOPEN_VERBOSE", 0))
     if verbose:
@@ -199,4 +254,9 @@ def gopen(url, mode="rb", bufsize=8192, **kw):
 
 
 def reader(url, **kw):
+    """Open url with gopen and mode "rb".
+
+    :param url: source URL
+    :param kw: other keywords forwarded to gopen
+    """
     return gopen(url, "rb", **kw)
