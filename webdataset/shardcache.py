@@ -1,3 +1,5 @@
+"""Implement caching for shards."""
+
 import sys
 import os.path
 import io
@@ -5,15 +7,25 @@ import uuid
 
 
 def guess_shard(path):
+    """Guess the shard from a given path."""
     return os.path.split(path.split()[-1])[1]
 
 
 def shard_uuid(path):
+    """Compute a UUID for a shard path."""
     return str(uuid.uuid3(uuid.NAMESPACE_URL, path))
 
 
 class CacheStream(io.RawIOBase):
+    """Cache raw IO stream."""
+
     def __init__(self, fname, stream, verbose=False):
+        """Create a shard cache.
+
+        :param fname: file name for the cache file
+        :param stream: stream to be cached
+        :param verbose: verbose output on progress
+        """
         super().__init__()
         self.verbose = verbose
         self.stream = stream
@@ -34,6 +46,10 @@ class CacheStream(io.RawIOBase):
             )
 
     def close(self, complete=False):
+        """Close both the cache file and the original stream.
+
+        :param complete: indicate whether the stream was fully read (if not, the cache file is discarded)
+        """
         self.stream.close()
         if self.cache is not None:
             self.cache.close()
@@ -47,6 +63,10 @@ class CacheStream(io.RawIOBase):
             os.remove(self.fname + self.tempsuffix)
 
     def read(self, n):
+        """Read n bytes from the stream and write them to the cache file.
+
+        :param n: number of bytes
+        """
         data = self.stream.read(n)
         self.cache.write(data)
         if data is None or len(data) < n:
@@ -55,6 +75,10 @@ class CacheStream(io.RawIOBase):
         return data
 
     def readinto(self, b):
+        """Read data into a buffer.
+
+        :param b: buffer
+        """
         n = self.stream.readinto(b)
         self.cache.write(b[:n])
         if n == 0:
@@ -63,9 +87,20 @@ class CacheStream(io.RawIOBase):
         return n
 
 
-def cache_shards(
-    urls, cache_dir="./data", cache_size=1e15, cache_name=guess_shard, verbose=False
-):
+def cache_shards(urls, cache_dir="./data", cache_size=1e15, cache_name=guess_shard, verbose=False):
+    """Implement shard caching.
+
+    When caching is off, just iterates through the list of shards.
+
+    When caching is on (cache_dir is not None), opens each shard with caching
+    an returns a dictionary consisting of a URL and a stream.
+
+    :param urls: list of URLs
+    :param cache_dir: directory used for caching
+    :param cache_size: cache size
+    :param cache_name: function computing cache names
+    :param verbose: verbose caching info
+    """
     global _cache
     if cache_dir is None:
         yield from urls

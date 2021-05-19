@@ -6,8 +6,7 @@
 #
 
 
-"""A small wrapper for the functions in the `iterators` package
-transforming them into curried iterators."""
+"""A small curry wrapper for the functions in the `iterators` package."""
 
 
 from . import iterators
@@ -16,32 +15,40 @@ from . import iterators
 class Curried2(object):
     """Helper class for currying pipeline stages.
 
-    We use this roundabout construct becauce it can be pickled."""
+    We use this roundabout construct becauce it can be pickled.
+    """
 
     def __init__(self, f, *args, **kw):
+        """Create a curried function."""
         self.f = f
         self.args = args
         self.kw = kw
 
     def __call__(self, data):
+        """Call the curried function with the given argument."""
         return self.f(data, *self.args, **self.kw)
 
     def __str__(self):
+        """Compute a string representation."""
         return f"<{self.f.__name__} {self.args} {self.kw}>"
 
     def __repr__(self):
+        """Compute a string representation."""
         return f"<{self.f.__name__} {self.args} {self.kw}>"
 
 
 class Curried(object):
     """Helper class for currying pipeline stages.
 
-    We use this roundabout construct because it can be pickled."""
+    We use this roundabout construct because it can be pickled.
+    """
 
     def __init__(self, f):
+        """Store the function for future currying."""
         self.f = f
 
     def __call__(self, *args, **kw):
+        """Curry with the given arguments."""
         return Curried2(self.f, *args, **kw)
 
 

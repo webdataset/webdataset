@@ -6,9 +6,7 @@
 #
 
 
-"""Train PyTorch models directly from POSIX tar archive, locally
-or over HTTP connections.
-"""
+"""Automatically decode webdataset samples."""
 
 __all__ = "WebDataset tariterator default_handlers imagehandler".split()
 
@@ -25,9 +23,7 @@ import numpy as np
 from .checks import checkmember, checknotnone
 
 
-check_present = int(os.environ.get("WDS_CHECK_DECODE", 0))
-
-
+"""Extensions passed on to the image decoder."""
 image_extensions = "jpg jpeg png ppm pgm pbm pnm".split()
 
 
@@ -37,6 +33,10 @@ image_extensions = "jpg jpeg png ppm pgm pbm pnm".split()
 
 
 def torch_loads(data):
+    """torch_loads.
+
+    :param data:
+    """
     import io
     import torch
 
@@ -45,7 +45,23 @@ def torch_loads(data):
 
 
 def basichandlers(key, data):
+    """Handle basic file decoding.
 
+    This function is usually part of the post= decoders.
+    This handles the following forms of decoding:
+
+    - txt -> unicode string
+    - cls cls2 class count index inx id -> int
+    - json jsn -> JSON decoding
+    - pyd pickle -> pickle decoding
+    - pth -> torch.loads
+    - ten tenbin -> fast tensor loading
+    - mp messagepack msg -> messagepack decoding
+    - npy -> Python NPY decoding
+
+    :param key: file name extension
+    :param data: binary data to be decoded
+    """
     extension = re.sub(r".*[.]", "", key)
 
     if extension in "txt text transcript":
@@ -84,6 +100,44 @@ def basichandlers(key, data):
 
 
 ################################################################
+# Generic extension handler.
+################################################################
+
+def call_extension_handler(key, data, f, extensions):
+    """Call the function f with the given data if the key matches the extensions.
+
+    :param key: actual key found in the sample
+    :param data: binary data
+    :param f: decoder function
+    :param extensions: list of matching extensions
+    """
+    extension = key.lower().split(".")
+    for target in extensions:
+        target = target.split(".")
+        if len(target) > len(extension):
+            continue
+        if extension[-len(target):] == target:
+            return f(data)
+    return None
+
+
+def handle_extension(extensions, f):
+    """Return a decoder function for the list of extensions.
+
+    Extensions can be a space separated list of extensions.
+    Extensions can contain dots, in which case the corresponding number
+    of extension components must be present in the key given to f.
+    Comparisons are case insensitive.
+
+    Examples:
+    handle_extension("jpg jpeg", my_decode_jpg)  # invoked for any file.jpg
+    handle_extension("seg.jpg", special_case_jpg)  # invoked only for file.seg.jpg
+    """
+    extensions = extensions.lower().split()
+    return partial(call_extension_handler, f=f, extensions=extensions)
+
+
+################################################################
 # handle images
 ################################################################
 
@@ -106,36 +160,6 @@ imagespecs = {
     "pilrgb": ("pil", None, "rgb"),
     "pilrgba": ("pil", None, "rgba"),
 }
-
-
-def _g(key, data, f, extensions):
-    extension = key.lower().split(".")
-    for target in extensions:
-        target = target.split(".")
-        if len(target) > len(extension):
-            continue
-        if extension[-len(target):] == target:
-            return f(data)
-    return None
-
-
-def handle_extension(extensions, f):
-    """Returns a decoder function for the list of extensions.
-
-    Extensions can be a space separated list of extensions.
-    Extensions can contain dots, in which case the corresponding number
-    of extension components must be present in the key given to f.
-    Comparisons are case insensitive.
-
-    Examples:
-
-    handle_extension("jpg jpeg", my_decode_jpg)  # invoked for any file.jpg
-    handle_extension("seg.jpg", special_case_jpg)  # invoked only for file.seg.jpg
-    """
-    extensions = extensions.lower().split()
-    # _g can't be a local function since pickle doesn't support local functions. Pickle is used by Pytorch dataloader
-    # when loading data with multiple workers.
-    return partial(_g, f=f, extensions=extensions)
 
 
 class ImageHandler:
@@ -166,11 +190,21 @@ class ImageHandler:
     """
 
     def __init__(self, imagespec, extensions=image_extensions):
+        """Create an image handler.
+
+        :param imagespec: short string indicating the type of decoding
+        :param extensions: list of extensions the image handler is invoked for
+        """
         checkmember(imagespec, list(imagespecs.keys()), "unknown image specification")
         self.imagespec = imagespec.lower()
         self.extensions = extensions
 
     def __call__(self, key, data):
+        """Perform image decoding.
+
+        :param key: file name extension
+        :param data: binary data
+        """
         import PIL.Image
 
         extension = re.sub(r".*[.]", "", key)
@@ -205,8 +239,15 @@ class ImageHandler:
         return None
 
 
-def imagehandler(imagespec):
-    return ImageHandler(imagespec)
+def imagehandler(imagespec, extensions=image_extensions):
+    """Create an image handler.
+
+    This is just a lower case alias for ImageHander.
+
+    :param imagespec: textual image spec
+    :param extensions: list of extensions the handler should be applied for
+    """
+    return ImageHandler(imagespec, extensions)
 
 
 ################################################################
@@ -215,6 +256,11 @@ def imagehandler(imagespec):
 
 
 def torch_video(key, data):
+    """Decode video using the torchvideo library.
+
+    :param key: file name extension
+    :param data: data to be decoded
+    """
     extension = re.sub(r".*[.]", "", key)
     if extension not in "mp4 ogv mjpeg avi mov h264 mpg webm wmv".split():
         return None
@@ -234,6 +280,11 @@ def torch_video(key, data):
 
 
 def torch_audio(key, data):
+    """Decode audio using the torchaudio library.
+
+    :param key: file name extension
+    :param data: data to be decoded
+    """
     extension = re.sub(r".*[.]", "", key)
     if extension not in ["flac", "mp3", "sox", "wav", "m4a", "ogg", "wma"]:
         return None
@@ -264,10 +315,22 @@ class Continue:
     """
 
     def __init__(self, key, data):
+        """__init__.
+
+        :param key:
+        :param data:
+        """
         self.key, self.data = key, data
 
 
 def gzfilter(key, data):
+    """Decode .gz files.
+
+    This decodes compressed files and the continues decoding.
+
+    :param key: file name extension
+    :param data: binary data
+    """
     import gzip
 
     if not key.endswith(".gz"):
@@ -277,7 +340,7 @@ def gzfilter(key, data):
 
 
 ################################################################
-# a sample decoder
+# decode entire training amples
 ################################################################
 
 
@@ -293,6 +356,13 @@ class Decoder:
     """
 
     def __init__(self, handlers, pre=None, post=None, only=None):
+        """Create a Decoder.
+
+        :param handlers: main list of handlers
+        :param pre: handlers called before the main list (.gz handler by default)
+        :param post: handlers called after the main list (default handlers by default)
+        :param only: a list of extensions; when give, only ignores files with those extensions
+        """
         self.only = only if only is None else set(only)
         if pre is None:
             pre = default_pre_handlers
@@ -304,6 +374,11 @@ class Decoder:
         self.handlers = pre + handlers + post
 
     def decode1(self, key, data):
+        """Decode a single field of a sample.
+
+        :param key: file name extension
+        :param data: binary data
+        """
         key = "." + key
         for f in self.handlers:
             result = f(key, data)
@@ -315,6 +390,10 @@ class Decoder:
         return data
 
     def decode(self, sample):
+        """Decode an entire sample.
+
+        :param sample: the sample, a dictionary of key value pairs
+        """
         result = {}
         assert isinstance(sample, dict), sample
         for k, v in list(sample.items()):
@@ -330,5 +409,9 @@ class Decoder:
         return result
 
     def __call__(self, sample):
+        """Decode an entire sample.
+
+        :param sample: the sample
+        """
         assert isinstance(sample, dict), (len(sample), sample)
         return self.decode(sample)

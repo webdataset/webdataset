@@ -4,6 +4,9 @@
 #
 # flake8: noqa
 
+
+"""Exported globals for webdataset library."""
+
 __all__ = "tenbin dataset writer".split()
 
 from . import tenbin
