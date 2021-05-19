@@ -6,8 +6,9 @@
 #
 
 
-"""Train PyTorch models directly from POSIX tar archive, locally
-or over HTTP connections.
+"""Train PyTorch models directly from POSIX tar archive.
+
+Code works locally or over HTTP connections.
 """
 
 __all__ = """Dataset tariterator default_handlers imagehandler
@@ -191,9 +192,6 @@ class BatchedLength:
 class Shorthands:
     """A convenient set of shorthands for common data transformations."""
 
-    def __init__(self):
-        super().__init__()
-
     def batched(self, batchsize, collation_fn=iterators.default_collation_fn, partial=True):
         """Compute batches for the given dataset.
 
@@ -276,7 +274,7 @@ class Shorthands:
         return self.map(decoder, handler=handler)
 
     def rename(self, handler=reraise_exception, **kw):
-        """Simple field renaming.
+        """Rename fields in a dictionary based sample.
 
         This works on dictionary input streams. A keyword argument like
         `new="old"` renames extension/key "old" to "new".
@@ -423,14 +421,36 @@ class Shorthands:
 class Repeatedly(IterableDataset, Composable, Shorthands):
     """Repeatedly yield samples from a dataset."""
 
-    def __init__(self, **kw):
-        self.kw = kw
+    def __init__(self, nepochs=None, nbatches=None, nsamples=None, batchsize=None, length=None):
+        """Create an instance of Repeatedly.
+
+        :param nepochs: repeat for a maximum of nepochs
+        :param nbatches: repeat for a maximum of nbatches
+        :param nsamples: repeat for a maximum of nsamples (requires batchsize)
+        :param batchsize: integer or function of sample returning batch size
+        """
+        self.length = length
+        self.nepochs = nepochs
+        self.nbatches = nbatches
+        self.nsamples = nsamples
+        self.batchsize = batchsize
 
     def __iter__(self):
-        return utils.repeatedly(self.source, **self.kw)
+        """Return an iterator that iterates repeatedly over a source."""
+        return utils.repeatedly(self.source, nepochs=self.nepochs, nbatches=self.nbatches, nsamples=self.nsamples, batchsize=self.batchsize)
 
     def __len__(self):
-        return len(self.source)
+        """Return the length of the source."""
+        if callable(self.length):
+            return self.length(self.source)
+        if self.length is not None:
+            return self.length
+        if self.nepochs is not None:
+            return len(self.source) * self.nepochs
+        if self.nbatches is not None:
+            return self.nbatches
+        if self.nsamples is not None:
+            raise ValueError("can't compute size for nsamples; please specify with length= argument")
 
 
 class Processor(IterableDataset, Composable, Shorthands):
@@ -545,7 +565,7 @@ def WebDataset(
 
 
 def WebLoader(*args, **kw):
-    """Return a small wrapper around torch.utils.data.DataLoader
+    """Return a small wrapper around torch.utils.data.DataLoader.
 
     This wrapper works identically to the original `DataLoader`, but adds
     alls the convenience functions and filters for WebDataset.
@@ -628,7 +648,7 @@ class ChoppedDataset(IterableDataset):
     """
 
     def __init__(self, dataset, length=None, nominal=None):
-        """Create a
+        """Create a ChoppedDataset.
 
         :param dataset: IterableDataset
         :param length: declared length of the dataset
