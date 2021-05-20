@@ -98,6 +98,18 @@ class Composable:
         assert callable(constructor)
         return constructor(*args, **kw).source_(self)
 
+    def set_epoch(self, epoch):
+        """Inform all subcomponents of the current epoch.
+        
+        This is used for shuffling shards differently at each epoch, before
+        assigning them to workers.
+        """
+        if isinstance(self.source, Composable):
+            self.source.set_epoch(epoch)
+        elif isinstance(self.source, DataLoader):
+            self.source.dataset.set_epoch(epoch)
+
+
 
 class ShardList(IterableDataset, Composable):
     """An iterable dataset yielding a list of urls."""
@@ -141,10 +153,16 @@ class ShardList(IterableDataset, Composable):
             urls = list(urls)
         self.urls = urls
         assert isinstance(self.urls[0], str)
+        self.epoch = None
+    
+    def set_epoch(self, epoch):
+        self.epoch = epoch
 
     def __iter__(self):
         """Return an iterator over the shards."""
         urls = list(self.urls)
+        if self.epoch is not None:
+            random.Random(self.epoch).shuffle(urls)
         urls = list(self.nodesplitter(urls))
         urls = list(self.splitter(urls))
         if callable(self.shuffle):
