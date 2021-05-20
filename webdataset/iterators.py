@@ -5,8 +5,7 @@
 # See the LICENSE file for licensing terms (BSD-style).
 #
 
-"""A collection of iterators implementing useful functionality for
-transforming datasets in processing pipelines.
+"""A collection of iterators for data transformations.
 
 These functions are plain iterator functions. You can find curried versions
 in webdataset.filters, and you can find IterableDataset wrappers in
@@ -22,6 +21,7 @@ from functools import reduce
 import numpy as np
 
 from . import autodecode
+from . import utils
 from .checks import checktype
 
 try:
@@ -29,6 +29,8 @@ try:
 except ModuleNotFoundError:
 
     class TorchTensor:
+        """TorchTensor."""
+
         pass
 
 
@@ -38,20 +40,25 @@ except ModuleNotFoundError:
 
 
 def reraise_exception(exn):
+    """Reraises the given exception; used as a handler.
+
+    :param exn: exception
+    """
     raise exn
 
 
 def identity(x):
+    """Return the argument."""
     return x
 
 
 def compose2(f, g):
-    """Compose two functions, g(f(x))"""
+    """Compose two functions, g(f(x))."""
     return lambda x: g(f(x))
 
 
 def compose(*args):
-    """Compose a sequence of functions (left-to-right)"""
+    """Compose a sequence of functions (left-to-right)."""
     return reduce(compose2, args)
 
 
@@ -111,52 +118,22 @@ def transform_with(sample, transformers):
     return result
 
 
-def transformer(transformers):
-    """Curried version of `transform_with`.
-
-    transformers :
-
-    """
-
-    def f(x):
-        return transform_with(x, transformers)
-
-    return f
-
-
 ###
 # Iterators
 ###
 
 
-# def map_stream(data, f=None, handler=reraise_exception):
-#     """Map entire samples using the given function.
-#
-#     data: iterator
-#     f: function from samples to samples
-#     returns: iterator over transformed samples
-#
-#     """
-#
-#     if f is None:
-#
-#         def f(x):  # skipcq: PYL-E0102
-#             return x
-#
-#     for sample in data:
-#         try:
-#             result = f(sample)
-#         except Exception as exn:
-#             if handler(exn):
-#                 continue
-#             else:
-#                 break
-#         if isinstance(sample, dict) and isinstance(result, dict):
-#             result["__key__"] = sample.get("__key__")
-#         yield result
-
-
 def info(data, fmt=None, n=3, every=-1, width=50, stream=sys.stderr, name=""):
+    """Print information about the samples that are passing through.
+
+    :param data: source iterator
+    :param fmt: format statement (using sample dict as keyword)
+    :param n: when to stop
+    :param every: how often to print
+    :param width: maximum width
+    :param stream: output stream
+    :param name: identifier printed before any output
+    """
     for i, sample in enumerate(data):
         if i < n or (every > 0 and (i + 1) % every == 0):
             if fmt is None:
@@ -202,12 +179,18 @@ def shuffle(data, bufsize=1000, initial=100, rng=random, handler=None):
 
 
 def select(data, predicate):
+    """Select samples based on a predicate.
+
+    :param data: source iterator
+    :param predicate: predicate (function)
+    """
     for sample in data:
         if predicate(sample):
             yield sample
 
 
 def decode(data, *args, handler=reraise_exception, **kw):
+    """Decode data based on the decoding functions given as arguments."""
     f = autodecode.Decoder(list(args), **kw)
 
     for sample in data:
@@ -223,6 +206,7 @@ def decode(data, *args, handler=reraise_exception, **kw):
 
 
 def map(data, f, handler=reraise_exception):
+    """Map samples."""
     for sample in data:
         try:
             result = f(sample)
@@ -237,6 +221,7 @@ def map(data, f, handler=reraise_exception):
 
 
 def rename(data, handler=reraise_exception, **kw):
+    """Rename samples based on keyword arguments."""
     for sample in data:
         try:
             yield {k: getfirst(sample, v, missing_is_error=True) for k, v in kw.items()}
@@ -248,6 +233,7 @@ def rename(data, handler=reraise_exception, **kw):
 
 
 def associate(data, associator, **kw):
+    """Associate additional data with samples."""
     for sample in data:
         if callable(associator):
             extra = associator(sample["__key__"])
@@ -258,6 +244,7 @@ def associate(data, associator, **kw):
 
 
 def map_dict(data, handler=reraise_exception, **kw):
+    """Map the entries in a dict sample with individual functions."""
     assert len(list(kw.keys())) > 0
     for key, f in kw.items():
         assert callable(f), (key, f)
@@ -276,6 +263,7 @@ def map_dict(data, handler=reraise_exception, **kw):
 
 
 def to_tuple(data, *args, handler=reraise_exception):
+    """Convert dict samples to tuples."""
     if len(args) == 1 and isinstance(args[0], str) and " " in args[0]:
         args = args[0].split()
 
@@ -290,6 +278,8 @@ def to_tuple(data, *args, handler=reraise_exception):
 
 
 def map_tuple(data, *args, handler=reraise_exception):
+    """Map the entries of a tuple with individual functions."""
+    args = [f if f is not None else utils.identity for f in args]
     for f in args:
         assert callable(f), f
     for sample in data:
@@ -354,7 +344,6 @@ def batched(
     :returns: iterator
 
     """
-
     batch = []
     for sample in data:
         if len(batch) >= batchsize:
@@ -368,6 +357,7 @@ def batched(
 
 
 def unbatched(data):
+    """Turn batched data back into unbatched data."""
     for sample in data:
         assert isinstance(sample, (tuple, list)), sample
         assert len(sample) > 0

@@ -5,12 +5,9 @@
 Help on module webdataset.iterators in webdataset:
 
 NAME
-    webdataset.iterators
+    webdataset.iterators - A collection of iterators for data transformations.
 
 DESCRIPTION
-    A collection of iterators implementing useful functionality for
-    transforming datasets in processing pipelines.
-    
     These functions are plain iterator functions. You can find curried versions
     in webdataset.filters, and you can find IterableDataset wrappers in
     webdataset.processing.
@@ -31,7 +28,7 @@ FILE
 Help on module webdataset.fluid in webdataset:
 
 NAME
-    webdataset.fluid - A fluid interface for constructing datasets.
+    webdataset.fluid - A deprecated interface to WebDataset.
 
 CLASSES
     torch.utils.data.dataset.IterableDataset(torch.utils.data.dataset.Dataset)
@@ -40,106 +37,7 @@ CLASSES
     class Dataset(torch.utils.data.dataset.IterableDataset)
      |  Dataset(*args, **kwds)
      |  
-     |  An iterable Dataset.
-     |  
-     |  All datasets that represent an iterable of data samples should subclass it.
-     |  Such form of datasets is particularly useful when data come from a stream.
-     |  
-     |  All subclasses should overwrite :meth:`__iter__`, which would return an
-     |  iterator of samples in this dataset.
-     |  
-     |  When a subclass is used with :class:`~torch.utils.data.DataLoader`, each
-     |  item in the dataset will be yielded from the :class:`~torch.utils.data.DataLoader`
-     |  iterator. When :attr:`num_workers > 0`, each worker process will have a
-     |  different copy of the dataset object, so it is often desired to configure
-     |  each copy independently to avoid having duplicate data returned from the
-     |  workers. :func:`~torch.utils.data.get_worker_info`, when called in a worker
-     |  process, returns information about the worker. It can be used in either the
-     |  dataset's :meth:`__iter__` method or the :class:`~torch.utils.data.DataLoader` 's
-     |  :attr:`worker_init_fn` option to modify each copy's behavior.
-     |  
-     |  Example 1: splitting workload across all workers in :meth:`__iter__`::
-     |  
-     |      >>> class MyIterableDataset(torch.utils.data.IterableDataset):
-     |      ...     def __init__(self, start, end):
-     |      ...         super(MyIterableDataset).__init__()
-     |      ...         assert end > start, "this example code only works with end >= start"
-     |      ...         self.start = start
-     |      ...         self.end = end
-     |      ...
-     |      ...     def __iter__(self):
-     |      ...         worker_info = torch.utils.data.get_worker_info()
-     |      ...         if worker_info is None:  # single-process data loading, return the full iterator
-     |      ...             iter_start = self.start
-     |      ...             iter_end = self.end
-     |      ...         else:  # in a worker process
-     |      ...             # split workload
-     |      ...             per_worker = int(math.ceil((self.end - self.start) / float(worker_info.num_workers)))
-     |      ...             worker_id = worker_info.id
-     |      ...             iter_start = self.start + worker_id * per_worker
-     |      ...             iter_end = min(iter_start + per_worker, self.end)
-     |      ...         return iter(range(iter_start, iter_end))
-     |      ...
-     |      >>> # should give same set of data as range(3, 7), i.e., [3, 4, 5, 6].
-     |      >>> ds = MyIterableDataset(start=3, end=7)
-     |  
-     |      >>> # Single-process loading
-     |      >>> print(list(torch.utils.data.DataLoader(ds, num_workers=0)))
-     |      [3, 4, 5, 6]
-     |  
-     |      >>> # Mult-process loading with two worker processes
-     |      >>> # Worker 0 fetched [3, 4].  Worker 1 fetched [5, 6].
-     |      >>> print(list(torch.utils.data.DataLoader(ds, num_workers=2)))
-     |      [3, 5, 4, 6]
-     |  
-     |      >>> # With even more workers
-     |      >>> print(list(torch.utils.data.DataLoader(ds, num_workers=20)))
-     |      [3, 4, 5, 6]
-     |  
-     |  Example 2: splitting workload across all workers using :attr:`worker_init_fn`::
-     |  
-     |      >>> class MyIterableDataset(torch.utils.data.IterableDataset):
-     |      ...     def __init__(self, start, end):
-     |      ...         super(MyIterableDataset).__init__()
-     |      ...         assert end > start, "this example code only works with end >= start"
-     |      ...         self.start = start
-     |      ...         self.end = end
-     |      ...
-     |      ...     def __iter__(self):
-     |      ...         return iter(range(self.start, self.end))
-     |      ...
-     |      >>> # should give same set of data as range(3, 7), i.e., [3, 4, 5, 6].
-     |      >>> ds = MyIterableDataset(start=3, end=7)
-     |  
-     |      >>> # Single-process loading
-     |      >>> print(list(torch.utils.data.DataLoader(ds, num_workers=0)))
-     |      [3, 4, 5, 6]
-     |      >>>
-     |      >>> # Directly doing multi-process loading yields duplicate data
-     |      >>> print(list(torch.utils.data.DataLoader(ds, num_workers=2)))
-     |      [3, 3, 4, 4, 5, 5, 6, 6]
-     |  
-     |      >>> # Define a `worker_init_fn` that configures each dataset copy differently
-     |      >>> def worker_init_fn(worker_id):
-     |      ...     worker_info = torch.utils.data.get_worker_info()
-     |      ...     dataset = worker_info.dataset  # the dataset copy in this worker process
-     |      ...     overall_start = dataset.start
-     |      ...     overall_end = dataset.end
-     |      ...     # configure the dataset to only process the split workload
-     |      ...     per_worker = int(math.ceil((overall_end - overall_start) / float(worker_info.num_workers)))
-     |      ...     worker_id = worker_info.id
-     |      ...     dataset.start = overall_start + worker_id * per_worker
-     |      ...     dataset.end = min(dataset.start + per_worker, overall_end)
-     |      ...
-     |  
-     |      >>> # Mult-process loading with the custom `worker_init_fn`
-     |      >>> # Worker 0 fetched [3, 4].  Worker 1 fetched [5, 6].
-     |      >>> print(list(torch.utils.data.DataLoader(ds, num_workers=2, worker_init_fn=worker_init_fn)))
-     |      [3, 5, 4, 6]
-     |  
-     |      >>> # With even more workers
-     |      >>> print(list(torch.utils.data.DataLoader(ds, num_workers=20, worker_init_fn=worker_init_fn)))
-     |      [3, 4, 5, 6]
+     |  This class works almost identically to WebDataset but with internal state.
      |  
      |  Method resolution order:
      |      Dataset
@@ -151,13 +49,16 @@ CLASSES
      |  Methods defined here:
      |  
      |  __getattr__(self, name)
+     |      Forward method calls to the underlying WebDataset and update the internal pipe.
      |  
-     |  __init__(self, urls, *, length=True, splitter=<function split_by_worker at 0x7f3d8dd039d0>, handler=<function reraise_exception at 0x7f3d8de85040>, shuffle=False, cache_dir='', cache_size=1000000000000000, cache_name=<function shard_uuid at 0x7f3d8dd03310>, cache_verbose=1)
-     |      Initialize self.  See help(type(self)) for accurate signature.
+     |  __init__(self, urls, *, length=True, splitter=<function split_by_worker at 0x7fd4491b2280>, handler=<function reraise_exception at 0x7fd4491a69d0>, shuffle=False, cache_dir='', cache_size=1000000000000000, cache_name=<function shard_uuid at 0x7fd4491a63a0>, cache_verbose=1)
+     |      Create a Dataset instance. See WebDataset for documentation.
      |  
      |  __iter__(self)
+     |      Return an iterator over the underlying dataset.
      |  
      |  __len__(self)
+     |      Return the length of the underlying dataset.
      |  
      |  ----------------------------------------------------------------------
      |  Data and other attributes defined here:
@@ -221,60 +122,27 @@ FILE
 Help on module webdataset.multi in webdataset:
 
 NAME
-    webdataset.multi
+    webdataset.multi - An alternative to DataLoader using ZMQ.
+
+DESCRIPTION
+    This implements MultiLoader, an alternative to DataLoader when torch
+    is not available. Subprocesses communicate with the loader through
+    ZMQ, provided for high performance multithreaded queueing.
 
 CLASSES
     builtins.object
-        DistLoader
-        DistSender
-        Finished
+        EOF
         MultiLoader
     
-    class DistLoader(builtins.object)
-     |  DistLoader(sockname)
+    class EOF(builtins.object)
+     |  EOF(**kw)
      |  
-     |  Methods defined here:
-     |  
-     |  __init__(self, sockname)
-     |      Initialize self.  See help(type(self)) for accurate signature.
-     |  
-     |  __iter__(self)
-     |  
-     |  ----------------------------------------------------------------------
-     |  Data descriptors defined here:
-     |  
-     |  __dict__
-     |      dictionary for instance variables (if defined)
-     |  
-     |  __weakref__
-     |      list of weak references to the object (if defined)
-    
-    class DistSender(builtins.object)
-     |  DistSender(sockname)
-     |  
-     |  Methods defined here:
-     |  
-     |  __init__(self, sockname)
-     |      Initialize self.  See help(type(self)) for accurate signature.
-     |  
-     |  send(self, sample)
-     |  
-     |  ----------------------------------------------------------------------
-     |  Data descriptors defined here:
-     |  
-     |  __dict__
-     |      dictionary for instance variables (if defined)
-     |  
-     |  __weakref__
-     |      list of weak references to the object (if defined)
-    
-    class Finished(builtins.object)
-     |  Finished(**kw)
+     |  A class that indicates that a data stream is finished.
      |  
      |  Methods defined here:
      |  
      |  __init__(self, **kw)
-     |      Initialize self.  See help(type(self)) for accurate signature.
+     |      Initialize the class with the kw as instance variables.
      |  
      |  ----------------------------------------------------------------------
      |  Data descriptors defined here:
@@ -288,14 +156,27 @@ CLASSES
     class MultiLoader(builtins.object)
      |  MultiLoader(dataset, workers=4, verbose=False, nokill=False, prefix='/tmp/_multi-')
      |  
+     |  Alternative to PyTorch DataLoader based on ZMQ.
+     |  
      |  Methods defined here:
      |  
      |  __init__(self, dataset, workers=4, verbose=False, nokill=False, prefix='/tmp/_multi-')
-     |      Initialize self.  See help(type(self)) for accurate signature.
+     |      Create a MultiLoader for a dataset.
+     |      
+     |      This creates ZMQ sockets, spawns `workers` subprocesses, and has them send data
+     |      to the socket.
+     |      
+     |      :param dataset: source dataset
+     |      :param workers: number of workers
+     |      :param verbose: report progress verbosely
+     |      :param nokill: don't kill old processes when restarting (allows multiple loaders)
+     |      :param prefix: directory prefix for the ZMQ socket
      |  
      |  __iter__(self)
+     |      Return an iterator over this dataloader.
      |  
      |  kill(self)
+     |      kill.
      |  
      |  ----------------------------------------------------------------------
      |  Data descriptors defined here:
@@ -308,6 +189,11 @@ CLASSES
 
 FUNCTIONS
     reader(dataset, sockname, index)
+        Read samples from the dataset and send them over the socket.
+        
+        :param dataset: source dataset
+        :param sockname: name for the socket to send data to
+        :param index: index for this reader, using to indicate EOF
 
 DATA
     all_pids = set()
@@ -320,13 +206,53 @@ FILE
 
 ```
 
+# Module `webdataset.handlers`
+
+```
+Help on module webdataset.handlers in webdataset:
+
+NAME
+    webdataset.handlers - Pluggable exception handlers.
+
+DESCRIPTION
+    These are functions that take an exception as an argument and then return...
+    
+    - the exception (in order to re-raise it)
+    - True (in order to continue and ignore the exception)
+    - False (in order to ignore the exception and stop processing)
+    
+    They are used as handler= arguments in much of the library.
+
+FUNCTIONS
+    ignore_and_continue(exn)
+        Call in an exception handler to ignore any exception and continue.
+    
+    ignore_and_stop(exn)
+        Call in an exception handler to ignore any exception and stop further processing.
+    
+    reraise_exception(exn)
+        Call in an exception handler to re-raise the exception.
+    
+    warn_and_continue(exn)
+        Call in an exception handler to ignore any exception, isssue a warning, and continue.
+    
+    warn_and_stop(exn)
+        Call in an exception handler to ignore any exception and stop further processing.
+
+FILE
+    /home/tmb/proj/webdataset/webdataset/handlers.py
+
+
+
+```
+
 # Module `webdataset.dbcache`
 
 ```
 Help on module webdataset.dbcache in webdataset:
 
 NAME
-    webdataset.dbcache
+    webdataset.dbcache - Cache training samples in an SQLite3 database.
 
 CLASSES
     torch.utils.data.dataset.IterableDataset(torch.utils.data.dataset.Dataset)
@@ -335,106 +261,7 @@ CLASSES
     class DBCache(torch.utils.data.dataset.IterableDataset)
      |  DBCache(*args, **kwds)
      |  
-     |  An iterable Dataset.
-     |  
-     |  All datasets that represent an iterable of data samples should subclass it.
-     |  Such form of datasets is particularly useful when data come from a stream.
-     |  
-     |  All subclasses should overwrite :meth:`__iter__`, which would return an
-     |  iterator of samples in this dataset.
-     |  
-     |  When a subclass is used with :class:`~torch.utils.data.DataLoader`, each
-     |  item in the dataset will be yielded from the :class:`~torch.utils.data.DataLoader`
-     |  iterator. When :attr:`num_workers > 0`, each worker process will have a
-     |  different copy of the dataset object, so it is often desired to configure
-     |  each copy independently to avoid having duplicate data returned from the
-     |  workers. :func:`~torch.utils.data.get_worker_info`, when called in a worker
-     |  process, returns information about the worker. It can be used in either the
-     |  dataset's :meth:`__iter__` method or the :class:`~torch.utils.data.DataLoader` 's
-     |  :attr:`worker_init_fn` option to modify each copy's behavior.
-     |  
-     |  Example 1: splitting workload across all workers in :meth:`__iter__`::
-     |  
-     |      >>> class MyIterableDataset(torch.utils.data.IterableDataset):
-     |      ...     def __init__(self, start, end):
-     |      ...         super(MyIterableDataset).__init__()
-     |      ...         assert end > start, "this example code only works with end >= start"
-     |      ...         self.start = start
-     |      ...         self.end = end
-     |      ...
-     |      ...     def __iter__(self):
-     |      ...         worker_info = torch.utils.data.get_worker_info()
-     |      ...         if worker_info is None:  # single-process data loading, return the full iterator
-     |      ...             iter_start = self.start
-     |      ...             iter_end = self.end
-     |      ...         else:  # in a worker process
-     |      ...             # split workload
-     |      ...             per_worker = int(math.ceil((self.end - self.start) / float(worker_info.num_workers)))
-     |      ...             worker_id = worker_info.id
-     |      ...             iter_start = self.start + worker_id * per_worker
-     |      ...             iter_end = min(iter_start + per_worker, self.end)
-     |      ...         return iter(range(iter_start, iter_end))
-     |      ...
-     |      >>> # should give same set of data as range(3, 7), i.e., [3, 4, 5, 6].
-     |      >>> ds = MyIterableDataset(start=3, end=7)
-     |  
-     |      >>> # Single-process loading
-     |      >>> print(list(torch.utils.data.DataLoader(ds, num_workers=0)))
-     |      [3, 4, 5, 6]
-     |  
-     |      >>> # Mult-process loading with two worker processes
-     |      >>> # Worker 0 fetched [3, 4].  Worker 1 fetched [5, 6].
-     |      >>> print(list(torch.utils.data.DataLoader(ds, num_workers=2)))
-     |      [3, 5, 4, 6]
-     |  
-     |      >>> # With even more workers
-     |      >>> print(list(torch.utils.data.DataLoader(ds, num_workers=20)))
-     |      [3, 4, 5, 6]
-     |  
-     |  Example 2: splitting workload across all workers using :attr:`worker_init_fn`::
-     |  
-     |      >>> class MyIterableDataset(torch.utils.data.IterableDataset):
-     |      ...     def __init__(self, start, end):
-     |      ...         super(MyIterableDataset).__init__()
-     |      ...         assert end > start, "this example code only works with end >= start"
-     |      ...         self.start = start
-     |      ...         self.end = end
-     |      ...
-     |      ...     def __iter__(self):
-     |      ...         return iter(range(self.start, self.end))
-     |      ...
-     |      >>> # should give same set of data as range(3, 7), i.e., [3, 4, 5, 6].
-     |      >>> ds = MyIterableDataset(start=3, end=7)
-     |  
-     |      >>> # Single-process loading
-     |      >>> print(list(torch.utils.data.DataLoader(ds, num_workers=0)))
-     |      [3, 4, 5, 6]
-     |      >>>
-     |      >>> # Directly doing multi-process loading yields duplicate data
-     |      >>> print(list(torch.utils.data.DataLoader(ds, num_workers=2)))
-     |      [3, 3, 4, 4, 5, 5, 6, 6]
-     |  
-     |      >>> # Define a `worker_init_fn` that configures each dataset copy differently
-     |      >>> def worker_init_fn(worker_id):
-     |      ...     worker_info = torch.utils.data.get_worker_info()
-     |      ...     dataset = worker_info.dataset  # the dataset copy in this worker process
-     |      ...     overall_start = dataset.start
-     |      ...     overall_end = dataset.end
-     |      ...     # configure the dataset to only process the split workload
-     |      ...     per_worker = int(math.ceil((overall_end - overall_start) / float(worker_info.num_workers)))
-     |      ...     worker_id = worker_info.id
-     |      ...     dataset.start = overall_start + worker_id * per_worker
-     |      ...     dataset.end = min(dataset.start + per_worker, overall_end)
-     |      ...
-     |  
-     |      >>> # Mult-process loading with the custom `worker_init_fn`
-     |      >>> # Worker 0 fetched [3, 4].  Worker 1 fetched [5, 6].
-     |      >>> print(list(torch.utils.data.DataLoader(ds, num_workers=2, worker_init_fn=worker_init_fn)))
-     |      [3, 5, 4, 6]
-     |  
-     |      >>> # With even more workers
-     |      >>> print(list(torch.utils.data.DataLoader(ds, num_workers=20, worker_init_fn=worker_init_fn)))
-     |      [3, 4, 5, 6]
+     |  An IterableDataset that caches its inputs.
      |  
      |  Method resolution order:
      |      DBCache
@@ -445,25 +272,51 @@ CLASSES
      |  
      |  Methods defined here:
      |  
-     |  __call__(self, source)
-     |      Call self as a function.
-     |  
      |  __init__(self, dbname, size, source=None, shuffle=False, verbose=True)
-     |      Initialize self.  See help(type(self)) for accurate signature.
+     |      Create a DBCache for the given file name and of the given size.
+     |      
+     |      :param dbname: file name
+     |      :param size: number of samples to be cached
+     |      :param source: data source
+     |      :param shuffle: shuffle data on return
+     |      :param verbose: print progress messages
      |  
      |  __iter__(self)
+     |      Iterate over the samples in the dataset.
+     |      
+     |      If no cache is defined, just iterates over the source dataset.
+     |      
+     |      If a cache is set and it is full, iterates over the samples in the cache.
+     |      
+     |      If a cache is set and not full, adds samples to the cache from the source
+     |      and yields them.
      |  
      |  __len__(self)
+     |      Return the number of samples in the cache.
      |  
      |  dbiter(self)
+     |      Iterate over the samples in the cache.
      |  
      |  getmeta(self, key)
+     |      Get the metadata for the given key.
+     |      
+     |      :param key: key to be retrieved
      |  
      |  key_exists(self, key)
+     |      Check whether a key exists in the database.
+     |      
+     |      :param key: key
      |  
      |  setmeta(self, key, value)
+     |      Set the metadata for the given key.
+     |      
+     |      :param key: key
+     |      :param value: value to be set (a string)
      |  
      |  source_(self, source)
+     |      Set the dataset source for this cache.
+     |      
+     |      :param source: an IterableDataset
      |  
      |  ----------------------------------------------------------------------
      |  Data and other attributes defined here:
@@ -513,6 +366,9 @@ CLASSES
 
 FUNCTIONS
     get_uuid(data)
+        Compute a UUID for data.
+        
+        :param data: byte array
 
 FILE
     /home/tmb/proj/webdataset/webdataset/dbcache.py
@@ -527,14 +383,7 @@ FILE
 Help on module webdataset.__init__ in webdataset:
 
 NAME
-    webdataset.__init__
-
-DESCRIPTION
-    # Copyright (c) 2017-2019 NVIDIA CORPORATION. All rights reserved.
-    # This file is part of the WebDataset library.
-    # See the LICENSE file for licensing terms (BSD-style).
-    #
-    # flake8: noqa
+    webdataset.__init__ - Exported globals for webdataset library.
 
 DATA
     __all__ = ['tenbin', 'dataset', 'writer']
@@ -552,14 +401,16 @@ FILE
 Help on module webdataset.autodecode in webdataset:
 
 NAME
-    webdataset.autodecode
-
-DESCRIPTION
-    Train PyTorch models directly from POSIX tar archive, locally
-    or over HTTP connections.
+    webdataset.autodecode - Automatically decode webdataset samples.
 
 FUNCTIONS
-    imagehandler(imagespec)
+    imagehandler(imagespec, extensions=['jpg', 'jpeg', 'png', 'ppm', 'pgm', 'pbm', 'pnm'])
+        Create an image handler.
+        
+        This is just a lower case alias for ImageHander.
+        
+        :param imagespec: textual image spec
+        :param extensions: list of extensions the handler should be applied for
 
 DATA
     __all__ = ['WebDataset', 'tariterator', 'default_handlers', 'imagehand...
@@ -577,23 +428,26 @@ FILE
 Help on module webdataset.utils in webdataset:
 
 NAME
-    webdataset.utils
+    webdataset.utils - Miscellaneous utility functions.
 
 FUNCTIONS
-    ignore_and_continue(exn)
-        Called in an exception handler to ignore any exception and continue.
+    guess_batchsize(batch)
+        Guess the batch size by looking at the length of the first element in a tuple.
     
-    ignore_and_stop(exn)
-        Called in an exception handler to ignore any exception and stop further processing.
+    identity(x)
+        Return the argument as is.
     
-    reraise_exception(exn)
-        Called in an exception handler to re-raise the exception.
+    lookup_sym(sym, modules)
+        Look up a symbol in a list of modules.
     
-    warn_and_stop(exn)
-        Called in an exception handler to ignore any exception and stop further processing.
-
-DATA
-    __all__ = ['reraise_exception', 'ignore_and_continue', 'ignore_and_sto...
+    repeatedly(source, nepochs=None, nbatches=None, nsamples=None, batchsize=<function guess_batchsize at 0x7fb3f7696d30>)
+        Repeatedly yield samples from an iterator.
+    
+    repeatedly0(loader, nepochs=999999999, nbatches=999999999999)
+        Repeatedly returns batches from a DataLoader.
+    
+    safe_eval(s, expr='{}')
+        Evaluate the given expression more safely.
 
 FILE
     /home/tmb/proj/webdataset/webdataset/utils.py
@@ -608,7 +462,7 @@ FILE
 Help on module webdataset.mock in webdataset:
 
 NAME
-    webdataset.mock
+    webdataset.mock - Mock implementations of torch interfaces when torch is not available.
 
 CLASSES
     builtins.object
@@ -616,6 +470,8 @@ CLASSES
         IterableDataset
     
     class DataLoader(builtins.object)
+     |  Empty implementation of DataLoader when torch is not available.
+     |  
      |  Data descriptors defined here:
      |  
      |  __dict__
@@ -625,6 +481,8 @@ CLASSES
      |      list of weak references to the object (if defined)
     
     class IterableDataset(builtins.object)
+     |  Empty implementation of IterableDataset when torch is not available.
+     |  
      |  Data descriptors defined here:
      |  
      |  __dict__
@@ -654,18 +512,1426 @@ problem in webdataset.filters - AttributeError: module 'webdataset.iterators' ha
 Help on module webdataset.dataset in webdataset:
 
 NAME
-    webdataset.dataset
+    webdataset.dataset - Train PyTorch models directly from POSIX tar archive.
 
 DESCRIPTION
-    Train PyTorch models directly from POSIX tar archive, locally
-    or over HTTP connections.
+    Code works locally or over HTTP connections.
+
+CLASSES
+    builtins.object
+        BatchedLength
+        Composable
+            DatasetTest(torch.utils.data.dataset.IterableDataset, Composable, Shorthands)
+            Processor(torch.utils.data.dataset.IterableDataset, Composable, Shorthands)
+            Repeatedly(torch.utils.data.dataset.IterableDataset, Composable, Shorthands)
+            ShardList(torch.utils.data.dataset.IterableDataset, Composable)
+        Shorthands
+    torch.utils.data.dataset.IterableDataset(torch.utils.data.dataset.Dataset)
+        ChoppedDataset
+        DatasetTest(torch.utils.data.dataset.IterableDataset, Composable, Shorthands)
+        MockDataset
+        Processor(torch.utils.data.dataset.IterableDataset, Composable, Shorthands)
+        Repeatedly(torch.utils.data.dataset.IterableDataset, Composable, Shorthands)
+        ShardList(torch.utils.data.dataset.IterableDataset, Composable)
+    
+    class BatchedLength(builtins.object)
+     |  BatchedLength(batchsize, partial: bool)
+     |  
+     |  Compute the batched length of a dataset.
+     |  
+     |  We make this a class rather than a closure so that it can be pickled.
+     |  
+     |  Methods defined here:
+     |  
+     |  __call__(self, length)
+     |      Compute the number of batches for the given length.
+     |      
+     |      :param length: number of samples
+     |  
+     |  __init__(self, batchsize, partial: bool)
+     |      Initialize.
+     |      
+     |      :param batchsize: batch size
+     |      :param partial: allow partial batches
+     |  
+     |  ----------------------------------------------------------------------
+     |  Data descriptors defined here:
+     |  
+     |  __dict__
+     |      dictionary for instance variables (if defined)
+     |  
+     |  __weakref__
+     |      list of weak references to the object (if defined)
+    
+    class ChoppedDataset(torch.utils.data.dataset.IterableDataset)
+     |  ChoppedDataset(*args, **kwds)
+     |  
+     |  Change the actual and nominal length of an IterableDataset.
+     |  
+     |  This will continuously iterate through the original dataset, but
+     |  impose new epoch boundaries at the given length/nominal.
+     |  This exists mainly as a workaround for the odd logic in DataLoader.
+     |  It is also useful for choosing smaller nominal epoch sizes with
+     |  very large datasets.
+     |  
+     |  Method resolution order:
+     |      ChoppedDataset
+     |      torch.utils.data.dataset.IterableDataset
+     |      torch.utils.data.dataset.Dataset
+     |      typing.Generic
+     |      builtins.object
+     |  
+     |  Methods defined here:
+     |  
+     |  __getstate__(self)
+     |      Return the pickled state of the dataset.
+     |      
+     |      This resets the dataset iterator, since that can't be pickled.
+     |  
+     |  __init__(self, dataset, length=None, nominal=None)
+     |      Create a ChoppedDataset.
+     |      
+     |      :param dataset: IterableDataset
+     |      :param length: declared length of the dataset
+     |      :param nominal: nominal length of dataset (if different from declared)
+     |  
+     |  __iter__(self)
+     |      Return an iterator over the dataset.
+     |      
+     |      This iterator returns as many samples as given by the `length` parameter.
+     |  
+     |  __len__(self)
+     |      Return the length of the dataset.
+     |  
+     |  ----------------------------------------------------------------------
+     |  Data and other attributes defined here:
+     |  
+     |  __parameters__ = ()
+     |  
+     |  ----------------------------------------------------------------------
+     |  Methods inherited from torch.utils.data.dataset.IterableDataset:
+     |  
+     |  __add__(self, other: torch.utils.data.dataset.Dataset[+T_co])
+     |  
+     |  ----------------------------------------------------------------------
+     |  Data and other attributes inherited from torch.utils.data.dataset.IterableDataset:
+     |  
+     |  __orig_bases__ = (torch.utils.data.dataset.Dataset[+T_co],)
+     |  
+     |  ----------------------------------------------------------------------
+     |  Methods inherited from torch.utils.data.dataset.Dataset:
+     |  
+     |  __getitem__(self, index) -> +T_co
+     |  
+     |  ----------------------------------------------------------------------
+     |  Data descriptors inherited from torch.utils.data.dataset.Dataset:
+     |  
+     |  __dict__
+     |      dictionary for instance variables (if defined)
+     |  
+     |  __weakref__
+     |      list of weak references to the object (if defined)
+     |  
+     |  ----------------------------------------------------------------------
+     |  Class methods inherited from typing.Generic:
+     |  
+     |  __class_getitem__(params) from builtins.type
+     |  
+     |  __init_subclass__(*args, **kwargs) from builtins.type
+     |      This method is called when a class is subclassed.
+     |      
+     |      The default implementation does nothing. It may be
+     |      overridden to extend subclasses.
+     |  
+     |  ----------------------------------------------------------------------
+     |  Static methods inherited from typing.Generic:
+     |  
+     |  __new__(cls, *args, **kwds)
+     |      Create and return a new object.  See help(type) for accurate signature.
+    
+    class Composable(builtins.object)
+     |  A mixin implementing composability of data pipelines.
+     |  
+     |  Methods defined here:
+     |  
+     |  __init__(self)
+     |      Initialize the composable mixin.
+     |  
+     |  compose(self, constructor, *args, **kw)
+     |      Compose this processor with another IterableDataset.
+     |      
+     |      The constructor should be of the form `__init__(self, source_dataset, ...)`
+     |  
+     |  source_(self, source)
+     |      Set the source for this dataset.
+     |      
+     |      :param source: source dataset, should be an IterableDataset instance
+     |  
+     |  then(self, f, *args, length=True, **kw)
+     |      Compose this processor with a new processor defined by a function.
+     |      
+     |      The function is of the form:
+     |      
+     |          def my_process(source, ...):
+     |              for sample in source:
+     |                  ...
+     |                  result = ...
+     |                  yield result
+     |  
+     |  ----------------------------------------------------------------------
+     |  Data descriptors defined here:
+     |  
+     |  __dict__
+     |      dictionary for instance variables (if defined)
+     |  
+     |  __weakref__
+     |      list of weak references to the object (if defined)
+    
+    class DatasetTest(torch.utils.data.dataset.IterableDataset, Composable, Shorthands)
+     |  DatasetTest(*args, **kwds)
+     |  
+     |  Perform final checks on an IterableDataset and permit easy mock tests.
+     |  
+     |  This is the implementation of the `Shorthands.test` method; you usually
+     |  do not need to construct it explicitly.
+     |  
+     |  Method resolution order:
+     |      DatasetTest
+     |      torch.utils.data.dataset.IterableDataset
+     |      torch.utils.data.dataset.Dataset
+     |      typing.Generic
+     |      Composable
+     |      Shorthands
+     |      builtins.object
+     |  
+     |  Methods defined here:
+     |  
+     |  __init__(self, length=None, checker=None, mock_sample=None, mock_length=10000, mock=False)
+     |      Create a DatasetTest.
+     |      
+     |      :param length: length of the dataset
+     |      :param checker: any kind of final checking function you want to run over samples
+     |      :param mock_sample: mock sample
+     |      :param mock_length: size of mocked dataset
+     |      :param mock: turning mocking on/off
+     |  
+     |  __iter__(self)
+     |      Return an iterator either over the mock object or the underlying dataset.
+     |  
+     |  __len__(self)
+     |      Return the length of the test object.
+     |      
+     |      This is either the length of the mock object when in mock mode,
+     |      otherwise the length of the underlying dataset/data loader.
+     |  
+     |  ----------------------------------------------------------------------
+     |  Data and other attributes defined here:
+     |  
+     |  __parameters__ = ()
+     |  
+     |  ----------------------------------------------------------------------
+     |  Methods inherited from torch.utils.data.dataset.IterableDataset:
+     |  
+     |  __add__(self, other: torch.utils.data.dataset.Dataset[+T_co])
+     |  
+     |  ----------------------------------------------------------------------
+     |  Data and other attributes inherited from torch.utils.data.dataset.IterableDataset:
+     |  
+     |  __orig_bases__ = (torch.utils.data.dataset.Dataset[+T_co],)
+     |  
+     |  ----------------------------------------------------------------------
+     |  Methods inherited from torch.utils.data.dataset.Dataset:
+     |  
+     |  __getitem__(self, index) -> +T_co
+     |  
+     |  ----------------------------------------------------------------------
+     |  Data descriptors inherited from torch.utils.data.dataset.Dataset:
+     |  
+     |  __dict__
+     |      dictionary for instance variables (if defined)
+     |  
+     |  __weakref__
+     |      list of weak references to the object (if defined)
+     |  
+     |  ----------------------------------------------------------------------
+     |  Class methods inherited from typing.Generic:
+     |  
+     |  __class_getitem__(params) from builtins.type
+     |  
+     |  __init_subclass__(*args, **kwargs) from builtins.type
+     |      This method is called when a class is subclassed.
+     |      
+     |      The default implementation does nothing. It may be
+     |      overridden to extend subclasses.
+     |  
+     |  ----------------------------------------------------------------------
+     |  Static methods inherited from typing.Generic:
+     |  
+     |  __new__(cls, *args, **kwds)
+     |      Create and return a new object.  See help(type) for accurate signature.
+     |  
+     |  ----------------------------------------------------------------------
+     |  Methods inherited from Composable:
+     |  
+     |  compose(self, constructor, *args, **kw)
+     |      Compose this processor with another IterableDataset.
+     |      
+     |      The constructor should be of the form `__init__(self, source_dataset, ...)`
+     |  
+     |  source_(self, source)
+     |      Set the source for this dataset.
+     |      
+     |      :param source: source dataset, should be an IterableDataset instance
+     |  
+     |  then(self, f, *args, length=True, **kw)
+     |      Compose this processor with a new processor defined by a function.
+     |      
+     |      The function is of the form:
+     |      
+     |          def my_process(source, ...):
+     |              for sample in source:
+     |                  ...
+     |                  result = ...
+     |                  yield result
+     |  
+     |  ----------------------------------------------------------------------
+     |  Methods inherited from Shorthands:
+     |  
+     |  batched(self, batchsize, collation_fn=<function default_collation_fn at 0x7ff79e0aff70>, partial=True)
+     |      Compute batches for the given dataset.
+     |      
+     |      :param batchsize: desired batchsize
+     |      :param collation_fn: collation function to turn list of objects into batches
+     |      :param partial: return partial batches
+     |  
+     |  dbcache(self, fname, size)
+     |      Cache training samples in an SQLite database.
+     |      
+     |      This is useful for testing and for running validation tests.
+     |      
+     |      :param fname: filename for the sqlite database
+     |      :param size: number of samples to be cached
+     |  
+     |  ddp_equalize(self, length)
+     |      Equalize number of training samples in DistributedDataParallel training.
+     |      
+     |      Torch's DistributedDataParallel requires the same number of samples in
+     |      all participating compute nodes.
+     |      
+     |      Use with `loader = loader.ddp_equalize(number_of_batches)`
+     |      
+     |      
+     |      You need to specify the number of batches you want to equalize to.
+     |      This is usually the number of samples in the dataset divided by the batch size.
+     |      
+     |      :param length: number of batches in the dataset
+     |  
+     |  decode(self, *args, pre=None, post=None, only=None, handler=<function reraise_exception at 0x7ff79e0b29d0>)
+     |      Decode samples.
+     |      
+     |      This is a special form of mapping over samples given as dicts.
+     |      A list of all decoders is formed from `pre + args + post`.
+     |      For each dict entry, the decoders on that list are invoked in sequence
+     |      until one of them decodes the sample. That decoded value is then stored
+     |      in the dictionary and the next dictionary entry is decoded.
+     |      
+     |      The `pre` and `post` decoder lists are set to common defaults (including `.gz` decoding).
+     |      You can specify decoders for your application in the `args` argument.
+     |      String arguments like "pil" are a shorthand for image decoder functions like
+     |      `webdataset.imagehandler("pil")`. All other decoders must be specified as
+     |      functions.
+     |      
+     |      :param args: list of decoder functions; a string like "pil" is a shorthand for common image decoders
+     |      :param pre: a list of decoder functions that is always carried out before args
+     |      :param post: a list of decoder functions that is always carried out after args
+     |      :param only: limit decoding to the list of these fields
+     |      :param handler: exception handler
+     |  
+     |  map(self, f, handler=<function reraise_exception at 0x7ff79e0b29d0>)
+     |      Map a function over a stream of samples.
+     |      
+     |      This may be a tuple stream or a stream of dicts.
+     |      
+     |      :param f: The function to be mapped.
+     |      :param handler: The exception handling strategy.
+     |  
+     |  map_dict(self, handler=<function reraise_exception at 0x7ff79e0b29d0>, **kw)
+     |      Map the fields of a dictionary.
+     |      
+     |      :param handler: exeption handler
+     |      :param kw: list of key=function mappers
+     |  
+     |  map_tuple(self, *args, handler=<function reraise_exception at 0x7ff79e0b29d0>)
+     |      Map a tuple.
+     |      
+     |      :param args: List of functions corresponding to the fields of the tuple.
+     |      :param handler: exception handler
+     |  
+     |  pipe(self, f, *args, **kw)
+     |      Pipe the sample stream through the given function.
+     |      
+     |      :param f: function obtaining an iterator as a sample and yielding samples
+     |      :param args: arguments to the function
+     |      :param kw: keyword arguments
+     |  
+     |  rename(self, handler=<function reraise_exception at 0x7ff79e0b29d0>, **kw)
+     |      Rename fields in a dictionary based sample.
+     |      
+     |      This works on dictionary input streams. A keyword argument like
+     |      `new="old"` renames extension/key "old" to "new".
+     |      
+     |      :param handler: exception handler
+     |      :param kw: list of renames
+     |  
+     |  repeat(self, nepochs=None, nbatches=None, nsamples=None, batchsize=<function guess_batchsize at 0x7ff79e0bbd30>)
+     |      Repeat samples from the source dataset iterator.
+     |      
+     |      With no arguments, repeat infinitely.
+     |      
+     |      :param nepochs: maximum number of epochs
+     |      :param nbatches: maximum number of batches
+     |      :param nsamples: maximum number of samples
+     |      :param batchsize: integer giving batchsize, or function to compute it
+     |  
+     |  select(self, predicate, **kw)
+     |      Select samples matching some predicate.
+     |      
+     |      :param predicate: predicate used to select samples
+     |  
+     |  shuffle(self, size, **kw)
+     |      Shuffle the dataset using an internal shuffle buffer.
+     |      
+     |      This will buffer up `initial` samples. Then it will add new samples to
+     |      the internal buffer and return random samples from the buffer, simultaneously
+     |      filling up the buffer to the given size.
+     |      
+     |      Using initial < size will result in less initial randomness but faster
+     |      startups.
+     |      
+     |      :param size: size of the shuffle buffer
+     |      :param initial: buffer this many samples before yield training samples
+     |      :param handler: The exception handling strategy.
+     |      :param kw: other keywords for iterators.shuffle
+     |  
+     |  slice(self, *args)
+     |      Slice the stream of training samples.
+     |      
+     |      This takes the usual islice arguments of ([start], stop, [step])
+     |      
+     |      :param args: arguments to itertools.islice
+     |  
+     |  test(self, length=None, checker=None, mock_sample=None, mock_length=None, mock=False)
+     |      A quick and simple way of switching to a mock dataset at the end of a pipeline.
+     |      
+     |      Use with `loader = loader.test(mock_sample=..., mock_length=...)
+     |      You can turn on mocking with `loader.mock = True`
+     |      
+     |      :param length: length of the dataset
+     |      :param checker: any kind of final checking function you want to run over samples
+     |      :param mock_sample: mock sample
+     |      :param mock_length: size of mocked dataset
+     |      :param mock: turning mocking on/off
+     |  
+     |  to_tuple(self, *args, handler=<function reraise_exception at 0x7ff79e0b29d0>)
+     |      Convert a dictionary-based sample to a tuple.
+     |      
+     |      Field names to be extracted can be specified as a Python list
+     |      or as a string. "__key__ jpg;png cls" will extract a triple, with the
+     |      first entry being the key, the second being a JPEG or PNG image, and
+     |      the third being the contents of the cls file.
+     |      
+     |      :param args: field names
+     |      :param handler: exception handler
+     |  
+     |  unbatched(self, length=None)
+     |      Take a stream of batches and turn it back into a stream of samples.
+     |      
+     |      :param length: user-supplied length for the unbatched dataset.
+    
+    class MockDataset(torch.utils.data.dataset.IterableDataset)
+     |  MockDataset(*args, **kwds)
+     |  
+     |  MockDataset.
+     |  
+     |  A mock dataset for performance testing and unit testing.
+     |  
+     |  Method resolution order:
+     |      MockDataset
+     |      torch.utils.data.dataset.IterableDataset
+     |      torch.utils.data.dataset.Dataset
+     |      typing.Generic
+     |      builtins.object
+     |  
+     |  Methods defined here:
+     |  
+     |  __init__(self, sample, length)
+     |      Create a mock dataset instance.
+     |      
+     |      :param sample: the sample to be returned repeatedly
+     |      :param length: the length of the mock dataset
+     |  
+     |  __iter__(self)
+     |      Return an iterator over this mock dataset.
+     |  
+     |  __len__(self)
+     |      Return the length of this mock dataset.
+     |  
+     |  ----------------------------------------------------------------------
+     |  Data and other attributes defined here:
+     |  
+     |  __parameters__ = ()
+     |  
+     |  ----------------------------------------------------------------------
+     |  Methods inherited from torch.utils.data.dataset.IterableDataset:
+     |  
+     |  __add__(self, other: torch.utils.data.dataset.Dataset[+T_co])
+     |  
+     |  ----------------------------------------------------------------------
+     |  Data and other attributes inherited from torch.utils.data.dataset.IterableDataset:
+     |  
+     |  __orig_bases__ = (torch.utils.data.dataset.Dataset[+T_co],)
+     |  
+     |  ----------------------------------------------------------------------
+     |  Methods inherited from torch.utils.data.dataset.Dataset:
+     |  
+     |  __getitem__(self, index) -> +T_co
+     |  
+     |  ----------------------------------------------------------------------
+     |  Data descriptors inherited from torch.utils.data.dataset.Dataset:
+     |  
+     |  __dict__
+     |      dictionary for instance variables (if defined)
+     |  
+     |  __weakref__
+     |      list of weak references to the object (if defined)
+     |  
+     |  ----------------------------------------------------------------------
+     |  Class methods inherited from typing.Generic:
+     |  
+     |  __class_getitem__(params) from builtins.type
+     |  
+     |  __init_subclass__(*args, **kwargs) from builtins.type
+     |      This method is called when a class is subclassed.
+     |      
+     |      The default implementation does nothing. It may be
+     |      overridden to extend subclasses.
+     |  
+     |  ----------------------------------------------------------------------
+     |  Static methods inherited from typing.Generic:
+     |  
+     |  __new__(cls, *args, **kwds)
+     |      Create and return a new object.  See help(type) for accurate signature.
+    
+    class Processor(torch.utils.data.dataset.IterableDataset, Composable, Shorthands)
+     |  Processor(*args, **kwds)
+     |  
+     |  A class that turns a function into an IterableDataset.
+     |  
+     |  Method resolution order:
+     |      Processor
+     |      torch.utils.data.dataset.IterableDataset
+     |      torch.utils.data.dataset.Dataset
+     |      typing.Generic
+     |      Composable
+     |      Shorthands
+     |      builtins.object
+     |  
+     |  Methods defined here:
+     |  
+     |  __init__(self, source, f, *args, _kwa={}, length=True, **kw)
+     |      Create a processor.
+     |      
+     |      The function should take an iterator as an argument and yield
+     |      processed samples. The function is invoked as `f(source, *args, **kw)`.
+     |      
+     |      The `length` can be specified as `True`, in which case the value
+     |      is taken from the source dataset, as a callable, in which case
+     |      the length is the result of applying the callable to the source
+     |      dataset, or as an integer, in which case the length returned by
+     |      `__len__` is that integer.
+     |      
+     |      :param source: source dataset, an IterableDataset
+     |      :param f: function implementing the processor
+     |      :param args: extra arguments to the processor after the source iterator
+     |      :param _kwa: keyword arguments
+     |      :param length: specified length for the output
+     |      :param kw: extra keyword arguments
+     |  
+     |  __iter__(self)
+     |      Return an iterator over the source dataset processed by the given function.
+     |  
+     |  __len__(self)
+     |      Return the length of this dataset; see above how this is computed.
+     |  
+     |  source_(self, source)
+     |      Set the source dataset.
+     |      
+     |      :param source: source dataset
+     |  
+     |  ----------------------------------------------------------------------
+     |  Data and other attributes defined here:
+     |  
+     |  __parameters__ = ()
+     |  
+     |  ----------------------------------------------------------------------
+     |  Methods inherited from torch.utils.data.dataset.IterableDataset:
+     |  
+     |  __add__(self, other: torch.utils.data.dataset.Dataset[+T_co])
+     |  
+     |  ----------------------------------------------------------------------
+     |  Data and other attributes inherited from torch.utils.data.dataset.IterableDataset:
+     |  
+     |  __orig_bases__ = (torch.utils.data.dataset.Dataset[+T_co],)
+     |  
+     |  ----------------------------------------------------------------------
+     |  Methods inherited from torch.utils.data.dataset.Dataset:
+     |  
+     |  __getitem__(self, index) -> +T_co
+     |  
+     |  ----------------------------------------------------------------------
+     |  Data descriptors inherited from torch.utils.data.dataset.Dataset:
+     |  
+     |  __dict__
+     |      dictionary for instance variables (if defined)
+     |  
+     |  __weakref__
+     |      list of weak references to the object (if defined)
+     |  
+     |  ----------------------------------------------------------------------
+     |  Class methods inherited from typing.Generic:
+     |  
+     |  __class_getitem__(params) from builtins.type
+     |  
+     |  __init_subclass__(*args, **kwargs) from builtins.type
+     |      This method is called when a class is subclassed.
+     |      
+     |      The default implementation does nothing. It may be
+     |      overridden to extend subclasses.
+     |  
+     |  ----------------------------------------------------------------------
+     |  Static methods inherited from typing.Generic:
+     |  
+     |  __new__(cls, *args, **kwds)
+     |      Create and return a new object.  See help(type) for accurate signature.
+     |  
+     |  ----------------------------------------------------------------------
+     |  Methods inherited from Composable:
+     |  
+     |  compose(self, constructor, *args, **kw)
+     |      Compose this processor with another IterableDataset.
+     |      
+     |      The constructor should be of the form `__init__(self, source_dataset, ...)`
+     |  
+     |  then(self, f, *args, length=True, **kw)
+     |      Compose this processor with a new processor defined by a function.
+     |      
+     |      The function is of the form:
+     |      
+     |          def my_process(source, ...):
+     |              for sample in source:
+     |                  ...
+     |                  result = ...
+     |                  yield result
+     |  
+     |  ----------------------------------------------------------------------
+     |  Methods inherited from Shorthands:
+     |  
+     |  batched(self, batchsize, collation_fn=<function default_collation_fn at 0x7ff79e0aff70>, partial=True)
+     |      Compute batches for the given dataset.
+     |      
+     |      :param batchsize: desired batchsize
+     |      :param collation_fn: collation function to turn list of objects into batches
+     |      :param partial: return partial batches
+     |  
+     |  dbcache(self, fname, size)
+     |      Cache training samples in an SQLite database.
+     |      
+     |      This is useful for testing and for running validation tests.
+     |      
+     |      :param fname: filename for the sqlite database
+     |      :param size: number of samples to be cached
+     |  
+     |  ddp_equalize(self, length)
+     |      Equalize number of training samples in DistributedDataParallel training.
+     |      
+     |      Torch's DistributedDataParallel requires the same number of samples in
+     |      all participating compute nodes.
+     |      
+     |      Use with `loader = loader.ddp_equalize(number_of_batches)`
+     |      
+     |      
+     |      You need to specify the number of batches you want to equalize to.
+     |      This is usually the number of samples in the dataset divided by the batch size.
+     |      
+     |      :param length: number of batches in the dataset
+     |  
+     |  decode(self, *args, pre=None, post=None, only=None, handler=<function reraise_exception at 0x7ff79e0b29d0>)
+     |      Decode samples.
+     |      
+     |      This is a special form of mapping over samples given as dicts.
+     |      A list of all decoders is formed from `pre + args + post`.
+     |      For each dict entry, the decoders on that list are invoked in sequence
+     |      until one of them decodes the sample. That decoded value is then stored
+     |      in the dictionary and the next dictionary entry is decoded.
+     |      
+     |      The `pre` and `post` decoder lists are set to common defaults (including `.gz` decoding).
+     |      You can specify decoders for your application in the `args` argument.
+     |      String arguments like "pil" are a shorthand for image decoder functions like
+     |      `webdataset.imagehandler("pil")`. All other decoders must be specified as
+     |      functions.
+     |      
+     |      :param args: list of decoder functions; a string like "pil" is a shorthand for common image decoders
+     |      :param pre: a list of decoder functions that is always carried out before args
+     |      :param post: a list of decoder functions that is always carried out after args
+     |      :param only: limit decoding to the list of these fields
+     |      :param handler: exception handler
+     |  
+     |  map(self, f, handler=<function reraise_exception at 0x7ff79e0b29d0>)
+     |      Map a function over a stream of samples.
+     |      
+     |      This may be a tuple stream or a stream of dicts.
+     |      
+     |      :param f: The function to be mapped.
+     |      :param handler: The exception handling strategy.
+     |  
+     |  map_dict(self, handler=<function reraise_exception at 0x7ff79e0b29d0>, **kw)
+     |      Map the fields of a dictionary.
+     |      
+     |      :param handler: exeption handler
+     |      :param kw: list of key=function mappers
+     |  
+     |  map_tuple(self, *args, handler=<function reraise_exception at 0x7ff79e0b29d0>)
+     |      Map a tuple.
+     |      
+     |      :param args: List of functions corresponding to the fields of the tuple.
+     |      :param handler: exception handler
+     |  
+     |  pipe(self, f, *args, **kw)
+     |      Pipe the sample stream through the given function.
+     |      
+     |      :param f: function obtaining an iterator as a sample and yielding samples
+     |      :param args: arguments to the function
+     |      :param kw: keyword arguments
+     |  
+     |  rename(self, handler=<function reraise_exception at 0x7ff79e0b29d0>, **kw)
+     |      Rename fields in a dictionary based sample.
+     |      
+     |      This works on dictionary input streams. A keyword argument like
+     |      `new="old"` renames extension/key "old" to "new".
+     |      
+     |      :param handler: exception handler
+     |      :param kw: list of renames
+     |  
+     |  repeat(self, nepochs=None, nbatches=None, nsamples=None, batchsize=<function guess_batchsize at 0x7ff79e0bbd30>)
+     |      Repeat samples from the source dataset iterator.
+     |      
+     |      With no arguments, repeat infinitely.
+     |      
+     |      :param nepochs: maximum number of epochs
+     |      :param nbatches: maximum number of batches
+     |      :param nsamples: maximum number of samples
+     |      :param batchsize: integer giving batchsize, or function to compute it
+     |  
+     |  select(self, predicate, **kw)
+     |      Select samples matching some predicate.
+     |      
+     |      :param predicate: predicate used to select samples
+     |  
+     |  shuffle(self, size, **kw)
+     |      Shuffle the dataset using an internal shuffle buffer.
+     |      
+     |      This will buffer up `initial` samples. Then it will add new samples to
+     |      the internal buffer and return random samples from the buffer, simultaneously
+     |      filling up the buffer to the given size.
+     |      
+     |      Using initial < size will result in less initial randomness but faster
+     |      startups.
+     |      
+     |      :param size: size of the shuffle buffer
+     |      :param initial: buffer this many samples before yield training samples
+     |      :param handler: The exception handling strategy.
+     |      :param kw: other keywords for iterators.shuffle
+     |  
+     |  slice(self, *args)
+     |      Slice the stream of training samples.
+     |      
+     |      This takes the usual islice arguments of ([start], stop, [step])
+     |      
+     |      :param args: arguments to itertools.islice
+     |  
+     |  test(self, length=None, checker=None, mock_sample=None, mock_length=None, mock=False)
+     |      A quick and simple way of switching to a mock dataset at the end of a pipeline.
+     |      
+     |      Use with `loader = loader.test(mock_sample=..., mock_length=...)
+     |      You can turn on mocking with `loader.mock = True`
+     |      
+     |      :param length: length of the dataset
+     |      :param checker: any kind of final checking function you want to run over samples
+     |      :param mock_sample: mock sample
+     |      :param mock_length: size of mocked dataset
+     |      :param mock: turning mocking on/off
+     |  
+     |  to_tuple(self, *args, handler=<function reraise_exception at 0x7ff79e0b29d0>)
+     |      Convert a dictionary-based sample to a tuple.
+     |      
+     |      Field names to be extracted can be specified as a Python list
+     |      or as a string. "__key__ jpg;png cls" will extract a triple, with the
+     |      first entry being the key, the second being a JPEG or PNG image, and
+     |      the third being the contents of the cls file.
+     |      
+     |      :param args: field names
+     |      :param handler: exception handler
+     |  
+     |  unbatched(self, length=None)
+     |      Take a stream of batches and turn it back into a stream of samples.
+     |      
+     |      :param length: user-supplied length for the unbatched dataset.
+    
+    class Repeatedly(torch.utils.data.dataset.IterableDataset, Composable, Shorthands)
+     |  Repeatedly(*args, **kwds)
+     |  
+     |  Repeatedly yield samples from a dataset.
+     |  
+     |  Method resolution order:
+     |      Repeatedly
+     |      torch.utils.data.dataset.IterableDataset
+     |      torch.utils.data.dataset.Dataset
+     |      typing.Generic
+     |      Composable
+     |      Shorthands
+     |      builtins.object
+     |  
+     |  Methods defined here:
+     |  
+     |  __init__(self, nepochs=None, nbatches=None, nsamples=None, batchsize=None, length=None)
+     |      Create an instance of Repeatedly.
+     |      
+     |      :param nepochs: repeat for a maximum of nepochs
+     |      :param nbatches: repeat for a maximum of nbatches
+     |      :param nsamples: repeat for a maximum of nsamples (requires batchsize)
+     |      :param batchsize: integer or function of sample returning batch size
+     |  
+     |  __iter__(self)
+     |      Return an iterator that iterates repeatedly over a source.
+     |  
+     |  __len__(self)
+     |      Return the length of the source.
+     |  
+     |  ----------------------------------------------------------------------
+     |  Data and other attributes defined here:
+     |  
+     |  __parameters__ = ()
+     |  
+     |  ----------------------------------------------------------------------
+     |  Methods inherited from torch.utils.data.dataset.IterableDataset:
+     |  
+     |  __add__(self, other: torch.utils.data.dataset.Dataset[+T_co])
+     |  
+     |  ----------------------------------------------------------------------
+     |  Data and other attributes inherited from torch.utils.data.dataset.IterableDataset:
+     |  
+     |  __orig_bases__ = (torch.utils.data.dataset.Dataset[+T_co],)
+     |  
+     |  ----------------------------------------------------------------------
+     |  Methods inherited from torch.utils.data.dataset.Dataset:
+     |  
+     |  __getitem__(self, index) -> +T_co
+     |  
+     |  ----------------------------------------------------------------------
+     |  Data descriptors inherited from torch.utils.data.dataset.Dataset:
+     |  
+     |  __dict__
+     |      dictionary for instance variables (if defined)
+     |  
+     |  __weakref__
+     |      list of weak references to the object (if defined)
+     |  
+     |  ----------------------------------------------------------------------
+     |  Class methods inherited from typing.Generic:
+     |  
+     |  __class_getitem__(params) from builtins.type
+     |  
+     |  __init_subclass__(*args, **kwargs) from builtins.type
+     |      This method is called when a class is subclassed.
+     |      
+     |      The default implementation does nothing. It may be
+     |      overridden to extend subclasses.
+     |  
+     |  ----------------------------------------------------------------------
+     |  Static methods inherited from typing.Generic:
+     |  
+     |  __new__(cls, *args, **kwds)
+     |      Create and return a new object.  See help(type) for accurate signature.
+     |  
+     |  ----------------------------------------------------------------------
+     |  Methods inherited from Composable:
+     |  
+     |  compose(self, constructor, *args, **kw)
+     |      Compose this processor with another IterableDataset.
+     |      
+     |      The constructor should be of the form `__init__(self, source_dataset, ...)`
+     |  
+     |  source_(self, source)
+     |      Set the source for this dataset.
+     |      
+     |      :param source: source dataset, should be an IterableDataset instance
+     |  
+     |  then(self, f, *args, length=True, **kw)
+     |      Compose this processor with a new processor defined by a function.
+     |      
+     |      The function is of the form:
+     |      
+     |          def my_process(source, ...):
+     |              for sample in source:
+     |                  ...
+     |                  result = ...
+     |                  yield result
+     |  
+     |  ----------------------------------------------------------------------
+     |  Methods inherited from Shorthands:
+     |  
+     |  batched(self, batchsize, collation_fn=<function default_collation_fn at 0x7ff79e0aff70>, partial=True)
+     |      Compute batches for the given dataset.
+     |      
+     |      :param batchsize: desired batchsize
+     |      :param collation_fn: collation function to turn list of objects into batches
+     |      :param partial: return partial batches
+     |  
+     |  dbcache(self, fname, size)
+     |      Cache training samples in an SQLite database.
+     |      
+     |      This is useful for testing and for running validation tests.
+     |      
+     |      :param fname: filename for the sqlite database
+     |      :param size: number of samples to be cached
+     |  
+     |  ddp_equalize(self, length)
+     |      Equalize number of training samples in DistributedDataParallel training.
+     |      
+     |      Torch's DistributedDataParallel requires the same number of samples in
+     |      all participating compute nodes.
+     |      
+     |      Use with `loader = loader.ddp_equalize(number_of_batches)`
+     |      
+     |      
+     |      You need to specify the number of batches you want to equalize to.
+     |      This is usually the number of samples in the dataset divided by the batch size.
+     |      
+     |      :param length: number of batches in the dataset
+     |  
+     |  decode(self, *args, pre=None, post=None, only=None, handler=<function reraise_exception at 0x7ff79e0b29d0>)
+     |      Decode samples.
+     |      
+     |      This is a special form of mapping over samples given as dicts.
+     |      A list of all decoders is formed from `pre + args + post`.
+     |      For each dict entry, the decoders on that list are invoked in sequence
+     |      until one of them decodes the sample. That decoded value is then stored
+     |      in the dictionary and the next dictionary entry is decoded.
+     |      
+     |      The `pre` and `post` decoder lists are set to common defaults (including `.gz` decoding).
+     |      You can specify decoders for your application in the `args` argument.
+     |      String arguments like "pil" are a shorthand for image decoder functions like
+     |      `webdataset.imagehandler("pil")`. All other decoders must be specified as
+     |      functions.
+     |      
+     |      :param args: list of decoder functions; a string like "pil" is a shorthand for common image decoders
+     |      :param pre: a list of decoder functions that is always carried out before args
+     |      :param post: a list of decoder functions that is always carried out after args
+     |      :param only: limit decoding to the list of these fields
+     |      :param handler: exception handler
+     |  
+     |  map(self, f, handler=<function reraise_exception at 0x7ff79e0b29d0>)
+     |      Map a function over a stream of samples.
+     |      
+     |      This may be a tuple stream or a stream of dicts.
+     |      
+     |      :param f: The function to be mapped.
+     |      :param handler: The exception handling strategy.
+     |  
+     |  map_dict(self, handler=<function reraise_exception at 0x7ff79e0b29d0>, **kw)
+     |      Map the fields of a dictionary.
+     |      
+     |      :param handler: exeption handler
+     |      :param kw: list of key=function mappers
+     |  
+     |  map_tuple(self, *args, handler=<function reraise_exception at 0x7ff79e0b29d0>)
+     |      Map a tuple.
+     |      
+     |      :param args: List of functions corresponding to the fields of the tuple.
+     |      :param handler: exception handler
+     |  
+     |  pipe(self, f, *args, **kw)
+     |      Pipe the sample stream through the given function.
+     |      
+     |      :param f: function obtaining an iterator as a sample and yielding samples
+     |      :param args: arguments to the function
+     |      :param kw: keyword arguments
+     |  
+     |  rename(self, handler=<function reraise_exception at 0x7ff79e0b29d0>, **kw)
+     |      Rename fields in a dictionary based sample.
+     |      
+     |      This works on dictionary input streams. A keyword argument like
+     |      `new="old"` renames extension/key "old" to "new".
+     |      
+     |      :param handler: exception handler
+     |      :param kw: list of renames
+     |  
+     |  repeat(self, nepochs=None, nbatches=None, nsamples=None, batchsize=<function guess_batchsize at 0x7ff79e0bbd30>)
+     |      Repeat samples from the source dataset iterator.
+     |      
+     |      With no arguments, repeat infinitely.
+     |      
+     |      :param nepochs: maximum number of epochs
+     |      :param nbatches: maximum number of batches
+     |      :param nsamples: maximum number of samples
+     |      :param batchsize: integer giving batchsize, or function to compute it
+     |  
+     |  select(self, predicate, **kw)
+     |      Select samples matching some predicate.
+     |      
+     |      :param predicate: predicate used to select samples
+     |  
+     |  shuffle(self, size, **kw)
+     |      Shuffle the dataset using an internal shuffle buffer.
+     |      
+     |      This will buffer up `initial` samples. Then it will add new samples to
+     |      the internal buffer and return random samples from the buffer, simultaneously
+     |      filling up the buffer to the given size.
+     |      
+     |      Using initial < size will result in less initial randomness but faster
+     |      startups.
+     |      
+     |      :param size: size of the shuffle buffer
+     |      :param initial: buffer this many samples before yield training samples
+     |      :param handler: The exception handling strategy.
+     |      :param kw: other keywords for iterators.shuffle
+     |  
+     |  slice(self, *args)
+     |      Slice the stream of training samples.
+     |      
+     |      This takes the usual islice arguments of ([start], stop, [step])
+     |      
+     |      :param args: arguments to itertools.islice
+     |  
+     |  test(self, length=None, checker=None, mock_sample=None, mock_length=None, mock=False)
+     |      A quick and simple way of switching to a mock dataset at the end of a pipeline.
+     |      
+     |      Use with `loader = loader.test(mock_sample=..., mock_length=...)
+     |      You can turn on mocking with `loader.mock = True`
+     |      
+     |      :param length: length of the dataset
+     |      :param checker: any kind of final checking function you want to run over samples
+     |      :param mock_sample: mock sample
+     |      :param mock_length: size of mocked dataset
+     |      :param mock: turning mocking on/off
+     |  
+     |  to_tuple(self, *args, handler=<function reraise_exception at 0x7ff79e0b29d0>)
+     |      Convert a dictionary-based sample to a tuple.
+     |      
+     |      Field names to be extracted can be specified as a Python list
+     |      or as a string. "__key__ jpg;png cls" will extract a triple, with the
+     |      first entry being the key, the second being a JPEG or PNG image, and
+     |      the third being the contents of the cls file.
+     |      
+     |      :param args: field names
+     |      :param handler: exception handler
+     |  
+     |  unbatched(self, length=None)
+     |      Take a stream of batches and turn it back into a stream of samples.
+     |      
+     |      :param length: user-supplied length for the unbatched dataset.
+    
+    ResizedDataset = class ChoppedDataset(torch.utils.data.dataset.IterableDataset)
+     |  ResizedDataset(*args, **kwds)
+     |  
+     |  Change the actual and nominal length of an IterableDataset.
+     |  
+     |  This will continuously iterate through the original dataset, but
+     |  impose new epoch boundaries at the given length/nominal.
+     |  This exists mainly as a workaround for the odd logic in DataLoader.
+     |  It is also useful for choosing smaller nominal epoch sizes with
+     |  very large datasets.
+     |  
+     |  Method resolution order:
+     |      ChoppedDataset
+     |      torch.utils.data.dataset.IterableDataset
+     |      torch.utils.data.dataset.Dataset
+     |      typing.Generic
+     |      builtins.object
+     |  
+     |  Methods defined here:
+     |  
+     |  __getstate__(self)
+     |      Return the pickled state of the dataset.
+     |      
+     |      This resets the dataset iterator, since that can't be pickled.
+     |  
+     |  __init__(self, dataset, length=None, nominal=None)
+     |      Create a ChoppedDataset.
+     |      
+     |      :param dataset: IterableDataset
+     |      :param length: declared length of the dataset
+     |      :param nominal: nominal length of dataset (if different from declared)
+     |  
+     |  __iter__(self)
+     |      Return an iterator over the dataset.
+     |      
+     |      This iterator returns as many samples as given by the `length` parameter.
+     |  
+     |  __len__(self)
+     |      Return the length of the dataset.
+     |  
+     |  ----------------------------------------------------------------------
+     |  Data and other attributes defined here:
+     |  
+     |  __parameters__ = ()
+     |  
+     |  ----------------------------------------------------------------------
+     |  Methods inherited from torch.utils.data.dataset.IterableDataset:
+     |  
+     |  __add__(self, other: torch.utils.data.dataset.Dataset[+T_co])
+     |  
+     |  ----------------------------------------------------------------------
+     |  Data and other attributes inherited from torch.utils.data.dataset.IterableDataset:
+     |  
+     |  __orig_bases__ = (torch.utils.data.dataset.Dataset[+T_co],)
+     |  
+     |  ----------------------------------------------------------------------
+     |  Methods inherited from torch.utils.data.dataset.Dataset:
+     |  
+     |  __getitem__(self, index) -> +T_co
+     |  
+     |  ----------------------------------------------------------------------
+     |  Data descriptors inherited from torch.utils.data.dataset.Dataset:
+     |  
+     |  __dict__
+     |      dictionary for instance variables (if defined)
+     |  
+     |  __weakref__
+     |      list of weak references to the object (if defined)
+     |  
+     |  ----------------------------------------------------------------------
+     |  Class methods inherited from typing.Generic:
+     |  
+     |  __class_getitem__(params) from builtins.type
+     |  
+     |  __init_subclass__(*args, **kwargs) from builtins.type
+     |      This method is called when a class is subclassed.
+     |      
+     |      The default implementation does nothing. It may be
+     |      overridden to extend subclasses.
+     |  
+     |  ----------------------------------------------------------------------
+     |  Static methods inherited from typing.Generic:
+     |  
+     |  __new__(cls, *args, **kwds)
+     |      Create and return a new object.  See help(type) for accurate signature.
+    
+    class ShardList(torch.utils.data.dataset.IterableDataset, Composable)
+     |  ShardList(*args, **kwds)
+     |  
+     |  An iterable dataset yielding a list of urls.
+     |  
+     |  Method resolution order:
+     |      ShardList
+     |      torch.utils.data.dataset.IterableDataset
+     |      torch.utils.data.dataset.Dataset
+     |      typing.Generic
+     |      Composable
+     |      builtins.object
+     |  
+     |  Methods defined here:
+     |  
+     |  __init__(self, urls, shuffle=False, nodesplitter=True, splitter=True, length=None)
+     |      Create a ShardList.
+     |      
+     |      :param urls: a list of URLs as a Python list or brace notation string
+     |      :param shuffle: whether to shuffle the URLs
+     |      :param nodesplitter: function for splitting urls across nodes (None: don't split)
+     |      :param splitter: function for splitting urls across workers (None: don't split)
+     |      :param length: user-specified length; this is returned unchanged by the len() function
+     |  
+     |  __iter__(self)
+     |      Return an iterator over the shards.
+     |  
+     |  __len__(self)
+     |      Return the user-specified length of this dataset.
+     |  
+     |  ----------------------------------------------------------------------
+     |  Data and other attributes defined here:
+     |  
+     |  __parameters__ = ()
+     |  
+     |  ----------------------------------------------------------------------
+     |  Methods inherited from torch.utils.data.dataset.IterableDataset:
+     |  
+     |  __add__(self, other: torch.utils.data.dataset.Dataset[+T_co])
+     |  
+     |  ----------------------------------------------------------------------
+     |  Data and other attributes inherited from torch.utils.data.dataset.IterableDataset:
+     |  
+     |  __orig_bases__ = (torch.utils.data.dataset.Dataset[+T_co],)
+     |  
+     |  ----------------------------------------------------------------------
+     |  Methods inherited from torch.utils.data.dataset.Dataset:
+     |  
+     |  __getitem__(self, index) -> +T_co
+     |  
+     |  ----------------------------------------------------------------------
+     |  Data descriptors inherited from torch.utils.data.dataset.Dataset:
+     |  
+     |  __dict__
+     |      dictionary for instance variables (if defined)
+     |  
+     |  __weakref__
+     |      list of weak references to the object (if defined)
+     |  
+     |  ----------------------------------------------------------------------
+     |  Class methods inherited from typing.Generic:
+     |  
+     |  __class_getitem__(params) from builtins.type
+     |  
+     |  __init_subclass__(*args, **kwargs) from builtins.type
+     |      This method is called when a class is subclassed.
+     |      
+     |      The default implementation does nothing. It may be
+     |      overridden to extend subclasses.
+     |  
+     |  ----------------------------------------------------------------------
+     |  Static methods inherited from typing.Generic:
+     |  
+     |  __new__(cls, *args, **kwds)
+     |      Create and return a new object.  See help(type) for accurate signature.
+     |  
+     |  ----------------------------------------------------------------------
+     |  Methods inherited from Composable:
+     |  
+     |  compose(self, constructor, *args, **kw)
+     |      Compose this processor with another IterableDataset.
+     |      
+     |      The constructor should be of the form `__init__(self, source_dataset, ...)`
+     |  
+     |  source_(self, source)
+     |      Set the source for this dataset.
+     |      
+     |      :param source: source dataset, should be an IterableDataset instance
+     |  
+     |  then(self, f, *args, length=True, **kw)
+     |      Compose this processor with a new processor defined by a function.
+     |      
+     |      The function is of the form:
+     |      
+     |          def my_process(source, ...):
+     |              for sample in source:
+     |                  ...
+     |                  result = ...
+     |                  yield result
+    
+    class Shorthands(builtins.object)
+     |  A convenient set of shorthands for common data transformations.
+     |  
+     |  Methods defined here:
+     |  
+     |  batched(self, batchsize, collation_fn=<function default_collation_fn at 0x7ff79e0aff70>, partial=True)
+     |      Compute batches for the given dataset.
+     |      
+     |      :param batchsize: desired batchsize
+     |      :param collation_fn: collation function to turn list of objects into batches
+     |      :param partial: return partial batches
+     |  
+     |  dbcache(self, fname, size)
+     |      Cache training samples in an SQLite database.
+     |      
+     |      This is useful for testing and for running validation tests.
+     |      
+     |      :param fname: filename for the sqlite database
+     |      :param size: number of samples to be cached
+     |  
+     |  ddp_equalize(self, length)
+     |      Equalize number of training samples in DistributedDataParallel training.
+     |      
+     |      Torch's DistributedDataParallel requires the same number of samples in
+     |      all participating compute nodes.
+     |      
+     |      Use with `loader = loader.ddp_equalize(number_of_batches)`
+     |      
+     |      
+     |      You need to specify the number of batches you want to equalize to.
+     |      This is usually the number of samples in the dataset divided by the batch size.
+     |      
+     |      :param length: number of batches in the dataset
+     |  
+     |  decode(self, *args, pre=None, post=None, only=None, handler=<function reraise_exception at 0x7ff79e0b29d0>)
+     |      Decode samples.
+     |      
+     |      This is a special form of mapping over samples given as dicts.
+     |      A list of all decoders is formed from `pre + args + post`.
+     |      For each dict entry, the decoders on that list are invoked in sequence
+     |      until one of them decodes the sample. That decoded value is then stored
+     |      in the dictionary and the next dictionary entry is decoded.
+     |      
+     |      The `pre` and `post` decoder lists are set to common defaults (including `.gz` decoding).
+     |      You can specify decoders for your application in the `args` argument.
+     |      String arguments like "pil" are a shorthand for image decoder functions like
+     |      `webdataset.imagehandler("pil")`. All other decoders must be specified as
+     |      functions.
+     |      
+     |      :param args: list of decoder functions; a string like "pil" is a shorthand for common image decoders
+     |      :param pre: a list of decoder functions that is always carried out before args
+     |      :param post: a list of decoder functions that is always carried out after args
+     |      :param only: limit decoding to the list of these fields
+     |      :param handler: exception handler
+     |  
+     |  map(self, f, handler=<function reraise_exception at 0x7ff79e0b29d0>)
+     |      Map a function over a stream of samples.
+     |      
+     |      This may be a tuple stream or a stream of dicts.
+     |      
+     |      :param f: The function to be mapped.
+     |      :param handler: The exception handling strategy.
+     |  
+     |  map_dict(self, handler=<function reraise_exception at 0x7ff79e0b29d0>, **kw)
+     |      Map the fields of a dictionary.
+     |      
+     |      :param handler: exeption handler
+     |      :param kw: list of key=function mappers
+     |  
+     |  map_tuple(self, *args, handler=<function reraise_exception at 0x7ff79e0b29d0>)
+     |      Map a tuple.
+     |      
+     |      :param args: List of functions corresponding to the fields of the tuple.
+     |      :param handler: exception handler
+     |  
+     |  pipe(self, f, *args, **kw)
+     |      Pipe the sample stream through the given function.
+     |      
+     |      :param f: function obtaining an iterator as a sample and yielding samples
+     |      :param args: arguments to the function
+     |      :param kw: keyword arguments
+     |  
+     |  rename(self, handler=<function reraise_exception at 0x7ff79e0b29d0>, **kw)
+     |      Rename fields in a dictionary based sample.
+     |      
+     |      This works on dictionary input streams. A keyword argument like
+     |      `new="old"` renames extension/key "old" to "new".
+     |      
+     |      :param handler: exception handler
+     |      :param kw: list of renames
+     |  
+     |  repeat(self, nepochs=None, nbatches=None, nsamples=None, batchsize=<function guess_batchsize at 0x7ff79e0bbd30>)
+     |      Repeat samples from the source dataset iterator.
+     |      
+     |      With no arguments, repeat infinitely.
+     |      
+     |      :param nepochs: maximum number of epochs
+     |      :param nbatches: maximum number of batches
+     |      :param nsamples: maximum number of samples
+     |      :param batchsize: integer giving batchsize, or function to compute it
+     |  
+     |  select(self, predicate, **kw)
+     |      Select samples matching some predicate.
+     |      
+     |      :param predicate: predicate used to select samples
+     |  
+     |  shuffle(self, size, **kw)
+     |      Shuffle the dataset using an internal shuffle buffer.
+     |      
+     |      This will buffer up `initial` samples. Then it will add new samples to
+     |      the internal buffer and return random samples from the buffer, simultaneously
+     |      filling up the buffer to the given size.
+     |      
+     |      Using initial < size will result in less initial randomness but faster
+     |      startups.
+     |      
+     |      :param size: size of the shuffle buffer
+     |      :param initial: buffer this many samples before yield training samples
+     |      :param handler: The exception handling strategy.
+     |      :param kw: other keywords for iterators.shuffle
+     |  
+     |  slice(self, *args)
+     |      Slice the stream of training samples.
+     |      
+     |      This takes the usual islice arguments of ([start], stop, [step])
+     |      
+     |      :param args: arguments to itertools.islice
+     |  
+     |  test(self, length=None, checker=None, mock_sample=None, mock_length=None, mock=False)
+     |      A quick and simple way of switching to a mock dataset at the end of a pipeline.
+     |      
+     |      Use with `loader = loader.test(mock_sample=..., mock_length=...)
+     |      You can turn on mocking with `loader.mock = True`
+     |      
+     |      :param length: length of the dataset
+     |      :param checker: any kind of final checking function you want to run over samples
+     |      :param mock_sample: mock sample
+     |      :param mock_length: size of mocked dataset
+     |      :param mock: turning mocking on/off
+     |  
+     |  to_tuple(self, *args, handler=<function reraise_exception at 0x7ff79e0b29d0>)
+     |      Convert a dictionary-based sample to a tuple.
+     |      
+     |      Field names to be extracted can be specified as a Python list
+     |      or as a string. "__key__ jpg;png cls" will extract a triple, with the
+     |      first entry being the key, the second being a JPEG or PNG image, and
+     |      the third being the contents of the cls file.
+     |      
+     |      :param args: field names
+     |      :param handler: exception handler
+     |  
+     |  unbatched(self, length=None)
+     |      Take a stream of batches and turn it back into a stream of samples.
+     |      
+     |      :param length: user-supplied length for the unbatched dataset.
+     |  
+     |  ----------------------------------------------------------------------
+     |  Data descriptors defined here:
+     |  
+     |  __dict__
+     |      dictionary for instance variables (if defined)
+     |  
+     |  __weakref__
+     |      list of weak references to the object (if defined)
 
 FUNCTIONS
-    reraise_exception(exn)
-        Called in an exception handler to re-raise the exception.
+    WebDataset(urls, shardshuffle=True, cache_dir='', cache_size=1000000000000000, cache_name=<function shard_uuid at 0x7ff79e0b23a0>, cache_verbose=1, splitter=<function split_by_worker at 0x7ff79e0bf280>, nodesplitter=True, handler=<function reraise_exception at 0x7ff79e0b29d0>, length=None)
+        Return a pipeline for WebDataset-style data files.
+        
+        This is a convenience function for constructing a partial pipeline
+        that reads from a set of sharded tar files, extracts the individual
+        files, and groups them together into samples (dictionaries).
+        
+        You can use all the methods from `Composable` (`then`, `compose`) and
+        from `Shorthands` (`batched`, `unbatched`, `decode`, `shuffle`, etc.)
+        on the result.
+        
+        :param urls: the source URLs, specified either as a list or as a brace-expanded string
+        :param shardshuffle: boolean indicating whether the shards should be shuffled or not
+        :param splitter: a function called for splitting shards among workers (True: PyTorch default, None: no splitting)
+        :param nodesplitter: a function called for splitting shards among nodes (True: PyTorch default, None: no splitting)
+        :param handler: an error handler
+        :param length: the length of this dataset, should be an integer
+        :param cache_dir: when set, caches shards in this directory
+        :param cache_size: when set, specifies a maximum size for the shard cache
+        :param cache_name: when set, specifies how shards should be named in the cache
+        :param cache_verbose: when set, prints information about caching
+    
+    WebLoader(*args, **kw)
+        Return a small wrapper around torch.utils.data.DataLoader.
+        
+        This wrapper works identically to the original `DataLoader`, but adds
+        alls the convenience functions and filters for WebDataset.
+        
+        You can use all the methods from `Composable` (`then`, `compose`) and
+        from `Shorthands` (`batched`, `unbatched`, `decode`, `shuffle`, etc.)
+        on the result.
+        
+        :param args: forwarded to `DataLoader`
+        :param kw: forwarded to `DataLoader`
 
 DATA
-    __all__ = ['Dataset', 'tariterator', 'default_handlers', 'imagehandler...
+    default_cache_dir = ''
+    default_cache_size = 1000000000000000
+    default_cache_verbose = 1
 
 FILE
     /home/tmb/proj/webdataset/webdataset/dataset.py
@@ -684,6 +1950,22 @@ NAME
 
 FUNCTIONS
     gopen(url, mode='rb', bufsize=8192, **kw)
+        Open the URL.
+        
+        This uses the `gopen_schemes` dispatch table to dispatch based
+        on scheme.
+        
+        Support for the following schemes is built-in: pipe, file,
+        http, https, sftp, ftps, scp.
+        
+        When no scheme is given the url is treated as a file.
+        
+        You can use the OPEN_VERBOSE argument to get info about
+        files being opened.
+        
+        :param url: the source URL
+        :param mode: the mode ("rb", "r")
+        :param bufsize: the buffer size
 
 DATA
     __all__ = ['gopen', 'gopen_schemes']
@@ -702,18 +1984,49 @@ FILE
 Help on module webdataset.tariterators in webdataset:
 
 NAME
-    webdataset.tariterators
-
-DESCRIPTION
-    Train PyTorch models directly from POSIX tar archive, locally
-    or over HTTP connections.
+    webdataset.tariterators - Low level iteration functions for tar archives.
 
 FUNCTIONS
-    reraise_exception(exn)
-        Called in an exception handler to re-raise the exception.
+    base_plus_ext(path)
+        Split off all file extensions.
+        
+        Returns base, allext.
+        
+        :param path: path with extensions
+        :param returns: path with all extensions removed
+    
+    group_by_keys(data, keys=<function base_plus_ext at 0x7fc402c42790>, lcase=True, suffixes=None, handler=None)
+        Return function over iterator that groups key, value pairs into samples.
+        
+        :param keys: function that splits the key into key and extension (base_plus_ext)
+        :param lcase: convert suffixes to lower case (Default value = True)
+    
+    shardlist(urls, *, shuffle=False)
+        Given a list of URLs, yields that list, possibly shuffled.
+    
+    tar_file_expander(data, handler=<function reraise_exception at 0x7fc402c429d0>)
+        Expand a stream of open tar files into a stream of tar file contents.
+        
+        This returns an iterator over (filename, file_contents).
+    
+    tar_file_iterator(fileobj, skip_meta='__[^/]*__($|/)', handler=<function reraise_exception at 0x7fc402c429d0>)
+        Iterate over tar file, yielding filename, content pairs for the given tar stream.
+        
+        :param fileobj: byte stream suitable for tarfile
+        :param skip_meta: regexp for keys that are skipped entirely (Default value = r"__[^/]*__($|/)")
+    
+    url_opener(data, handler=<function reraise_exception at 0x7fc402c429d0>, **kw)
+        Given a stream of url names (packaged in `dict(url=url)`), yield opened streams.
+    
+    valid_sample(sample)
+        Check whether a sample is valid.
+        
+        :param sample: sample to be checked
 
 DATA
-    __all__ = ['Dataset', 'tariterator', 'default_handlers', 'imagehandler...
+    meta_prefix = '__'
+    meta_suffix = '__'
+    trace = False
 
 FILE
     /home/tmb/proj/webdataset/webdataset/tariterators.py
@@ -728,10 +2041,9 @@ FILE
 Help on module webdataset.workerenv in webdataset:
 
 NAME
-    webdataset.workerenv
+    webdataset.workerenv - Functions related to splitting datasets by node and worker.
 
 DESCRIPTION
-    Functions related to splitting datasets by node and worker.
     This follows the PyTorch model of magic global functions and environment
     settings and supplies the default node and worker splitting functions.
     This is provided mainly because PyTorch users expect something like this
@@ -746,6 +2058,8 @@ CLASSES
     class TorchWorkerEnvironment(WorkerEnvironment)
      |  TorchWorkerEnvironment(group=None)
      |  
+     |  TorchWorkerEnvironment.
+     |  
      |  Method resolution order:
      |      TorchWorkerEnvironment
      |      WorkerEnvironment
@@ -754,13 +2068,15 @@ CLASSES
      |  Methods defined here:
      |  
      |  __init__(self, group=None)
-     |      Initialize self.  See help(type(self)) for accurate signature.
+     |      Initialize the worker environment for Torch.
+     |      
+     |      :param group: torch.distributed group for determining rank/size
      |  
      |  ----------------------------------------------------------------------
      |  Methods inherited from WorkerEnvironment:
      |  
      |  __str__(self)
-     |      Return str(self).
+     |      __str__.
      |  
      |  ----------------------------------------------------------------------
      |  Data descriptors inherited from WorkerEnvironment:
@@ -774,13 +2090,15 @@ CLASSES
     class WorkerEnvironment(builtins.object)
      |  WorkerEnvironment(rank=0, world_size=1, worker=0, nworkers=1)
      |  
+     |  Encapsulates the runtime environment of the worker.
+     |  
      |  Methods defined here:
      |  
      |  __init__(self, rank=0, world_size=1, worker=0, nworkers=1)
-     |      Initialize self.  See help(type(self)) for accurate signature.
+     |      Initialize the worker environment.
      |  
      |  __str__(self)
-     |      Return str(self).
+     |      __str__.
      |  
      |  ----------------------------------------------------------------------
      |  Data descriptors defined here:
@@ -793,18 +2111,20 @@ CLASSES
 
 FUNCTIONS
     get_worker_environment()
+        Get the current worker environment.
     
     split_by_node(urls, env=None)
-        Selects a subset of urls based on node info.
+        Select a subset of urls based on node info.
         
         Used as a shard selection function in Dataset.
     
     split_by_worker(urls, env=None)
-        Selects a subset of urls based on worker info.
+        Select a subset of urls based on worker info.
         
         Used as a shard selection function in Dataset.
     
     worker_id()
+        Return an identifier for the current worker.
 
 DATA
     too_few_shards_warning = 1
@@ -823,13 +2143,7 @@ FILE
 Help on module webdataset.checks in webdataset:
 
 NAME
-    webdataset.checks
-
-DESCRIPTION
-    # Copyright (c) 2017-2019 NVIDIA CORPORATION. All rights reserved.
-    # This file is part of the objectio library.
-    # See the LICENSE file for licensing terms (BSD-style).
-    #
+    webdataset.checks - A collection of simple runtime checks.
 
 FUNCTIONS
     check(value, msg='')
@@ -899,34 +2213,8 @@ FUNCTIONS
     save(fname, *args, infos=None, nocheck=False)
         Save a list of arrays to a file, with magics, length, and padding.
     
-    sctp_recv(socket, infos=False, maxsize=100000000)
-        Receive arrays as an SCTP datagram.
-        
-        This is just a convenience function and illustration.
-        For more complex networking needs, you may want
-        to call sctp_recv and decode_buffer directly.
-    
-    sctp_send(socket, dest, l, infos=None)
-        Send arrays as an SCTP datagram.
-        
-        This is just a convenience function and illustration.
-        For more complex networking needs, you may want
-        to call encode_buffer and sctp_send directly.
-    
     write(stream, l, infos=None)
         Write a list of arrays to a stream, with magics, length, and padding.
-    
-    zrecv_multipart(socket, infos=False)
-        Receive arrays as a multipart ZMQ message.
-    
-    zrecv_single(socket, infos=False)
-        Receive arrays as a single part ZMQ message.
-    
-    zsend_multipart(socket, l, infos=None)
-        Send arrays as a multipart ZMQ message.
-    
-    zsend_single(socket, l, infos=None)
-        Send arrays as a single part ZMQ message.
 
 DATA
     __all__ = ['read', 'write', 'save', 'load', 'zsend_single', 'zrecv_sin...
@@ -944,20 +2232,24 @@ FILE
 Help on module webdataset.bench in webdataset:
 
 NAME
-    webdataset.bench
+    webdataset.bench - A simple command line program to benchmark I/O speeds.
 
 CLASSES
     builtins.object
         TotalSize
     
     class TotalSize(builtins.object)
+     |  Keep track of the total size of samples.
+     |  
      |  Methods defined here:
      |  
      |  __call__(self, sample)
-     |      Call self as a function.
+     |      Add sample to the counter.
+     |      
+     |      :param sample: undecoded sample to be added
      |  
      |  __init__(self)
-     |      Initialize self.  See help(type(self)) for accurate signature.
+     |      Create a TotalSize counter.
      |  
      |  ----------------------------------------------------------------------
      |  Data descriptors defined here:
@@ -970,6 +2262,9 @@ CLASSES
 
 FUNCTIONS
     main(args)
+        Perform benchmarking.
+        
+        :param args: argparse result with command line arguments
 
 FILE
     /home/tmb/proj/webdataset/webdataset/bench.py
@@ -984,13 +2279,7 @@ FILE
 Help on module webdataset.writer in webdataset:
 
 NAME
-    webdataset.writer
-
-DESCRIPTION
-    # Copyright (c) 2017-2019 NVIDIA CORPORATION. All rights reserved.
-    # This file is part of the WebDataset library.
-    # See the LICENSE file for licensing terms (BSD-style).
-    #
+    webdataset.writer - Classes and functions for writing tar files and WebDataset files.
 
 CLASSES
     builtins.object
@@ -1002,27 +2291,35 @@ CLASSES
      |  
      |  Like TarWriter but splits into multiple shards.
      |  
-     |  :param pattern: output file pattern
-     |  :param maxcount: maximum number of records per shard (Default value = 100000)
-     |  :param maxsize: maximum size of each shard (Default value = 3e9)
-     |  :param kw: other options passed to TarWriter
-     |  
      |  Methods defined here:
      |  
      |  __enter__(self)
+     |      Enter context.
      |  
      |  __exit__(self, *args, **kw)
+     |      Exit context.
      |  
      |  __init__(self, pattern, maxcount=100000, maxsize=3000000000.0, post=None, start_shard=0, **kw)
-     |      Initialize self.  See help(type(self)) for accurate signature.
+     |      Create a ShardWriter.
+     |      
+     |      :param pattern: output file pattern
+     |      :param maxcount: maximum number of records per shard (Default value = 100000)
+     |      :param maxsize: maximum size of each shard (Default value = 3e9)
+     |      :param kw: other options passed to TarWriter
      |  
      |  close(self)
+     |      Close the stream.
      |  
      |  finish(self)
+     |      Finish all writing (use close instead).
      |  
      |  next_stream(self)
+     |      Close the current stream and move to the next.
      |  
      |  write(self, obj)
+     |      Write a sample.
+     |      
+     |      :param obj: sample to be written
      |  
      |  ----------------------------------------------------------------------
      |  Data descriptors defined here:
@@ -1061,20 +2358,24 @@ CLASSES
      |  Methods defined here:
      |  
      |  __enter__(self)
+     |      Enter context.
      |  
      |  __exit__(self, exc_type, exc_val, exc_tb)
+     |      Exit context.
      |  
      |  __init__(self, fileobj, user='bigdata', group='bigdata', mode=292, compress=None, encoder=True, keep_meta=False)
-     |      Initialize self.  See help(type(self)) for accurate signature.
+     |      Create a tar writer.
+     |      
+     |      :param fileobj: stream to write data to
+     |      :param user: user for tar files
+     |      :param group: group for tar files
+     |      :param mode: mode for tar files
+     |      :param compress: desired compression
+     |      :param encoder: encoder function
+     |      :param keep_meta: keep metadata (entries starting with "_")
      |  
      |  close(self)
      |      Close the tar file.
-     |  
-     |  dwrite(self, key, **kw)
-     |      Convenience function for `write`.
-     |      
-     |      Takes key as the first argument and key-value pairs for the rest.
-     |      Replaces "_" with ".".
      |  
      |  write(self, obj)
      |      Write a dictionary to the tar file.
@@ -1091,8 +2392,52 @@ CLASSES
      |  __weakref__
      |      list of weak references to the object (if defined)
 
+FUNCTIONS
+    bytestr(data)
+        Convert data into a bytestring.
+        
+        Uses str and ASCII encoding for data that isn't already in string format.
+        
+        :param data: data
+    
+    encode_based_on_extension(sample, handlers)
+        Encode an entire sample with a collection of handlers.
+        
+        :param sample: data sample (a dict)
+        :param handlers: handlers for encoding
+    
+    encode_based_on_extension1(data, tname, handlers)
+        Encode data based on its extension and a dict of handlers.
+        
+        :param data: data
+        :param tname: file extension
+        :param handlers: handlers
+    
+    imageencoder(image, format='PNG')
+        Compress an image using PIL and return it as a string.
+        
+        Can handle float or uint8 images.
+        
+        :param image: ndarray representing an image
+        :param format: compression format (PNG, JPEG, PPM)
+    
+    make_encoder(spec)
+        Make an encoder function from a specification.
+        
+        :param spec: specification
+    
+    make_handlers()
+        Create a list of handlers for encoding data.
+    
+    torch_dumps(data)
+        Dump data into a bytestring using torch.dumps.
+        
+        This delays importing torch until needed.
+        
+        :param data: data to be dumped
+
 DATA
-    __all__ = ['TarWriter', 'ShardWriter']
+    default_handlers = {'default': {'class': <function make_handlers.<loca...
 
 FILE
     /home/tmb/proj/webdataset/webdataset/writer.py
@@ -1107,7 +2452,7 @@ FILE
 Help on module webdataset.shardcache in webdataset:
 
 NAME
-    webdataset.shardcache
+    webdataset.shardcache - Implement caching for shards.
 
 CLASSES
     io.RawIOBase(_io._RawIOBase, io.IOBase)
@@ -1116,7 +2461,7 @@ CLASSES
     class CacheStream(io.RawIOBase)
      |  CacheStream(fname, stream, verbose=False)
      |  
-     |  Base class for raw binary I/O.
+     |  Cache raw IO stream.
      |  
      |  Method resolution order:
      |      CacheStream
@@ -1129,16 +2474,26 @@ CLASSES
      |  Methods defined here:
      |  
      |  __init__(self, fname, stream, verbose=False)
-     |      Initialize self.  See help(type(self)) for accurate signature.
+     |      Create a shard cache.
+     |      
+     |      :param fname: file name for the cache file
+     |      :param stream: stream to be cached
+     |      :param verbose: verbose output on progress
      |  
      |  close(self, complete=False)
-     |      Flush and close the IO object.
+     |      Close both the cache file and the original stream.
      |      
-     |      This method has no effect if the file is already closed.
+     |      :param complete: indicate whether the stream was fully read (if not, the cache file is discarded)
      |  
      |  read(self, n)
+     |      Read n bytes from the stream and write them to the cache file.
+     |      
+     |      :param n: number of bytes
      |  
      |  readinto(self, b)
+     |      Read data into a buffer.
+     |      
+     |      :param b: buffer
      |  
      |  ----------------------------------------------------------------------
      |  Data and other attributes defined here:
@@ -1257,11 +2612,25 @@ CLASSES
      |  closed
 
 FUNCTIONS
-    cache_shards(urls, cache_dir='./data', cache_size=1000000000000000.0, cache_name=<function guess_shard at 0x7f8138f43280>, verbose=False)
+    cache_shards(urls, cache_dir='./data', cache_size=1000000000000000.0, cache_name=<function guess_shard at 0x7f13e53b0310>, verbose=False)
+        Implement shard caching.
+        
+        When caching is off, just iterates through the list of shards.
+        
+        When caching is on (cache_dir is not None), opens each shard with caching
+        an returns a dictionary consisting of a URL and a stream.
+        
+        :param urls: list of URLs
+        :param cache_dir: directory used for caching
+        :param cache_size: cache size
+        :param cache_name: function computing cache names
+        :param verbose: verbose caching info
     
     guess_shard(path)
+        Guess the shard from a given path.
     
     shard_uuid(path)
+        Compute a UUID for a shard path.
 
 FILE
     /home/tmb/proj/webdataset/webdataset/shardcache.py

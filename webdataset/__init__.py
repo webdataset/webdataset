@@ -53,7 +53,6 @@ from .tariterators import (
 
 from .iterators import (
     transform_with,
-    transformer,
     info,
     shuffle,
     select,
