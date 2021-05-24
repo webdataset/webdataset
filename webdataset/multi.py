@@ -1,3 +1,9 @@
+#
+# Copyright (c) 2017-2021 NVIDIA CORPORATION. All rights reserved.
+# This file is part of the WebDataset library.
+# See the LICENSE file for licensing terms (BSD-style).
+#
+
 """An alternative to DataLoader using ZMQ.
 
 This implements MultiLoader, an alternative to DataLoader when torch
