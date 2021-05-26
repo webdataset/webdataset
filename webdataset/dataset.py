@@ -12,6 +12,7 @@ Code works locally or over HTTP connections.
 
 import itertools as itt
 import os
+import sys
 import random
 import warnings
 
@@ -20,7 +21,7 @@ import braceexpand
 from . import autodecode, dbcache, iterators, shardcache, tariterators, utils
 from .utils import lookup_sym, safe_eval
 from .handlers import reraise_exception
-from .workerenv import split_by_node, split_by_worker, get_worker_environment
+from .workerenv import split_by_node, split_by_worker, get_worker_environment, nodeslice
 
 try:
     from torch.utils.data import IterableDataset, DataLoader
@@ -133,14 +134,14 @@ class ShardList(IterableDataset, Composable):
         super().__init__()
         self.shuffle = shuffle
         self.length = length
-        if nodesplitter is None:
+        if nodesplitter is None or nodesplitter is False:
             self.nodesplitter = utils.identity
         elif nodesplitter is True:
             self.nodesplitter = split_by_node
         else:
             assert callable(nodesplitter)
             self.nodesplitter = nodesplitter
-        if splitter is None:
+        if splitter is None or splitter is False:
             self.splitter = utils.identity
         elif splitter is True:
             self.splitter = split_by_worker
@@ -355,7 +356,21 @@ class Shorthands:
 
         :param args: arguments to itertools.islice
         """
-        return self.pipe(itt.islice, *args)
+        if len(args) == 0:
+            return self
+        start = 0
+        stop = sys.maxsize
+        step = 1
+        if len(args) == 1:
+            stop, = args
+        elif len(args) == 2:
+            start, stop = args
+        elif len(args) == 3:
+            start, stop, step = args
+        new_length = (stop - start) // step
+        result = self.pipe(itt.islice, *args)
+        result.length = new_length
+        return result
 
     def repeat(
         self,
@@ -422,7 +437,7 @@ class Shorthands:
         if torch.distributed.is_initialized():
             world_size = torch.distributed.get_world_size()
         numbatches = length // world_size
-        result = self.repeat(999999999).slice(numbatches)
+        result = self.repeat(sys.maxsize).slice(numbatches)
         result.length = numbatches
         return result
 
@@ -526,7 +541,8 @@ def WebDataset(
     cache_size=default_cache_size,
     cache_name=default_cache_name,
     cache_verbose=default_cache_verbose,
-    splitter=split_by_worker,
+    multimode=None,
+    splitter=True,
     nodesplitter=True,
     handler=reraise_exception,
     length=None,
@@ -543,6 +559,7 @@ def WebDataset(
     on the result.
 
     :param urls: the source URLs, specified either as a list or as a brace-expanded string
+    :param multimode: how to handle multimode processing
     :param shardshuffle: boolean indicating whether the shards should be shuffled or not
     :param splitter: a function called for splitting shards among workers (True: PyTorch default, None: no splitting)
     :param nodesplitter: a function called for splitting shards among nodes (True: PyTorch default, None: no splitting)
@@ -554,6 +571,15 @@ def WebDataset(
     :param cache_verbose: when set, prints information about caching
     :param warn_empty: warn when no samples are generated at all
     """
+    if multimode is not None:
+        assert splitter is True, "specify either splitter or multimode, not both"
+        assert nodesplitter is True, "specify either nodesplitter or multimode, not both"
+        if multimode == "pytorch":
+            splitter = True
+            nodesplitter = True
+        elif multimode in ["resampled", "sliced"]:
+            splitter = False
+            nodesplitter = False
     result = ShardList(
         urls,
         shuffle=shardshuffle,
@@ -572,7 +598,11 @@ def WebDataset(
         )
     result = result.then(tariterators.tar_file_expander, length=None, handler=handler)
     result = result.then(tariterators.group_by_keys, length=length)
-    if warn_empty:
+    if multimode == "sliced":
+        result = result.then(nodeslice)
+    elif multimode == "resampled":
+        result = result.repeat()
+    if multimode is not None:
         result = result.then(warn_no_samples)
     return result
 

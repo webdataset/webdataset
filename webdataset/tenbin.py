@@ -31,6 +31,7 @@ Header chunks have the following structure:
 - ...
 """
 
+import sys
 import struct
 
 import numpy as np
@@ -263,7 +264,7 @@ def write(stream, l, infos=None):
         write_chunk(stream, chunk)
 
 
-def read(stream, n=999999, infos=False):
+def read(stream, n=sys.maxsize, infos=False):
     """Read a list of arrays from a stream, with magics, length, and padding."""
     chunks = []
     for _ in range(n):
