@@ -77,6 +77,17 @@ def torch_dumps(data):
     torch.save(data, stream)
     return stream.getvalue()
 
+def numpy_dump(data):
+    """Dump data into a bytestring using numpy npy format
+    
+    :param data: data to be dumped
+    """
+    import io
+    import numpy.lib.format
+    
+    sstream = io.BytesIO()
+    numpy.lib.format.write_array(data, stream)
+    return stream.getvalue()
 
 def make_handlers():
     """Create a list of handlers for encoding data."""
@@ -99,6 +110,8 @@ def make_handlers():
         handlers[extension] = pickle.dumps
     for extension in ["pth"]:
         handlers[extension] = torch_dumps
+    for extension in ["npy"]:
+        handlers[extension] = numpy_dumps
     for extension in ["json", "jsn"]:
         handlers[extension] = lambda x: json.dumps(x).encode("utf-8")
     for extension in ["ten", "tb"]:
