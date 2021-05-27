@@ -7,7 +7,6 @@ import torch
 import pickle
 
 import webdataset.dataset as wds
-from webdataset import utils
 from webdataset import autodecode
 from webdataset import handlers
 
