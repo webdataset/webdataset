@@ -1,251 +1,4 @@
 
-# Module `webdataset.iterators`
-
-```
-Help on module webdataset.iterators in webdataset:
-
-NAME
-    webdataset.iterators - A collection of iterators for data transformations.
-
-DESCRIPTION
-    These functions are plain iterator functions. You can find curried versions
-    in webdataset.filters, and you can find IterableDataset wrappers in
-    webdataset.processing.
-
-DATA
-    __all__ = ['WebDataset', 'tariterator', 'default_handlers', 'imagehand...
-
-FILE
-    /home/tmb/proj/webdataset/webdataset/iterators.py
-
-
-
-```
-
-# Module `webdataset.fluid`
-
-```
-Help on module webdataset.fluid in webdataset:
-
-NAME
-    webdataset.fluid - A deprecated interface to WebDataset.
-
-CLASSES
-    torch.utils.data.dataset.IterableDataset(torch.utils.data.dataset.Dataset)
-        Dataset
-    
-    class Dataset(torch.utils.data.dataset.IterableDataset)
-     |  Dataset(*args, **kwds)
-     |  
-     |  This class works almost identically to WebDataset but with internal state.
-     |  
-     |  Method resolution order:
-     |      Dataset
-     |      torch.utils.data.dataset.IterableDataset
-     |      torch.utils.data.dataset.Dataset
-     |      typing.Generic
-     |      builtins.object
-     |  
-     |  Methods defined here:
-     |  
-     |  __getattr__(self, name)
-     |      Forward method calls to the underlying WebDataset and update the internal pipe.
-     |  
-     |  __init__(self, urls, *, length=True, splitter=<function split_by_worker at 0x7fd4491b2280>, handler=<function reraise_exception at 0x7fd4491a69d0>, shuffle=False, cache_dir='', cache_size=1000000000000000, cache_name=<function shard_uuid at 0x7fd4491a63a0>, cache_verbose=1)
-     |      Create a Dataset instance. See WebDataset for documentation.
-     |  
-     |  __iter__(self)
-     |      Return an iterator over the underlying dataset.
-     |  
-     |  __len__(self)
-     |      Return the length of the underlying dataset.
-     |  
-     |  ----------------------------------------------------------------------
-     |  Data and other attributes defined here:
-     |  
-     |  __parameters__ = ()
-     |  
-     |  ----------------------------------------------------------------------
-     |  Methods inherited from torch.utils.data.dataset.IterableDataset:
-     |  
-     |  __add__(self, other: torch.utils.data.dataset.Dataset[+T_co])
-     |  
-     |  ----------------------------------------------------------------------
-     |  Data and other attributes inherited from torch.utils.data.dataset.IterableDataset:
-     |  
-     |  __orig_bases__ = (torch.utils.data.dataset.Dataset[+T_co],)
-     |  
-     |  ----------------------------------------------------------------------
-     |  Methods inherited from torch.utils.data.dataset.Dataset:
-     |  
-     |  __getitem__(self, index) -> +T_co
-     |  
-     |  ----------------------------------------------------------------------
-     |  Data descriptors inherited from torch.utils.data.dataset.Dataset:
-     |  
-     |  __dict__
-     |      dictionary for instance variables (if defined)
-     |  
-     |  __weakref__
-     |      list of weak references to the object (if defined)
-     |  
-     |  ----------------------------------------------------------------------
-     |  Class methods inherited from typing.Generic:
-     |  
-     |  __class_getitem__(params) from builtins.type
-     |  
-     |  __init_subclass__(*args, **kwargs) from builtins.type
-     |      This method is called when a class is subclassed.
-     |      
-     |      The default implementation does nothing. It may be
-     |      overridden to extend subclasses.
-     |  
-     |  ----------------------------------------------------------------------
-     |  Static methods inherited from typing.Generic:
-     |  
-     |  __new__(cls, *args, **kwds)
-     |      Create and return a new object.  See help(type) for accurate signature.
-
-DATA
-    __all__ = ['FluidPipes', 'Dataset']
-
-FILE
-    /home/tmb/proj/webdataset/webdataset/fluid.py
-
-
-
-```
-
-# Module `webdataset.multi`
-
-```
-Help on module webdataset.multi in webdataset:
-
-NAME
-    webdataset.multi - An alternative to DataLoader using ZMQ.
-
-DESCRIPTION
-    This implements MultiLoader, an alternative to DataLoader when torch
-    is not available. Subprocesses communicate with the loader through
-    ZMQ, provided for high performance multithreaded queueing.
-
-CLASSES
-    builtins.object
-        EOF
-        MultiLoader
-    
-    class EOF(builtins.object)
-     |  EOF(**kw)
-     |  
-     |  A class that indicates that a data stream is finished.
-     |  
-     |  Methods defined here:
-     |  
-     |  __init__(self, **kw)
-     |      Initialize the class with the kw as instance variables.
-     |  
-     |  ----------------------------------------------------------------------
-     |  Data descriptors defined here:
-     |  
-     |  __dict__
-     |      dictionary for instance variables (if defined)
-     |  
-     |  __weakref__
-     |      list of weak references to the object (if defined)
-    
-    class MultiLoader(builtins.object)
-     |  MultiLoader(dataset, workers=4, verbose=False, nokill=False, prefix='/tmp/_multi-')
-     |  
-     |  Alternative to PyTorch DataLoader based on ZMQ.
-     |  
-     |  Methods defined here:
-     |  
-     |  __init__(self, dataset, workers=4, verbose=False, nokill=False, prefix='/tmp/_multi-')
-     |      Create a MultiLoader for a dataset.
-     |      
-     |      This creates ZMQ sockets, spawns `workers` subprocesses, and has them send data
-     |      to the socket.
-     |      
-     |      :param dataset: source dataset
-     |      :param workers: number of workers
-     |      :param verbose: report progress verbosely
-     |      :param nokill: don't kill old processes when restarting (allows multiple loaders)
-     |      :param prefix: directory prefix for the ZMQ socket
-     |  
-     |  __iter__(self)
-     |      Return an iterator over this dataloader.
-     |  
-     |  kill(self)
-     |      kill.
-     |  
-     |  ----------------------------------------------------------------------
-     |  Data descriptors defined here:
-     |  
-     |  __dict__
-     |      dictionary for instance variables (if defined)
-     |  
-     |  __weakref__
-     |      list of weak references to the object (if defined)
-
-FUNCTIONS
-    reader(dataset, sockname, index)
-        Read samples from the dataset and send them over the socket.
-        
-        :param dataset: source dataset
-        :param sockname: name for the socket to send data to
-        :param index: index for this reader, using to indicate EOF
-
-DATA
-    all_pids = set()
-    the_protocol = 5
-
-FILE
-    /home/tmb/proj/webdataset/webdataset/multi.py
-
-
-
-```
-
-# Module `webdataset.handlers`
-
-```
-Help on module webdataset.handlers in webdataset:
-
-NAME
-    webdataset.handlers - Pluggable exception handlers.
-
-DESCRIPTION
-    These are functions that take an exception as an argument and then return...
-    
-    - the exception (in order to re-raise it)
-    - True (in order to continue and ignore the exception)
-    - False (in order to ignore the exception and stop processing)
-    
-    They are used as handler= arguments in much of the library.
-
-FUNCTIONS
-    ignore_and_continue(exn)
-        Call in an exception handler to ignore any exception and continue.
-    
-    ignore_and_stop(exn)
-        Call in an exception handler to ignore any exception and stop further processing.
-    
-    reraise_exception(exn)
-        Call in an exception handler to re-raise the exception.
-    
-    warn_and_continue(exn)
-        Call in an exception handler to ignore any exception, isssue a warning, and continue.
-    
-    warn_and_stop(exn)
-        Call in an exception handler to ignore any exception and stop further processing.
-
-FILE
-    /home/tmb/proj/webdataset/webdataset/handlers.py
-
-
-
-```
-
 # Module `webdataset.dbcache`
 
 ```
@@ -377,20 +130,10 @@ FILE
 
 ```
 
-# Module `webdataset.__init__`
+# Module `webdataset.filters`
 
 ```
-Help on module webdataset.__init__ in webdataset:
-
-NAME
-    webdataset.__init__ - Exported globals for webdataset library.
-
-DATA
-    __all__ = ['tenbin', 'dataset', 'writer']
-
-FILE
-    /home/tmb/proj/webdataset/webdataset/__init__.py
-
+problem in webdataset.filters - AttributeError: module 'webdataset.iterators' has no attribute 'map_stream'
 
 
 ```
@@ -418,90 +161,6 @@ DATA
 FILE
     /home/tmb/proj/webdataset/webdataset/autodecode.py
 
-
-
-```
-
-# Module `webdataset.utils`
-
-```
-Help on module webdataset.utils in webdataset:
-
-NAME
-    webdataset.utils - Miscellaneous utility functions.
-
-FUNCTIONS
-    guess_batchsize(batch)
-        Guess the batch size by looking at the length of the first element in a tuple.
-    
-    identity(x)
-        Return the argument as is.
-    
-    lookup_sym(sym, modules)
-        Look up a symbol in a list of modules.
-    
-    repeatedly(source, nepochs=None, nbatches=None, nsamples=None, batchsize=<function guess_batchsize at 0x7fb3f7696d30>)
-        Repeatedly yield samples from an iterator.
-    
-    repeatedly0(loader, nepochs=999999999, nbatches=999999999999)
-        Repeatedly returns batches from a DataLoader.
-    
-    safe_eval(s, expr='{}')
-        Evaluate the given expression more safely.
-
-FILE
-    /home/tmb/proj/webdataset/webdataset/utils.py
-
-
-
-```
-
-# Module `webdataset.mock`
-
-```
-Help on module webdataset.mock in webdataset:
-
-NAME
-    webdataset.mock - Mock implementations of torch interfaces when torch is not available.
-
-CLASSES
-    builtins.object
-        DataLoader
-        IterableDataset
-    
-    class DataLoader(builtins.object)
-     |  Empty implementation of DataLoader when torch is not available.
-     |  
-     |  Data descriptors defined here:
-     |  
-     |  __dict__
-     |      dictionary for instance variables (if defined)
-     |  
-     |  __weakref__
-     |      list of weak references to the object (if defined)
-    
-    class IterableDataset(builtins.object)
-     |  Empty implementation of IterableDataset when torch is not available.
-     |  
-     |  Data descriptors defined here:
-     |  
-     |  __dict__
-     |      dictionary for instance variables (if defined)
-     |  
-     |  __weakref__
-     |      list of weak references to the object (if defined)
-
-FILE
-    /home/tmb/proj/webdataset/webdataset/mock.py
-
-
-
-```
-
-# Module `webdataset.filters`
-
-```
-problem in webdataset.filters - AttributeError: module 'webdataset.iterators' has no attribute 'map_stream'
 
 
 ```
@@ -797,7 +456,17 @@ CLASSES
      |  ----------------------------------------------------------------------
      |  Methods inherited from Shorthands:
      |  
-     |  batched(self, batchsize, collation_fn=<function default_collation_fn at 0x7ff79e0aff70>, partial=True)
+     |  associate(self, associator)
+     |      Slice the stream of training samples.
+     |      
+     |      Associates information from the associator with the current sample.
+     |      The associator should either be a function or a hash table. It is
+     |      invoked with the sample key as an argument and must return a dictionary
+     |      of information that is merged with the sample.
+     |      
+     |      :param associator: callable or dictionary-like object
+     |  
+     |  batched(self, batchsize, collation_fn=<function default_collation_fn at 0x7fe5ed5e6040>, partial=True)
      |      Compute batches for the given dataset.
      |      
      |      :param batchsize: desired batchsize
@@ -826,7 +495,7 @@ CLASSES
      |      
      |      :param length: number of batches in the dataset
      |  
-     |  decode(self, *args, pre=None, post=None, only=None, handler=<function reraise_exception at 0x7ff79e0b29d0>)
+     |  decode(self, *args, pre=None, post=None, only=None, handler=<function reraise_exception at 0x7fe5ed5e6af0>)
      |      Decode samples.
      |      
      |      This is a special form of mapping over samples given as dicts.
@@ -847,7 +516,7 @@ CLASSES
      |      :param only: limit decoding to the list of these fields
      |      :param handler: exception handler
      |  
-     |  map(self, f, handler=<function reraise_exception at 0x7ff79e0b29d0>)
+     |  map(self, f, handler=<function reraise_exception at 0x7fe5ed5e6af0>)
      |      Map a function over a stream of samples.
      |      
      |      This may be a tuple stream or a stream of dicts.
@@ -855,26 +524,19 @@ CLASSES
      |      :param f: The function to be mapped.
      |      :param handler: The exception handling strategy.
      |  
-     |  map_dict(self, handler=<function reraise_exception at 0x7ff79e0b29d0>, **kw)
+     |  map_dict(self, handler=<function reraise_exception at 0x7fe5ed5e6af0>, **kw)
      |      Map the fields of a dictionary.
      |      
      |      :param handler: exeption handler
      |      :param kw: list of key=function mappers
      |  
-     |  map_tuple(self, *args, handler=<function reraise_exception at 0x7ff79e0b29d0>)
+     |  map_tuple(self, *args, handler=<function reraise_exception at 0x7fe5ed5e6af0>)
      |      Map a tuple.
      |      
      |      :param args: List of functions corresponding to the fields of the tuple.
      |      :param handler: exception handler
      |  
-     |  pipe(self, f, *args, **kw)
-     |      Pipe the sample stream through the given function.
-     |      
-     |      :param f: function obtaining an iterator as a sample and yielding samples
-     |      :param args: arguments to the function
-     |      :param kw: keyword arguments
-     |  
-     |  rename(self, handler=<function reraise_exception at 0x7ff79e0b29d0>, **kw)
+     |  rename(self, handler=<function reraise_exception at 0x7fe5ed5e6af0>, **kw)
      |      Rename fields in a dictionary based sample.
      |      
      |      This works on dictionary input streams. A keyword argument like
@@ -883,7 +545,7 @@ CLASSES
      |      :param handler: exception handler
      |      :param kw: list of renames
      |  
-     |  repeat(self, nepochs=None, nbatches=None, nsamples=None, batchsize=<function guess_batchsize at 0x7ff79e0bbd30>)
+     |  repeat(self, nepochs=None, nbatches=None, nsamples=None, batchsize=<function guess_batchsize at 0x7fe653716550>)
      |      Repeat samples from the source dataset iterator.
      |      
      |      With no arguments, repeat infinitely.
@@ -892,6 +554,11 @@ CLASSES
      |      :param nbatches: maximum number of batches
      |      :param nsamples: maximum number of samples
      |      :param batchsize: integer giving batchsize, or function to compute it
+     |  
+     |  rsample(self, p=0.5)
+     |      Randomly subsample a stream of samples.
+     |      
+     |      :param args: probability of including a sample in the output stream.
      |  
      |  select(self, predicate, **kw)
      |      Select samples matching some predicate.
@@ -932,7 +599,7 @@ CLASSES
      |      :param mock_length: size of mocked dataset
      |      :param mock: turning mocking on/off
      |  
-     |  to_tuple(self, *args, handler=<function reraise_exception at 0x7ff79e0b29d0>)
+     |  to_tuple(self, *args, handler=<function reraise_exception at 0x7fe5ed5e6af0>)
      |      Convert a dictionary-based sample to a tuple.
      |      
      |      Field names to be extracted can be specified as a Python list
@@ -1136,7 +803,17 @@ CLASSES
      |  ----------------------------------------------------------------------
      |  Methods inherited from Shorthands:
      |  
-     |  batched(self, batchsize, collation_fn=<function default_collation_fn at 0x7ff79e0aff70>, partial=True)
+     |  associate(self, associator)
+     |      Slice the stream of training samples.
+     |      
+     |      Associates information from the associator with the current sample.
+     |      The associator should either be a function or a hash table. It is
+     |      invoked with the sample key as an argument and must return a dictionary
+     |      of information that is merged with the sample.
+     |      
+     |      :param associator: callable or dictionary-like object
+     |  
+     |  batched(self, batchsize, collation_fn=<function default_collation_fn at 0x7fe5ed5e6040>, partial=True)
      |      Compute batches for the given dataset.
      |      
      |      :param batchsize: desired batchsize
@@ -1165,7 +842,7 @@ CLASSES
      |      
      |      :param length: number of batches in the dataset
      |  
-     |  decode(self, *args, pre=None, post=None, only=None, handler=<function reraise_exception at 0x7ff79e0b29d0>)
+     |  decode(self, *args, pre=None, post=None, only=None, handler=<function reraise_exception at 0x7fe5ed5e6af0>)
      |      Decode samples.
      |      
      |      This is a special form of mapping over samples given as dicts.
@@ -1186,7 +863,7 @@ CLASSES
      |      :param only: limit decoding to the list of these fields
      |      :param handler: exception handler
      |  
-     |  map(self, f, handler=<function reraise_exception at 0x7ff79e0b29d0>)
+     |  map(self, f, handler=<function reraise_exception at 0x7fe5ed5e6af0>)
      |      Map a function over a stream of samples.
      |      
      |      This may be a tuple stream or a stream of dicts.
@@ -1194,26 +871,19 @@ CLASSES
      |      :param f: The function to be mapped.
      |      :param handler: The exception handling strategy.
      |  
-     |  map_dict(self, handler=<function reraise_exception at 0x7ff79e0b29d0>, **kw)
+     |  map_dict(self, handler=<function reraise_exception at 0x7fe5ed5e6af0>, **kw)
      |      Map the fields of a dictionary.
      |      
      |      :param handler: exeption handler
      |      :param kw: list of key=function mappers
      |  
-     |  map_tuple(self, *args, handler=<function reraise_exception at 0x7ff79e0b29d0>)
+     |  map_tuple(self, *args, handler=<function reraise_exception at 0x7fe5ed5e6af0>)
      |      Map a tuple.
      |      
      |      :param args: List of functions corresponding to the fields of the tuple.
      |      :param handler: exception handler
      |  
-     |  pipe(self, f, *args, **kw)
-     |      Pipe the sample stream through the given function.
-     |      
-     |      :param f: function obtaining an iterator as a sample and yielding samples
-     |      :param args: arguments to the function
-     |      :param kw: keyword arguments
-     |  
-     |  rename(self, handler=<function reraise_exception at 0x7ff79e0b29d0>, **kw)
+     |  rename(self, handler=<function reraise_exception at 0x7fe5ed5e6af0>, **kw)
      |      Rename fields in a dictionary based sample.
      |      
      |      This works on dictionary input streams. A keyword argument like
@@ -1222,7 +892,7 @@ CLASSES
      |      :param handler: exception handler
      |      :param kw: list of renames
      |  
-     |  repeat(self, nepochs=None, nbatches=None, nsamples=None, batchsize=<function guess_batchsize at 0x7ff79e0bbd30>)
+     |  repeat(self, nepochs=None, nbatches=None, nsamples=None, batchsize=<function guess_batchsize at 0x7fe653716550>)
      |      Repeat samples from the source dataset iterator.
      |      
      |      With no arguments, repeat infinitely.
@@ -1231,6 +901,11 @@ CLASSES
      |      :param nbatches: maximum number of batches
      |      :param nsamples: maximum number of samples
      |      :param batchsize: integer giving batchsize, or function to compute it
+     |  
+     |  rsample(self, p=0.5)
+     |      Randomly subsample a stream of samples.
+     |      
+     |      :param args: probability of including a sample in the output stream.
      |  
      |  select(self, predicate, **kw)
      |      Select samples matching some predicate.
@@ -1271,7 +946,7 @@ CLASSES
      |      :param mock_length: size of mocked dataset
      |      :param mock: turning mocking on/off
      |  
-     |  to_tuple(self, *args, handler=<function reraise_exception at 0x7ff79e0b29d0>)
+     |  to_tuple(self, *args, handler=<function reraise_exception at 0x7fe5ed5e6af0>)
      |      Convert a dictionary-based sample to a tuple.
      |      
      |      Field names to be extracted can be specified as a Python list
@@ -1390,7 +1065,17 @@ CLASSES
      |  ----------------------------------------------------------------------
      |  Methods inherited from Shorthands:
      |  
-     |  batched(self, batchsize, collation_fn=<function default_collation_fn at 0x7ff79e0aff70>, partial=True)
+     |  associate(self, associator)
+     |      Slice the stream of training samples.
+     |      
+     |      Associates information from the associator with the current sample.
+     |      The associator should either be a function or a hash table. It is
+     |      invoked with the sample key as an argument and must return a dictionary
+     |      of information that is merged with the sample.
+     |      
+     |      :param associator: callable or dictionary-like object
+     |  
+     |  batched(self, batchsize, collation_fn=<function default_collation_fn at 0x7fe5ed5e6040>, partial=True)
      |      Compute batches for the given dataset.
      |      
      |      :param batchsize: desired batchsize
@@ -1419,7 +1104,7 @@ CLASSES
      |      
      |      :param length: number of batches in the dataset
      |  
-     |  decode(self, *args, pre=None, post=None, only=None, handler=<function reraise_exception at 0x7ff79e0b29d0>)
+     |  decode(self, *args, pre=None, post=None, only=None, handler=<function reraise_exception at 0x7fe5ed5e6af0>)
      |      Decode samples.
      |      
      |      This is a special form of mapping over samples given as dicts.
@@ -1440,7 +1125,7 @@ CLASSES
      |      :param only: limit decoding to the list of these fields
      |      :param handler: exception handler
      |  
-     |  map(self, f, handler=<function reraise_exception at 0x7ff79e0b29d0>)
+     |  map(self, f, handler=<function reraise_exception at 0x7fe5ed5e6af0>)
      |      Map a function over a stream of samples.
      |      
      |      This may be a tuple stream or a stream of dicts.
@@ -1448,26 +1133,19 @@ CLASSES
      |      :param f: The function to be mapped.
      |      :param handler: The exception handling strategy.
      |  
-     |  map_dict(self, handler=<function reraise_exception at 0x7ff79e0b29d0>, **kw)
+     |  map_dict(self, handler=<function reraise_exception at 0x7fe5ed5e6af0>, **kw)
      |      Map the fields of a dictionary.
      |      
      |      :param handler: exeption handler
      |      :param kw: list of key=function mappers
      |  
-     |  map_tuple(self, *args, handler=<function reraise_exception at 0x7ff79e0b29d0>)
+     |  map_tuple(self, *args, handler=<function reraise_exception at 0x7fe5ed5e6af0>)
      |      Map a tuple.
      |      
      |      :param args: List of functions corresponding to the fields of the tuple.
      |      :param handler: exception handler
      |  
-     |  pipe(self, f, *args, **kw)
-     |      Pipe the sample stream through the given function.
-     |      
-     |      :param f: function obtaining an iterator as a sample and yielding samples
-     |      :param args: arguments to the function
-     |      :param kw: keyword arguments
-     |  
-     |  rename(self, handler=<function reraise_exception at 0x7ff79e0b29d0>, **kw)
+     |  rename(self, handler=<function reraise_exception at 0x7fe5ed5e6af0>, **kw)
      |      Rename fields in a dictionary based sample.
      |      
      |      This works on dictionary input streams. A keyword argument like
@@ -1476,7 +1154,7 @@ CLASSES
      |      :param handler: exception handler
      |      :param kw: list of renames
      |  
-     |  repeat(self, nepochs=None, nbatches=None, nsamples=None, batchsize=<function guess_batchsize at 0x7ff79e0bbd30>)
+     |  repeat(self, nepochs=None, nbatches=None, nsamples=None, batchsize=<function guess_batchsize at 0x7fe653716550>)
      |      Repeat samples from the source dataset iterator.
      |      
      |      With no arguments, repeat infinitely.
@@ -1485,6 +1163,11 @@ CLASSES
      |      :param nbatches: maximum number of batches
      |      :param nsamples: maximum number of samples
      |      :param batchsize: integer giving batchsize, or function to compute it
+     |  
+     |  rsample(self, p=0.5)
+     |      Randomly subsample a stream of samples.
+     |      
+     |      :param args: probability of including a sample in the output stream.
      |  
      |  select(self, predicate, **kw)
      |      Select samples matching some predicate.
@@ -1525,7 +1208,7 @@ CLASSES
      |      :param mock_length: size of mocked dataset
      |      :param mock: turning mocking on/off
      |  
-     |  to_tuple(self, *args, handler=<function reraise_exception at 0x7ff79e0b29d0>)
+     |  to_tuple(self, *args, handler=<function reraise_exception at 0x7fe5ed5e6af0>)
      |      Convert a dictionary-based sample to a tuple.
      |      
      |      Field names to be extracted can be specified as a Python list
@@ -1732,7 +1415,17 @@ CLASSES
      |  
      |  Methods defined here:
      |  
-     |  batched(self, batchsize, collation_fn=<function default_collation_fn at 0x7ff79e0aff70>, partial=True)
+     |  associate(self, associator)
+     |      Slice the stream of training samples.
+     |      
+     |      Associates information from the associator with the current sample.
+     |      The associator should either be a function or a hash table. It is
+     |      invoked with the sample key as an argument and must return a dictionary
+     |      of information that is merged with the sample.
+     |      
+     |      :param associator: callable or dictionary-like object
+     |  
+     |  batched(self, batchsize, collation_fn=<function default_collation_fn at 0x7fe5ed5e6040>, partial=True)
      |      Compute batches for the given dataset.
      |      
      |      :param batchsize: desired batchsize
@@ -1761,7 +1454,7 @@ CLASSES
      |      
      |      :param length: number of batches in the dataset
      |  
-     |  decode(self, *args, pre=None, post=None, only=None, handler=<function reraise_exception at 0x7ff79e0b29d0>)
+     |  decode(self, *args, pre=None, post=None, only=None, handler=<function reraise_exception at 0x7fe5ed5e6af0>)
      |      Decode samples.
      |      
      |      This is a special form of mapping over samples given as dicts.
@@ -1782,7 +1475,7 @@ CLASSES
      |      :param only: limit decoding to the list of these fields
      |      :param handler: exception handler
      |  
-     |  map(self, f, handler=<function reraise_exception at 0x7ff79e0b29d0>)
+     |  map(self, f, handler=<function reraise_exception at 0x7fe5ed5e6af0>)
      |      Map a function over a stream of samples.
      |      
      |      This may be a tuple stream or a stream of dicts.
@@ -1790,26 +1483,19 @@ CLASSES
      |      :param f: The function to be mapped.
      |      :param handler: The exception handling strategy.
      |  
-     |  map_dict(self, handler=<function reraise_exception at 0x7ff79e0b29d0>, **kw)
+     |  map_dict(self, handler=<function reraise_exception at 0x7fe5ed5e6af0>, **kw)
      |      Map the fields of a dictionary.
      |      
      |      :param handler: exeption handler
      |      :param kw: list of key=function mappers
      |  
-     |  map_tuple(self, *args, handler=<function reraise_exception at 0x7ff79e0b29d0>)
+     |  map_tuple(self, *args, handler=<function reraise_exception at 0x7fe5ed5e6af0>)
      |      Map a tuple.
      |      
      |      :param args: List of functions corresponding to the fields of the tuple.
      |      :param handler: exception handler
      |  
-     |  pipe(self, f, *args, **kw)
-     |      Pipe the sample stream through the given function.
-     |      
-     |      :param f: function obtaining an iterator as a sample and yielding samples
-     |      :param args: arguments to the function
-     |      :param kw: keyword arguments
-     |  
-     |  rename(self, handler=<function reraise_exception at 0x7ff79e0b29d0>, **kw)
+     |  rename(self, handler=<function reraise_exception at 0x7fe5ed5e6af0>, **kw)
      |      Rename fields in a dictionary based sample.
      |      
      |      This works on dictionary input streams. A keyword argument like
@@ -1818,7 +1504,7 @@ CLASSES
      |      :param handler: exception handler
      |      :param kw: list of renames
      |  
-     |  repeat(self, nepochs=None, nbatches=None, nsamples=None, batchsize=<function guess_batchsize at 0x7ff79e0bbd30>)
+     |  repeat(self, nepochs=None, nbatches=None, nsamples=None, batchsize=<function guess_batchsize at 0x7fe653716550>)
      |      Repeat samples from the source dataset iterator.
      |      
      |      With no arguments, repeat infinitely.
@@ -1827,6 +1513,11 @@ CLASSES
      |      :param nbatches: maximum number of batches
      |      :param nsamples: maximum number of samples
      |      :param batchsize: integer giving batchsize, or function to compute it
+     |  
+     |  rsample(self, p=0.5)
+     |      Randomly subsample a stream of samples.
+     |      
+     |      :param args: probability of including a sample in the output stream.
      |  
      |  select(self, predicate, **kw)
      |      Select samples matching some predicate.
@@ -1867,7 +1558,7 @@ CLASSES
      |      :param mock_length: size of mocked dataset
      |      :param mock: turning mocking on/off
      |  
-     |  to_tuple(self, *args, handler=<function reraise_exception at 0x7ff79e0b29d0>)
+     |  to_tuple(self, *args, handler=<function reraise_exception at 0x7fe5ed5e6af0>)
      |      Convert a dictionary-based sample to a tuple.
      |      
      |      Field names to be extracted can be specified as a Python list
@@ -1893,7 +1584,7 @@ CLASSES
      |      list of weak references to the object (if defined)
 
 FUNCTIONS
-    WebDataset(urls, shardshuffle=True, cache_dir='', cache_size=1000000000000000, cache_name=<function shard_uuid at 0x7ff79e0b23a0>, cache_verbose=1, splitter=<function split_by_worker at 0x7ff79e0bf280>, nodesplitter=True, handler=<function reraise_exception at 0x7ff79e0b29d0>, length=None)
+    WebDataset(urls, shardshuffle=True, cache_dir='', cache_size=1000000000000000, cache_name=<function shard_uuid at 0x7fe5ed5e64c0>, cache_verbose=1, splitter=<function split_by_worker at 0x7fe5ed5f3040>, nodesplitter=True, handler=<function reraise_exception at 0x7fe5ed5e6af0>, length=None)
         Return a pipeline for WebDataset-style data files.
         
         This is a convenience function for constructing a partial pipeline
@@ -1940,198 +1631,41 @@ FILE
 
 ```
 
-# Module `webdataset.gopen`
+# Module `webdataset.handlers`
 
 ```
-Help on module webdataset.gopen in webdataset:
+Help on module webdataset.handlers in webdataset:
 
 NAME
-    webdataset.gopen - Open URLs by calling subcommands.
-
-FUNCTIONS
-    gopen(url, mode='rb', bufsize=8192, **kw)
-        Open the URL.
-        
-        This uses the `gopen_schemes` dispatch table to dispatch based
-        on scheme.
-        
-        Support for the following schemes is built-in: pipe, file,
-        http, https, sftp, ftps, scp.
-        
-        When no scheme is given the url is treated as a file.
-        
-        You can use the OPEN_VERBOSE argument to get info about
-        files being opened.
-        
-        :param url: the source URL
-        :param mode: the mode ("rb", "r")
-        :param bufsize: the buffer size
-
-DATA
-    __all__ = ['gopen', 'gopen_schemes']
-    gopen_schemes = {'__default__': <function gopen_error>, 'ftps': <funct...
-
-FILE
-    /home/tmb/proj/webdataset/webdataset/gopen.py
-
-
-
-```
-
-# Module `webdataset.tariterators`
-
-```
-Help on module webdataset.tariterators in webdataset:
-
-NAME
-    webdataset.tariterators - Low level iteration functions for tar archives.
-
-FUNCTIONS
-    base_plus_ext(path)
-        Split off all file extensions.
-        
-        Returns base, allext.
-        
-        :param path: path with extensions
-        :param returns: path with all extensions removed
-    
-    group_by_keys(data, keys=<function base_plus_ext at 0x7fc402c42790>, lcase=True, suffixes=None, handler=None)
-        Return function over iterator that groups key, value pairs into samples.
-        
-        :param keys: function that splits the key into key and extension (base_plus_ext)
-        :param lcase: convert suffixes to lower case (Default value = True)
-    
-    shardlist(urls, *, shuffle=False)
-        Given a list of URLs, yields that list, possibly shuffled.
-    
-    tar_file_expander(data, handler=<function reraise_exception at 0x7fc402c429d0>)
-        Expand a stream of open tar files into a stream of tar file contents.
-        
-        This returns an iterator over (filename, file_contents).
-    
-    tar_file_iterator(fileobj, skip_meta='__[^/]*__($|/)', handler=<function reraise_exception at 0x7fc402c429d0>)
-        Iterate over tar file, yielding filename, content pairs for the given tar stream.
-        
-        :param fileobj: byte stream suitable for tarfile
-        :param skip_meta: regexp for keys that are skipped entirely (Default value = r"__[^/]*__($|/)")
-    
-    url_opener(data, handler=<function reraise_exception at 0x7fc402c429d0>, **kw)
-        Given a stream of url names (packaged in `dict(url=url)`), yield opened streams.
-    
-    valid_sample(sample)
-        Check whether a sample is valid.
-        
-        :param sample: sample to be checked
-
-DATA
-    meta_prefix = '__'
-    meta_suffix = '__'
-    trace = False
-
-FILE
-    /home/tmb/proj/webdataset/webdataset/tariterators.py
-
-
-
-```
-
-# Module `webdataset.workerenv`
-
-```
-Help on module webdataset.workerenv in webdataset:
-
-NAME
-    webdataset.workerenv - Functions related to splitting datasets by node and worker.
+    webdataset.handlers - Pluggable exception handlers.
 
 DESCRIPTION
-    This follows the PyTorch model of magic global functions and environment
-    settings and supplies the default node and worker splitting functions.
-    This is provided mainly because PyTorch users expect something like this
-    to exist. The cleaner and safer way of dealing with node and worker splitting
-    is via explicit functions.
-
-CLASSES
-    builtins.object
-        WorkerEnvironment
-            TorchWorkerEnvironment
+    These are functions that take an exception as an argument and then return...
     
-    class TorchWorkerEnvironment(WorkerEnvironment)
-     |  TorchWorkerEnvironment(group=None)
-     |  
-     |  TorchWorkerEnvironment.
-     |  
-     |  Method resolution order:
-     |      TorchWorkerEnvironment
-     |      WorkerEnvironment
-     |      builtins.object
-     |  
-     |  Methods defined here:
-     |  
-     |  __init__(self, group=None)
-     |      Initialize the worker environment for Torch.
-     |      
-     |      :param group: torch.distributed group for determining rank/size
-     |  
-     |  ----------------------------------------------------------------------
-     |  Methods inherited from WorkerEnvironment:
-     |  
-     |  __str__(self)
-     |      __str__.
-     |  
-     |  ----------------------------------------------------------------------
-     |  Data descriptors inherited from WorkerEnvironment:
-     |  
-     |  __dict__
-     |      dictionary for instance variables (if defined)
-     |  
-     |  __weakref__
-     |      list of weak references to the object (if defined)
+    - the exception (in order to re-raise it)
+    - True (in order to continue and ignore the exception)
+    - False (in order to ignore the exception and stop processing)
     
-    class WorkerEnvironment(builtins.object)
-     |  WorkerEnvironment(rank=0, world_size=1, worker=0, nworkers=1)
-     |  
-     |  Encapsulates the runtime environment of the worker.
-     |  
-     |  Methods defined here:
-     |  
-     |  __init__(self, rank=0, world_size=1, worker=0, nworkers=1)
-     |      Initialize the worker environment.
-     |  
-     |  __str__(self)
-     |      __str__.
-     |  
-     |  ----------------------------------------------------------------------
-     |  Data descriptors defined here:
-     |  
-     |  __dict__
-     |      dictionary for instance variables (if defined)
-     |  
-     |  __weakref__
-     |      list of weak references to the object (if defined)
+    They are used as handler= arguments in much of the library.
 
 FUNCTIONS
-    get_worker_environment()
-        Get the current worker environment.
+    ignore_and_continue(exn)
+        Call in an exception handler to ignore any exception and continue.
     
-    split_by_node(urls, env=None)
-        Select a subset of urls based on node info.
-        
-        Used as a shard selection function in Dataset.
+    ignore_and_stop(exn)
+        Call in an exception handler to ignore any exception and stop further processing.
     
-    split_by_worker(urls, env=None)
-        Select a subset of urls based on worker info.
-        
-        Used as a shard selection function in Dataset.
+    reraise_exception(exn)
+        Call in an exception handler to re-raise the exception.
     
-    worker_id()
-        Return an identifier for the current worker.
-
-DATA
-    too_few_shards_warning = 1
-    worker_environment = None
+    warn_and_continue(exn)
+        Call in an exception handler to ignore any exception, isssue a warning, and continue.
+    
+    warn_and_stop(exn)
+        Call in an exception handler to ignore any exception and stop further processing.
 
 FILE
-    /home/tmb/proj/webdataset/webdataset/workerenv.py
+    /home/tmb/proj/webdataset/webdataset/handlers.py
 
 
 
@@ -2166,6 +1700,24 @@ FUNCTIONS
 
 FILE
     /home/tmb/proj/webdataset/webdataset/checks.py
+
+
+
+```
+
+# Module `webdataset.__init__`
+
+```
+Help on module webdataset.__init__ in webdataset:
+
+NAME
+    webdataset.__init__ - Exported globals for webdataset library.
+
+DATA
+    __all__ = ['tenbin', 'dataset', 'writer']
+
+FILE
+    /home/tmb/proj/webdataset/webdataset/__init__.py
 
 
 
@@ -2268,6 +1820,123 @@ FUNCTIONS
 
 FILE
     /home/tmb/proj/webdataset/webdataset/bench.py
+
+
+
+```
+
+# Module `webdataset.fluid`
+
+```
+Help on module webdataset.fluid in webdataset:
+
+NAME
+    webdataset.fluid - A deprecated interface to WebDataset.
+
+CLASSES
+    torch.utils.data.dataset.IterableDataset(torch.utils.data.dataset.Dataset)
+        Dataset
+    
+    class Dataset(torch.utils.data.dataset.IterableDataset)
+     |  Dataset(*args, **kwds)
+     |  
+     |  This class works almost identically to WebDataset but with internal state.
+     |  
+     |  Method resolution order:
+     |      Dataset
+     |      torch.utils.data.dataset.IterableDataset
+     |      torch.utils.data.dataset.Dataset
+     |      typing.Generic
+     |      builtins.object
+     |  
+     |  Methods defined here:
+     |  
+     |  __getattr__(self, name)
+     |      Forward method calls to the underlying WebDataset and update the internal pipe.
+     |  
+     |  __init__(self, urls, *, length=True, splitter=<function split_by_worker at 0x7fe6688ae040>, handler=<function reraise_exception at 0x7fe6688a3af0>, shuffle=False, cache_dir='', cache_size=1000000000000000, cache_name=<function shard_uuid at 0x7fe6688a34c0>, cache_verbose=1)
+     |      Create a Dataset instance. See WebDataset for documentation.
+     |  
+     |  __iter__(self)
+     |      Return an iterator over the underlying dataset.
+     |  
+     |  __len__(self)
+     |      Return the length of the underlying dataset.
+     |  
+     |  ----------------------------------------------------------------------
+     |  Data and other attributes defined here:
+     |  
+     |  __parameters__ = ()
+     |  
+     |  ----------------------------------------------------------------------
+     |  Methods inherited from torch.utils.data.dataset.IterableDataset:
+     |  
+     |  __add__(self, other: torch.utils.data.dataset.Dataset[+T_co])
+     |  
+     |  ----------------------------------------------------------------------
+     |  Data and other attributes inherited from torch.utils.data.dataset.IterableDataset:
+     |  
+     |  __orig_bases__ = (torch.utils.data.dataset.Dataset[+T_co],)
+     |  
+     |  ----------------------------------------------------------------------
+     |  Methods inherited from torch.utils.data.dataset.Dataset:
+     |  
+     |  __getitem__(self, index) -> +T_co
+     |  
+     |  ----------------------------------------------------------------------
+     |  Data descriptors inherited from torch.utils.data.dataset.Dataset:
+     |  
+     |  __dict__
+     |      dictionary for instance variables (if defined)
+     |  
+     |  __weakref__
+     |      list of weak references to the object (if defined)
+     |  
+     |  ----------------------------------------------------------------------
+     |  Class methods inherited from typing.Generic:
+     |  
+     |  __class_getitem__(params) from builtins.type
+     |  
+     |  __init_subclass__(*args, **kwargs) from builtins.type
+     |      This method is called when a class is subclassed.
+     |      
+     |      The default implementation does nothing. It may be
+     |      overridden to extend subclasses.
+     |  
+     |  ----------------------------------------------------------------------
+     |  Static methods inherited from typing.Generic:
+     |  
+     |  __new__(cls, *args, **kwds)
+     |      Create and return a new object.  See help(type) for accurate signature.
+
+DATA
+    __all__ = ['FluidPipes', 'Dataset']
+
+FILE
+    /home/tmb/proj/webdataset/webdataset/fluid.py
+
+
+
+```
+
+# Module `webdataset.iterators`
+
+```
+Help on module webdataset.iterators in webdataset:
+
+NAME
+    webdataset.iterators - A collection of iterators for data transformations.
+
+DESCRIPTION
+    These functions are plain iterator functions. You can find curried versions
+    in webdataset.filters, and you can find IterableDataset wrappers in
+    webdataset.processing.
+
+DATA
+    __all__ = ['WebDataset', 'tariterator', 'default_handlers', 'imagehand...
+
+FILE
+    /home/tmb/proj/webdataset/webdataset/iterators.py
 
 
 
@@ -2446,6 +2115,96 @@ FILE
 
 ```
 
+# Module `webdataset.multi`
+
+```
+Help on module webdataset.multi in webdataset:
+
+NAME
+    webdataset.multi - An alternative to DataLoader using ZMQ.
+
+DESCRIPTION
+    This implements MultiLoader, an alternative to DataLoader when torch
+    is not available. Subprocesses communicate with the loader through
+    ZMQ, provided for high performance multithreaded queueing.
+
+CLASSES
+    builtins.object
+        EOF
+        MultiLoader
+    
+    class EOF(builtins.object)
+     |  EOF(**kw)
+     |  
+     |  A class that indicates that a data stream is finished.
+     |  
+     |  Methods defined here:
+     |  
+     |  __init__(self, **kw)
+     |      Initialize the class with the kw as instance variables.
+     |  
+     |  ----------------------------------------------------------------------
+     |  Data descriptors defined here:
+     |  
+     |  __dict__
+     |      dictionary for instance variables (if defined)
+     |  
+     |  __weakref__
+     |      list of weak references to the object (if defined)
+    
+    class MultiLoader(builtins.object)
+     |  MultiLoader(dataset, workers=4, verbose=False, nokill=False, prefix='/tmp/_multi-')
+     |  
+     |  Alternative to PyTorch DataLoader based on ZMQ.
+     |  
+     |  Methods defined here:
+     |  
+     |  __init__(self, dataset, workers=4, verbose=False, nokill=False, prefix='/tmp/_multi-')
+     |      Create a MultiLoader for a dataset.
+     |      
+     |      This creates ZMQ sockets, spawns `workers` subprocesses, and has them send data
+     |      to the socket.
+     |      
+     |      :param dataset: source dataset
+     |      :param workers: number of workers
+     |      :param verbose: report progress verbosely
+     |      :param nokill: don't kill old processes when restarting (allows multiple loaders)
+     |      :param prefix: directory prefix for the ZMQ socket
+     |  
+     |  __iter__(self)
+     |      Return an iterator over this dataloader.
+     |  
+     |  kill(self)
+     |      kill.
+     |  
+     |  ----------------------------------------------------------------------
+     |  Data descriptors defined here:
+     |  
+     |  __dict__
+     |      dictionary for instance variables (if defined)
+     |  
+     |  __weakref__
+     |      list of weak references to the object (if defined)
+
+FUNCTIONS
+    reader(dataset, sockname, index)
+        Read samples from the dataset and send them over the socket.
+        
+        :param dataset: source dataset
+        :param sockname: name for the socket to send data to
+        :param index: index for this reader, using to indicate EOF
+
+DATA
+    all_pids = set()
+    the_protocol = 5
+
+FILE
+    /home/tmb/proj/webdataset/webdataset/multi.py
+
+
+
+```
+
 # Module `webdataset.shardcache`
 
 ```
@@ -2612,7 +2371,7 @@ CLASSES
      |  closed
 
 FUNCTIONS
-    cache_shards(urls, cache_dir='./data', cache_size=1000000000000000.0, cache_name=<function guess_shard at 0x7f13e53b0310>, verbose=False)
+    cache_shards(urls, cache_dir='./data', cache_size=1000000000000000.0, cache_name=<function guess_shard at 0x7fe5340fb430>, verbose=False)
         Implement shard caching.
         
         When caching is off, just iterates through the list of shards.
@@ -2634,6 +2393,279 @@ FUNCTIONS
 
 FILE
     /home/tmb/proj/webdataset/webdataset/shardcache.py
+
+
+
+```
+
+# Module `webdataset.gopen`
+
+```
+Help on module webdataset.gopen in webdataset:
+
+NAME
+    webdataset.gopen - Open URLs by calling subcommands.
+
+FUNCTIONS
+    gopen(url, mode='rb', bufsize=8192, **kw)
+        Open the URL.
+        
+        This uses the `gopen_schemes` dispatch table to dispatch based
+        on scheme.
+        
+        Support for the following schemes is built-in: pipe, file,
+        http, https, sftp, ftps, scp.
+        
+        When no scheme is given the url is treated as a file.
+        
+        You can use the OPEN_VERBOSE argument to get info about
+        files being opened.
+        
+        :param url: the source URL
+        :param mode: the mode ("rb", "r")
+        :param bufsize: the buffer size
+
+DATA
+    __all__ = ['gopen', 'gopen_schemes']
+    gopen_schemes = {'__default__': <function gopen_error>, 'ftps': <funct...
+
+FILE
+    /home/tmb/proj/webdataset/webdataset/gopen.py
+
+
+
+```
+
+# Module `webdataset.tariterators`
+
+```
+Help on module webdataset.tariterators in webdataset:
+
+NAME
+    webdataset.tariterators - Low level iteration functions for tar archives.
+
+FUNCTIONS
+    base_plus_ext(path)
+        Split off all file extensions.
+        
+        Returns base, allext.
+        
+        :param path: path with extensions
+        :param returns: path with all extensions removed
+    
+    group_by_keys(data, keys=<function base_plus_ext at 0x7f1f973e58b0>, lcase=True, suffixes=None, handler=None)
+        Return function over iterator that groups key, value pairs into samples.
+        
+        :param keys: function that splits the key into key and extension (base_plus_ext)
+        :param lcase: convert suffixes to lower case (Default value = True)
+    
+    shardlist(urls, *, shuffle=False)
+        Given a list of URLs, yields that list, possibly shuffled.
+    
+    tar_file_expander(data, handler=<function reraise_exception at 0x7f1f973e5af0>)
+        Expand a stream of open tar files into a stream of tar file contents.
+        
+        This returns an iterator over (filename, file_contents).
+    
+    tar_file_iterator(fileobj, skip_meta='__[^/]*__($|/)', handler=<function reraise_exception at 0x7f1f973e5af0>)
+        Iterate over tar file, yielding filename, content pairs for the given tar stream.
+        
+        :param fileobj: byte stream suitable for tarfile
+        :param skip_meta: regexp for keys that are skipped entirely (Default value = r"__[^/]*__($|/)")
+    
+    url_opener(data, handler=<function reraise_exception at 0x7f1f973e5af0>, **kw)
+        Given a stream of url names (packaged in `dict(url=url)`), yield opened streams.
+    
+    valid_sample(sample)
+        Check whether a sample is valid.
+        
+        :param sample: sample to be checked
+
+DATA
+    meta_prefix = '__'
+    meta_suffix = '__'
+    trace = False
+
+FILE
+    /home/tmb/proj/webdataset/webdataset/tariterators.py
+
+
+
+```
+
+# Module `webdataset.mock`
+
+```
+Help on module webdataset.mock in webdataset:
+
+NAME
+    webdataset.mock - Mock implementations of torch interfaces when torch is not available.
+
+CLASSES
+    builtins.object
+        DataLoader
+        IterableDataset
+    
+    class DataLoader(builtins.object)
+     |  Empty implementation of DataLoader when torch is not available.
+     |  
+     |  Data descriptors defined here:
+     |  
+     |  __dict__
+     |      dictionary for instance variables (if defined)
+     |  
+     |  __weakref__
+     |      list of weak references to the object (if defined)
+    
+    class IterableDataset(builtins.object)
+     |  Empty implementation of IterableDataset when torch is not available.
+     |  
+     |  Data descriptors defined here:
+     |  
+     |  __dict__
+     |      dictionary for instance variables (if defined)
+     |  
+     |  __weakref__
+     |      list of weak references to the object (if defined)
+
+FILE
+    /home/tmb/proj/webdataset/webdataset/mock.py
+
+
+
+```
+
+# Module `webdataset.workerenv`
+
+```
+Help on module webdataset.workerenv in webdataset:
+
+NAME
+    webdataset.workerenv - Functions related to splitting datasets by node and worker.
+
+DESCRIPTION
+    This follows the PyTorch model of magic global functions and environment
+    settings and supplies the default node and worker splitting functions.
+    This is provided mainly because PyTorch users expect something like this
+    to exist. The cleaner and safer way of dealing with node and worker splitting
+    is via explicit functions.
+
+CLASSES
+    builtins.object
+        WorkerEnvironment
+            TorchWorkerEnvironment
+    
+    class TorchWorkerEnvironment(WorkerEnvironment)
+     |  TorchWorkerEnvironment(group=None)
+     |  
+     |  TorchWorkerEnvironment.
+     |  
+     |  Method resolution order:
+     |      TorchWorkerEnvironment
+     |      WorkerEnvironment
+     |      builtins.object
+     |  
+     |  Methods defined here:
+     |  
+     |  __init__(self, group=None)
+     |      Initialize the worker environment for Torch.
+     |      
+     |      :param group: torch.distributed group for determining rank/size
+     |  
+     |  ----------------------------------------------------------------------
+     |  Methods inherited from WorkerEnvironment:
+     |  
+     |  __str__(self)
+     |      __str__.
+     |  
+     |  ----------------------------------------------------------------------
+     |  Data descriptors inherited from WorkerEnvironment:
+     |  
+     |  __dict__
+     |      dictionary for instance variables (if defined)
+     |  
+     |  __weakref__
+     |      list of weak references to the object (if defined)
+    
+    class WorkerEnvironment(builtins.object)
+     |  WorkerEnvironment(rank=0, world_size=1, worker=0, nworkers=1)
+     |  
+     |  Encapsulates the runtime environment of the worker.
+     |  
+     |  Methods defined here:
+     |  
+     |  __init__(self, rank=0, world_size=1, worker=0, nworkers=1)
+     |      Initialize the worker environment.
+     |  
+     |  __str__(self)
+     |      __str__.
+     |  
+     |  ----------------------------------------------------------------------
+     |  Data descriptors defined here:
+     |  
+     |  __dict__
+     |      dictionary for instance variables (if defined)
+     |  
+     |  __weakref__
+     |      list of weak references to the object (if defined)
+
+FUNCTIONS
+    get_worker_environment()
+        Get the current worker environment.
+    
+    split_by_node(urls, env=None)
+        Select a subset of urls based on node info.
+        
+        Used as a shard selection function in Dataset.
+    
+    split_by_worker(urls, env=None)
+        Select a subset of urls based on worker info.
+        
+        Used as a shard selection function in Dataset.
+    
+    worker_id()
+        Return an identifier for the current worker.
+
+DATA
+    too_few_shards_warning = 1
+    worker_environment = None
+
+FILE
+    /home/tmb/proj/webdataset/webdataset/workerenv.py
+
+
+
+```
+
+# Module `webdataset.utils`
+
+```
+Help on module webdataset.utils in webdataset:
+
+NAME
+    webdataset.utils - Miscellaneous utility functions.
+
+FUNCTIONS
+    guess_batchsize(batch)
+        Guess the batch size by looking at the length of the first element in a tuple.
+    
+    identity(x)
+        Return the argument as is.
+    
+    lookup_sym(sym, modules)
+        Look up a symbol in a list of modules.
+    
+    repeatedly(source, nepochs=None, nbatches=None, nsamples=None, batchsize=<function guess_batchsize at 0x7fb5335df550>)
+        Repeatedly yield samples from an iterator.
+    
+    repeatedly0(loader, nepochs=999999999, nbatches=999999999999)
+        Repeatedly returns batches from a DataLoader.
+    
+    safe_eval(s, expr='{}')
+        Evaluate the given expression more safely.
+
+FILE
+    /home/tmb/proj/webdataset/webdataset/utils.py
 
 
 
