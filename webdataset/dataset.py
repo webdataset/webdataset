@@ -316,15 +316,6 @@ class Shorthands:
         """
         return self.then(iterators.map_tuple, *args, handler=handler)
 
-    def pipe(self, f, *args, **kw):
-        """Pipe the sample stream through the given function.
-
-        :param f: function obtaining an iterator as a sample and yielding samples
-        :param args: arguments to the function
-        :param kw: keyword arguments
-        """
-        return self.then(f, *args, _kwa=kw)
-
     def dbcache(self, fname, size):
         """Cache training samples in an SQLite database.
 
@@ -335,6 +326,18 @@ class Shorthands:
         """
         return self.compose(dbcache.DBCache, fname, size)
 
+    def associate(self, associator):
+        """Slice the stream of training samples.
+
+        Associates information from the associator with the current sample.
+        The associator should either be a function or a hash table. It is
+        invoked with the sample key as an argument and must return a dictionary
+        of information that is merged with the sample.
+
+        :param associator: callable or dictionary-like object
+        """
+        return self.then(iterators.associate, associator)
+
     def slice(self, *args):
         """Slice the stream of training samples.
 
@@ -342,7 +345,14 @@ class Shorthands:
 
         :param args: arguments to itertools.islice
         """
-        return self.pipe(itt.islice, *args)
+        return self.then(itt.islice, *args)
+
+    def rsample(self, p=0.5):
+        """Randomly subsample a stream of samples.
+
+        :param args: probability of including a sample in the output stream.
+        """
+        return self.then(iterators.rsample, p)
 
     def repeat(
         self,

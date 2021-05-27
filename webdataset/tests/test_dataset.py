@@ -117,6 +117,16 @@ def test_dataset_missing_rename_raises():
         count_samples_tuple(ds)
 
 
+def test_dataset_rsample():
+
+    ds = wds.WebDataset(local_data).rsample(1.0)
+    assert count_samples_tuple(ds) == 47
+
+    ds = wds.WebDataset(local_data).rsample(0.5)
+    result = [count_samples_tuple(ds) for _ in range(300)]
+    assert np.mean(result) >= 0.3 * 47 and np.mean(result) <= 0.7 * 47, np.mean(result)
+
+
 def test_dataset_decode_handler():
     count = [0]
     good = [0]
