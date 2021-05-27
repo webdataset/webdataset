@@ -13,13 +13,14 @@ Code works locally or over HTTP connections.
 import itertools as itt
 import os
 import random
+import warnings
 
 import braceexpand
 
 from . import autodecode, dbcache, iterators, shardcache, tariterators, utils
 from .utils import lookup_sym, safe_eval
 from .handlers import reraise_exception
-from .workerenv import split_by_node, split_by_worker
+from .workerenv import split_by_node, split_by_worker, get_worker_environment
 
 try:
     from torch.utils.data import IterableDataset, DataLoader
@@ -56,6 +57,18 @@ class MockDataset(IterableDataset):
         """Return an iterator over this mock dataset."""
         for i in range(self.length):
             yield self.sample
+
+
+def warn_no_samples(data):
+    """Warn if the iterator yields no samples."""
+    count = 0
+    for sample in data:
+        yield sample
+        count += 1
+    if count == 0:
+        env = get_worker_environment()
+        if env.rank > 0:
+            warnings.warn(f"no samples at all in node {env.rank}, worker {env.worker}")
 
 
 class Composable:
@@ -527,6 +540,7 @@ def WebDataset(
     nodesplitter=True,
     handler=reraise_exception,
     length=None,
+    warn_empty=True,
 ):
     """Return a pipeline for WebDataset-style data files.
 
@@ -548,6 +562,7 @@ def WebDataset(
     :param cache_size: when set, specifies a maximum size for the shard cache
     :param cache_name: when set, specifies how shards should be named in the cache
     :param cache_verbose: when set, prints information about caching
+    :param warn_empty: warn when no samples are generated at all
     """
     result = ShardList(
         urls,
@@ -567,6 +582,8 @@ def WebDataset(
         )
     result = result.then(tariterators.tar_file_expander, length=None, handler=handler)
     result = result.then(tariterators.group_by_keys, length=length)
+    if warn_empty:
+        result = result.then(warn_no_samples)
     return result
 
 
