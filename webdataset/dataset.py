@@ -112,6 +112,41 @@ class Composable:
         return constructor(*args, **kw).source_(self)
 
 
+class ResampledShards(IterableDataset, Composable):
+    """An iterable dataset yielding a list of urls."""
+
+    def __init__(
+        self,
+        urls,
+        nshards=sys.maxint,
+        length=None,
+    ):
+        """Sample shards from the shard list with replacement.
+
+        :param urls: a list of URLs as a Python list or brace notation string
+        """
+        super().__init__()
+        if isinstance(urls, str):
+            urls = list(braceexpand.braceexpand(urls))
+        else:
+            urls = list(urls)
+        self.urls = urls
+        self.nshards = nshards
+        self.length = length
+        assert isinstance(self.urls[0], str)
+
+    def __iter__(self):
+        """Return an iterator over the shards."""
+        for _ in range(self.nshards):
+            yield random.choice(self.urls)
+
+    def __len__(self):
+        """Return the user-specified length of this dataset."""
+        if self.length is None:
+            raise ValueError("length requested, but no length specified for ShardIterator")
+        return self.length
+
+
 class ShardList(IterableDataset, Composable):
     """An iterable dataset yielding a list of urls."""
 
@@ -558,11 +593,20 @@ def WebDataset(
     from `Shorthands` (`batched`, `unbatched`, `decode`, `shuffle`, etc.)
     on the result.
 
+    The `multimode` argument determines how to handle shard splitting across
+    different nodes and workers:
+
+    - None: split shards based on node/worker
+    - "nodeworker": split shards both by node and worker
+    - "worker": split shards by worker only (all shards on each node)
+    - "resampled": infinite stream of samples, with all shards on all nodes
+    - "sliced": all shards on all nodes, but split by samples
+
     :param urls: the source URLs, specified either as a list or as a brace-expanded string
     :param multimode: how to handle multimode processing
     :param shardshuffle: boolean indicating whether the shards should be shuffled or not
     :param splitter: a function called for splitting shards among workers (True: PyTorch default, None: no splitting)
-    :param nodesplitter: a function called for splitting shards among nodes (True: PyTorch default, None: no splitting)
+    :param nodesplitter: a function called for splitting shards among nodes (True: PyTOrch default, None: no splitting)
     :param handler: an error handler
     :param length: the length of this dataset, should be an integer
     :param cache_dir: when set, caches shards in this directory
@@ -574,19 +618,27 @@ def WebDataset(
     if multimode is not None:
         assert splitter is True, "specify either splitter or multimode, not both"
         assert nodesplitter is True, "specify either nodesplitter or multimode, not both"
-        if multimode == "pytorch":
+        if multimode == "nodeworker":
             splitter = True
             nodesplitter = True
         elif multimode in ["resampled", "sliced"]:
             splitter = False
             nodesplitter = False
-    result = ShardList(
-        urls,
-        shuffle=shardshuffle,
-        splitter=splitter,
-        nodesplitter=nodesplitter,
-        length=length,
-    )
+        elif multimode == "worker":
+            splitter = True
+            nodesplitter = False
+        else:
+            raise ValueError(f"{multimode}: unknown multimode")
+    if multimode == "resampled":
+        result = ResampledShards(urls)
+    else:
+        result = ShardList(
+            urls,
+            shuffle=shardshuffle,
+            splitter=splitter,
+            nodesplitter=nodesplitter,
+            length=length,
+        )
     result = result.then(tariterators.url_opener, handler=handler)
     if cache_dir != "":
         result = result.then(
