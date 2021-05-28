@@ -466,7 +466,7 @@ CLASSES
      |      
      |      :param associator: callable or dictionary-like object
      |  
-     |  batched(self, batchsize, collation_fn=<function default_collation_fn at 0x7fe5ed5e6040>, partial=True)
+     |  batched(self, batchsize, collation_fn=<function default_collation_fn at 0x7f5a0de8b0d0>, partial=True)
      |      Compute batches for the given dataset.
      |      
      |      :param batchsize: desired batchsize
@@ -495,7 +495,7 @@ CLASSES
      |      
      |      :param length: number of batches in the dataset
      |  
-     |  decode(self, *args, pre=None, post=None, only=None, handler=<function reraise_exception at 0x7fe5ed5e6af0>)
+     |  decode(self, *args, pre=None, post=None, only=None, handler=<function reraise_exception at 0x7f5a0de8bb80>)
      |      Decode samples.
      |      
      |      This is a special form of mapping over samples given as dicts.
@@ -516,7 +516,7 @@ CLASSES
      |      :param only: limit decoding to the list of these fields
      |      :param handler: exception handler
      |  
-     |  map(self, f, handler=<function reraise_exception at 0x7fe5ed5e6af0>)
+     |  map(self, f, handler=<function reraise_exception at 0x7f5a0de8bb80>)
      |      Map a function over a stream of samples.
      |      
      |      This may be a tuple stream or a stream of dicts.
@@ -524,19 +524,19 @@ CLASSES
      |      :param f: The function to be mapped.
      |      :param handler: The exception handling strategy.
      |  
-     |  map_dict(self, handler=<function reraise_exception at 0x7fe5ed5e6af0>, **kw)
+     |  map_dict(self, handler=<function reraise_exception at 0x7f5a0de8bb80>, **kw)
      |      Map the fields of a dictionary.
      |      
      |      :param handler: exeption handler
      |      :param kw: list of key=function mappers
      |  
-     |  map_tuple(self, *args, handler=<function reraise_exception at 0x7fe5ed5e6af0>)
+     |  map_tuple(self, *args, handler=<function reraise_exception at 0x7f5a0de8bb80>)
      |      Map a tuple.
      |      
      |      :param args: List of functions corresponding to the fields of the tuple.
      |      :param handler: exception handler
      |  
-     |  rename(self, handler=<function reraise_exception at 0x7fe5ed5e6af0>, **kw)
+     |  rename(self, handler=<function reraise_exception at 0x7f5a0de8bb80>, **kw)
      |      Rename fields in a dictionary based sample.
      |      
      |      This works on dictionary input streams. A keyword argument like
@@ -545,7 +545,7 @@ CLASSES
      |      :param handler: exception handler
      |      :param kw: list of renames
      |  
-     |  repeat(self, nepochs=None, nbatches=None, nsamples=None, batchsize=<function guess_batchsize at 0x7fe653716550>)
+     |  repeat(self, nepochs=None, nbatches=None, nsamples=None, batchsize=<function guess_batchsize at 0x7f5a73fba5e0>)
      |      Repeat samples from the source dataset iterator.
      |      
      |      With no arguments, repeat infinitely.
@@ -599,7 +599,7 @@ CLASSES
      |      :param mock_length: size of mocked dataset
      |      :param mock: turning mocking on/off
      |  
-     |  to_tuple(self, *args, handler=<function reraise_exception at 0x7fe5ed5e6af0>)
+     |  to_tuple(self, *args, handler=<function reraise_exception at 0x7f5a0de8bb80>)
      |      Convert a dictionary-based sample to a tuple.
      |      
      |      Field names to be extracted can be specified as a Python list
@@ -813,7 +813,7 @@ CLASSES
      |      
      |      :param associator: callable or dictionary-like object
      |  
-     |  batched(self, batchsize, collation_fn=<function default_collation_fn at 0x7fe5ed5e6040>, partial=True)
+     |  batched(self, batchsize, collation_fn=<function default_collation_fn at 0x7f5a0de8b0d0>, partial=True)
      |      Compute batches for the given dataset.
      |      
      |      :param batchsize: desired batchsize
@@ -842,7 +842,7 @@ CLASSES
      |      
      |      :param length: number of batches in the dataset
      |  
-     |  decode(self, *args, pre=None, post=None, only=None, handler=<function reraise_exception at 0x7fe5ed5e6af0>)
+     |  decode(self, *args, pre=None, post=None, only=None, handler=<function reraise_exception at 0x7f5a0de8bb80>)
      |      Decode samples.
      |      
      |      This is a special form of mapping over samples given as dicts.
@@ -863,7 +863,7 @@ CLASSES
      |      :param only: limit decoding to the list of these fields
      |      :param handler: exception handler
      |  
-     |  map(self, f, handler=<function reraise_exception at 0x7fe5ed5e6af0>)
+     |  map(self, f, handler=<function reraise_exception at 0x7f5a0de8bb80>)
      |      Map a function over a stream of samples.
      |      
      |      This may be a tuple stream or a stream of dicts.
@@ -871,19 +871,19 @@ CLASSES
      |      :param f: The function to be mapped.
      |      :param handler: The exception handling strategy.
      |  
-     |  map_dict(self, handler=<function reraise_exception at 0x7fe5ed5e6af0>, **kw)
+     |  map_dict(self, handler=<function reraise_exception at 0x7f5a0de8bb80>, **kw)
      |      Map the fields of a dictionary.
      |      
      |      :param handler: exeption handler
      |      :param kw: list of key=function mappers
      |  
-     |  map_tuple(self, *args, handler=<function reraise_exception at 0x7fe5ed5e6af0>)
+     |  map_tuple(self, *args, handler=<function reraise_exception at 0x7f5a0de8bb80>)
      |      Map a tuple.
      |      
      |      :param args: List of functions corresponding to the fields of the tuple.
      |      :param handler: exception handler
      |  
-     |  rename(self, handler=<function reraise_exception at 0x7fe5ed5e6af0>, **kw)
+     |  rename(self, handler=<function reraise_exception at 0x7f5a0de8bb80>, **kw)
      |      Rename fields in a dictionary based sample.
      |      
      |      This works on dictionary input streams. A keyword argument like
@@ -892,7 +892,7 @@ CLASSES
      |      :param handler: exception handler
      |      :param kw: list of renames
      |  
-     |  repeat(self, nepochs=None, nbatches=None, nsamples=None, batchsize=<function guess_batchsize at 0x7fe653716550>)
+     |  repeat(self, nepochs=None, nbatches=None, nsamples=None, batchsize=<function guess_batchsize at 0x7f5a73fba5e0>)
      |      Repeat samples from the source dataset iterator.
      |      
      |      With no arguments, repeat infinitely.
@@ -946,7 +946,7 @@ CLASSES
      |      :param mock_length: size of mocked dataset
      |      :param mock: turning mocking on/off
      |  
-     |  to_tuple(self, *args, handler=<function reraise_exception at 0x7fe5ed5e6af0>)
+     |  to_tuple(self, *args, handler=<function reraise_exception at 0x7f5a0de8bb80>)
      |      Convert a dictionary-based sample to a tuple.
      |      
      |      Field names to be extracted can be specified as a Python list
@@ -1075,7 +1075,7 @@ CLASSES
      |      
      |      :param associator: callable or dictionary-like object
      |  
-     |  batched(self, batchsize, collation_fn=<function default_collation_fn at 0x7fe5ed5e6040>, partial=True)
+     |  batched(self, batchsize, collation_fn=<function default_collation_fn at 0x7f5a0de8b0d0>, partial=True)
      |      Compute batches for the given dataset.
      |      
      |      :param batchsize: desired batchsize
@@ -1104,7 +1104,7 @@ CLASSES
      |      
      |      :param length: number of batches in the dataset
      |  
-     |  decode(self, *args, pre=None, post=None, only=None, handler=<function reraise_exception at 0x7fe5ed5e6af0>)
+     |  decode(self, *args, pre=None, post=None, only=None, handler=<function reraise_exception at 0x7f5a0de8bb80>)
      |      Decode samples.
      |      
      |      This is a special form of mapping over samples given as dicts.
@@ -1125,7 +1125,7 @@ CLASSES
      |      :param only: limit decoding to the list of these fields
      |      :param handler: exception handler
      |  
-     |  map(self, f, handler=<function reraise_exception at 0x7fe5ed5e6af0>)
+     |  map(self, f, handler=<function reraise_exception at 0x7f5a0de8bb80>)
      |      Map a function over a stream of samples.
      |      
      |      This may be a tuple stream or a stream of dicts.
@@ -1133,19 +1133,19 @@ CLASSES
      |      :param f: The function to be mapped.
      |      :param handler: The exception handling strategy.
      |  
-     |  map_dict(self, handler=<function reraise_exception at 0x7fe5ed5e6af0>, **kw)
+     |  map_dict(self, handler=<function reraise_exception at 0x7f5a0de8bb80>, **kw)
      |      Map the fields of a dictionary.
      |      
      |      :param handler: exeption handler
      |      :param kw: list of key=function mappers
      |  
-     |  map_tuple(self, *args, handler=<function reraise_exception at 0x7fe5ed5e6af0>)
+     |  map_tuple(self, *args, handler=<function reraise_exception at 0x7f5a0de8bb80>)
      |      Map a tuple.
      |      
      |      :param args: List of functions corresponding to the fields of the tuple.
      |      :param handler: exception handler
      |  
-     |  rename(self, handler=<function reraise_exception at 0x7fe5ed5e6af0>, **kw)
+     |  rename(self, handler=<function reraise_exception at 0x7f5a0de8bb80>, **kw)
      |      Rename fields in a dictionary based sample.
      |      
      |      This works on dictionary input streams. A keyword argument like
@@ -1154,7 +1154,7 @@ CLASSES
      |      :param handler: exception handler
      |      :param kw: list of renames
      |  
-     |  repeat(self, nepochs=None, nbatches=None, nsamples=None, batchsize=<function guess_batchsize at 0x7fe653716550>)
+     |  repeat(self, nepochs=None, nbatches=None, nsamples=None, batchsize=<function guess_batchsize at 0x7f5a73fba5e0>)
      |      Repeat samples from the source dataset iterator.
      |      
      |      With no arguments, repeat infinitely.
@@ -1208,7 +1208,7 @@ CLASSES
      |      :param mock_length: size of mocked dataset
      |      :param mock: turning mocking on/off
      |  
-     |  to_tuple(self, *args, handler=<function reraise_exception at 0x7fe5ed5e6af0>)
+     |  to_tuple(self, *args, handler=<function reraise_exception at 0x7f5a0de8bb80>)
      |      Convert a dictionary-based sample to a tuple.
      |      
      |      Field names to be extracted can be specified as a Python list
@@ -1425,7 +1425,7 @@ CLASSES
      |      
      |      :param associator: callable or dictionary-like object
      |  
-     |  batched(self, batchsize, collation_fn=<function default_collation_fn at 0x7fe5ed5e6040>, partial=True)
+     |  batched(self, batchsize, collation_fn=<function default_collation_fn at 0x7f5a0de8b0d0>, partial=True)
      |      Compute batches for the given dataset.
      |      
      |      :param batchsize: desired batchsize
@@ -1454,7 +1454,7 @@ CLASSES
      |      
      |      :param length: number of batches in the dataset
      |  
-     |  decode(self, *args, pre=None, post=None, only=None, handler=<function reraise_exception at 0x7fe5ed5e6af0>)
+     |  decode(self, *args, pre=None, post=None, only=None, handler=<function reraise_exception at 0x7f5a0de8bb80>)
      |      Decode samples.
      |      
      |      This is a special form of mapping over samples given as dicts.
@@ -1475,7 +1475,7 @@ CLASSES
      |      :param only: limit decoding to the list of these fields
      |      :param handler: exception handler
      |  
-     |  map(self, f, handler=<function reraise_exception at 0x7fe5ed5e6af0>)
+     |  map(self, f, handler=<function reraise_exception at 0x7f5a0de8bb80>)
      |      Map a function over a stream of samples.
      |      
      |      This may be a tuple stream or a stream of dicts.
@@ -1483,19 +1483,19 @@ CLASSES
      |      :param f: The function to be mapped.
      |      :param handler: The exception handling strategy.
      |  
-     |  map_dict(self, handler=<function reraise_exception at 0x7fe5ed5e6af0>, **kw)
+     |  map_dict(self, handler=<function reraise_exception at 0x7f5a0de8bb80>, **kw)
      |      Map the fields of a dictionary.
      |      
      |      :param handler: exeption handler
      |      :param kw: list of key=function mappers
      |  
-     |  map_tuple(self, *args, handler=<function reraise_exception at 0x7fe5ed5e6af0>)
+     |  map_tuple(self, *args, handler=<function reraise_exception at 0x7f5a0de8bb80>)
      |      Map a tuple.
      |      
      |      :param args: List of functions corresponding to the fields of the tuple.
      |      :param handler: exception handler
      |  
-     |  rename(self, handler=<function reraise_exception at 0x7fe5ed5e6af0>, **kw)
+     |  rename(self, handler=<function reraise_exception at 0x7f5a0de8bb80>, **kw)
      |      Rename fields in a dictionary based sample.
      |      
      |      This works on dictionary input streams. A keyword argument like
@@ -1504,7 +1504,7 @@ CLASSES
      |      :param handler: exception handler
      |      :param kw: list of renames
      |  
-     |  repeat(self, nepochs=None, nbatches=None, nsamples=None, batchsize=<function guess_batchsize at 0x7fe653716550>)
+     |  repeat(self, nepochs=None, nbatches=None, nsamples=None, batchsize=<function guess_batchsize at 0x7f5a73fba5e0>)
      |      Repeat samples from the source dataset iterator.
      |      
      |      With no arguments, repeat infinitely.
@@ -1558,7 +1558,7 @@ CLASSES
      |      :param mock_length: size of mocked dataset
      |      :param mock: turning mocking on/off
      |  
-     |  to_tuple(self, *args, handler=<function reraise_exception at 0x7fe5ed5e6af0>)
+     |  to_tuple(self, *args, handler=<function reraise_exception at 0x7f5a0de8bb80>)
      |      Convert a dictionary-based sample to a tuple.
      |      
      |      Field names to be extracted can be specified as a Python list
@@ -1584,7 +1584,7 @@ CLASSES
      |      list of weak references to the object (if defined)
 
 FUNCTIONS
-    WebDataset(urls, shardshuffle=True, cache_dir='', cache_size=1000000000000000, cache_name=<function shard_uuid at 0x7fe5ed5e64c0>, cache_verbose=1, splitter=<function split_by_worker at 0x7fe5ed5f3040>, nodesplitter=True, handler=<function reraise_exception at 0x7fe5ed5e6af0>, length=None)
+    WebDataset(urls, shardshuffle=True, cache_dir='', cache_size=1000000000000000, cache_name=<function shard_uuid at 0x7f5a0de8b550>, cache_verbose=1, splitter=<function split_by_worker at 0x7f5a0de970d0>, nodesplitter=True, handler=<function reraise_exception at 0x7f5a0de8bb80>, length=None, warn_empty=True)
         Return a pipeline for WebDataset-style data files.
         
         This is a convenience function for constructing a partial pipeline
@@ -1605,6 +1605,7 @@ FUNCTIONS
         :param cache_size: when set, specifies a maximum size for the shard cache
         :param cache_name: when set, specifies how shards should be named in the cache
         :param cache_verbose: when set, prints information about caching
+        :param warn_empty: warn when no samples are generated at all
     
     WebLoader(*args, **kw)
         Return a small wrapper around torch.utils.data.DataLoader.
@@ -1618,6 +1619,9 @@ FUNCTIONS
         
         :param args: forwarded to `DataLoader`
         :param kw: forwarded to `DataLoader`
+    
+    warn_no_samples(data)
+        Warn if the iterator yields no samples.
 
 DATA
     default_cache_dir = ''
@@ -1854,7 +1858,7 @@ CLASSES
      |  __getattr__(self, name)
      |      Forward method calls to the underlying WebDataset and update the internal pipe.
      |  
-     |  __init__(self, urls, *, length=True, splitter=<function split_by_worker at 0x7fe6688ae040>, handler=<function reraise_exception at 0x7fe6688a3af0>, shuffle=False, cache_dir='', cache_size=1000000000000000, cache_name=<function shard_uuid at 0x7fe6688a34c0>, cache_verbose=1)
+     |  __init__(self, urls, *, length=True, splitter=<function split_by_worker at 0x7f6fdc8550d0>, handler=<function reraise_exception at 0x7f6fdc849b80>, shuffle=False, cache_dir='', cache_size=1000000000000000, cache_name=<function shard_uuid at 0x7f6fdc849550>, cache_verbose=1)
      |      Create a Dataset instance. See WebDataset for documentation.
      |  
      |  __iter__(self)
@@ -2371,7 +2375,7 @@ CLASSES
      |  closed
 
 FUNCTIONS
-    cache_shards(urls, cache_dir='./data', cache_size=1000000000000000.0, cache_name=<function guess_shard at 0x7fe5340fb430>, verbose=False)
+    cache_shards(urls, cache_dir='./data', cache_size=1000000000000000.0, cache_name=<function guess_shard at 0x7ff3061ac4c0>, verbose=False)
         Implement shard caching.
         
         When caching is off, just iterates through the list of shards.
@@ -2453,7 +2457,7 @@ FUNCTIONS
         :param path: path with extensions
         :param returns: path with all extensions removed
     
-    group_by_keys(data, keys=<function base_plus_ext at 0x7f1f973e58b0>, lcase=True, suffixes=None, handler=None)
+    group_by_keys(data, keys=<function base_plus_ext at 0x7f2cbf67f940>, lcase=True, suffixes=None, handler=None)
         Return function over iterator that groups key, value pairs into samples.
         
         :param keys: function that splits the key into key and extension (base_plus_ext)
@@ -2462,18 +2466,18 @@ FUNCTIONS
     shardlist(urls, *, shuffle=False)
         Given a list of URLs, yields that list, possibly shuffled.
     
-    tar_file_expander(data, handler=<function reraise_exception at 0x7f1f973e5af0>)
+    tar_file_expander(data, handler=<function reraise_exception at 0x7f2cbf67fb80>)
         Expand a stream of open tar files into a stream of tar file contents.
         
         This returns an iterator over (filename, file_contents).
     
-    tar_file_iterator(fileobj, skip_meta='__[^/]*__($|/)', handler=<function reraise_exception at 0x7f1f973e5af0>)
+    tar_file_iterator(fileobj, skip_meta='__[^/]*__($|/)', handler=<function reraise_exception at 0x7f2cbf67fb80>)
         Iterate over tar file, yielding filename, content pairs for the given tar stream.
         
         :param fileobj: byte stream suitable for tarfile
         :param skip_meta: regexp for keys that are skipped entirely (Default value = r"__[^/]*__($|/)")
     
-    url_opener(data, handler=<function reraise_exception at 0x7f1f973e5af0>, **kw)
+    url_opener(data, handler=<function reraise_exception at 0x7f2cbf67fb80>, **kw)
         Given a stream of url names (packaged in `dict(url=url)`), yield opened streams.
     
     valid_sample(sample)
@@ -2655,7 +2659,7 @@ FUNCTIONS
     lookup_sym(sym, modules)
         Look up a symbol in a list of modules.
     
-    repeatedly(source, nepochs=None, nbatches=None, nsamples=None, batchsize=<function guess_batchsize at 0x7fb5335df550>)
+    repeatedly(source, nepochs=None, nbatches=None, nsamples=None, batchsize=<function guess_batchsize at 0x7fe6674665e0>)
         Repeatedly yield samples from an iterator.
     
     repeatedly0(loader, nepochs=999999999, nbatches=999999999999)
