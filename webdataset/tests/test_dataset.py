@@ -9,6 +9,7 @@ import pickle
 import webdataset.dataset as wds
 from webdataset import autodecode
 from webdataset import handlers
+from webdataset import workerenv
 
 
 local_data = "testdata/imagenet-000000.tgz"
@@ -349,6 +350,30 @@ def test_dataloader():
     assert count_samples_tuple(dl, n=100) == 100
 
 
+def test_multimode():
+    import torch
+
+    it = workerenv.nodeslice(range(10))
+    print(it)
+    result = list(it)
+    assert len(result) == 10
+
+    ds = wds.WebDataset(remote_loc + remote_shards, multimode="nodeworker")
+    dl = torch.utils.data.DataLoader(ds, num_workers=4)
+    count = count_samples_tuple(dl, n=100)
+    assert count == 100, count
+
+    ds = wds.WebDataset(remote_loc + remote_shards, multimode="sliced")
+    dl = torch.utils.data.DataLoader(ds, num_workers=4)
+    count = count_samples_tuple(dl, n=100)
+    assert count == 100, count
+
+    ds = wds.WebDataset(remote_loc + remote_shards, multimode="resampled").slice(170)
+    dl = torch.utils.data.DataLoader(ds, num_workers=4)
+    count = count_samples_tuple(dl, n=1000)
+    assert count == 170 * 4, count
+
+
 def test_handlers():
     def mydecoder(data):
         return PIL.Image.open(io.BytesIO(data)).resize((128, 128))
@@ -401,7 +426,9 @@ def test_shard_syntax():
 
 
 def test_pipe():
-    ds = wds.WebDataset(f"pipe:curl -s '{remote_loc}{remote_shards}'").shuffle(100).to_tuple("jpg;png", "json")
+    ds = (
+        wds.WebDataset(f"pipe:curl -s '{remote_loc}{remote_shards}'").shuffle(100).to_tuple("jpg;png", "json")
+    )
     assert count_samples_tuple(ds, n=10) == 10
 
 

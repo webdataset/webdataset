@@ -13,11 +13,14 @@ to exist. The cleaner and safer way of dealing with node and worker splitting
 is via explicit functions.
 """
 
+import sys
 import os
 import warnings
 import socket
 
 from . import gopen
+from itertools import islice
+from functools import partial
 
 
 worker_environment = None
@@ -88,6 +91,14 @@ def get_worker_environment():
         pass
     worker_environment = WorkerEnvironment()
     return worker_environment
+
+
+def nodeslice(source, env=None):
+    """Slice the source based on the rank and worker number."""
+    env = env or get_worker_environment()
+    offset = env.rank * env.nworkers + env.worker
+    step = env.world_size * env.nworkers
+    yield from islice(source, offset, sys.maxsize, step)
 
 
 def split_by_node(urls, env=None):
