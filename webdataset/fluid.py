@@ -7,8 +7,6 @@
 
 """A deprecated interface to WebDataset."""
 
-__all__ = """FluidPipes Dataset""".split()
-
 from .dataset import (
     WebDataset,
     split_by_worker,
