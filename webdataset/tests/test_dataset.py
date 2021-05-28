@@ -358,7 +358,7 @@ def test_multimode():
     result = list(it)
     assert len(result) == 10
 
-    ds = wds.WebDataset(remote_loc + remote_shards, multimode="pytorch")
+    ds = wds.WebDataset(remote_loc + remote_shards, multimode="nodeworker")
     dl = torch.utils.data.DataLoader(ds, num_workers=4)
     count = count_samples_tuple(dl, n=100)
     assert count == 100, count

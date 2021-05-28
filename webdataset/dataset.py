@@ -118,7 +118,7 @@ class ResampledShards(IterableDataset, Composable):
     def __init__(
         self,
         urls,
-        nshards=sys.maxint,
+        nshards=sys.maxsize,
         length=None,
     ):
         """Sample shards from the shard list with replacement.
@@ -138,7 +138,7 @@ class ResampledShards(IterableDataset, Composable):
     def __iter__(self):
         """Return an iterator over the shards."""
         for _ in range(self.nshards):
-            yield random.choice(self.urls)
+            yield dict(url=random.choice(self.urls))
 
     def __len__(self):
         """Return the user-specified length of this dataset."""
@@ -406,7 +406,7 @@ class Shorthands:
         elif len(args) == 3:
             start, stop, step = args
         new_length = (stop - start) // step
-        result = self.pipe(itt.islice, *args)
+        result = self.then(itt.islice, *args)
         result.length = new_length
         return result
 
