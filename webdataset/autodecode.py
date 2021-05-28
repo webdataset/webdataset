@@ -77,7 +77,7 @@ def basichandlers(key, data):
     if extension in "pyd pickle".split():
         return pickle.loads(data)
 
-    if extension in "pth".split():
+    if extension in "pth pytorch".split():
         return torch_loads(data)
 
     if extension in "ten tb".split():
@@ -90,7 +90,7 @@ def basichandlers(key, data):
 
         return msgpack.unpackb(data)
 
-    if extension in "npy".split():
+    if extension in "npy numpy".split():
         import numpy.lib.format
 
         stream = io.BytesIO(data)
