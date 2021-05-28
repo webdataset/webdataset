@@ -11,8 +11,6 @@ in webdataset.filters, and you can find IterableDataset wrappers in
 webdataset.processing.
 """
 
-__all__ = "WebDataset tariterator default_handlers imagehandler".split()
-
 import random
 import sys
 from functools import reduce

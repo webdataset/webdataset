@@ -2,4 +2,19 @@ site_name: webdataset
 nav:
     - Home: index.md
     - Module Docs: pydoc.md
+    - Examples:
+      - Getting Started: gettingstarted.md
+      - Commands: commands.md
+      - Creating Webdatasets: creating.md
+      - Decoding: decoding.md
+      - Desktop Usage: desktop.md
+      - How It Works: howitworks.md
+      - Multinode: multinode.md
+      - Sharding: sharding.md
+      - Sources: sources.md
+      - Writing: writing.md
+    - Dataset Conversions:
+      - Video Loading: video-loading-example.md
+      - Falling Things: falling-things-make-shards.md
+      - Objectron: objectron-conversion.md
 theme: readthedocs

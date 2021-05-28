@@ -35,11 +35,6 @@ import struct
 
 import numpy as np
 
-__all__ = """
-read write save load
-zsend_single zrecv_single zsend_multipart zrecv_multipart sctp_send sctp_recv
-""".split()
-
 
 def bytelen(a):
     """Determine the length of a in bytes."""
