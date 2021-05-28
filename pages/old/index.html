@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  
+  
+  <link rel="shortcut icon" href="../img/favicon.ico">
+  <title>Index - webdataset</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700" />
+
+  <link rel="stylesheet" href="../css/theme.css" />
+  <link rel="stylesheet" href="../css/theme_extra.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css" />
+  
+  <script>
+    // Current page data
+    var mkdocs_page_name = "Index";
+    var mkdocs_page_input_path = "old/index.md";
+    var mkdocs_page_url = null;
+  </script>
+  
+  <script src="../js/jquery-2.1.1.min.js" defer></script>
+  <script src="../js/modernizr-2.8.3.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script> 
+  
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+        <a href=".." class="icon icon-home"> webdataset</a>
+        <div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="..">Home</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../pydoc/">Module Docs</a>
+                    </li>
+                </ul>
+                <p class="caption"><span class="caption-text">Examples</span></p>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../gettingstarted/">Getting Started</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../commands/">Commands</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../creating/">Creating Webdatasets</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../decoding/">Decoding</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../desktop/">Desktop Usage</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../howitworks/">How It Works</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../multinode/">Multinode</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../sharding/">Sharding</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../sources/">Sources</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../writing/">Writing</a>
+                    </li>
+                </ul>
+                <p class="caption"><span class="caption-text">Dataset Conversions</span></p>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../video-loading-example/">Video Loading</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../falling-things-make-shards/">Falling Things</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../objectron-conversion/">Objectron</a>
+                    </li>
+                </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="..">webdataset</a>
+      </nav>
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="..">Docs</a> &raquo;</li>
+    
+      
+    
+    <li>Index</li>
+    <li class="wy-breadcrumbs-aside">
+      
+    </li>
+  </ul>
+  
+  <hr/>
+</div>
+          <div role="main">
+            <div class="section">
+              
+                <p><a href="https://github.com/tmbdev/webdataset/actions?query=workflow%3ATest"><img alt="Test" src="https://github.com/tmbdev/webdataset/workflows/Test/badge.svg" /></a>
+<a href="https://deepsource.io/gh/tmbdev/webdataset/?ref=repository-badge"><img alt="DeepSource" src="https://static.deepsource.io/deepsource-badge-light-mini.svg" /></a></p>
+<h1 id="webdataset">WebDataset</h1>
+<p>WebDataset is a PyTorch Dataset (IterableDataset) implementation providing
+efficient access to datasets stored in POSIX tar archives.</p>
+<p>Storing data in POSIX tar archives greatly speeds up I/O operations on
+rotational storage and on networked file systems because it permits all
+I/O operations to operate as large sequential reads and writes.</p>
+<p>WebDataset fulfills a similar function to Tensorflow's TFRecord/tf.Example
+classes, but it is much easier to adopt because it does not actually
+require any kind of data conversion: data is stored in exactly the same
+format inside tar files as it is on disk, and all preprocessing and data
+augmentation code remains unchanged.</p>
+<h1 id="installation-and-documentation">Installation and Documentation</h1>
+<pre><code class="language-Bash">    $ pip install webdataset
+</code></pre>
+<p>For the Github version:</p>
+<pre><code class="language-Bash">    $ pip install git+https://github.com/tmbdev/webdataset.git
+</code></pre>
+<p>Documentation: <a href="http://webdataset.readthedocs.io">ReadTheDocs</a></p>
+<h1 id="using-webdataset">Using WebDataset</h1>
+<p>WebDataset reads dataset that are stored as tar files, with the simple convention that files that belong together and make up a training sample share the same basename. WebDataset can read files from local disk or from any pipe, which allows it to access files using common cloud object stores.</p>
+<pre><code class="language-bash">%%bash
+curl -s http://storage.googleapis.com/nvdata-openimages/openimages-train-000000.tar | tar tf - | sed 10q
+</code></pre>
+<pre><code>e39871fd9fd74f55.jpg
+e39871fd9fd74f55.json
+f18b91585c4d3f3e.jpg
+f18b91585c4d3f3e.json
+ede6e66b2fb59aab.jpg
+ede6e66b2fb59aab.json
+ed600d57fcee4f94.jpg
+ed600d57fcee4f94.json
+ff47e649b23f446d.jpg
+ff47e649b23f446d.json
+</code></pre>
+<pre><code class="language-python">%pylab inline
+
+import torch
+from torchvision import transforms
+import webdataset as wds
+from itertools import islice
+
+url = &quot;http://storage.googleapis.com/nvdata-openimages/openimages-train-000000.tar&quot;
+url = f&quot;pipe:curl -L -s {url} || true&quot;
+</code></pre>
+<pre><code>Populating the interactive namespace from numpy and matplotlib
+</code></pre>
+<p>WebDatasets are an implementation of PyTorch <code>IterableDataset</code> and fully compatible with PyTorch input pipelines. By default, WebDataset just iterates through the files in a tar file without decoding anything, returning related files in each sample.</p>
+<pre><code class="language-python">dataset = wds.Dataset(url)
+
+for sample in islice(dataset, 0, 3):
+    for key, value in sample.items():
+        print(key, repr(value)[:50])
+    print()
+</code></pre>
+<pre><code>__key__ 'e39871fd9fd74f55'
+jpg b'\xff\xd8\xff\xe0\x00\x10JFIF\x00\x01\x01\x01\x01
+json b'[{"ImageID": "e39871fd9fd74f55", "Source": "xcli
+
+__key__ 'f18b91585c4d3f3e'
+jpg b'\xff\xd8\xff\xe0\x00\x10JFIF\x00\x01\x01\x00\x00
+json b'[{"ImageID": "f18b91585c4d3f3e", "Source": "acti
+
+__key__ 'ede6e66b2fb59aab'
+jpg b'\xff\xd8\xff\xe0\x00\x10JFIF\x00\x01\x01\x01\x00
+json b'[{"ImageID": "ede6e66b2fb59aab", "Source": "acti
+</code></pre>
+<p>There are common processing stages you can add to a dataset to make it a drop-in replacement for any existing dataset. For convenience, common operations are available through a "fluent" interface (as chained method calls).</p>
+<pre><code class="language-python">dataset = (
+    wds.Dataset(url)
+    .shuffle(100)
+    .decode()
+    .to_tuple(&quot;jpg;png&quot;, &quot;json&quot;)
+)
+
+for image, data in islice(dataset, 0, 3):
+    print(image.shape, image.dtype, type(data))
+</code></pre>
+<pre><code>(762, 1024, 3) float32 &lt;class 'list'&gt;
+(768, 1024, 3) float32 &lt;class 'list'&gt;
+(1024, 768, 3) float32 &lt;class 'list'&gt;
+</code></pre>
+<p>Common operations:</p>
+<ul>
+<li><code>shuffle(n)</code>: shuffle the dataset with a buffer of size <code>n</code>; also shuffles shards (see below)</li>
+<li><code>decode([type])</code>: automatically decode files; the <code>type</code> determines desired outputs for images, video, and audio: <code>pil</code>, <code>rgb</code>, <code>rgb8</code>, <code>rgbtorch</code>, etc.</li>
+<li><code>rename(new="old1;old2", ...)</code>: rename fields</li>
+<li><code>map(f)</code>: apply <code>f</code> to each sample</li>
+<li><code>map_dict(key=f, ...)</code>: apply <code>f</code> to its corresponding key</li>
+<li><code>map_tuple(f, g, ...)</code>: apply <code>f</code>, <code>g</code>, etc. to their corresponding values in the tuple</li>
+<li><code>pipe(f)</code>: <code>f</code> should be a function that takes an iterator and returns a new iterator</li>
+</ul>
+<p>Stages commonly take a <code>handler=</code> argument, which is a function that gets called when there is an exception; you can write whatever function you want, but common functions are:</p>
+<ul>
+<li><code>webdataset.ignore_and_stop</code></li>
+<li><code>webdataset.ignore_and_continue</code></li>
+<li><code>webdataset.warn_and_stop</code></li>
+<li><code>webdataset.warn_and_continue</code></li>
+<li><code>webdataset.reraise_exception</code></li>
+</ul>
+<p>Here is an example that uses <code>torchvision</code> data augmentation the same way you might use it with a <code>FileDataset</code>.</p>
+<pre><code class="language-python">def identity(x):
+    return x
+
+normalize = transforms.Normalize(
+    mean=[0.485, 0.456, 0.406],
+    std=[0.229, 0.224, 0.225])
+
+preproc = transforms.Compose([
+    transforms.RandomResizedCrop(224),
+    transforms.RandomHorizontalFlip(),
+    transforms.ToTensor(),
+    normalize,
+])
+
+dataset = (
+    wds.Dataset(url)
+    .shuffle(100)
+    .decode(&quot;pil&quot;)
+    .to_tuple(&quot;jpg;png&quot;, &quot;json&quot;)
+    .map_tuple(preproc, identity)
+)
+
+for image, data in islice(dataset, 0, 3):
+    print(image.shape, image.dtype, type(data))
+</code></pre>
+<pre><code>torch.Size([3, 224, 224]) torch.float32 &lt;class 'list'&gt;
+torch.Size([3, 224, 224]) torch.float32 &lt;class 'list'&gt;
+torch.Size([3, 224, 224]) torch.float32 &lt;class 'list'&gt;
+</code></pre>
+<h1 id="sharding-and-parallel-io">Sharding and Parallel I/O</h1>
+<p>In order to be able to shuffle data better and to process and load data in parallel, it is a good idea to shard it; that is, to split up the dataset into several <code>.tar</code> files.</p>
+<p>WebDataset uses standard UNIX brace notation for sharded dataset. For example, the OpenImages dataset consists of 554 shards, each containing about 1 Gbyte of images. You can open the entire dataset as follows.</p>
+<pre><code class="language-python">url = &quot;http://storage.googleapis.com/nvdata-openimages/openimages-train-{000000..000554}.tar&quot;
+url = f&quot;pipe:curl -L -s {url} || true&quot;
+dataset = (
+    wds.Dataset(url)
+    .shuffle(100)
+    .decode(&quot;pil&quot;)
+    .to_tuple(&quot;jpg;png&quot;, &quot;json&quot;)
+    .map_tuple(preproc, identity)
+)
+</code></pre>
+<p>When used with a standard Torch <code>DataLoader</code>, this will now perform parallel I/O and preprocessing.</p>
+<pre><code class="language-python">dataloader = torch.utils.data.DataLoader(dataset, num_workers=4, batch_size=16)
+images, targets = next(iter(dataloader))
+images.shape
+</code></pre>
+<pre><code>torch.Size([16, 3, 224, 224])
+</code></pre>
+<p>The recommended way of using <code>IterableDataset</code> with <code>DataLoader</code> is to do the batching explicitly in the <code>Dataset</code>. In addition, you need to set a nominal length for the <code>Dataset</code> in order to avoid warnings from <code>DataLoader</code>.</p>
+<pre><code class="language-python">url = &quot;http://storage.googleapis.com/nvdata-openimages/openimages-train-{000000..000554}.tar&quot;
+url = f&quot;pipe:curl -L -s {url} || true&quot;
+bs = 20
+
+dataset = (
+    wds.Dataset(url, length=int(1e9) // bs)
+    .shuffle(100)
+    .decode(&quot;pil&quot;)
+    .to_tuple(&quot;jpg;png&quot;, &quot;json&quot;)
+    .map_tuple(preproc, identity)
+    .batched(20)
+)
+
+dataloader = torch.utils.data.DataLoader(dataset, num_workers=4, batch_size=None)
+images, targets = next(iter(dataloader))
+images.shape
+</code></pre>
+<pre><code>torch.Size([20, 3, 224, 224])
+</code></pre>
+<p>The <code>ResizedDataset</code> is also helpful for connecting iterable datasets to <code>DataLoader</code>: it lets you set both a nominal and an actual epoch size; it will repeatedly iterate through the entire dataset and return data in chunks with the given epoch size.</p>
+<p>The WebDataset library also provides an alternative to <code>DataLoader</code> called <code>MultiDataset</code>. It distributes <code>IterableDatasets</code> across multiple workers and collects the results in a way very similar to <code>DataLoader</code>. Unlike <code>DataLoader</code>, you don't have to worry about calculating the epoch length, and you can configure the <code>MultiDataset</code> using the same interface as a WebDataset. For example, if you want to shuffle samples between the batches returned by individual workers, you can write:</p>
+<pre><code class="language-Python">dataloader = wds.MultiDataset(dataset, workers=4).unbatched().shuffle(1000).batched(128)
+</code></pre>
+<h1 id="data-decoding">Data Decoding</h1>
+<p>WebDataset stores data in files contained inside <code>.tar</code> archives. This allows datasets to be stored in a bit-identical way to the way they are usually stored on disk. In addition, it allows WebDataset to take advantage of existing conventions and facilities for dealing with metadata and compression.</p>
+<p>Loading takes place in two steps: first, the binary contents of each file are read into memory, and then the files are decoded. Reading is carried out by the <code>webdataset.Dataset</code> class itself. You can decode using any function you like. If you invoke <code>webdataset.Dataset(...).map(my_decoder)</code>, then <code>my_decoder</code> will simply be called on a dictionary with full extensions as keys and binary vectors as values.</p>
+<p>In most cases, howeer, it's more convenient to use the <code>.decode</code> method, since it decodes images based on extensions. The <code>.decode</code> method takes one argument that specifies how decoding is to take place. That argument is a dictionary consisting of a last-extension string and a corresponding function for decoding a file with that extension. Note that samples in WebDataset are grouped based on the full extension, while decoding takes place based on the last extension. So, <code>sample.input.png</code> is represented in the sample with the key of <code>input.png</code>, but its last extension is <code>png</code>, which identifies it as an image file.</p>
+<p>There are a number of automatic decoders built in that already understand many common extensions (recommended formats are in bold face):</p>
+<ul>
+<li><strong>jpg</strong>, <strong>ppm</strong>, jpeg, img, image, pbm, pgm, png : image</li>
+<li><strong>txt</strong>, text, transcript                     : string</li>
+<li><strong>cls</strong>, cls2, class, count, index, inx, id   : integer</li>
+<li><strong>pyd</strong>, pickle                               : Python pickle (using <code>pickle.loads</code>)</li>
+<li><strong>pth</strong>                                       : Torch pickle (using <code>torch.load</code>)</li>
+<li><strong>json</strong>, jsn                                 : JSON encoded object (using <code>json.loads</code>)</li>
+<li><strong>ten</strong>, tb                                   : fast binary tensor format</li>
+<li><strong>mp4</strong>, <strong>ogg</strong>, <strong>mjpeg</strong>, avi, mov, h264                       : video (using torchvision <code>load</code>)</li>
+<li><strong>flac</strong>, <strong>mp3</strong>, sox                            : audio (using torchaudio <code>load</code>)</li>
+</ul>
+<p>You select a set of these by giving a string rather than dictionary as an argument to the <code>.decode</code> method. Strings of the form <code>&lt;tensor-type&gt;&lt;image-format&gt;&lt;8bit&gt;</code> are recognized, where <code>&lt;tensor-type&gt;</code> can be empty (NumPy), <code>torch</code>, or <code>pil</code>; <code>&lt;image-format&gt;</code> can be <code>l</code>, <code>rgb</code> (same as empty), or <code>rgba</code>, and <code>&lt;8bit&gt;</code> can either be empty (floating point values in the range from 0 to 1) or <code>8</code> (outputs <code>uint8</code> tensors). </p>
+<p>Common and recommended arguments for <code>.decoder</code> are:</p>
+<ul>
+<li><strong>pil</strong> - for <code>torchvision</code> data augmentation</li>
+<li><strong>rgb</strong> - for NumPy-based data augmentation, forcing RGB inputs in the range 0..1, in CHW order</li>
+<li><strong>torchrgb</strong> - for torch-based data augmentation, forcing RGB format in the range 0..1, in CHW order</li>
+<li><strong>torchrgb8</strong> - for torch-based data augmentation, forcing RGB format using <code>uint8</code>, in CHW order</li>
+<li><strong>l8</strong> - for large grayscale images in HW order</li>
+</ul>
+<h1 id="splitting-shards-across-nodes-and-workers">Splitting Shards across Nodes and Workers</h1>
+<p>Datasets are generally split across workers and processing nodes by shards. This is handled by <code>Dataset.shard_fn</code>. It will in turn call four hook functions in sequences:</p>
+<pre><code class="language-Python">self.reseed_hook()
+urls = self.node_selection(urls)   # hook for splitting up shards across nodes
+urls = self.shard_selection(urls)  # hook for splitting up shards across workers
+urls = self.shard_shuffle(urls)    # hook for shuffling the shards
+</code></pre>
+<p>You can put any function in there you like. By default <code>reseed_hook</code>, <code>node_selection</code> and <code>shard_shuffle</code> do nothing, while <code>shard_selection</code> uses PyTorch's worker globals for splitting up shards across workers. The <code>shard_shuffle</code> function is set to a random shuffle when you use the <code>.shuffle(...)</code> method on the <code>Dataset</code>; if you want to override that, set it after configuring the <code>.shuffle</code> method.</p>
+<h1 id="data-sources">Data Sources</h1>
+<p>When creating a dataset with <code>webdataset.Dataset(url)</code>, the URL can be:</p>
+<ul>
+<li>the string "-", referring to stdin</li>
+<li>a UNIX path, opened as a regular file</li>
+<li>a URL-like string with the schema "pipe:"; such URLs are opened with <code>subprocess.Popen</code>. For example:<ul>
+<li><code>pipe:curl -s -L http://server/file</code> accesses a file via HTTP</li>
+<li><code>pipe:gsutil cat gs://bucket/file</code> accesses a file on GCS</li>
+<li><code>pipe:az cp --container bucket --name file --file /dev/stdout</code> accesses a file on Azure</li>
+<li><code>pipe:ssh host cat file</code> accesses a file via <code>ssh</code></li>
+</ul>
+</li>
+<li>any other URL-like string with another schema; such URLs are passed to the <code>objectio</code> libraries if it is installed</li>
+</ul>
+<p>It might seem at first glance to be "more efficient" to use built-in Python libraries for accessing object stores rather than subprocesses, but efficient object store access from Python really requires spawning a separate process anyway, so this approach to accessing object stores is not only convenient, it also is as efficient as we can make it in Python.</p>
+<h1 id="creating-a-webdataset">Creating a WebDataset</h1>
+<p>Since WebDatasets are just regular tar files, you can usually create them by just using the <code>tar</code> command. All you have to do is to arrange for any files that should be in the same sample to share the same basename. Many datasets already come that way. For those, you can simply create a WebDataset with</p>
+<pre><code class="language-Bash">$ tar --sort=name -cf dataset.tar dataset/
+</code></pre>
+<p>If your dataset has some other directory layout, you can either rearrange the files on disk, or you can use <code>tar --transform</code> to get the right kinds of names in your tar file.</p>
+<p>You can also create a WebDataset with library functions in this library:</p>
+<ul>
+<li><code>webdataset.TarWriter</code> takes dictionaries containing key value pairs and writes them to disk</li>
+<li><code>webdataset.ShardWriter</code> takes dictionaries containing key value pairs and writes them to disk as a series of shards</li>
+</ul>
+<p>Here is how you can use <code>TarWriter</code> for writing a dataset:</p>
+<pre><code class="language-Python">sink = wds.TarWriter(&quot;dest.tar&quot;, encoder=False)
+for basename in basenames:
+    with open(f&quot;{basename}.png&quot;, &quot;rb&quot;) as stream):
+        image = stream.read()
+    cls = lookup_cls(basename)
+    sample = {
+        &quot;__key__&quot;: basename,
+        &quot;png&quot;: image,
+        &quot;cls&quot;: cls
+    }
+    sink.write(sample)
+sink.close()
+</code></pre>
+<h1 id="writing-filters-and-offline-augmentation">Writing Filters and Offline Augmentation</h1>
+<p>Webdataset can be used for filters and offline augmentation of datasets. Here is a complete example that pre-augments a shard and extracts class labels.</p>
+<pre><code class="language-python">def extract_class(data):
+    # mock implementation
+    return 0
+
+def augment_wds(input, output, maxcount=999999999):
+    src = (
+        wds.Dataset(input)
+        .decode(&quot;pil&quot;)
+        .to_tuple(&quot;__key__&quot;, &quot;jpg;png&quot;, &quot;json&quot;)
+        .map_tuple(identity, preproc, identity)
+    )
+    with wds.TarWriter(output) as dst:
+        for key, image, data in islice(src, 0, maxcount):
+            print(key)
+            image = image.numpy().transpose(1, 2, 0)
+            image -= amin(image)
+            image /= amax(image)
+            sample = {
+                &quot;__key__&quot;: key,
+                &quot;png&quot;: image,
+                &quot;cls&quot;: extract_class(data)
+            }
+            dst.write(sample)
+</code></pre>
+<p>Now run the augmentation pipeline:</p>
+<pre><code class="language-python">url = &quot;http://storage.googleapis.com/nvdata-openimages/openimages-train-000000.tar&quot;
+url = f&quot;pipe:curl -L -s {url} || true&quot;
+augment_wds(url, &quot;_temp.tar&quot;, maxcount=5)
+</code></pre>
+<pre><code>e39871fd9fd74f55
+f18b91585c4d3f3e
+ede6e66b2fb59aab
+ed600d57fcee4f94
+ff47e649b23f446d
+</code></pre>
+<p>To verify that things worked correctly, let's look at the output file:</p>
+<pre><code class="language-bash">%%bash
+tar tf _temp.tar
+</code></pre>
+<pre><code>e39871fd9fd74f55.cls
+e39871fd9fd74f55.png
+f18b91585c4d3f3e.cls
+f18b91585c4d3f3e.png
+ede6e66b2fb59aab.cls
+ede6e66b2fb59aab.png
+ed600d57fcee4f94.cls
+ed600d57fcee4f94.png
+ff47e649b23f446d.cls
+ff47e649b23f446d.png
+</code></pre>
+<p>If you want to preprocess the entire OpenImages dataset with a process like this, you can use your favorite job queueing or worflow system.</p>
+<p>For example, using Dask, you could process all 554 shards in parallel using code like this:</p>
+<pre><code class="language-Python">shards = braceexpand.braceexpand(&quot;{000000..000554}&quot;)
+inputs = [f&quot;gs://bucket/openimages-{shard}.tar&quot; for shard in shards]
+outputs = [f&quot;gs://bucket2/openimages-augmented-{shard}.tar&quot; for shard in shards]
+results = [dask.delayed(augment_wds)(args) for args in zip(inputs, outputs)]
+dask.compute(*results)
+</code></pre>
+<p>Note that the data is streaming from and to Google Cloud Storage buckets, so very little local storage is required on each worker.</p>
+<p>For very large scale processing, it's easiest to submit separate jobs to a Kubernetes cluster using the Kubernetes <code>Job</code> template, or using a workflow engine like Argo.</p>
+<h1 id="related-libraries-and-software">Related Libraries and Software</h1>
+<p>The <a href="http://github.com/NVIDIA/aistore">AIStore</a> server provides an efficient backend for WebDataset; it functions like a combination of web server, content distribution network, P2P network, and distributed file system. Together, AIStore and WebDataset can serve input data from rotational drives distributed across many servers at the speed of local SSDs to many GPUs, at a fraction of the cost. We can easily achieve hundreds of MBytes/s of I/O per GPU even in large, distributed training jobs.</p>
+<p>The <a href="http://github.com/tmbdev/tarproc">tarproc</a> utilities provide command line manipulation and processing of webdatasets and other tar files, including splitting, concatenation, and <code>xargs</code>-like functionality.</p>
+<p>The <a href="http://github.com/tmbdev/tensorcom/">tensorcom</a> library provides fast three-tiered I/O; it can be inserted between <a href="http://github.com/NVIDIA/aistore">AIStore</a> and <a href="http://github.com/tmbdev/webdataset">WebDataset</a> to permit distributed data augmentation and I/O. It is particularly useful when data augmentation requires more CPU than the GPU server has available.</p>
+              
+            </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+    
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+      
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="versions">
+    <span class="rst-current-version" data-toggle="rst-current-version">
+      
+      
+      
+    </span>
+</div>
+    <script>var base_url = '..';</script>
+    <script src="../js/theme.js" defer></script>
+      <script src="../search/main.js" defer></script>
+    <script defer>
+        window.onload = function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        };
+    </script>
+
+</body>
+</html>

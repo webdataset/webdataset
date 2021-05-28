@@ -1,4 +1,5 @@
 site_name: webdataset
+site_dir: pages
 nav:
     - Home: index.md
     - Module Docs: pydoc.md

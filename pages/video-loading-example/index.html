@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  
+  
+  <link rel="shortcut icon" href="../img/favicon.ico">
+  <title>Video Loading - webdataset</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700" />
+
+  <link rel="stylesheet" href="../css/theme.css" />
+  <link rel="stylesheet" href="../css/theme_extra.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css" />
+  
+  <script>
+    // Current page data
+    var mkdocs_page_name = "Video Loading";
+    var mkdocs_page_input_path = "video-loading-example.md";
+    var mkdocs_page_url = null;
+  </script>
+  
+  <script src="../js/jquery-2.1.1.min.js" defer></script>
+  <script src="../js/modernizr-2.8.3.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script> 
+  
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+        <a href=".." class="icon icon-home"> webdataset</a>
+        <div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="..">Home</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../pydoc/">Module Docs</a>
+                    </li>
+                </ul>
+                <p class="caption"><span class="caption-text">Examples</span></p>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../gettingstarted/">Getting Started</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../commands/">Commands</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../creating/">Creating Webdatasets</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../decoding/">Decoding</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../desktop/">Desktop Usage</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../howitworks/">How It Works</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../multinode/">Multinode</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../sharding/">Sharding</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../sources/">Sources</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../writing/">Writing</a>
+                    </li>
+                </ul>
+                <p class="caption"><span class="caption-text">Dataset Conversions</span></p>
+                <ul class="current">
+                    <li class="toctree-l1 current"><a class="reference internal current" href="./">Video Loading</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#ytsamples-data">YTSamples Data</a>
+    </li>
+    </ul>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../falling-things-make-shards/">Falling Things</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../objectron-conversion/">Objectron</a>
+                    </li>
+                </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="..">webdataset</a>
+      </nav>
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="..">Docs</a> &raquo;</li>
+    
+      
+        
+          <li>Dataset Conversions &raquo;</li>
+        
+      
+    
+    <li>Video Loading</li>
+    <li class="wy-breadcrumbs-aside">
+      
+    </li>
+  </ul>
+  
+  <hr/>
+</div>
+          <div role="main">
+            <div class="section">
+              
+                <pre><code class="language-python">%pylab inline
+</code></pre>
+<pre><code>Populating the interactive namespace from numpy and matplotlib
+</code></pre>
+<pre><code class="language-python">import webdataset as wds
+</code></pre>
+<h1 id="simple-examples-of-reading-video-with-webdataset">Simple Examples of Reading Video with WebDataset</h1>
+<p>There are many different ways in which video can be used in deep learning. One of the more common ones is to break up large video sequences into fixed sized clips and load those clips into a time x channel x height x width tensor.</p>
+<p>Breaking up large sequences into clips can be done on-the-fly or it can be done ahead of time. On-the-fly splitting of video is common but can be resource intensive, difficult to debug, and result in poor shuffling. WebDataset can be used with on-the-fly splitting, but when training on video clips with WebDataset, we generally prefer to split videos into clips ahead of time, shuffle the clips, and then just treat them as if they were regular samples. Splitting and shuffling of videos for WebDataset can be done with a small shell script and using FFMPEG; <a href="https://gist.github.com/0ddc2d45dcfa8675d8ea830a29518b77">here</a> is a notebook that illustrates this.</p>
+<p>We're going to look at two common sets of representing videos for deep learning:</p>
+<ul>
+<li>each video clip is stored in a video format like .mp4</li>
+<li>each video clip is represented as a sequence of frames, stored as separate images</li>
+</ul>
+<p>There are a couple of video datasets you can experiment with, stored in Google Cloud:</p>
+<ul>
+<li><code>gs://nvdata-fallingthings</code> contains the Falling Things dataset from NVIDIA; this uses separate image storage; you can find here...<ul>
+<li>the original dataset (<code>fat.zip</code>)</li>
+<li>the original dataset split into shards, with one shard per sequence and one sample per frame</li>
+<li>the frames of the original dataset in shuffled order; this is useful for training segmentation and stereo algorithms, but not motion</li>
+<li>a derived dataset containing shuffled samples each representing three consecutive frames; this is useful for learning optical flow and motion segmentation</li>
+</ul>
+</li>
+<li><code>gs://nvdata-ytsamples</code> contains a small subset of the videos from Google's YouTube8m dataset<ul>
+<li>this just contains 10 shards of 1Gbyte size each with short .mp4 clips</li>
+</ul>
+</li>
+</ul>
+<p>When using WebDataset, it is common to create many derived datasets, rather than performing complex transformations on the fly on a single master dataset. That's because creating derived datasets is easy and fast, and because separating augmentation/transformation from deep learning also tends to be easier to manage.</p>
+<p>This may seem less efficient at first glance, but it is actually usually also more cost effective, since adding rotational drives for extra storage is cheaper than adding extra CPU and I/O performance necessary for on-the-fly augmentation. </p>
+<p>The examples presented here internally use TorchVision for video decoding and PIL for image decoding; these are CPU-based decoders. You can use GPU-based image and video decompression with WebDataset; we will illustrate that in a future set of examples.</p>
+<h2 id="ytsamples-data">YTSamples Data</h2>
+<p>This dataset is a tiny set of fixed sized clips from the YT8m dataset. It's just provided to illustrate video I/O.</p>
+<p>In this dataset, each sample is stored as four files:</p>
+<ul>
+<li><code>sample.info.json</code> - content metadata</li>
+<li><code>sample.mp4.json</code> - video metadata</li>
+<li><code>sample.mp4</code> - MP4 encoded video clip</li>
+</ul>
+<p>The default decoder in WebDataset doesn't decode videos. However, the library provides a simple decoder based on <code>torchvision</code> (you need to install <code>torchvision</code> for this to work, including Python's <code>av</code> package).</p>
+<p>The <code>decode</code> method takes as arguments a sequence of function callbacks for decoding the fields making up a sample. To decode videos, just add the <code>wds.torch_video</code> callback.</p>
+<p>For inspecting it, we can open the video dataset directly from its cloud storage bucket; for actual training, you want to store it on a local file/web/object server to get better I/O speed.</p>
+<pre><code class="language-python">ds = wds.Dataset(&quot;https://storage.googleapis.com/nvdata-ytsamples/yt8m-clips-{000000..000009}.tar&quot;).decode(wds.torch_video)
+
+for sample in ds:
+    break
+</code></pre>
+<pre><code>/home/tmb/.local/lib/python3.8/site-packages/torchvision/io/video.py:103: UserWarning: The pts_unit 'pts' gives wrong results and will be removed in a follow-up version. Please use pts_unit 'sec'.
+  warnings.warn(
+</code></pre>
+<pre><code class="language-python">sample.keys()
+</code></pre>
+<pre><code>dict_keys(['__key__', 'info.json', 'mp4', 'mp4.json'])
+</code></pre>
+<p>Note that <code>torchvision</code> returns two tensors, the first containing the video, the second containing the audio. Therefore <code>sample["mp4"][0]</code> is the tensor containing the video clip. Let's look at the first frame.</p>
+<pre><code class="language-python">imshow(sample[&quot;mp4&quot;][0][0])
+sample[&quot;mp4&quot;][0].shape
+</code></pre>
+<pre><code>torch.Size([250, 128, 256, 3])
+</code></pre>
+<p><img alt="png" src="../video-loading-example_files/video-loading-example_9_1.png" /></p>
+<p>Let's look at 36 frames from the video.</p>
+<pre><code class="language-python">figsize(16, 9)
+n = len(sample[&quot;mp4&quot;][0])
+for i, f in enumerate(sample[&quot;mp4&quot;][0][0:n-36:n//36]):
+    subplot(6, 6, i+1)
+    imshow(f)
+</code></pre>
+<p><img alt="png" src="../video-loading-example_files/video-loading-example_11_0.png" /></p>
+<h1 id="falling-things-data">Falling Things Data</h1>
+<p>Clips in the YT8m dataset are stored as video files. In many applications, videos are actually stored as sequences of individual images.</p>
+<p>The <code>alling-things-3frames-shuffled</code> dataset provides an example of this (it is derived from the Falling Things dataset).</p>
+<pre><code class="language-python">!curl -L -s https://storage.googleapis.com/nvdata-fallingthings/clips/falling-things-3frames-shuffled-000000.tar | tar tvf - | head
+</code></pre>
+<pre><code>-rwxr-xr-x bigdata/bigdata 278214 2020-09-03 07:52 fat/mixed/kitedemo_3/001166/frame.000001.image.jpg
+-rwxr-xr-x bigdata/bigdata 201386 2020-09-03 07:52 fat/mixed/kitedemo_3/001166/frame.000002.depth.png
+-rwxr-xr-x bigdata/bigdata 242860 2020-09-03 07:52 fat/mixed/kitedemo_3/001166/frame.000002.image.jpg
+-rwxr-xr-x bigdata/bigdata 117790 2020-09-03 07:52 fat/mixed/kitedemo_3/001166/frame.000000.depth.png
+-rwxr-xr-x bigdata/bigdata 206575 2020-09-03 07:52 fat/mixed/kitedemo_3/001166/frame.000000.image.jpg
+-rwxr-xr-x bigdata/bigdata 199519 2020-09-03 07:52 fat/mixed/kitedemo_3/001166/frame.000001.depth.png
+-rwxr-xr-x bigdata/bigdata 362315 2020-09-03 07:52 fat/mixed/kitedemo_4/000716/frame.000001.depth.png
+-rwxr-xr-x bigdata/bigdata 289780 2020-09-03 07:52 fat/mixed/kitedemo_4/000716/frame.000001.image.jpg
+-rwxr-xr-x bigdata/bigdata 515337 2020-09-03 07:52 fat/mixed/kitedemo_4/000716/frame.000002.depth.png
+-rwxr-xr-x bigdata/bigdata 344835 2020-09-03 07:52 fat/mixed/kitedemo_4/000716/frame.000002.image.jpg
+tar: write error
+</code></pre>
+<p>As you can see, each clip is stored as a collection of images with the same basename (<code>.../frame</code> in this case, though there is nothing special about that), and then a numbered sequence of image files (again, this is just a convention, albeit a convenient one).</p>
+<p>We can open this like any other WebDataset. Since we want images decoded, we need to specify an image decoder. We can use a string shorthand for doing this; <code>.decode("rgb")</code> is short for <code>.decode(wds.imagehandler("rgb"))</code>.</p>
+<pre><code class="language-python">fat_3frames = &quot;https://storage.googleapis.com/nvdata-fallingthings/clips/falling-things-3frames-shuffled-{000000..000004}.tar&quot;
+
+ds = wds.Dataset(fat_3frames).decode(&quot;rgb&quot;)
+
+for sample in ds:
+    break
+
+sample.keys()
+</code></pre>
+<pre><code>dict_keys(['__key__', '000001.image.jpg', '000002.depth.png', '000002.image.jpg', '000000.depth.png', '000000.image.jpg', '000001.depth.png'])
+</code></pre>
+<p>To reassemble the images into a 4D numerical array, we just loop through the frame numbers and combine the images we get.</p>
+<pre><code class="language-python">images = np.array([sample[f&quot;{i:06d}.image.jpg&quot;] for i in range(3)])
+print(images.shape)
+</code></pre>
+<pre><code>(3, 540, 960, 3)
+</code></pre>
+<pre><code class="language-python">imshow(np.amax(np.abs(images[1]-images[0]), axis=2))
+</code></pre>
+<pre><code>&lt;matplotlib.image.AxesImage at 0x7f2d460d6490&gt;
+</code></pre>
+<p><img alt="png" src="../video-loading-example_files/video-loading-example_18_1.png" /></p>
+<p>If you like, you can do this directly in the <code>Dataset</code> class using the <code>.map</code> method.</p>
+<pre><code class="language-python">def assemble_frames(sample):
+    images = np.array([sample[f&quot;{i:06d}.image.jpg&quot;] for i in range(3)])
+    depths = np.array([sample[f&quot;{i:06d}.depth.png&quot;] for i in range(3)])
+    return images, depths
+
+ds = wds.Dataset(fat_3frames).decode(&quot;rgb&quot;).map(assemble_frames)
+
+for images, depths in ds:
+    break
+
+print(images.shape, depths.shape)
+</code></pre>
+<pre><code>(3, 540, 960, 3) (3, 540, 960, 3)
+</code></pre>
+              
+            </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="../falling-things-make-shards/" class="btn btn-neutral float-right" title="Falling Things">Next <span class="icon icon-circle-arrow-right"></span></a>
+      
+      
+        <a href="../writing/" class="btn btn-neutral" title="Writing"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+    
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+      
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="versions">
+    <span class="rst-current-version" data-toggle="rst-current-version">
+      
+      
+        <span><a href="../writing/" style="color: #fcfcfc;">&laquo; Previous</a></span>
+      
+      
+        <span style="margin-left: 15px"><a href="../falling-things-make-shards/" style="color: #fcfcfc">Next &raquo;</a></span>
+      
+    </span>
+</div>
+    <script>var base_url = '..';</script>
+    <script src="../js/theme.js" defer></script>
+      <script src="../search/main.js" defer></script>
+    <script defer>
+        window.onload = function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        };
+    </script>
+
+</body>
+</html>
