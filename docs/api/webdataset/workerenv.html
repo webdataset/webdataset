@@ -55,6 +55,9 @@
                     <a class="function" href="#get_worker_environment">get_worker_environment</a>
             </li>
             <li>
+                    <a class="function" href="#nodeslice">nodeslice</a>
+            </li>
+            <li>
                     <a class="function" href="#split_by_node">split_by_node</a>
             </li>
             <li>
@@ -101,11 +104,14 @@ is via explicit functions.</p>
 <span class="sd">is via explicit functions.</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
+<span class="kn">import</span> <span class="nn">sys</span>
 <span class="kn">import</span> <span class="nn">os</span>
 <span class="kn">import</span> <span class="nn">warnings</span>
 <span class="kn">import</span> <span class="nn">socket</span>
 
 <span class="kn">from</span> <span class="nn">.</span> <span class="kn">import</span> <span class="n">gopen</span>
+<span class="kn">from</span> <span class="nn">itertools</span> <span class="kn">import</span> <span class="n">islice</span>
+<span class="kn">from</span> <span class="nn">functools</span> <span class="kn">import</span> <span class="n">partial</span>
 
 
 <span class="n">worker_environment</span> <span class="o">=</span> <span class="kc">None</span>
@@ -176,6 +182,14 @@ is via explicit functions.</p>
         <span class="k">pass</span>
     <span class="n">worker_environment</span> <span class="o">=</span> <span class="n">WorkerEnvironment</span><span class="p">()</span>
     <span class="k">return</span> <span class="n">worker_environment</span>
+
+
+<span class="k">def</span> <span class="nf">nodeslice</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="n">env</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Slice the source based on the rank and worker number.&quot;&quot;&quot;</span>
+    <span class="n">env</span> <span class="o">=</span> <span class="n">env</span> <span class="ow">or</span> <span class="n">get_worker_environment</span><span class="p">()</span>
+    <span class="n">offset</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="n">rank</span> <span class="o">*</span> <span class="n">env</span><span class="o">.</span><span class="n">nworkers</span> <span class="o">+</span> <span class="n">env</span><span class="o">.</span><span class="n">worker</span>
+    <span class="n">step</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="n">world_size</span> <span class="o">*</span> <span class="n">env</span><span class="o">.</span><span class="n">nworkers</span>
+    <span class="k">yield from</span> <span class="n">islice</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="n">offset</span><span class="p">,</span> <span class="n">sys</span><span class="o">.</span><span class="n">maxsize</span><span class="p">,</span> <span class="n">step</span><span class="p">)</span>
 
 
 <span class="k">def</span> <span class="nf">split_by_node</span><span class="p">(</span><span class="n">urls</span><span class="p">,</span> <span class="n">env</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
@@ -411,6 +425,31 @@ is via explicit functions.</p>
         </details>
 
             <div class="docstring"><p>Get the current worker environment.</p>
+</div>
+
+
+                </section>
+                <section id="nodeslice">
+                            <div class="attr function"><a class="headerlink" href="#nodeslice">#&nbsp;&nbsp</a>
+
+        
+            <span class="def">def</span>
+            <span class="name">nodeslice</span><span class="signature">(source, env=None)</span>:
+    </div>
+
+                <details>
+            <summary>View Source</summary>
+            <div class="codehilite"><pre><span></span><span class="k">def</span> <span class="nf">nodeslice</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="n">env</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Slice the source based on the rank and worker number.&quot;&quot;&quot;</span>
+    <span class="n">env</span> <span class="o">=</span> <span class="n">env</span> <span class="ow">or</span> <span class="n">get_worker_environment</span><span class="p">()</span>
+    <span class="n">offset</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="n">rank</span> <span class="o">*</span> <span class="n">env</span><span class="o">.</span><span class="n">nworkers</span> <span class="o">+</span> <span class="n">env</span><span class="o">.</span><span class="n">worker</span>
+    <span class="n">step</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="n">world_size</span> <span class="o">*</span> <span class="n">env</span><span class="o">.</span><span class="n">nworkers</span>
+    <span class="k">yield from</span> <span class="n">islice</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="n">offset</span><span class="p">,</span> <span class="n">sys</span><span class="o">.</span><span class="n">maxsize</span><span class="p">,</span> <span class="n">step</span><span class="p">)</span>
+</pre></div>
+
+        </details>
+
+            <div class="docstring"><p>Slice the source based on the rank and worker number.</p>
 </div>
 
 

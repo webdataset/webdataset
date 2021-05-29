@@ -173,6 +173,7 @@ Header chunks have the following structure:</p>
 <span class="sd">- ...</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
+<span class="kn">import</span> <span class="nn">sys</span>
 <span class="kn">import</span> <span class="nn">struct</span>
 
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
@@ -400,7 +401,7 @@ Header chunks have the following structure:</p>
         <span class="n">write_chunk</span><span class="p">(</span><span class="n">stream</span><span class="p">,</span> <span class="n">chunk</span><span class="p">)</span>
 
 
-<span class="k">def</span> <span class="nf">read</span><span class="p">(</span><span class="n">stream</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="mi">999999</span><span class="p">,</span> <span class="n">infos</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">read</span><span class="p">(</span><span class="n">stream</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">maxsize</span><span class="p">,</span> <span class="n">infos</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Read a list of arrays from a stream, with magics, length, and padding.&quot;&quot;&quot;</span>
     <span class="n">chunks</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
@@ -944,12 +945,12 @@ Header chunks have the following structure:</p>
 
         
             <span class="def">def</span>
-            <span class="name">read</span><span class="signature">(stream, n=999999, infos=False)</span>:
+            <span class="name">read</span><span class="signature">(stream, n=9223372036854775807, infos=False)</span>:
     </div>
 
                 <details>
             <summary>View Source</summary>
-            <div class="codehilite"><pre><span></span><span class="k">def</span> <span class="nf">read</span><span class="p">(</span><span class="n">stream</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="mi">999999</span><span class="p">,</span> <span class="n">infos</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+            <div class="codehilite"><pre><span></span><span class="k">def</span> <span class="nf">read</span><span class="p">(</span><span class="n">stream</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">maxsize</span><span class="p">,</span> <span class="n">infos</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Read a list of arrays from a stream, with magics, length, and padding.&quot;&quot;&quot;</span>
     <span class="n">chunks</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>

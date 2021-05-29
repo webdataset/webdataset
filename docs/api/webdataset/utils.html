@@ -76,6 +76,7 @@
 
 <span class="sd">&quot;&quot;&quot;Miscellaneous utility functions.&quot;&quot;&quot;</span>
 
+<span class="kn">import</span> <span class="nn">sys</span>
 <span class="kn">import</span> <span class="nn">re</span>
 <span class="kn">import</span> <span class="nn">importlib</span>
 <span class="kn">import</span> <span class="nn">itertools</span> <span class="k">as</span> <span class="nn">itt</span>
@@ -103,7 +104,7 @@
     <span class="k">return</span> <span class="kc">None</span>
 
 
-<span class="k">def</span> <span class="nf">repeatedly0</span><span class="p">(</span><span class="n">loader</span><span class="p">,</span> <span class="n">nepochs</span><span class="o">=</span><span class="mi">999999999</span><span class="p">,</span> <span class="n">nbatches</span><span class="o">=</span><span class="mi">999999999999</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">repeatedly0</span><span class="p">(</span><span class="n">loader</span><span class="p">,</span> <span class="n">nepochs</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">maxsize</span><span class="p">,</span> <span class="n">nbatches</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">maxsize</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Repeatedly returns batches from a DataLoader.&quot;&quot;&quot;</span>
     <span class="k">for</span> <span class="n">epoch</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nepochs</span><span class="p">):</span>
         <span class="k">for</span> <span class="n">sample</span> <span class="ow">in</span> <span class="n">itt</span><span class="o">.</span><span class="n">islice</span><span class="p">(</span><span class="n">loader</span><span class="p">,</span> <span class="n">nbatches</span><span class="p">):</span>
@@ -216,12 +217,12 @@
 
         
             <span class="def">def</span>
-            <span class="name">repeatedly0</span><span class="signature">(loader, nepochs=999999999, nbatches=999999999999)</span>:
+            <span class="name">repeatedly0</span><span class="signature">(loader, nepochs=9223372036854775807, nbatches=9223372036854775807)</span>:
     </div>
 
                 <details>
             <summary>View Source</summary>
-            <div class="codehilite"><pre><span></span><span class="k">def</span> <span class="nf">repeatedly0</span><span class="p">(</span><span class="n">loader</span><span class="p">,</span> <span class="n">nepochs</span><span class="o">=</span><span class="mi">999999999</span><span class="p">,</span> <span class="n">nbatches</span><span class="o">=</span><span class="mi">999999999999</span><span class="p">):</span>
+            <div class="codehilite"><pre><span></span><span class="k">def</span> <span class="nf">repeatedly0</span><span class="p">(</span><span class="n">loader</span><span class="p">,</span> <span class="n">nepochs</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">maxsize</span><span class="p">,</span> <span class="n">nbatches</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">maxsize</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Repeatedly returns batches from a DataLoader.&quot;&quot;&quot;</span>
     <span class="k">for</span> <span class="n">epoch</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nepochs</span><span class="p">):</span>
         <span class="k">for</span> <span class="n">sample</span> <span class="ow">in</span> <span class="n">itt</span><span class="o">.</span><span class="n">islice</span><span class="p">(</span><span class="n">loader</span><span class="p">,</span> <span class="n">nbatches</span><span class="p">):</span>

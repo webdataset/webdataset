@@ -106,9 +106,11 @@ def gendocs(c):
     "Generate docs."
 
     # convert IPython Notebooks
-    for nb in glob.glob("docs/*.ipynb"):
-        c.run(f"{ACTIVATE} jupyter nbconvert {nb} --to markdown")
+    for nb in glob.glob("notebooks/*.ipynb"):
+        c.run(f"{ACTIVATE} jupyter nbconvert {nb} --to markdown --output-dir=docs/.")
     c.run(f"cp README.md docs/index.md")
+    c.run(f"mkdocs build")
+    c.run(f"pdoc -o docs/api webdataset")
 
     # generate pydoc for each module
     document = ""
@@ -117,16 +119,6 @@ def gendocs(c):
             text = stream.read()
         document += pydoc_template.format(text=text, module=module)
     with open("docs/pydoc.md", "w") as stream:
-        stream.write(document)
-
-    # generate help text for each command
-    document = ""
-    for command in COMMANDS:
-        with os.popen(f"{ACTIVATE}{PYTHON3}{command} --help ") as stream:
-            text = stream.read()
-        text = re.sub("```", "", text)
-        document = command_template.format(text=text, command=command)
-    with open("docs/commands.md", "w") as stream:
         stream.write(document)
 
 

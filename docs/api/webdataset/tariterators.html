@@ -140,7 +140,7 @@
 <span class="k">def</span> <span class="nf">url_opener</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">handler</span><span class="o">=</span><span class="n">reraise_exception</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Given a stream of url names (packaged in `dict(url=url)`), yield opened streams.&quot;&quot;&quot;</span>
     <span class="k">for</span> <span class="n">sample</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
-        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">sample</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">sample</span><span class="p">,</span> <span class="nb">dict</span><span class="p">),</span> <span class="n">sample</span>
         <span class="k">assert</span> <span class="s2">&quot;url&quot;</span> <span class="ow">in</span> <span class="n">sample</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="n">stream</span> <span class="o">=</span> <span class="n">gopen</span><span class="o">.</span><span class="n">gopen</span><span class="p">(</span><span class="n">sample</span><span class="p">[</span><span class="s2">&quot;url&quot;</span><span class="p">],</span> <span class="o">**</span><span class="n">kw</span><span class="p">)</span>
@@ -347,7 +347,7 @@
             <div class="codehilite"><pre><span></span><span class="k">def</span> <span class="nf">url_opener</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">handler</span><span class="o">=</span><span class="n">reraise_exception</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Given a stream of url names (packaged in `dict(url=url)`), yield opened streams.&quot;&quot;&quot;</span>
     <span class="k">for</span> <span class="n">sample</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
-        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">sample</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">sample</span><span class="p">,</span> <span class="nb">dict</span><span class="p">),</span> <span class="n">sample</span>
         <span class="k">assert</span> <span class="s2">&quot;url&quot;</span> <span class="ow">in</span> <span class="n">sample</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="n">stream</span> <span class="o">=</span> <span class="n">gopen</span><span class="o">.</span><span class="n">gopen</span><span class="p">(</span><span class="n">sample</span><span class="p">[</span><span class="s2">&quot;url&quot;</span><span class="p">],</span> <span class="o">**</span><span class="n">kw</span><span class="p">)</span>
