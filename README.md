@@ -38,7 +38,6 @@ augmentation code remains unchanged.
 - [Documentation](https://webdataset.github.io/webdataset)
 - [API](https://webdataset.github.io/webdataset/api)
 
-
 # Installation
 
     $ pip install webdataset
