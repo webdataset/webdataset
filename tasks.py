@@ -110,27 +110,7 @@ def gendocs(c):
         c.run(f"{ACTIVATE} jupyter nbconvert {nb} --to markdown --output-dir=docsrc/.")
     c.run(f"mkdocs build")
     c.run(f"pdoc -t docsrc -o docs/api webdataset")
-
-    # generate pydoc for each module
-    document = ""
-    for module in MODULES:
-        with os.popen(f"{ACTIVATE}{PYTHON3} -m pydoc {module}") as stream:
-            text = stream.read()
-        document += pydoc_template.format(text=text, module=module)
-    with open("docs/pydoc.md", "w") as stream:
-        stream.write(document)
-
-
-@task(gendocs)
-def pubdocs(c):
-    "Generate and publish docs."
-    modified = os.popen("git status").readlines()
-    for line in modified:
-        if "modified:" in line and ".md" not in line:
-            print("non-documentation file modified; commit manually", file=sys.stderr)
-    c.run("git add docs/*.md README.md")
-    c.run("git commit -a -m 'documentation update'")
-    c.run("git push")
+    c.run("git add docs")
 
 
 @task
