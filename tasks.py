@@ -109,7 +109,7 @@ def gendocs(c):
     for nb in glob.glob("notebooks/*.ipynb"):
         c.run(f"{ACTIVATE} jupyter nbconvert {nb} --to markdown --output-dir=docsrc/.")
     c.run(f"mkdocs build")
-    c.run(f"pdoc -o docs/api webdataset")
+    c.run(f"pdoc -t docsrc -o docs/api webdataset")
 
     # generate pydoc for each module
     document = ""
