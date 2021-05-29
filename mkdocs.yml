@@ -2,10 +2,9 @@ site_name: webdataset
 site_dir: pages
 nav:
     - Home: index.md
-    - Module Docs: pydoc.md
+    - API: api/index.html
     - Examples:
       - Getting Started: gettingstarted.md
-      - Commands: commands.md
       - Creating Webdatasets: creating.md
       - Decoding: decoding.md
       - Desktop Usage: desktop.md
