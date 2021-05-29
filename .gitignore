@@ -27,3 +27,4 @@ docs/webdataset
 *.mdb
 dist
 webdataset.egg-info
+docsrc/*.md
