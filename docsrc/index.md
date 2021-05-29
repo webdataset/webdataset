@@ -33,17 +33,6 @@ require any kind of data conversion: data is stored in exactly the same
 format inside tar files as it is on disk, and all preprocessing and data
 augmentation code remains unchanged.
 
-# Documentation
-
-- [Getting Started](docs/gettingstarted.ipynb) -- a simple demonstration of how to use WebDataset
-- [How It Works](docs/howitworks.ipynb) -- WebDataset is just a collection of PyTorch IterableDataset implementations
-- [Decoding](docs/decoding.ipynb) -- WebDataset uses file-based representations internally and its Decoder makes turning these into PyTorch tensors easy
-- [Desktop Usage and Caching](docs/desktop.ipynb) -- WebDataset is great for desktop development and supports built-in caching
-- [Creating Datasets in WebDataset Format](docs/creating.ipynb) -- there are a variety of tools for creating datasets in WebDataset format
-- [Writing WebDataset from Python](docs/writing.ipynb) -- you can write WebDataset datasets directly from Python
-- [Multinode Training](docs/multinode.ipynb) -- what you need to know to handle distributed, multi-node training with WebDataset
-- [Data Sources](docs/sources.ipynb) -- accessing data on local disks, on web servers, or in cloud storage buckets
-
 # Installation
 
     $ pip install webdataset
@@ -62,12 +51,6 @@ Here are some videos talking about WebDataset and large scale deep learning:
 - [Loading Training Data with WebDataset](https://www.youtube.com/watch?v=mTv_ePYeBhs)
 - [Creating Datasets in WebDataset Format](https://www.youtube.com/watch?v=v_PacO-3OGQ)
 - [Tools for Working with Large Datasets](https://www.youtube.com/watch?v=kIv8zDpRUec)
-
-# More Examples
-
-- [loading videos](https://github.com/tmbdev/webdataset/blob/master/docs/video-loading-example.ipynb)
-- [splitting raw videos into clips for training](https://github.com/tmbdev/webdataset/blob/master/docs/ytsamples-split.ipynb)
-- [converting the Falling Things dataset](https://github.com/tmbdev/webdataset/blob/master/docs/falling-things-make-shards.ipynb)
 
 # Related Libraries and Software
 

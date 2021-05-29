@@ -107,7 +107,7 @@ def gendocs(c):
 
     # convert IPython Notebooks
     for nb in glob.glob("notebooks/*.ipynb"):
-        c.run(f"{ACTIVATE} jupyter nbconvert {nb} --to markdown --output-dir=docs/.")
+        c.run(f"{ACTIVATE} jupyter nbconvert {nb} --to markdown --output-dir=docsrc/.")
     c.run(f"mkdocs build")
     c.run(f"pdoc -o docs/api webdataset")
 

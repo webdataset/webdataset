@@ -1,5 +1,5 @@
 site_name: webdataset
-site_dir: pages
+site_dir: docs
 nav:
     - Home: index.md
     - API: api/index.html
