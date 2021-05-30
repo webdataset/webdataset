@@ -133,3 +133,27 @@ def split_by_worker(urls, env=None):
     if too_few_shards_warning and env.worker == 0 and len(urls) < env.nworkers:
         warnings.warn(f"num_workers {env.nworkers} > num_shards {len(urls)}")
     return urls[env.worker :: env.nworkers]
+
+
+class RandomNodeSplitter:
+    """Randomly split shards between nodes.
+
+    Used as a shard selection function in Dataset.
+    In epoch-based training loops, this splitter can be used to ensure shards are distributed
+    differently among nodes at each epoch. A typical use is to call `set_seed(epoch)` before
+    iterating over the dataset in each epoch.
+    """
+
+    def __init__(self, start_seed=0):
+        """Initialize the node splitter with a fixed seed."""
+        self.set_seed(start_seed)
+
+    def set_seed(self, seed):
+        """Change the seed to change the node splitting on the next epoch."""
+        self.seed = seed
+
+    def __call__(self, urls, env=None):
+        """Perform both per-epoch shuffling and node splitting."""
+        urls = urls.copy()
+        random.Random(self.seed).shuffle(list(urls))
+        return split_by_node(urls, env)
