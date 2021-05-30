@@ -112,41 +112,6 @@ class Composable:
         return constructor(*args, **kw).source_(self)
 
 
-class ResampledShards(IterableDataset, Composable):
-    """An iterable dataset yielding a list of urls."""
-
-    def __init__(
-        self,
-        urls,
-        nshards=sys.maxsize,
-        length=None,
-    ):
-        """Sample shards from the shard list with replacement.
-
-        :param urls: a list of URLs as a Python list or brace notation string
-        """
-        super().__init__()
-        if isinstance(urls, str):
-            urls = list(braceexpand.braceexpand(urls))
-        else:
-            urls = list(urls)
-        self.urls = urls
-        self.nshards = nshards
-        self.length = length
-        assert isinstance(self.urls[0], str)
-
-    def __iter__(self):
-        """Return an iterator over the shards."""
-        for _ in range(self.nshards):
-            yield dict(url=random.choice(self.urls))
-
-    def __len__(self):
-        """Return the user-specified length of this dataset."""
-        if self.length is None:
-            raise ValueError("length requested, but no length specified for ShardIterator")
-        return self.length
-
-
 class ShardList(IterableDataset, Composable):
     """An iterable dataset yielding a list of urls."""
 
@@ -201,6 +166,41 @@ class ShardList(IterableDataset, Composable):
             random.shuffle(urls)
         for url in urls:
             yield dict(url=url)
+
+    def __len__(self):
+        """Return the user-specified length of this dataset."""
+        if self.length is None:
+            raise ValueError("length requested, but no length specified for ShardIterator")
+        return self.length
+
+
+class ResampledShards(IterableDataset, Composable):
+    """An iterable dataset yielding a list of urls."""
+
+    def __init__(
+        self,
+        urls,
+        nshards=sys.maxsize,
+        length=None,
+    ):
+        """Sample shards from the shard list with replacement.
+
+        :param urls: a list of URLs as a Python list or brace notation string
+        """
+        super().__init__()
+        if isinstance(urls, str):
+            urls = list(braceexpand.braceexpand(urls))
+        else:
+            urls = list(urls)
+        self.urls = urls
+        self.nshards = nshards
+        self.length = length
+        assert isinstance(self.urls[0], str)
+
+    def __iter__(self):
+        """Return an iterator over the shards."""
+        for _ in range(self.nshards):
+            yield dict(url=random.choice(self.urls))
 
     def __len__(self):
         """Return the user-specified length of this dataset."""

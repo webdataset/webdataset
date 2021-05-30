@@ -24,6 +24,7 @@ from .workerenv import (
     split_by_node,
     split_by_worker,
     RandomNodeSplitter,
+    get_worker_environment,
 )
 from .handlers import (
     reraise_exception,

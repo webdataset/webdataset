@@ -44,12 +44,14 @@ class WorkerEnvironment:
         self.world_size = world_size
         self.worker = worker
         self.nworkers = nworkers
+        self.rank_init = False
+        self.worker_init = False
 
     def __str__(self):
         """__str__."""
         return (
-            f"WorkerEnvironment(rank={self.rank}, world_size={self.world_size}, "
-            + f"worker={self.worker}, nworkers={self.nworkers})"
+            f"WorkerEnvironment(rank={self.rank}, world_size={self.world_size}, {self.rank_init}, "
+            + f"worker={self.worker}, nworkers={self.nworkers}, {self.worker_init})"
         )
 
 
@@ -69,26 +71,31 @@ class TorchWorkerEnvironment(WorkerEnvironment):
         if torch.distributed.is_available() and torch.distributed.is_initialized():
             if group is None:
                 group = torch.distributed.group.WORLD
+            self.rank_init = True
             self.rank = torch.distributed.get_rank(group=group)
             self.world_size = torch.distributed.get_world_size(group=group)
 
         worker_info = torch.utils.data.get_worker_info()
 
         if worker_info is not None:
+            self.worker_init = True
             self.worker = worker_info.id
             self.nworkers = worker_info.num_workers
-
+            
 
 def get_worker_environment():
     """Get the current worker environment."""
     global worker_environment
     if worker_environment is not None and worker_environment.identity == worker_id():
+        print("cached", worker_environment)
         return worker_environment
     try:
         worker_environment = TorchWorkerEnvironment()
+        print("torch", worker_environment)
         return worker_environment
     except ModuleNotFoundError:
         pass
+    print("default", worker_environment)
     worker_environment = WorkerEnvironment()
     return worker_environment
 
