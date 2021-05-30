@@ -9,7 +9,6 @@
 
 from .dataset import (
     WebDataset,
-    split_by_worker,
     default_cache_dir,
     default_cache_name,
     default_cache_size,
@@ -31,7 +30,7 @@ class Dataset(IterableDataset):
         urls,
         *,
         length=True,
-        splitter=split_by_worker,
+        splitter=True,
         handler=reraise_exception,
         shuffle=False,
         cache_dir=default_cache_dir,

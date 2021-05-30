@@ -14,14 +14,12 @@ import itertools as itt
 import os
 import sys
 import random
-import warnings
 
 import braceexpand
 
 from . import autodecode, dbcache, iterators, shardcache, tariterators, utils
 from .utils import lookup_sym, safe_eval
 from .handlers import reraise_exception
-from .workerenv import split_by_node, split_by_worker, get_worker_environment
 
 try:
     from torch.utils.data import IterableDataset, DataLoader
@@ -58,18 +56,6 @@ class MockDataset(IterableDataset):
         """Return an iterator over this mock dataset."""
         for i in range(self.length):
             yield self.sample
-
-
-def warn_no_samples(data):
-    """Warn if the iterator yields no samples."""
-    count = 0
-    for sample in data:
-        yield sample
-        count += 1
-    if count == 0:
-        env = get_worker_environment()
-        if env.rank > 0:
-            warnings.warn(f"no samples at all in node {env.rank}, worker {env.worker}")
 
 
 class Composable:
@@ -112,59 +98,30 @@ class Composable:
         return constructor(*args, **kw).source_(self)
 
 
-class ShardList(IterableDataset, Composable):
+class SimpleShardList(IterableDataset, Composable):
     """An iterable dataset yielding a list of urls."""
 
     def __init__(
         self,
         urls,
-        shuffle=False,
-        nodesplitter=True,
-        splitter=True,
         length=None,
     ):
-        """Create a ShardList using a nodesplitter and splitter function.
+        """Iterate through the list of shards.
 
         :param urls: a list of URLs as a Python list or brace notation string
-        :param shuffle: whether to shuffle the URLs
-        :param nodesplitter: function for splitting urls across nodes (None: don't split)
-        :param splitter: function for splitting urls across workers (None: don't split)
-        :param length: user-specified length; this is returned unchanged by the len() function
         """
         super().__init__()
-        self.shuffle = shuffle
-        self.length = length
-        if nodesplitter is None or nodesplitter is False:
-            self.nodesplitter = utils.identity
-        elif nodesplitter is True:
-            self.nodesplitter = split_by_node
-        else:
-            assert callable(nodesplitter)
-            self.nodesplitter = nodesplitter
-        if splitter is None or splitter is False:
-            self.splitter = utils.identity
-        elif splitter is True:
-            self.splitter = split_by_worker
-        else:
-            assert callable(splitter)
-            self.splitter = splitter
         if isinstance(urls, str):
             urls = list(braceexpand.braceexpand(urls))
         else:
             urls = list(urls)
         self.urls = urls
+        self.length = length
         assert isinstance(self.urls[0], str)
 
     def __iter__(self):
         """Return an iterator over the shards."""
-        urls = list(self.urls)
-        urls = list(self.nodesplitter(urls))
-        urls = list(self.splitter(urls))
-        if callable(self.shuffle):
-            self.shuffle(urls)
-        elif self.shuffle:
-            random.shuffle(urls)
-        for url in urls:
+        for url in self.urls:
             yield dict(url=url)
 
     def __len__(self):
@@ -756,7 +713,6 @@ def WebDataset(
         )
     result = result.then(tariterators.tar_file_expander, length=None, handler=handler)
     result = result.then(tariterators.group_by_keys, length=length)
-    result = result.then(warn_no_samples)
     return result
 
 

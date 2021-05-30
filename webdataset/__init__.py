@@ -10,7 +10,7 @@
 from . import tenbin
 from .fluid import Dataset
 from .dataset import (
-    ShardList,
+    SimpleShardList,
     PytorchShardList,
     ResampledShards,
     Composable,
@@ -21,12 +21,6 @@ from .dataset import (
     ChoppedDataset,
     ResizedDataset,
     MockDataset,
-)
-from .workerenv import (
-    split_by_node,
-    split_by_worker,
-    RandomNodeSplitter,
-    get_worker_environment,
 )
 from .handlers import (
     reraise_exception,
