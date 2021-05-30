@@ -17,11 +17,13 @@ import sys
 import os
 import warnings
 import socket
+import random
 
 from . import gopen
 from itertools import islice
-from functools import partial
 
+
+wenv_verbose = int(os.environ.get("WENV_VERBOSE", "0"))
 
 worker_environment = None
 
@@ -71,31 +73,38 @@ class TorchWorkerEnvironment(WorkerEnvironment):
         if torch.distributed.is_available() and torch.distributed.is_initialized():
             if group is None:
                 group = torch.distributed.group.WORLD
-            self.rank_init = True
             self.rank = torch.distributed.get_rank(group=group)
             self.world_size = torch.distributed.get_world_size(group=group)
+            self.rank_init = True
+        elif "RANK" in os.environ and "WORLD_SIZE" in os.environ:
+            self.rank = int(os.environ["RANK"])
+            self.world_size = int(os.environ["WORLD_SIZE"])
+            self.rank_init = True
 
         worker_info = torch.utils.data.get_worker_info()
 
         if worker_info is not None:
-            self.worker_init = True
             self.worker = worker_info.id
             self.nworkers = worker_info.num_workers
-            
+            self.worker_init = True
+
 
 def get_worker_environment():
     """Get the current worker environment."""
     global worker_environment
     if worker_environment is not None and worker_environment.identity == worker_id():
-        print("cached", worker_environment)
+        if wenv_verbose:
+            print("cached", worker_environment)
         return worker_environment
     try:
         worker_environment = TorchWorkerEnvironment()
-        print("torch", worker_environment)
+        if wenv_verbose:
+            print("torch", worker_environment)
         return worker_environment
     except ModuleNotFoundError:
         pass
-    print("default", worker_environment)
+    if wenv_verbose:
+        print("default", worker_environment)
     worker_environment = WorkerEnvironment()
     return worker_environment
 

@@ -21,7 +21,7 @@ import braceexpand
 from . import autodecode, dbcache, iterators, shardcache, tariterators, utils
 from .utils import lookup_sym, safe_eval
 from .handlers import reraise_exception
-from .workerenv import split_by_node, split_by_worker, get_worker_environment, nodeslice
+from .workerenv import split_by_node, split_by_worker, get_worker_environment
 
 try:
     from torch.utils.data import IterableDataset, DataLoader
@@ -123,7 +123,7 @@ class ShardList(IterableDataset, Composable):
         splitter=True,
         length=None,
     ):
-        """Create a ShardList.
+        """Create a ShardList using a nodesplitter and splitter function.
 
         :param urls: a list of URLs as a Python list or brace notation string
         :param shuffle: whether to shuffle the URLs
@@ -166,6 +166,129 @@ class ShardList(IterableDataset, Composable):
             random.shuffle(urls)
         for url in urls:
             yield dict(url=url)
+
+    def __len__(self):
+        """Return the user-specified length of this dataset."""
+        if self.length is None:
+            raise ValueError("length requested, but no length specified for ShardIterator")
+        return self.length
+
+
+class PytorchEnv:
+    """A class encapsulating the PyTorch node/worker environment."""
+
+    def __init__(self, group=None):
+        """Initialize rank/worker information."""
+        super().__init__()
+        self.rank = None
+        self.worker = None
+        self.group = group
+        self.update_env()
+
+    def update_env(self):
+        """Update information about node and worker environment.
+
+        This code is written this way because the torch.distributed info is
+        available only in the environment where the loader is created.
+        This class retains that environment info when it is serialized.
+        """
+        import torch
+        import torch.distributed
+        from . import gopen
+        import socket
+
+        self.nodeinfo = (socket.gethostname(), os.getpid())
+
+        if self.rank is None:
+            if torch.distributed.is_available() and torch.distributed.is_initialized():
+                group = self.group or torch.distributed.group.WORLD
+                self.rank = torch.distributed.get_rank(group=group), torch.distributed.get_world_size(
+                    group=group
+                )
+
+        if self.worker is None:
+            worker_info = torch.utils.data.get_worker_info()
+            if worker_info is not None:
+                self.worker = worker_info.id, worker_info.num_workers
+
+        gopen.info["nodeinfo"] = self.nodeinfo
+        gopen.info["rank"], gopen.info["size"] = self.rank or (-1, -1)
+        gopen.info["worker_id"], gopen.info["num_workers"] = self.worker or (-1, -1)
+
+
+class PytorchShardList(IterableDataset, Composable, PytorchEnv):
+    """An iterable dataset yielding a list of urls.
+
+    This understands the PyTorch distributed and worker APIs and splits shards
+    accordingly.
+    """
+
+    def __init__(
+        self,
+        urls,
+        epoch_shuffle=False,
+        shuffle=False,
+        split_by_worker=True,
+        split_by_node=True,
+        length=None,
+        verbose=False,
+    ):
+        """Create a ShardList.
+
+        :param urls: a list of URLs as a Python list or brace notation string
+        :param shuffle: shuffle samples before iterating
+        :param length: user-specified length; this is returned unchanged by the len() function
+        :param split_by_node: split shards by node if True
+        :param split_by_worker: split shards by worker if True
+        :param group: group used for determining rank/world_size
+
+        If WDS_SHUFFLE is in the environment, it is used for shuffling shards prior
+        to splitting; this assigns different shards to different nodes on each epoch.
+        """
+        super().__init__()
+
+        self.verbose = verbose
+        if self.verbose:
+            print("PytorchShardList init")
+        self.epoch_shuffle = epoch_shuffle
+        self.shuffle = shuffle
+        self.length = length
+        if isinstance(urls, str):
+            urls = list(braceexpand.braceexpand(urls))
+        else:
+            urls = list(urls)
+        self.urls = list(urls)
+        assert isinstance(self.urls[0], str)
+        self.split_by_worker = split_by_worker
+        self.split_by_node = split_by_node
+
+    def __iter__(self):
+        """Return an iterator over the shards."""
+        self.update_env()
+        urls = self.urls.copy()
+        if self.epoch_shuffle:
+            if "WDS_EPOCH" not in os.environ:
+                raise ValueError("when specifying epoch_shuffle, you must provide the epoch in the WDS_EPOCH environment variable")
+            epoch = int(os.environ["WDS_EPOCH"])
+            if self.verbose:
+                print(f"PytorchShardList epochshuffle {epoch}")
+            random.Random(epoch).shuffle(urls)
+        if self.split_by_node:
+            rank, world = self.rank or (0, 1)
+            if self.verbose:
+                print(f"PytorchShardList rank {rank} of {world}")
+            urls = urls[rank::world]
+        if self.split_by_worker:
+            worker, nworkers = self.worker or (0, 1)
+            if self.verbose:
+                print(f"PytorchShardList worker {worker} of {nworkers}")
+            urls = urls[worker::nworkers]
+        if self.shuffle:
+            random.Random(self.epoch + 17).shuffle(urls)
+        if self.verbose:
+            print(f"PytorchShardList got {len(urls)} urls")
+        for url in urls:
+            yield dict(url=url, worker=str(self.worker), rank=str(self.rank), nodeinfo=str(self.nodeinfo))
 
     def __len__(self):
         """Return the user-specified length of this dataset."""
@@ -400,7 +523,7 @@ class Shorthands:
         stop = sys.maxsize
         step = 1
         if len(args) == 1:
-            stop, = args
+            (stop,) = args
         elif len(args) == 2:
             start, stop = args
         elif len(args) == 3:
@@ -506,7 +629,13 @@ class Repeatedly(IterableDataset, Composable, Shorthands):
 
     def __iter__(self):
         """Return an iterator that iterates repeatedly over a source."""
-        return utils.repeatedly(self.source, nepochs=self.nepochs, nbatches=self.nbatches, nsamples=self.nsamples, batchsize=self.batchsize)
+        return utils.repeatedly(
+            self.source,
+            nepochs=self.nepochs,
+            nbatches=self.nbatches,
+            nsamples=self.nsamples,
+            batchsize=self.batchsize,
+        )
 
     def __len__(self):
         """Return the length of the source."""
@@ -581,14 +710,11 @@ class Processor(IterableDataset, Composable, Shorthands):
 
 def WebDataset(
     urls,
-    shardshuffle=True,
+    shardlist=PytorchShardList,
     cache_dir=default_cache_dir,
     cache_size=default_cache_size,
     cache_name=default_cache_name,
     cache_verbose=default_cache_verbose,
-    multimode=None,
-    splitter=True,
-    nodesplitter=True,
     handler=reraise_exception,
     length=None,
     warn_empty=True,
@@ -603,20 +729,13 @@ def WebDataset(
     from `Shorthands` (`batched`, `unbatched`, `decode`, `shuffle`, etc.)
     on the result.
 
-    The `multimode` argument determines how to handle shard splitting across
-    different nodes and workers:
+    The recommended way of specifying novel ways of splitting shards is
+    via writing a new shardlist class.
 
-    - None: split shards based on node/worker
-    - "nodeworker": split shards both by node and worker
-    - "worker": split shards by worker only (all shards on each node)
-    - "resampled": infinite stream of samples, with all shards on all nodes
-    - "sliced": all shards on all nodes, but split by samples
+    The old nodesplitter/splitter functionality can be used via the argument
+    `shardlist=partial(wds.ShardList, nodesplitter=..., splitter=...)`
 
     :param urls: the source URLs, specified either as a list or as a brace-expanded string
-    :param multimode: how to handle multimode processing
-    :param shardshuffle: boolean indicating whether the shards should be shuffled or not
-    :param splitter: a function called for splitting shards among workers (True: PyTorch default, None: no splitting)
-    :param nodesplitter: a function called for splitting shards among nodes (True: PyTOrch default, None: no splitting)
     :param handler: an error handler
     :param length: the length of this dataset, should be an integer
     :param cache_dir: when set, caches shards in this directory
@@ -625,30 +744,7 @@ def WebDataset(
     :param cache_verbose: when set, prints information about caching
     :param warn_empty: warn when no samples are generated at all
     """
-    if multimode is not None:
-        assert splitter is True, "specify either splitter or multimode, not both"
-        assert nodesplitter is True, "specify either nodesplitter or multimode, not both"
-        if multimode == "nodeworker":
-            splitter = True
-            nodesplitter = True
-        elif multimode in ["resampled", "sliced"]:
-            splitter = False
-            nodesplitter = False
-        elif multimode == "worker":
-            splitter = True
-            nodesplitter = False
-        else:
-            raise ValueError(f"{multimode}: unknown multimode")
-    if multimode == "resampled":
-        result = ResampledShards(urls)
-    else:
-        result = ShardList(
-            urls,
-            shuffle=shardshuffle,
-            splitter=splitter,
-            nodesplitter=nodesplitter,
-            length=length,
-        )
+    result = shardlist(urls)
     result = result.then(tariterators.url_opener, handler=handler)
     if cache_dir != "":
         result = result.then(
@@ -660,12 +756,7 @@ def WebDataset(
         )
     result = result.then(tariterators.tar_file_expander, length=None, handler=handler)
     result = result.then(tariterators.group_by_keys, length=length)
-    if multimode == "sliced":
-        result = result.then(nodeslice)
-    elif multimode == "resampled":
-        result = result.repeat()
-    if multimode is not None:
-        result = result.then(warn_no_samples)
+    result = result.then(warn_no_samples)
     return result
 
 

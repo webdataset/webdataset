@@ -11,6 +11,8 @@ from . import tenbin
 from .fluid import Dataset
 from .dataset import (
     ShardList,
+    PytorchShardList,
+    ResampledShards,
     Composable,
     Shorthands,
     WebDataset,

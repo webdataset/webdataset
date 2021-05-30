@@ -1,15 +1,15 @@
 import io
-
+import os
 import numpy as np
 import PIL
 import pytest
 import torch
 import pickle
+from functools import partial
 
 import webdataset.dataset as wds
 from webdataset import autodecode
 from webdataset import handlers
-from webdataset import workerenv
 
 
 local_data = "testdata/imagenet-000000.tgz"
@@ -24,7 +24,7 @@ def identity(x):
     return x
 
 
-def count_samples_tuple(source, *args, n=1000):
+def count_samples_tuple(source, *args, n=10000):
     count = 0
     for i, sample in enumerate(iter(source)):
         if i >= n:
@@ -353,24 +353,27 @@ def test_dataloader():
 def test_multimode():
     import torch
 
-    it = workerenv.nodeslice(range(10))
-    print(it)
-    result = list(it)
-    assert len(result) == 10
+    urls = [local_data] * 8
+    nsamples = 47 * 8
 
-    ds = wds.WebDataset(remote_loc + remote_shards, multimode="nodeworker")
+    shardlist = partial(wds.PytorchShardList, verbose=True, epoch_shuffle=True)
+    os.environ["WDS_EPOCH"] = "17"
+    ds = wds.WebDataset(urls, shardlist=shardlist)
     dl = torch.utils.data.DataLoader(ds, num_workers=4)
-    count = count_samples_tuple(dl, n=100)
-    assert count == 100, count
+    count = count_samples_tuple(dl)
+    assert count == nsamples, count
+    del os.environ["WDS_EPOCH"]
 
-    ds = wds.WebDataset(remote_loc + remote_shards, multimode="sliced")
+    shardlist = partial(wds.PytorchShardList, verbose=True, split_by_worker=False)
+    ds = wds.WebDataset(urls, shardlist=shardlist)
     dl = torch.utils.data.DataLoader(ds, num_workers=4)
-    count = count_samples_tuple(dl, n=100)
-    assert count == 100, count
+    count = count_samples_tuple(dl)
+    assert count == 4 * nsamples, count
 
-    ds = wds.WebDataset(remote_loc + remote_shards, multimode="resampled").slice(170)
+    shardlist = wds.ResampledShards
+    ds = wds.WebDataset(urls, shardlist=shardlist).slice(170)
     dl = torch.utils.data.DataLoader(ds, num_workers=4)
-    count = count_samples_tuple(dl, n=1000)
+    count = count_samples_tuple(dl)
     assert count == 170 * 4, count
 
 
