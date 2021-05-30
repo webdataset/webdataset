@@ -23,6 +23,7 @@ from .dataset import (
 from .workerenv import (
     split_by_node,
     split_by_worker,
+    RandomNodeSplitter,
 )
 from .handlers import (
     reraise_exception,
