@@ -207,6 +207,7 @@ class PytorchShardList(IterableDataset, Composable, PytorchEnv):
         self.verbose = verbose
         if self.verbose:
             print("PytorchShardList init")
+        self.epoch = 0
         self.epoch_shuffle = epoch_shuffle
         self.shuffle = shuffle
         self.length = length
@@ -221,11 +222,14 @@ class PytorchShardList(IterableDataset, Composable, PytorchEnv):
 
     def __iter__(self):
         """Return an iterator over the shards."""
+        self.epoch += 1
         self.update_env()
         urls = self.urls.copy()
         if self.epoch_shuffle:
             if "WDS_EPOCH" not in os.environ:
-                raise ValueError("when specifying epoch_shuffle, you must provide the epoch in the WDS_EPOCH environment variable")
+                raise ValueError(
+                    "when specifying epoch_shuffle, you must provide the epoch in the WDS_EPOCH environment variable"
+                )
             epoch = int(os.environ["WDS_EPOCH"])
             if self.verbose:
                 print(f"PytorchShardList epochshuffle {epoch}")

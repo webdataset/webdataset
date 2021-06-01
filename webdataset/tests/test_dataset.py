@@ -356,8 +356,8 @@ def test_multimode():
     urls = [local_data] * 8
     nsamples = 47 * 8
 
-    shardlist = partial(wds.PytorchShardList, verbose=True, epoch_shuffle=True)
-    os.environ["WDS_EPOCH"] = "17"
+    shardlist = partial(wds.PytorchShardList, verbose=True, epoch_shuffle=True, shuffle=True)
+    os.environ["WDS_EPOCH"] = "7"
     ds = wds.WebDataset(urls, shardlist=shardlist)
     dl = torch.utils.data.DataLoader(ds, num_workers=4)
     count = count_samples_tuple(dl)
