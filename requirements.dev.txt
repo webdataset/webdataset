@@ -13,6 +13,9 @@ flake8
 pydocstyle
 bandit
 
+twine
+wheel
+
 #Pillow
 #numpy
 #scipy
@@ -20,5 +23,3 @@ bandit
 #mkdocs
 #nbconvert
 #pynvim
-#twine
-#wheel
