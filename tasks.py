@@ -102,6 +102,16 @@ command_template = """
 
 
 @task
+def nbgen(c):
+    "Reexecute IPython Notebooks."
+    opts = "--ExecutePreprocessor.timeout=-1"
+    for nb in glob.glob("notebooks/*.ipynb"):
+        if "/convert-" in nb:
+            continue
+        c.run(f"{ACTIVATE} jupyter nbconvert {opts} --execute --to notebook {nb}")
+
+
+@task
 def gendocs(c):
     "Generate docs."
 

@@ -1,3 +1,7 @@
+mkdocs
+setuptools
+wheel
+
 torch
 torchvision
 torchaudio
@@ -13,12 +17,13 @@ flake8
 pydocstyle
 bandit
 
-#Pillow
-#numpy
-#scipy
-#matplotlib
-#mkdocs
-#nbconvert
-#pynvim
-#twine
-#wheel
+Pillow
+numpy
+scipy
+matplotlib
+twine
+wheel
+imageio
+
+nbconvert
+jupyter-contrib-nbextensions

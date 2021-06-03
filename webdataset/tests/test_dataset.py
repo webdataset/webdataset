@@ -8,6 +8,7 @@ import pickle
 from functools import partial
 
 import webdataset.dataset as wds
+import webdataset.extradatasets as eds
 from webdataset import autodecode
 from webdataset import handlers
 
@@ -53,7 +54,7 @@ def test_dataset():
 
 
 def test_mock():
-    ds = wds.MockDataset((True, True), 193)
+    ds = eds.MockDataset((True, True), 193)
     assert count_samples_tuple(ds) == 193
 
 
@@ -146,23 +147,6 @@ def test_dataset_decode_handler():
     assert count[0] == 47
     assert good[0] == 24
     assert result == 24
-
-
-def test_dataset_test():
-    obj = ("hello", "world")
-    ds = wds.WebDataset(local_data).shuffle(5).to_tuple("png;jpg cls").test(mock_sample=obj)
-    assert count_samples_tuple(ds) == 47
-
-
-def test_dataset_mock():
-    obj = ("hello", "world")
-    ds = wds.WebDataset(local_data).shuffle(5).to_tuple("png;jpg cls").test(mock_sample=obj)
-    assert count_samples_tuple(ds) == 47
-    ds.mock_length = 99
-    ds.mock = True
-    assert count_samples_tuple(ds) == 99
-    sample = next(iter(ds))
-    assert sample == obj
 
 
 def test_dataset_rename_handler():
@@ -519,22 +503,22 @@ def test_chopped():
     from torchvision import datasets
 
     ds = datasets.FakeData(size=100)
-    cds = wds.ChoppedDataset(ds, 20)
+    cds = eds.ChoppedDataset(ds, 20)
     assert len(cds) == 20
     assert count_samples_tuple(cds, n=500) == 20
 
     ds = datasets.FakeData(size=100)
-    cds = wds.ChoppedDataset(ds, 250)
+    cds = eds.ChoppedDataset(ds, 250)
     assert len(cds) == 250
     assert count_samples_tuple(cds, n=500) == 250
 
     ds = datasets.FakeData(size=100)
-    cds = wds.ChoppedDataset(ds, 77, nominal=250)
+    cds = eds.ChoppedDataset(ds, 77, nominal=250)
     assert len(cds) == 250
     assert count_samples_tuple(cds, n=500) == 77
 
     ds = datasets.FakeData(size=100)
-    cds = wds.ChoppedDataset(ds, 250, nominal=77)
+    cds = eds.ChoppedDataset(ds, 250, nominal=77)
     assert len(cds) == 77
     assert count_samples_tuple(cds, n=500) == 250
 
@@ -547,11 +531,6 @@ def test_repeat():
 def test_repeat2():
     ds = wds.WebDataset(local_data).batched(2)
     assert count_samples_tuple(ds.repeat(nbatches=20)) == 20
-
-
-def test_repeat3():
-    ds = wds.WebDataset(local_data).batched(2)
-    assert count_samples_tuple(ds.repeat(nsamples=7)) == 4
 
 
 def test_webloader():
