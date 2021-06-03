@@ -18,9 +18,9 @@ from .dataset import (
     WebDataset,
     WebLoader,
     Processor,
-    ChoppedDataset,
-    ResizedDataset,
-    MockDataset,
+)
+from .extradatasets import (
+    MockDataset
 )
 from .handlers import (
     reraise_exception,
