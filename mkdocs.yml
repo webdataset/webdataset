@@ -15,8 +15,8 @@ nav:
       - Sharding: sharding.md
       - Sources: sources.md
       - Writing: writing.md
-    - Dataset Conversions:
       - Video Loading: video-loading-example.md
-      - Falling Things: falling-things-make-shards.md
-      - Objectron: objectron-conversion.md
+    - Dataset Conversions:
+      - Falling Things: convert-falling-things.md
+      - Objectron: convert-objectron.md
 theme: readthedocs

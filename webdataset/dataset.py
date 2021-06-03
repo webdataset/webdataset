@@ -475,8 +475,6 @@ class Shorthands:
         self,
         nepochs=None,
         nbatches=None,
-        nsamples=None,
-        batchsize=utils.guess_batchsize,
     ):
         """Repeat samples from the source dataset iterator.
 
@@ -484,17 +482,17 @@ class Shorthands:
 
         :param nepochs: maximum number of epochs
         :param nbatches: maximum number of batches
-        :param nsamples: maximum number of samples
-        :param batchsize: integer giving batchsize, or function to compute it
         """
         from .extradatasets import Repeatedly
         return self.compose(
             Repeatedly,
             nepochs=nepochs,
             nbatches=nbatches,
-            nsamples=nsamples,
-            batchsize=batchsize,
         )
+
+    def by_epoch(self, length):
+        return extradatasets.ChoppedDataset(self, length)
+
 
     def ddp_equalize(self, length):
         """Equalize number of training samples in DistributedDataParallel training.

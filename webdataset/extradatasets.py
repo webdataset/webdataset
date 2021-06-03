@@ -21,7 +21,7 @@ from .pytorch import IterableDataset
 from . import dataset
 from . import utils
 
-class MockDataset(IterableDataset):
+class MockDataset(IterableDataset, dataset.Composable, dataset.Shorthands):
     """MockDataset.
 
     A mock dataset for performance testing and unit testing.
@@ -49,19 +49,15 @@ class MockDataset(IterableDataset):
 class Repeatedly(IterableDataset, dataset.Composable, dataset.Shorthands):
     """Repeatedly yield samples from a dataset."""
 
-    def __init__(self, nepochs=None, nbatches=None, nsamples=None, batchsize=None, length=None):
+    def __init__(self, nepochs=None, nbatches=None, length=None):
         """Create an instance of Repeatedly.
 
         :param nepochs: repeat for a maximum of nepochs
         :param nbatches: repeat for a maximum of nbatches
-        :param nsamples: repeat for a maximum of nsamples (requires batchsize)
-        :param batchsize: integer or function of sample returning batch size
         """
         self.length = length
         self.nepochs = nepochs
         self.nbatches = nbatches
-        self.nsamples = nsamples
-        self.batchsize = batchsize
 
     def __iter__(self):
         """Return an iterator that iterates repeatedly over a source."""
@@ -69,8 +65,6 @@ class Repeatedly(IterableDataset, dataset.Composable, dataset.Shorthands):
             self.source,
             nepochs=self.nepochs,
             nbatches=self.nbatches,
-            nsamples=self.nsamples,
-            batchsize=self.batchsize,
         )
 
     def __len__(self):
