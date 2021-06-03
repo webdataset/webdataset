@@ -36,10 +36,6 @@ class MockDataset(IterableDataset, dataset.Composable, dataset.Shorthands):
         self.sample = sample
         self.length = length
 
-    def __len__(self):
-        """Return the length of this mock dataset."""
-        return self.length
-
     def __iter__(self):
         """Return an iterator over this mock dataset."""
         for i in range(self.length):
@@ -67,19 +63,6 @@ class Repeatedly(IterableDataset, dataset.Composable, dataset.Shorthands):
             nbatches=self.nbatches,
         )
 
-    def __len__(self):
-        """Return the length of the source."""
-        if callable(self.length):
-            return self.length(self.source)
-        if self.length is not None:
-            return self.length
-        if self.nepochs is not None:
-            return len(self.source) * self.nepochs
-        if self.nbatches is not None:
-            return self.nbatches
-        if self.nsamples is not None:
-            raise ValueError("can't compute size for nsamples; please specify with length= argument")
-
 
 class DatasetTest(IterableDataset, dataset.Composable, dataset.Shorthands):
     """Perform final checks on an IterableDataset and permit easy mock tests.
@@ -105,22 +88,6 @@ class DatasetTest(IterableDataset, dataset.Composable, dataset.Shorthands):
         self.mock_length = mock_length
         self.mock_sample = mock_sample
 
-    def __len__(self):
-        """Return the length of the test object.
-
-        This is either the length of the mock object when in mock mode,
-        otherwise the length of the underlying dataset/data loader.
-        """
-        if self.mock:
-            return self.mock_length
-        elif self.length is True:
-            return len(self.source)
-        elif isinstance(self.length, int):
-            return self.length
-        elif callable(self.length):
-            return self.length(self.source)
-        else:
-            raise ValueError(f"{self.length}: not a valid length specification")
 
     def __iter__(self):
         """Return an iterator either over the mock object or the underlying dataset."""
@@ -137,7 +104,7 @@ class DatasetTest(IterableDataset, dataset.Composable, dataset.Shorthands):
                 yield sample
 
 
-class ChoppedDataset(IterableDataset):
+class ChoppedDataset(IterableDataset, dataset.Composable, dataset.Shorthands):
     """Change the actual and nominal length of an IterableDataset.
 
     This will continuously iterate through the original dataset, but
@@ -163,10 +130,6 @@ class ChoppedDataset(IterableDataset):
         self.nominal = self.length if nominal is None else nominal
         self.source = None
 
-    def __len__(self):
-        """Return the length of the dataset."""
-        return self.nominal
-
     def __getstate__(self):
         """Return the pickled state of the dataset.
 
@@ -191,3 +154,24 @@ class ChoppedDataset(IterableDataset):
                 sample = next(self.source)
             yield sample
 
+
+class FakeLength(IterableDataset, dataset.Composable, dataset.Shorthands):
+    """Repeatedly yield samples from a dataset."""
+
+    def __init__(self, dataset, length):
+        """Create an instance of Repeatedly.
+
+        :param dataset: source dataset
+        :param length: stated length
+        """
+        super().__init__()
+        self.dataset = dataset
+        self.length = length
+
+    def __iter__(self):
+        """Return an iterator that iterates repeatedly over a source."""
+        return iter(source)
+
+    def __len__(self):
+        """Return the user specified length."""
+        return self.length
