@@ -59,6 +59,7 @@ def basichandlers(key, data):
     :param data: binary data to be decoded
     """
     extension = re.sub(r".*[.]", "", key)
+
     if extension in "txt text transcript":
         return data.decode("utf-8")
 
