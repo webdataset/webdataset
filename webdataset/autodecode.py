@@ -6,8 +6,6 @@
 
 """Automatically decode webdataset samples."""
 
-__all__ = "WebDataset tariterator default_handlers imagehandler".split()
-
 import io
 import json
 import os

@@ -1,5 +1,22 @@
 site_name: webdataset
+repo_url: http://github.com/webdataset/webdataset
+docs_dir: docsrc
+site_dir: docs
 nav:
     - Home: index.md
-    - Module Docs: pydoc.md
+    - API: api/index.html
+    - Examples:
+      - Getting Started: gettingstarted.md
+      - Creating Webdatasets: creating.md
+      - Decoding: decoding.md
+      - Desktop Usage: desktop.md
+      - How It Works: howitworks.md
+      - Multinode: multinode.md
+      - Sharding: sharding.md
+      - Sources: sources.md
+      - Writing: writing.md
+    - Dataset Conversions:
+      - Video Loading: video-loading-example.md
+      - Falling Things: falling-things-make-shards.md
+      - Objectron: objectron-conversion.md
 theme: readthedocs

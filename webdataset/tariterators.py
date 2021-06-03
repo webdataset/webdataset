@@ -67,7 +67,7 @@ def shardlist(urls, *, shuffle=False):
 def url_opener(data, handler=reraise_exception, **kw):
     """Given a stream of url names (packaged in `dict(url=url)`), yield opened streams."""
     for sample in data:
-        assert isinstance(sample, dict)
+        assert isinstance(sample, dict), sample
         assert "url" in sample
         try:
             stream = gopen.gopen(sample["url"], **kw)

@@ -18,7 +18,6 @@ venv
 EXTRA
 cache.db
 cache
-*.md
 *_files
 dask-worker-space
 *.db
@@ -28,3 +27,4 @@ docs/webdataset
 *.mdb
 dist
 webdataset.egg-info
+docsrc/*.md

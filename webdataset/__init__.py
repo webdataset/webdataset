@@ -7,12 +7,12 @@
 
 """Exported globals for webdataset library."""
 
-__all__ = "tenbin dataset writer".split()
-
 from . import tenbin
 from .fluid import Dataset
 from .dataset import (
-    ShardList,
+    SimpleShardList,
+    PytorchShardList,
+    ResampledShards,
     Composable,
     Shorthands,
     WebDataset,
@@ -21,10 +21,6 @@ from .dataset import (
     ChoppedDataset,
     ResizedDataset,
     MockDataset,
-)
-from .workerenv import (
-    split_by_node,
-    split_by_worker,
 )
 from .handlers import (
     reraise_exception,

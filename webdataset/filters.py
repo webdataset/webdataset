@@ -50,7 +50,6 @@ class Curried(object):
         return Curried2(self.f, *args, **kw)
 
 
-map_stream = Curried(iterators.map_stream)
 info = Curried(iterators.info)
 shuffle = Curried(iterators.shuffle)
 select = Curried(iterators.select)

@@ -6,6 +6,7 @@
 
 """Miscellaneous utility functions."""
 
+import sys
 import re
 import importlib
 import itertools as itt
@@ -33,7 +34,7 @@ def lookup_sym(sym, modules):
     return None
 
 
-def repeatedly0(loader, nepochs=999999999, nbatches=999999999999):
+def repeatedly0(loader, nepochs=sys.maxsize, nbatches=sys.maxsize):
     """Repeatedly returns batches from a DataLoader."""
     for epoch in range(nepochs):
         for sample in itt.islice(loader, nbatches):

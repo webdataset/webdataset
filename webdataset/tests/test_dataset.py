@@ -1,13 +1,13 @@
 import io
-
+import os
 import numpy as np
 import PIL
 import pytest
 import torch
 import pickle
+from functools import partial
 
 import webdataset.dataset as wds
-from webdataset import utils
 from webdataset import autodecode
 from webdataset import handlers
 
@@ -24,7 +24,7 @@ def identity(x):
     return x
 
 
-def count_samples_tuple(source, *args, n=1000):
+def count_samples_tuple(source, *args, n=10000):
     count = 0
     for i, sample in enumerate(iter(source)):
         if i >= n:
@@ -115,6 +115,16 @@ def test_dataset_missing_rename_raises():
     with pytest.raises(ValueError):
         ds = wds.WebDataset(local_data).rename(x="foo", y="bar")
         count_samples_tuple(ds)
+
+
+def test_dataset_rsample():
+
+    ds = wds.WebDataset(local_data).rsample(1.0)
+    assert count_samples_tuple(ds) == 47
+
+    ds = wds.WebDataset(local_data).rsample(0.5)
+    result = [count_samples_tuple(ds) for _ in range(300)]
+    assert np.mean(result) >= 0.3 * 47 and np.mean(result) <= 0.7 * 47, np.mean(result)
 
 
 def test_dataset_decode_handler():
@@ -340,6 +350,33 @@ def test_dataloader():
     assert count_samples_tuple(dl, n=100) == 100
 
 
+def test_multimode():
+    import torch
+
+    urls = [local_data] * 8
+    nsamples = 47 * 8
+
+    shardlist = partial(wds.PytorchShardList, verbose=True, epoch_shuffle=True, shuffle=True)
+    os.environ["WDS_EPOCH"] = "7"
+    ds = wds.WebDataset(urls, shardlist=shardlist)
+    dl = torch.utils.data.DataLoader(ds, num_workers=4)
+    count = count_samples_tuple(dl)
+    assert count == nsamples, count
+    del os.environ["WDS_EPOCH"]
+
+    shardlist = partial(wds.PytorchShardList, verbose=True, split_by_worker=False)
+    ds = wds.WebDataset(urls, shardlist=shardlist)
+    dl = torch.utils.data.DataLoader(ds, num_workers=4)
+    count = count_samples_tuple(dl)
+    assert count == 4 * nsamples, count
+
+    shardlist = wds.ResampledShards
+    ds = wds.WebDataset(urls, shardlist=shardlist).slice(170)
+    dl = torch.utils.data.DataLoader(ds, num_workers=4)
+    count = count_samples_tuple(dl)
+    assert count == 170 * 4, count
+
+
 def test_handlers():
     def mydecoder(data):
         return PIL.Image.open(io.BytesIO(data)).resize((128, 128))
@@ -392,7 +429,9 @@ def test_shard_syntax():
 
 
 def test_pipe():
-    ds = wds.WebDataset(f"pipe:curl -s '{remote_loc}{remote_shards}'").shuffle(100).to_tuple("jpg;png", "json")
+    ds = (
+        wds.WebDataset(f"pipe:curl -s '{remote_loc}{remote_shards}'").shuffle(100).to_tuple("jpg;png", "json")
+    )
     assert count_samples_tuple(ds, n=10) == 10
 
 

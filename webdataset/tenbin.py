@@ -31,14 +31,10 @@ Header chunks have the following structure:
 - ...
 """
 
+import sys
 import struct
 
 import numpy as np
-
-__all__ = """
-read write save load
-zsend_single zrecv_single zsend_multipart zrecv_multipart sctp_send sctp_recv
-""".split()
 
 
 def bytelen(a):
@@ -263,7 +259,7 @@ def write(stream, l, infos=None):
         write_chunk(stream, chunk)
 
 
-def read(stream, n=999999, infos=False):
+def read(stream, n=sys.maxsize, infos=False):
     """Read a list of arrays from a stream, with magics, length, and padding."""
     chunks = []
     for _ in range(n):

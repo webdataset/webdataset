@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  
+  
+  <link rel="shortcut icon" href="../img/favicon.ico">
+  <title>Creating Webdatasets - webdataset</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700" />
+
+  <link rel="stylesheet" href="../css/theme.css" />
+  <link rel="stylesheet" href="../css/theme_extra.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css" />
+  
+  <script>
+    // Current page data
+    var mkdocs_page_name = "Creating Webdatasets";
+    var mkdocs_page_input_path = "creating.md";
+    var mkdocs_page_url = null;
+  </script>
+  
+  <script src="../js/jquery-2.1.1.min.js" defer></script>
+  <script src="../js/modernizr-2.8.3.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script> 
+  
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+        <a href=".." class="icon icon-home"> webdataset</a>
+        <div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="..">Home</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="" href="../api/index.html">API</a>
+                    </li>
+                </ul>
+                <p class="caption"><span class="caption-text">Examples</span></p>
+                <ul class="current">
+                    <li class="toctree-l1"><a class="reference internal" href="../gettingstarted/">Getting Started</a>
+                    </li>
+                    <li class="toctree-l1 current"><a class="reference internal current" href="./">Creating Webdatasets</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#using-tar">Using tar</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#the-tarp-create-command">The tarp create Command</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#programmatically-in-python">Programmatically in Python</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#direct-conversion-of-any-dataset">Direct Conversion of Any Dataset</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#direct-conversion-of-any-dataset-with-compression">Direct Conversion of Any Dataset with Compression</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#using-tarwritershardwriter-with-binary-data-lossless-writing">Using TarWriter/ShardWriter with Binary Data (Lossless Writing)</a>
+    </li>
+        </ul>
+    </li>
+    </ul>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../decoding/">Decoding</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../desktop/">Desktop Usage</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../howitworks/">How It Works</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../multinode/">Multinode</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../sharding/">Sharding</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../sources/">Sources</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../writing/">Writing</a>
+                    </li>
+                </ul>
+                <p class="caption"><span class="caption-text">Dataset Conversions</span></p>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../video-loading-example/">Video Loading</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../falling-things-make-shards/">Falling Things</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../objectron-conversion/">Objectron</a>
+                    </li>
+                </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="..">webdataset</a>
+      </nav>
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="..">Docs</a> &raquo;</li>
+    
+      
+        
+          <li>Examples &raquo;</li>
+        
+      
+    
+    <li>Creating Webdatasets</li>
+    <li class="wy-breadcrumbs-aside">
+      
+        <a href="http://github.com/webdataset/webdataset/edit/master/docs/creating.md"
+          class="icon icon-github"> Edit on GitHub</a>
+      
+    </li>
+  </ul>
+  
+  <hr/>
+</div>
+          <div role="main">
+            <div class="section">
+              
+                <pre><code class="language-python">import webdataset as wds
+import torchvision
+import sys
+</code></pre>
+<h1 id="creating-a-webdataset">Creating a WebDataset</h1>
+<h2 id="using-tar">Using <code>tar</code></h2>
+<p>Since WebDatasets are just regular tar files, you can usually create them by just using the <code>tar</code> command. All you have to do is to arrange for any files that should be in the same sample to share the same basename. Many datasets already come that way. For those, you can simply create a WebDataset with</p>
+<pre><code>$ tar --sort=name -cf dataset.tar dataset/
+</code></pre>
+<p>If your dataset has some other directory layout, you may need a different file name in the archive from the name on disk. You can use the <code>--transform</code> argument to GNU tar to transform file names. You can also use the <code>-T</code> argument to read the files from a text file and embed other options in that text file.</p>
+<h2 id="the-tarp-create-command">The <code>tarp create</code> Command</h2>
+<p>The <a href="https://github.com/tmbdev/tarp"><code>tarp</code></a> command is a little utility for manipulating <code>tar</code> archives. Its <code>create</code> subcommand makes it particularly simple to construct tar archives from files. The <code>tarp create</code> command takes a recipe for building
+a tar archive that contains lines of the form:</p>
+<pre><code>archive-name-1 source-name-1
+archive-name-2 source-name-2
+...
+</code></pre>
+<p>The source name can either be a file, "text:something", or "pipe:something".</p>
+<h2 id="programmatically-in-python">Programmatically in Python</h2>
+<p>You can also create a WebDataset with library functions in this library:</p>
+<ul>
+<li><code>webdataset.TarWriter</code> takes dictionaries containing key value pairs and writes them to disk</li>
+<li><code>webdataset.ShardWriter</code> takes dictionaries containing key value pairs and writes them to disk as a series of shards</li>
+</ul>
+<h3 id="direct-conversion-of-any-dataset">Direct Conversion of Any Dataset</h3>
+<p>Here is a quick way of converting an existing dataset into a WebDataset; this will store all tensors as Python pickles:</p>
+<pre><code class="language-python">dataset = torchvision.datasets.MNIST(root=&quot;./temp&quot;, download=True)
+sink = wds.TarWriter(&quot;mnist.tar&quot;)
+for index, (input, output) in enumerate(dataset):
+    if index%1000==0:
+        print(f&quot;{index:6d}&quot;, end=&quot;\r&quot;, flush=True, file=sys.stderr)
+    sink.write({
+        &quot;__key__&quot;: &quot;sample%06d&quot; % index,
+        &quot;input.pyd&quot;: input,
+        &quot;output.pyd&quot;: output,
+    })
+sink.close()
+</code></pre>
+<pre><code> 59000
+</code></pre>
+<pre><code class="language-python">!ls -l mnist.tar
+!tar tvf mnist.tar | head
+</code></pre>
+<pre><code>-rw-rw-r-- 1 tmb tmb 276490240 Oct 31 14:05 mnist.tar
+-r--r--r-- bigdata/bigdata 845 2020-10-31 14:05 sample000000.input.pyd
+-r--r--r-- bigdata/bigdata   5 2020-10-31 14:05 sample000000.output.pyd
+-r--r--r-- bigdata/bigdata 845 2020-10-31 14:05 sample000001.input.pyd
+-r--r--r-- bigdata/bigdata   5 2020-10-31 14:05 sample000001.output.pyd
+-r--r--r-- bigdata/bigdata 845 2020-10-31 14:05 sample000002.input.pyd
+-r--r--r-- bigdata/bigdata   5 2020-10-31 14:05 sample000002.output.pyd
+-r--r--r-- bigdata/bigdata 845 2020-10-31 14:05 sample000003.input.pyd
+-r--r--r-- bigdata/bigdata   5 2020-10-31 14:05 sample000003.output.pyd
+-r--r--r-- bigdata/bigdata 845 2020-10-31 14:05 sample000004.input.pyd
+-r--r--r-- bigdata/bigdata   5 2020-10-31 14:05 sample000004.output.pyd
+tar: write error
+</code></pre>
+<p>Storing data as Python pickles allows most common Python datatypes to be stored, it is lossless, and the format is fast to decode.
+However, it is uncompressed and cannot be read by non-Python programs. It's often better to choose other storage formats, e.g.,
+taking advantage of common image compression formats.</p>
+<h3 id="direct-conversion-of-any-dataset-with-compression">Direct Conversion of Any Dataset with Compression</h3>
+<p>If you know that the input is an image and the output is an integer class, you can also write something like this:</p>
+<pre><code class="language-python">dataset = torchvision.datasets.MNIST(root=&quot;./temp&quot;, download=True)
+sink = wds.TarWriter(&quot;mnist.tar&quot;)
+for index, (input, output) in enumerate(dataset):
+    if index%1000==0:
+        print(f&quot;{index:6d}&quot;, end=&quot;\r&quot;, flush=True, file=sys.stderr)
+    sink.write({
+        &quot;__key__&quot;: &quot;sample%06d&quot; % index,
+        &quot;ppm&quot;: input,
+        &quot;cls&quot;: output,
+    })
+sink.close()
+</code></pre>
+<pre><code> 59000
+</code></pre>
+<pre><code class="language-python">!ls -l mnist.tar
+!tar tvf mnist.tar | head
+</code></pre>
+<pre><code>-rw-rw-r-- 1 tmb tmb 276490240 Oct 31 14:05 mnist.tar
+-r--r--r-- bigdata/bigdata   1 2020-10-31 14:05 sample000000.cls
+-r--r--r-- bigdata/bigdata 797 2020-10-31 14:05 sample000000.ppm
+-r--r--r-- bigdata/bigdata   1 2020-10-31 14:05 sample000001.cls
+-r--r--r-- bigdata/bigdata 797 2020-10-31 14:05 sample000001.ppm
+-r--r--r-- bigdata/bigdata   1 2020-10-31 14:05 sample000002.cls
+-r--r--r-- bigdata/bigdata 797 2020-10-31 14:05 sample000002.ppm
+-r--r--r-- bigdata/bigdata   1 2020-10-31 14:05 sample000003.cls
+-r--r--r-- bigdata/bigdata 797 2020-10-31 14:05 sample000003.ppm
+-r--r--r-- bigdata/bigdata   1 2020-10-31 14:05 sample000004.cls
+-r--r--r-- bigdata/bigdata 797 2020-10-31 14:05 sample000004.ppm
+tar: write error
+</code></pre>
+<p>All we needed to do was to change the key from <code>.input.pyd</code> to <code>.ppm</code>; this will trigger using an image compressor (in this case, writing the image in PPM format). You can use different image types depending on what speed, compression, and quality tradeoffs you want to make. If you want to encode data yourself, you can simply convert it to a byte string yourself, store it under the desired key in the sample, and that binary string will get written out.</p>
+<h3 id="using-tarwritershardwriter-with-binary-data-lossless-writing">Using <code>TarWriter</code>/<code>ShardWriter</code> with Binary Data (Lossless Writing)</h3>
+<p>The <code>assert</code> statements in that loop are not necessary, but they document and illustrate the expectations for this
+particular dataset. Generally, the ".jpg" encoder can actually encode a wide variety of array types as images. The
+".cls" encoder always requires an integer for encoding.</p>
+<p>Here is how you can use <code>TarWriter</code> for writing a dataset without using an encoder:</p>
+<pre><code class="language-Python">sink = wds.TarWriter(&quot;dest.tar&quot;, encoder=False)
+for basename in basenames:
+    with open(f&quot;{basename}.png&quot;, &quot;rb&quot;) as stream):
+        image = stream.read()
+    cls = lookup_cls(basename)
+    sample = {
+        &quot;__key__&quot;: basename,
+        &quot;input.png&quot;: image,
+        &quot;target.cls&quot;: cls
+    }
+    sink.write(sample)
+sink.close()
+</code></pre>
+<p>Since no encoder is used, if you want to be able to read this data with the default decoder, <code>image</code> must contain a byte string corresponding to a PNG image (as indicated by the ".png" extension on its dictionary key), and <code>cls</code> must contain an integer encoded in ASCII (as indicated by the ".cls" extension on its dictionary key).</p>
+              
+            </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="../decoding/" class="btn btn-neutral float-right" title="Decoding">Next <span class="icon icon-circle-arrow-right"></span></a>
+      
+      
+        <a href="../gettingstarted/" class="btn btn-neutral" title="Getting Started"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+    
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+      
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="versions">
+    <span class="rst-current-version" data-toggle="rst-current-version">
+      
+          <a href="http://github.com/webdataset/webdataset/" class="fa fa-github" style="float: left; color: #fcfcfc"> GitHub</a>
+      
+      
+        <span><a href="../gettingstarted/" style="color: #fcfcfc;">&laquo; Previous</a></span>
+      
+      
+        <span style="margin-left: 15px"><a href="../decoding/" style="color: #fcfcfc">Next &raquo;</a></span>
+      
+    </span>
+</div>
+    <script>var base_url = '..';</script>
+    <script src="../js/theme.js" defer></script>
+      <script src="../search/main.js" defer></script>
+    <script defer>
+        window.onload = function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        };
+    </script>
+
+</body>
+</html>

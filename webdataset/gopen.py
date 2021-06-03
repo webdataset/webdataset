@@ -7,8 +7,6 @@
 
 """Open URLs by calling subcommands."""
 
-__all__ = "gopen gopen_schemes".split()
-
 import os
 import sys
 from subprocess import PIPE, Popen

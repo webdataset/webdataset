@@ -11,8 +11,6 @@ in webdataset.filters, and you can find IterableDataset wrappers in
 webdataset.processing.
 """
 
-__all__ = "WebDataset tariterator default_handlers imagehandler".split()
-
 import random
 import sys
 from functools import reduce
@@ -362,3 +360,11 @@ def unbatched(data):
         assert len(sample) > 0
         for i in range(len(sample[0])):
             yield tuple(x[i] for x in sample)
+
+
+def rsample(data, p=0.5):
+    """Randomly subsample a stream of data."""
+    assert p >= 0.0 and p <= 1.0
+    for sample in data:
+        if random.uniform(0.0, 1.0) < p:
+            yield sample

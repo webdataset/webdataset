@@ -12,15 +12,14 @@ Code works locally or over HTTP connections.
 
 import itertools as itt
 import os
+import sys
 import random
-import warnings
 
 import braceexpand
 
 from . import autodecode, dbcache, iterators, shardcache, tariterators, utils
 from .utils import lookup_sym, safe_eval
 from .handlers import reraise_exception
-from .workerenv import split_by_node, split_by_worker, get_worker_environment
 
 try:
     from torch.utils.data import IterableDataset, DataLoader
@@ -57,18 +56,6 @@ class MockDataset(IterableDataset):
         """Return an iterator over this mock dataset."""
         for i in range(self.length):
             yield self.sample
-
-
-def warn_no_samples(data):
-    """Warn if the iterator yields no samples."""
-    count = 0
-    for sample in data:
-        yield sample
-        count += 1
-    if count == 0:
-        env = get_worker_environment()
-        if env.rank > 0:
-            warnings.warn(f"no samples at all in node {env.rank}, worker {env.worker}")
 
 
 class Composable:
@@ -111,60 +98,193 @@ class Composable:
         return constructor(*args, **kw).source_(self)
 
 
-class ShardList(IterableDataset, Composable):
+class SimpleShardList(IterableDataset, Composable):
     """An iterable dataset yielding a list of urls."""
 
     def __init__(
         self,
         urls,
-        shuffle=False,
-        nodesplitter=True,
-        splitter=True,
         length=None,
     ):
-        """Create a ShardList.
+        """Iterate through the list of shards.
 
         :param urls: a list of URLs as a Python list or brace notation string
-        :param shuffle: whether to shuffle the URLs
-        :param nodesplitter: function for splitting urls across nodes (None: don't split)
-        :param splitter: function for splitting urls across workers (None: don't split)
-        :param length: user-specified length; this is returned unchanged by the len() function
         """
         super().__init__()
-        self.shuffle = shuffle
-        self.length = length
-        if nodesplitter is None:
-            self.nodesplitter = utils.identity
-        elif nodesplitter is True:
-            self.nodesplitter = split_by_node
-        else:
-            assert callable(nodesplitter)
-            self.nodesplitter = nodesplitter
-        if splitter is None:
-            self.splitter = utils.identity
-        elif splitter is True:
-            self.splitter = split_by_worker
-        else:
-            assert callable(splitter)
-            self.splitter = splitter
         if isinstance(urls, str):
             urls = list(braceexpand.braceexpand(urls))
         else:
             urls = list(urls)
         self.urls = urls
+        self.length = length
         assert isinstance(self.urls[0], str)
 
     def __iter__(self):
         """Return an iterator over the shards."""
-        urls = list(self.urls)
-        urls = list(self.nodesplitter(urls))
-        urls = list(self.splitter(urls))
-        if callable(self.shuffle):
-            self.shuffle(urls)
-        elif self.shuffle:
-            random.shuffle(urls)
-        for url in urls:
+        for url in self.urls:
             yield dict(url=url)
+
+    def __len__(self):
+        """Return the user-specified length of this dataset."""
+        if self.length is None:
+            raise ValueError("length requested, but no length specified for ShardIterator")
+        return self.length
+
+
+class PytorchEnv:
+    """A class encapsulating the PyTorch node/worker environment."""
+
+    def __init__(self, group=None):
+        """Initialize rank/worker information."""
+        super().__init__()
+        self.rank = None
+        self.worker = None
+        self.group = group
+        self.update_env()
+
+    def update_env(self):
+        """Update information about node and worker environment.
+
+        This code is written this way because the torch.distributed info is
+        available only in the environment where the loader is created.
+        This class retains that environment info when it is serialized.
+        """
+        import torch
+        import torch.distributed
+        from . import gopen
+        import socket
+
+        self.nodeinfo = (socket.gethostname(), os.getpid())
+
+        if self.rank is None:
+            if torch.distributed.is_available() and torch.distributed.is_initialized():
+                group = self.group or torch.distributed.group.WORLD
+                self.rank = torch.distributed.get_rank(group=group), torch.distributed.get_world_size(
+                    group=group
+                )
+
+        if self.worker is None:
+            worker_info = torch.utils.data.get_worker_info()
+            if worker_info is not None:
+                self.worker = worker_info.id, worker_info.num_workers
+
+        gopen.info["nodeinfo"] = self.nodeinfo
+        gopen.info["rank"], gopen.info["size"] = self.rank or (-1, -1)
+        gopen.info["worker_id"], gopen.info["num_workers"] = self.worker or (-1, -1)
+
+
+class PytorchShardList(IterableDataset, Composable, PytorchEnv):
+    """An iterable dataset yielding a list of urls.
+
+    This understands the PyTorch distributed and worker APIs and splits shards
+    accordingly.
+    """
+
+    def __init__(
+        self,
+        urls,
+        epoch_shuffle=False,
+        shuffle=False,
+        split_by_worker=True,
+        split_by_node=True,
+        length=None,
+        verbose=False,
+    ):
+        """Create a ShardList.
+
+        :param urls: a list of URLs as a Python list or brace notation string
+        :param shuffle: shuffle samples before iterating
+        :param length: user-specified length; this is returned unchanged by the len() function
+        :param split_by_node: split shards by node if True
+        :param split_by_worker: split shards by worker if True
+        :param group: group used for determining rank/world_size
+
+        If WDS_SHUFFLE is in the environment, it is used for shuffling shards prior
+        to splitting; this assigns different shards to different nodes on each epoch.
+        """
+        super().__init__()
+
+        self.verbose = verbose
+        if self.verbose:
+            print("PytorchShardList init")
+        self.epoch = 0
+        self.epoch_shuffle = epoch_shuffle
+        self.shuffle = shuffle
+        self.length = length
+        if isinstance(urls, str):
+            urls = list(braceexpand.braceexpand(urls))
+        else:
+            urls = list(urls)
+        self.urls = list(urls)
+        assert isinstance(self.urls[0], str)
+        self.split_by_worker = split_by_worker
+        self.split_by_node = split_by_node
+
+    def __iter__(self):
+        """Return an iterator over the shards."""
+        self.epoch += 1
+        self.update_env()
+        urls = self.urls.copy()
+        if self.epoch_shuffle:
+            if "WDS_EPOCH" not in os.environ:
+                raise ValueError(
+                    "when specifying epoch_shuffle, you must provide the epoch in the WDS_EPOCH environment variable"
+                )
+            epoch = int(os.environ["WDS_EPOCH"])
+            if self.verbose:
+                print(f"PytorchShardList epochshuffle {epoch}")
+            random.Random(epoch).shuffle(urls)
+        if self.split_by_node:
+            rank, world = self.rank or (0, 1)
+            if self.verbose:
+                print(f"PytorchShardList rank {rank} of {world}")
+            urls = urls[rank::world]
+        if self.split_by_worker:
+            worker, nworkers = self.worker or (0, 1)
+            if self.verbose:
+                print(f"PytorchShardList worker {worker} of {nworkers}")
+            urls = urls[worker::nworkers]
+        if self.shuffle:
+            random.Random(self.epoch + 17).shuffle(urls)
+        if self.verbose:
+            print(f"PytorchShardList got {len(urls)} urls")
+        for url in urls:
+            yield dict(url=url, worker=str(self.worker), rank=str(self.rank), nodeinfo=str(self.nodeinfo))
+
+    def __len__(self):
+        """Return the user-specified length of this dataset."""
+        if self.length is None:
+            raise ValueError("length requested, but no length specified for ShardIterator")
+        return self.length
+
+
+class ResampledShards(IterableDataset, Composable):
+    """An iterable dataset yielding a list of urls."""
+
+    def __init__(
+        self,
+        urls,
+        nshards=sys.maxsize,
+        length=None,
+    ):
+        """Sample shards from the shard list with replacement.
+
+        :param urls: a list of URLs as a Python list or brace notation string
+        """
+        super().__init__()
+        if isinstance(urls, str):
+            urls = list(braceexpand.braceexpand(urls))
+        else:
+            urls = list(urls)
+        self.urls = urls
+        self.nshards = nshards
+        self.length = length
+        assert isinstance(self.urls[0], str)
+
+    def __iter__(self):
+        """Return an iterator over the shards."""
+        for _ in range(self.nshards):
+            yield dict(url=random.choice(self.urls))
 
     def __len__(self):
         """Return the user-specified length of this dataset."""
@@ -329,15 +449,6 @@ class Shorthands:
         """
         return self.then(iterators.map_tuple, *args, handler=handler)
 
-    def pipe(self, f, *args, **kw):
-        """Pipe the sample stream through the given function.
-
-        :param f: function obtaining an iterator as a sample and yielding samples
-        :param args: arguments to the function
-        :param kw: keyword arguments
-        """
-        return self.then(f, *args, _kwa=kw)
-
     def dbcache(self, fname, size):
         """Cache training samples in an SQLite database.
 
@@ -348,6 +459,18 @@ class Shorthands:
         """
         return self.compose(dbcache.DBCache, fname, size)
 
+    def associate(self, associator):
+        """Slice the stream of training samples.
+
+        Associates information from the associator with the current sample.
+        The associator should either be a function or a hash table. It is
+        invoked with the sample key as an argument and must return a dictionary
+        of information that is merged with the sample.
+
+        :param associator: callable or dictionary-like object
+        """
+        return self.then(iterators.associate, associator)
+
     def slice(self, *args):
         """Slice the stream of training samples.
 
@@ -355,7 +478,28 @@ class Shorthands:
 
         :param args: arguments to itertools.islice
         """
-        return self.pipe(itt.islice, *args)
+        if len(args) == 0:
+            return self
+        start = 0
+        stop = sys.maxsize
+        step = 1
+        if len(args) == 1:
+            (stop,) = args
+        elif len(args) == 2:
+            start, stop = args
+        elif len(args) == 3:
+            start, stop, step = args
+        new_length = (stop - start) // step
+        result = self.then(itt.islice, *args)
+        result.length = new_length
+        return result
+
+    def rsample(self, p=0.5):
+        """Randomly subsample a stream of samples.
+
+        :param args: probability of including a sample in the output stream.
+        """
+        return self.then(iterators.rsample, p)
 
     def repeat(
         self,
@@ -422,7 +566,7 @@ class Shorthands:
         if torch.distributed.is_initialized():
             world_size = torch.distributed.get_world_size()
         numbatches = length // world_size
-        result = self.repeat(999999999).slice(numbatches)
+        result = self.repeat(sys.maxsize).slice(numbatches)
         result.length = numbatches
         return result
 
@@ -446,7 +590,13 @@ class Repeatedly(IterableDataset, Composable, Shorthands):
 
     def __iter__(self):
         """Return an iterator that iterates repeatedly over a source."""
-        return utils.repeatedly(self.source, nepochs=self.nepochs, nbatches=self.nbatches, nsamples=self.nsamples, batchsize=self.batchsize)
+        return utils.repeatedly(
+            self.source,
+            nepochs=self.nepochs,
+            nbatches=self.nbatches,
+            nsamples=self.nsamples,
+            batchsize=self.batchsize,
+        )
 
     def __len__(self):
         """Return the length of the source."""
@@ -521,13 +671,11 @@ class Processor(IterableDataset, Composable, Shorthands):
 
 def WebDataset(
     urls,
-    shardshuffle=True,
+    shardlist=PytorchShardList,
     cache_dir=default_cache_dir,
     cache_size=default_cache_size,
     cache_name=default_cache_name,
     cache_verbose=default_cache_verbose,
-    splitter=split_by_worker,
-    nodesplitter=True,
     handler=reraise_exception,
     length=None,
     warn_empty=True,
@@ -542,10 +690,13 @@ def WebDataset(
     from `Shorthands` (`batched`, `unbatched`, `decode`, `shuffle`, etc.)
     on the result.
 
+    The recommended way of specifying novel ways of splitting shards is
+    via writing a new shardlist class.
+
+    The old nodesplitter/splitter functionality can be used via the argument
+    `shardlist=partial(wds.ShardList, nodesplitter=..., splitter=...)`
+
     :param urls: the source URLs, specified either as a list or as a brace-expanded string
-    :param shardshuffle: boolean indicating whether the shards should be shuffled or not
-    :param splitter: a function called for splitting shards among workers (True: PyTorch default, None: no splitting)
-    :param nodesplitter: a function called for splitting shards among nodes (True: PyTorch default, None: no splitting)
     :param handler: an error handler
     :param length: the length of this dataset, should be an integer
     :param cache_dir: when set, caches shards in this directory
@@ -554,13 +705,7 @@ def WebDataset(
     :param cache_verbose: when set, prints information about caching
     :param warn_empty: warn when no samples are generated at all
     """
-    result = ShardList(
-        urls,
-        shuffle=shardshuffle,
-        splitter=splitter,
-        nodesplitter=nodesplitter,
-        length=length,
-    )
+    result = shardlist(urls)
     result = result.then(tariterators.url_opener, handler=handler)
     if cache_dir != "":
         result = result.then(
@@ -572,8 +717,6 @@ def WebDataset(
         )
     result = result.then(tariterators.tar_file_expander, length=None, handler=handler)
     result = result.then(tariterators.group_by_keys, length=length)
-    if warn_empty:
-        result = result.then(warn_no_samples)
     return result
 
 
