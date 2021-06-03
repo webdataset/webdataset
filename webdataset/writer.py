@@ -77,7 +77,8 @@ def torch_dumps(data):
     torch.save(data, stream)
     return stream.getvalue()
 
-def numpy_dump(data):
+
+def numpy_dumps(data):
     """Dump data into a bytestring using numpy npy format
     
     :param data: data to be dumped
@@ -85,9 +86,10 @@ def numpy_dump(data):
     import io
     import numpy.lib.format
     
-    sstream = io.BytesIO()
-    numpy.lib.format.write_array(data, stream)
+    stream = io.BytesIO()
+    numpy.lib.format.write_array(stream, data)
     return stream.getvalue()
+
 
 def make_handlers():
     """Create a list of handlers for encoding data."""

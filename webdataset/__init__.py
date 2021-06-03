@@ -29,7 +29,7 @@ from .handlers import (
     ignore_and_stop,
     warn_and_stop,
 )
-from .writer import ShardWriter, TarWriter, torch_dumps
+from .writer import ShardWriter, TarWriter, torch_dumps, numpy_dumps
 from .autodecode import (
     Continue,
     handle_extension,
