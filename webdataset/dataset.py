@@ -671,14 +671,13 @@ class Processor(IterableDataset, Composable, Shorthands):
 
 def WebDataset(
     urls,
-    shardlist=PytorchShardList,
     cache_dir=default_cache_dir,
     cache_size=default_cache_size,
     cache_name=default_cache_name,
     cache_verbose=default_cache_verbose,
     handler=reraise_exception,
     length=None,
-    warn_empty=True,
+    repeat=False,
 ):
     """Return a pipeline for WebDataset-style data files.
 
@@ -693,19 +692,16 @@ def WebDataset(
     The recommended way of specifying novel ways of splitting shards is
     via writing a new shardlist class.
 
-    The old nodesplitter/splitter functionality can be used via the argument
-    `shardlist=partial(wds.ShardList, nodesplitter=..., splitter=...)`
-
-    :param urls: the source URLs, specified either as a list or as a brace-expanded string
+    :param urls: the source URLs: a string, a list, or an IterableDataset
     :param handler: an error handler
-    :param length: the length of this dataset, should be an integer
     :param cache_dir: when set, caches shards in this directory
     :param cache_size: when set, specifies a maximum size for the shard cache
     :param cache_name: when set, specifies how shards should be named in the cache
     :param cache_verbose: when set, prints information about caching
-    :param warn_empty: warn when no samples are generated at all
+    :param repeat: repeat infinitely if True
     """
-    result = shardlist(urls)
+    if not isinstance(urls, IterableDataset):
+        result = PytorchShardList(urls)
     result = result.then(tariterators.url_opener, handler=handler)
     if cache_dir != "":
         result = result.then(
@@ -717,8 +713,9 @@ def WebDataset(
         )
     result = result.then(tariterators.tar_file_expander, length=None, handler=handler)
     result = result.then(tariterators.group_by_keys, length=length)
+    if repeat:
+        result = result.repeat()
     return result
-
 
 def WebLoader(*args, **kw):
     """Return a small wrapper around torch.utils.data.DataLoader.
