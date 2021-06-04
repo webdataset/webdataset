@@ -143,7 +143,7 @@ class PytorchShardList(IterableDataset, Composable, PytorchEnv):
         self,
         urls,
         epoch_shuffle=False,
-        shuffle=False,
+        shuffle=True,
         split_by_worker=True,
         split_by_node=True,
         verbose=False,
