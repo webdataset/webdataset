@@ -430,13 +430,21 @@ class Shorthands:
             nbatches=nbatches,
         )
 
-    def with_epoch(self, length):
+    def with_epoch(self, length, by_node=False):
         from .extradatasets import ChoppedDataset
+
+        if by_node:
+            import torch.distributed
+
+            if torch.distributed.is_initialized():
+                world_size = torch.distributed.world_size()
+                length = length // world_size
         return ChoppedDataset(self, length)
 
     def with_length(self, length):
         """Return an IterableDataset with a __len__ method."""
         from .extradatasets import FakeLength
+
         return FakeLength(self, length)
 
     def ddp_equalize(self, length):
@@ -552,6 +560,7 @@ def WebDataset(
     if repeat:
         result = result.repeat()
     return result
+
 
 def WebLoader(*args, **kw):
     """Return a small wrapper around torch.utils.data.DataLoader.
