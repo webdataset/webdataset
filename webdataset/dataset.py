@@ -43,7 +43,7 @@ class Composable:
         self.source = source
         return self
 
-    def then(self, f, *args, length=True, **kw):
+    def then(self, f, *args, **kw):
         """Compose this processor with a new processor defined by a function.
 
         The function is of the form:
@@ -57,7 +57,7 @@ class Composable:
         assert callable(f)
         assert "source" not in kw
         # print("Processor", args, kw)
-        return Processor(self, f, length=length, *args, **kw)
+        return Processor(self, f, *args, **kw)
 
     def compose(self, constructor, *args, **kw):
         """Compose this processor with another IterableDataset.
@@ -71,11 +71,7 @@ class Composable:
 class SimpleShardList(IterableDataset, Composable):
     """An iterable dataset yielding a list of urls."""
 
-    def __init__(
-        self,
-        urls,
-        length=None,
-    ):
+    def __init__(self, urls):
         """Iterate through the list of shards.
 
         :param urls: a list of URLs as a Python list or brace notation string
@@ -86,19 +82,12 @@ class SimpleShardList(IterableDataset, Composable):
         else:
             urls = list(urls)
         self.urls = urls
-        self.length = length
         assert isinstance(self.urls[0], str)
 
     def __iter__(self):
         """Return an iterator over the shards."""
         for url in self.urls:
             yield dict(url=url)
-
-    def __len__(self):
-        """Return the user-specified length of this dataset."""
-        if self.length is None:
-            raise ValueError("length requested, but no length specified for ShardIterator")
-        return self.length
 
 
 class PytorchEnv:
@@ -157,14 +146,12 @@ class PytorchShardList(IterableDataset, Composable, PytorchEnv):
         shuffle=False,
         split_by_worker=True,
         split_by_node=True,
-        length=None,
         verbose=False,
     ):
         """Create a ShardList.
 
         :param urls: a list of URLs as a Python list or brace notation string
         :param shuffle: shuffle samples before iterating
-        :param length: user-specified length; this is returned unchanged by the len() function
         :param split_by_node: split shards by node if True
         :param split_by_worker: split shards by worker if True
         :param group: group used for determining rank/world_size
@@ -180,7 +167,6 @@ class PytorchShardList(IterableDataset, Composable, PytorchEnv):
         self.epoch = 0
         self.epoch_shuffle = epoch_shuffle
         self.shuffle = shuffle
-        self.length = length
         if isinstance(urls, str):
             urls = list(braceexpand.braceexpand(urls))
         else:
@@ -221,12 +207,6 @@ class PytorchShardList(IterableDataset, Composable, PytorchEnv):
         for url in urls:
             yield dict(url=url, worker=str(self.worker), rank=str(self.rank), nodeinfo=str(self.nodeinfo))
 
-    def __len__(self):
-        """Return the user-specified length of this dataset."""
-        if self.length is None:
-            raise ValueError("length requested, but no length specified for ShardIterator")
-        return self.length
-
 
 class ResampledShards(IterableDataset, Composable):
     """An iterable dataset yielding a list of urls."""
@@ -235,7 +215,6 @@ class ResampledShards(IterableDataset, Composable):
         self,
         urls,
         nshards=sys.maxsize,
-        length=None,
     ):
         """Sample shards from the shard list with replacement.
 
@@ -248,44 +227,12 @@ class ResampledShards(IterableDataset, Composable):
             urls = list(urls)
         self.urls = urls
         self.nshards = nshards
-        self.length = length
         assert isinstance(self.urls[0], str)
 
     def __iter__(self):
         """Return an iterator over the shards."""
         for _ in range(self.nshards):
             yield dict(url=random.choice(self.urls))
-
-    def __len__(self):
-        """Return the user-specified length of this dataset."""
-        if self.length is None:
-            raise ValueError("length requested, but no length specified for ShardIterator")
-        return self.length
-
-
-class BatchedLength:
-    """Compute the batched length of a dataset.
-
-    We make this a class rather than a closure so that it can be pickled.
-    """
-
-    def __init__(self, batchsize, partial: bool):
-        """Initialize.
-
-        :param batchsize: batch size
-        :param partial: allow partial batches
-        """
-        self.batchsize = batchsize
-        self.partial = partial
-
-    def __call__(self, length):
-        """Compute the number of batches for the given length.
-
-        :param length: number of samples
-        """
-        # Add +1 when partial batch is allowed
-        partial_batch = len(length) % self.batchsize > 0  # True or False
-        return len(length) // self.batchsize + (1 if self.partial and partial_batch else 0)
 
 
 class Shorthands:
@@ -298,17 +245,11 @@ class Shorthands:
         :param collation_fn: collation function to turn list of objects into batches
         :param partial: return partial batches
         """
-        length = BatchedLength(batchsize, partial)
-        return self.then(
-            iterators.batched, length=length, batchsize=batchsize, collation_fn=collation_fn, partial=partial
-        )
+        return self.then(iterators.batched, batchsize=batchsize, collation_fn=collation_fn, partial=partial)
 
-    def unbatched(self, length=None):
-        """Take a stream of batches and turn it back into a stream of samples.
-
-        :param length: user-supplied length for the unbatched dataset.
-        """
-        return self.then(iterators.unbatched, length=length)
+    def unbatched(self):
+        """Take a stream of batches and turn it back into a stream of samples."""
+        return self.then(iterators.unbatched)
 
     def shuffle(self, size, **kw):
         """Shuffle the dataset using an internal shuffle buffer.
@@ -459,9 +400,7 @@ class Shorthands:
             start, stop = args
         elif len(args) == 3:
             start, stop, step = args
-        new_length = (stop - start) // step
         result = self.then(itt.islice, *args)
-        result.length = new_length
         return result
 
     def rsample(self, p=0.5):
@@ -484,15 +423,21 @@ class Shorthands:
         :param nbatches: maximum number of batches
         """
         from .extradatasets import Repeatedly
+
         return self.compose(
             Repeatedly,
             nepochs=nepochs,
             nbatches=nbatches,
         )
 
-    def by_epoch(self, length):
-        return extradatasets.ChoppedDataset(self, length)
+    def with_epoch(self, length):
+        from .extradatasets import ChoppedDataset
+        return ChoppedDataset(self, length)
 
+    def with_length(self, length):
+        """Return an IterableDataset with a __len__ method."""
+        from .extradatasets import FakeLength
+        return FakeLength(self, length)
 
     def ddp_equalize(self, length):
         """Equalize number of training samples in DistributedDataParallel training.
@@ -522,23 +467,16 @@ class Shorthands:
 class Processor(IterableDataset, Composable, Shorthands):
     """A class that turns a function into an IterableDataset."""
 
-    def __init__(self, source, f, *args, _kwa={}, length=True, **kw):
+    def __init__(self, source, f, *args, _kwa={}, **kw):
         """Create a processor.
 
         The function should take an iterator as an argument and yield
         processed samples. The function is invoked as `f(source, *args, **kw)`.
 
-        The `length` can be specified as `True`, in which case the value
-        is taken from the source dataset, as a callable, in which case
-        the length is the result of applying the callable to the source
-        dataset, or as an integer, in which case the length returned by
-        `__len__` is that integer.
-
         :param source: source dataset, an IterableDataset
         :param f: function implementing the processor
         :param args: extra arguments to the processor after the source iterator
         :param _kwa: keyword arguments
-        :param length: specified length for the output
         :param kw: extra keyword arguments
         """
         super().__init__()
@@ -548,7 +486,6 @@ class Processor(IterableDataset, Composable, Shorthands):
         self.args = args
         self.kw = dict(_kwa)
         self.kw.update(kw)
-        self.length = length
 
     def source_(self, source):
         """Set the source dataset.
@@ -564,17 +501,6 @@ class Processor(IterableDataset, Composable, Shorthands):
         assert callable(self.f), self.f
         return self.f(iter(self.source), *self.args, **self.kw)
 
-    def __len__(self):
-        """Return the length of this dataset; see above how this is computed."""
-        if self.length is True:
-            return len(self.source)
-        elif isinstance(self.length, int):
-            return self.length
-        elif callable(self.length):
-            return self.length(self.source)
-        else:
-            raise ValueError(f"{self.length}: not a valid length specification")
-
 
 def WebDataset(
     urls,
@@ -583,7 +509,6 @@ def WebDataset(
     cache_name=default_cache_name,
     cache_verbose=default_cache_verbose,
     handler=reraise_exception,
-    length=None,
     repeat=False,
 ):
     """Return a pipeline for WebDataset-style data files.
@@ -609,6 +534,10 @@ def WebDataset(
     """
     if not isinstance(urls, IterableDataset):
         result = PytorchShardList(urls)
+    elif isinstance(urls, Composable):
+        result = urls
+    else:
+        result = Composable().source_(urls)
     result = result.then(tariterators.url_opener, handler=handler)
     if cache_dir != "":
         result = result.then(
@@ -618,8 +547,8 @@ def WebDataset(
             cache_name=cache_name,
             verbose=cache_verbose,
         )
-    result = result.then(tariterators.tar_file_expander, length=None, handler=handler)
-    result = result.then(tariterators.group_by_keys, length=length)
+    result = result.then(tariterators.tar_file_expander, handler=handler)
+    result = result.then(tariterators.group_by_keys)
     if repeat:
         result = result.repeat()
     return result
@@ -638,5 +567,3 @@ def WebLoader(*args, **kw):
     :param kw: forwarded to `DataLoader`
     """
     return Processor(DataLoader(*args, **kw), utils.identity)
-
-

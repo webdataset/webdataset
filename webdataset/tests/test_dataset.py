@@ -53,6 +53,16 @@ def test_dataset():
     assert count_samples_tuple(ds) == 47
 
 
+def test_length():
+    ds = wds.WebDataset(local_data)
+    with pytest.raises(TypeError):
+        len(ds)
+    dsl = ds.with_length(1793)
+    assert len(dsl) == 1793
+    dsl2 = dsl.repeat(17).with_length(19)
+    assert len(dsl2) == 19
+
+
 def test_mock():
     ds = eds.MockDataset((True, True), 193)
     assert count_samples_tuple(ds) == 193
@@ -206,11 +216,6 @@ def test_dataset_shuffle_decode_rename_extract():
     assert isinstance(cls, int), type(cls)
 
 
-def test_dataset_len():
-    ds = wds.WebDataset(local_data, length=100)
-    assert len(ds) == 100
-
-
 def test_rgb8():
     ds = wds.WebDataset(local_data).decode("rgb8").to_tuple("png;jpg", "cls")
     assert count_samples_tuple(ds) == 47
@@ -340,22 +345,22 @@ def test_multimode():
     urls = [local_data] * 8
     nsamples = 47 * 8
 
-    shardlist = partial(wds.PytorchShardList, verbose=True, epoch_shuffle=True, shuffle=True)
+    shardlist = wds.PytorchShardList(urls, verbose=True, epoch_shuffle=True, shuffle=True)
     os.environ["WDS_EPOCH"] = "7"
-    ds = wds.WebDataset(urls, shardlist=shardlist)
+    ds = wds.WebDataset(shardlist)
     dl = torch.utils.data.DataLoader(ds, num_workers=4)
     count = count_samples_tuple(dl)
     assert count == nsamples, count
     del os.environ["WDS_EPOCH"]
 
-    shardlist = partial(wds.PytorchShardList, verbose=True, split_by_worker=False)
-    ds = wds.WebDataset(urls, shardlist=shardlist)
+    shardlist = wds.PytorchShardList(urls, verbose=True, split_by_worker=False)
+    ds = wds.WebDataset(shardlist)
     dl = torch.utils.data.DataLoader(ds, num_workers=4)
     count = count_samples_tuple(dl)
     assert count == 4 * nsamples, count
 
-    shardlist = wds.ResampledShards
-    ds = wds.WebDataset(urls, shardlist=shardlist).slice(170)
+    shardlist = wds.ResampledShards(urls)
+    ds = wds.WebDataset(shardlist).slice(170)
     dl = torch.utils.data.DataLoader(ds, num_workers=4)
     count = count_samples_tuple(dl)
     assert count == 170 * 4, count
@@ -465,8 +470,6 @@ def test_batched():
         assert tuple(sample[0].size()) == (7, 3, 224, 224), sample[0].size()
         assert isinstance(sample[1], list), type(sample[1])
         break
-    raw.length = 721
-    assert len(ds) == 721 // 7
     pickle.dumps(ds)
 
 
@@ -504,23 +507,34 @@ def test_chopped():
 
     ds = datasets.FakeData(size=100)
     cds = eds.ChoppedDataset(ds, 20)
-    assert len(cds) == 20
     assert count_samples_tuple(cds, n=500) == 20
 
     ds = datasets.FakeData(size=100)
     cds = eds.ChoppedDataset(ds, 250)
-    assert len(cds) == 250
     assert count_samples_tuple(cds, n=500) == 250
 
     ds = datasets.FakeData(size=100)
-    cds = eds.ChoppedDataset(ds, 77, nominal=250)
-    assert len(cds) == 250
+    cds = eds.ChoppedDataset(ds, 77)
     assert count_samples_tuple(cds, n=500) == 77
 
     ds = datasets.FakeData(size=100)
-    cds = eds.ChoppedDataset(ds, 250, nominal=77)
-    assert len(cds) == 77
+    cds = eds.ChoppedDataset(ds, 250)
     assert count_samples_tuple(cds, n=500) == 250
+
+    ds = datasets.FakeData(size=100)
+    cds = eds.ChoppedDataset(ds, 250)
+    assert count_samples_tuple(cds, n=500) == 250
+
+def test_with_epoch():
+    ds = wds.WebDataset(local_data)
+    for _ in range(10):
+        assert count_samples_tuple(ds) == 47
+    be = ds.with_epoch(193)
+    for _ in range(10):
+        assert count_samples_tuple(be) == 193
+    be = ds.with_epoch(2)
+    for _ in range(10):
+        assert count_samples_tuple(be) == 2
 
 
 def test_repeat():

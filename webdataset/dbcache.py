@@ -87,7 +87,7 @@ class DBCache(IterableDataset):
             (str(key), str(value)),
         )
 
-    def __len__(self):
+    def cachesize(self):
         """Return the number of samples in the cache."""
         return self.size
 
