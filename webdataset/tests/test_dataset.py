@@ -345,22 +345,22 @@ def test_multimode():
     urls = [local_data] * 8
     nsamples = 47 * 8
 
-    shardlist = partial(wds.PytorchShardList, verbose=True, epoch_shuffle=True, shuffle=True)
+    shardlist = wds.PytorchShardList(urls, verbose=True, epoch_shuffle=True, shuffle=True)
     os.environ["WDS_EPOCH"] = "7"
-    ds = wds.WebDataset(urls, shardlist=shardlist)
+    ds = wds.WebDataset(shardlist)
     dl = torch.utils.data.DataLoader(ds, num_workers=4)
     count = count_samples_tuple(dl)
     assert count == nsamples, count
     del os.environ["WDS_EPOCH"]
 
-    shardlist = partial(wds.PytorchShardList, verbose=True, split_by_worker=False)
-    ds = wds.WebDataset(urls, shardlist=shardlist)
+    shardlist = wds.PytorchShardList(urls, verbose=True, split_by_worker=False)
+    ds = wds.WebDataset(shardlist)
     dl = torch.utils.data.DataLoader(ds, num_workers=4)
     count = count_samples_tuple(dl)
     assert count == 4 * nsamples, count
 
-    shardlist = wds.ResampledShards
-    ds = wds.WebDataset(urls, shardlist=shardlist).slice(170)
+    shardlist = wds.ResampledShards(urls)
+    ds = wds.WebDataset(shardlist).slice(170)
     dl = torch.utils.data.DataLoader(ds, num_workers=4)
     count = count_samples_tuple(dl)
     assert count == 170 * 4, count

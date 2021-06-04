@@ -143,7 +143,7 @@ class PytorchShardList(IterableDataset, Composable, PytorchEnv):
         self,
         urls,
         epoch_shuffle=False,
-        shuffle=False,
+        shuffle=True,
         split_by_worker=True,
         split_by_node=True,
         verbose=False,
@@ -430,8 +430,15 @@ class Shorthands:
             nbatches=nbatches,
         )
 
-    def with_epoch(self, length):
+    def with_epoch(self, length, by_node=False):
         from .extradatasets import ChoppedDataset
+
+        if by_node:
+            import torch.distributed
+
+            if torch.distributed.is_initialized():
+                world_size = torch.distributed.world_size()
+                length = length // world_size
         return ChoppedDataset(self, length)
 
     def with_length(self, length):
@@ -504,13 +511,12 @@ class Processor(IterableDataset, Composable, Shorthands):
 
 def WebDataset(
     urls,
-    shardlist=PytorchShardList,
     cache_dir=default_cache_dir,
     cache_size=default_cache_size,
     cache_name=default_cache_name,
     cache_verbose=default_cache_verbose,
     handler=reraise_exception,
-    warn_empty=True,
+    repeat=False,
 ):
     """Return a pipeline for WebDataset-style data files.
 
@@ -525,18 +531,20 @@ def WebDataset(
     The recommended way of specifying novel ways of splitting shards is
     via writing a new shardlist class.
 
-    The old nodesplitter/splitter functionality can be used via the argument
-    `shardlist=partial(wds.ShardList, nodesplitter=..., splitter=...)`
-
-    :param urls: the source URLs, specified either as a list or as a brace-expanded string
+    :param urls: the source URLs: a string, a list, or an IterableDataset
     :param handler: an error handler
     :param cache_dir: when set, caches shards in this directory
     :param cache_size: when set, specifies a maximum size for the shard cache
     :param cache_name: when set, specifies how shards should be named in the cache
     :param cache_verbose: when set, prints information about caching
-    :param warn_empty: warn when no samples are generated at all
+    :param repeat: repeat infinitely if True
     """
-    result = shardlist(urls)
+    if not isinstance(urls, IterableDataset):
+        result = PytorchShardList(urls)
+    elif isinstance(urls, Composable):
+        result = urls
+    else:
+        result = Composable().source_(urls)
     result = result.then(tariterators.url_opener, handler=handler)
     if cache_dir != "":
         result = result.then(
@@ -548,6 +556,8 @@ def WebDataset(
         )
     result = result.then(tariterators.tar_file_expander, handler=handler)
     result = result.then(tariterators.group_by_keys)
+    if repeat:
+        result = result.repeat()
     return result
 
 
