@@ -239,6 +239,18 @@ def test_raw():
     assert isinstance(image, bytes)
     assert isinstance(cls, bytes)
 
+def test_only1():
+    ds = wds.WebDataset(local_data).decode(only="cls").to_tuple("jpg;png", "cls")
+    assert count_samples_tuple(ds) == 47
+    image, cls = next(iter(ds))
+    assert isinstance(image, bytes)
+    assert isinstance(cls, int)
+
+    ds = wds.WebDataset(local_data).decode("l", only=["jpg", "png"]).to_tuple("jpg;png", "cls")
+    assert count_samples_tuple(ds) == 47
+    image, cls = next(iter(ds))
+    assert isinstance(image, np.ndarray)
+    assert isinstance(cls, bytes)
 
 def test_gz():
     ds = wds.WebDataset(compressed).decode()

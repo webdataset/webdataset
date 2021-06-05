@@ -404,6 +404,7 @@ class Decoder:
                 result[k] = v
                 continue
             checknotnone(v)
+            assert isinstance(v, bytes)
             result[k] = self.decode1(k, v)
         return result
 
