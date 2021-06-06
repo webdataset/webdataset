@@ -170,7 +170,7 @@ class FakeLength(IterableDataset, dataset.Composable, dataset.Shorthands):
 
     def __iter__(self):
         """Return an iterator that iterates repeatedly over a source."""
-        return iter(source)
+        return iter(self.dataset)
 
     def __len__(self):
         """Return the user specified length."""
