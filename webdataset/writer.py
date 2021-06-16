@@ -35,6 +35,9 @@ def imageencoder(image, format="PNG"):  # skipcq: PYL-W0622
                 raise ValueError(f"image values out of range {np.amin(image)} {np.amax(image)}")
             image = np.clip(image, 0.0, 1.0)
             image = np.array(image * 255.0, "uint8")
+        assert image.ndim in [2, 3]
+        if image.ndim == 3:
+            assert image.shape[2] in [1, 3]
         image = PIL.Image.fromarray(image)
     if format.upper() == "JPG":
         format = "JPEG"
@@ -80,12 +83,12 @@ def torch_dumps(data):
 
 def numpy_dumps(data):
     """Dump data into a bytestring using numpy npy format
-    
+
     :param data: data to be dumped
     """
     import io
     import numpy.lib.format
-    
+
     stream = io.BytesIO()
     numpy.lib.format.write_array(stream, data)
     return stream.getvalue()
