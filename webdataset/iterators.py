@@ -217,11 +217,19 @@ def map(data, f, handler=reraise_exception):
         yield result
 
 
-def rename(data, handler=reraise_exception, **kw):
+def rename(data, handler=reraise_exception, keep=True, **kw):
     """Rename samples based on keyword arguments."""
     for sample in data:
         try:
-            yield {k: getfirst(sample, v, missing_is_error=True) for k, v in kw.items()}
+            if not keep:
+                yield {k: getfirst(sample, v, missing_is_error=True) for k, v in kw.items()}
+            else:
+                def listify(v):
+                    return v.split(";") if isinstance(v, str) else v
+                to_be_replaced = {x for v in kw.values() for x in listify(v)}
+                result = {k: v for k, v in sample.items() if k not in to_be_replaced}
+                result.update({k: getfirst(sample, v, missing_is_error=True) for k, v in kw.items()})
+                yield result
         except Exception as exn:
             if handler(exn):
                 continue

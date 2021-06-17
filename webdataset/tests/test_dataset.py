@@ -5,7 +5,6 @@ import PIL
 import pytest
 import torch
 import pickle
-from functools import partial
 
 import webdataset.dataset as wds
 import webdataset.extradatasets as eds
@@ -128,6 +127,15 @@ def test_dataset_missing_rename_raises():
         count_samples_tuple(ds)
 
 
+def test_dataset_rename_keep():
+    ds = wds.WebDataset(local_data).rename(image="png", keep=False)
+    sample = next(iter(ds))
+    assert set(sample.keys()) == set(["image"]), set(sample.keys())
+    ds = wds.WebDataset(local_data).rename(image="png")
+    sample = next(iter(ds))
+    assert set(sample.keys()) == set("__key__ cls image wnid xml".split()), set(sample.keys())
+
+
 def test_dataset_rsample():
 
     ds = wds.WebDataset(local_data).rsample(1.0)
@@ -239,6 +247,7 @@ def test_raw():
     assert isinstance(image, bytes)
     assert isinstance(cls, bytes)
 
+
 def test_only1():
     ds = wds.WebDataset(local_data).decode(only="cls").to_tuple("jpg;png", "cls")
     assert count_samples_tuple(ds) == 47
@@ -251,6 +260,7 @@ def test_only1():
     image, cls = next(iter(ds))
     assert isinstance(image, np.ndarray)
     assert isinstance(cls, bytes)
+
 
 def test_gz():
     ds = wds.WebDataset(compressed).decode()
@@ -536,6 +546,7 @@ def test_chopped():
     ds = datasets.FakeData(size=100)
     cds = eds.ChoppedDataset(ds, 250)
     assert count_samples_tuple(cds, n=500) == 250
+
 
 def test_with_epoch():
     ds = wds.WebDataset(local_data)
