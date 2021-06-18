@@ -56,7 +56,6 @@ class Composable:
         """
         assert callable(f)
         assert "source" not in kw
-        # print("Processor", args, kw)
         return Processor(self, f, *args, **kw)
 
     def compose(self, constructor, *args, **kw):
