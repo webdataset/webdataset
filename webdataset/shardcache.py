@@ -66,7 +66,7 @@ class CacheStream(io.RawIOBase):
                 if self.verbose:
                     print("[done caching", self.fname, "]", file=sys.stderr, flush=True)
         else:
-            os.remove(self.fname + self.tempsuffix)
+            os.remove(self.tempname)
 
     def read(self, n):
         """Read n bytes from the stream and write them to the cache file.
