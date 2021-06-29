@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2017-2019 NVIDIA CORPORATION. All rights reserved.
+# Copyright (c) 2017-2021 NVIDIA CORPORATION. All rights reserved.
 # This file is part of the WebDataset library.
 # See the LICENSE file for licensing terms (BSD-style).
 #
@@ -31,14 +31,10 @@ Header chunks have the following structure:
 - ...
 """
 
+import sys
 import struct
 
 import numpy as np
-
-__all__ = """
-read write save load
-zsend_single zrecv_single zsend_multipart zrecv_multipart sctp_send sctp_recv
-""".split()
 
 
 def bytelen(a):
@@ -82,6 +78,11 @@ short_to_long = {v: k for k, v in long_to_short.items()}
 
 
 def check_acceptable_input_type(data, allow64):
+    """Check that the data has an acceptable type for tensor encoding.
+
+    :param data: array
+    :param allow64: allow 64 bit types
+    """
     for a in data:
         if a.dtype.name not in long_to_short:
             raise ValueError("unsupported dataypte")
@@ -103,7 +104,7 @@ def unstr64(i):
 
 
 def check_infos(data, infos, required_infos=None):
-    """Implement infos verification logic."""
+    """Verify the info strings."""
     if required_infos is False or required_infos is None:
         return data
     if required_infos is True:
@@ -258,7 +259,7 @@ def write(stream, l, infos=None):
         write_chunk(stream, chunk)
 
 
-def read(stream, n=999999, infos=False):
+def read(stream, n=sys.maxsize, infos=False):
     """Read a list of arrays from a stream, with magics, length, and padding."""
     chunks = []
     for _ in range(n):
@@ -286,45 +287,3 @@ def load(fname, infos=False, nocheck=False):
         raise ValueError("file name should end in .ten")
     with open(fname, "rb") as stream:
         return read(stream, infos=infos)
-
-
-def zsend_single(socket, l, infos=None):
-    """Send arrays as a single part ZMQ message."""
-    return socket.send(encode_buffer(l, infos=infos))
-
-
-def zrecv_single(socket, infos=False):
-    """Receive arrays as a single part ZMQ message."""
-    return decode_buffer(socket.recv(), infos=infos)
-
-
-def zsend_multipart(socket, l, infos=None):
-    """Send arrays as a multipart ZMQ message."""
-    return socket.send_multipart(encode_list(l, infos=infos))
-
-
-def zrecv_multipart(socket, infos=False):
-    """Receive arrays as a multipart ZMQ message."""
-    return decode_list(socket.recv_multipart(), infos=infos)
-
-
-def sctp_send(socket, dest, l, infos=None):
-    """Send arrays as an SCTP datagram.
-
-    This is just a convenience function and illustration.
-    For more complex networking needs, you may want
-    to call encode_buffer and sctp_send directly.
-    """
-    socket.sctp_send(bytes(encode_buffer(l, infos=infos)), to=dest)
-
-
-def sctp_recv(socket, infos=False, maxsize=100000000):
-    """Receive arrays as an SCTP datagram.
-
-    This is just a convenience function and illustration.
-    For more complex networking needs, you may want
-    to call sctp_recv and decode_buffer directly.
-    """
-    client, _ = socket.accept()
-    _, _, data, _ = client.sctp_recv(maxsize)
-    return decode_buffer(data, infos=infos)

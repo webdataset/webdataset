@@ -4,29 +4,32 @@
 #
 # flake8: noqa
 
-__all__ = "tenbin dataset writer".split()
+
+"""Exported globals for webdataset library."""
 
 from . import tenbin
 from .fluid import Dataset
 from .dataset import (
-    split_by_worker,
-    ShardList,
+    SimpleShardList,
+    PytorchShardList,
+    ResampledShards,
     Composable,
     Shorthands,
     WebDataset,
     WebLoader,
     Processor,
-    ChoppedDataset,
-    ResizedDataset,
 )
-from .utils import (
+from .extradatasets import (
+    MockDataset
+)
+from .handlers import (
     reraise_exception,
     ignore_and_continue,
     warn_and_continue,
     ignore_and_stop,
     warn_and_stop,
 )
-from .writer import ShardWriter, TarWriter, torch_dumps
+from .writer import ShardWriter, TarWriter, torch_dumps, numpy_dumps
 from .autodecode import (
     Continue,
     handle_extension,
@@ -46,7 +49,6 @@ from .tariterators import (
 
 from .iterators import (
     transform_with,
-    transformer,
     info,
     shuffle,
     select,

@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  
+  
+  <link rel="shortcut icon" href="../img/favicon.ico">
+  <title>Multinode - webdataset</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700" />
+
+  <link rel="stylesheet" href="../css/theme.css" />
+  <link rel="stylesheet" href="../css/theme_extra.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css" />
+  
+  <script>
+    // Current page data
+    var mkdocs_page_name = "Multinode";
+    var mkdocs_page_input_path = "multinode.md";
+    var mkdocs_page_url = null;
+  </script>
+  
+  <script src="../js/jquery-2.1.1.min.js" defer></script>
+  <script src="../js/modernizr-2.8.3.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script> 
+  
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+        <a href=".." class="icon icon-home"> webdataset</a>
+        <div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="..">Home</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="" href="../api/index.html">API</a>
+                    </li>
+                </ul>
+                <p class="caption"><span class="caption-text">Examples</span></p>
+                <ul class="current">
+                    <li class="toctree-l1"><a class="reference internal" href="../gettingstarted/">Getting Started</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../creating/">Creating Webdatasets</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../decoding/">Decoding</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../desktop/">Desktop Usage</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../howitworks/">How It Works</a>
+                    </li>
+                    <li class="toctree-l1 current"><a class="reference internal current" href="./">Multinode</a>
+    <ul class="current">
+    </ul>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../sharding/">Sharding</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../sources/">Sources</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../writing/">Writing</a>
+                    </li>
+                </ul>
+                <p class="caption"><span class="caption-text">Dataset Conversions</span></p>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../video-loading-example/">Video Loading</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../falling-things-make-shards/">Falling Things</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../objectron-conversion/">Objectron</a>
+                    </li>
+                </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="..">webdataset</a>
+      </nav>
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="..">Docs</a> &raquo;</li>
+    
+      
+        
+          <li>Examples &raquo;</li>
+        
+      
+    
+    <li>Multinode</li>
+    <li class="wy-breadcrumbs-aside">
+      
+        <a href="http://github.com/webdataset/webdataset/edit/master/docs/multinode.md"
+          class="icon icon-github"> Edit on GitHub</a>
+      
+    </li>
+  </ul>
+  
+  <hr/>
+</div>
+          <div role="main">
+            <div class="section">
+              
+                <pre><code class="language-python">%pylab inline
+
+import torch
+import webdataset as wds
+import braceexpand
+</code></pre>
+<pre><code>Populating the interactive namespace from numpy and matplotlib
+</code></pre>
+<h1 id="splitting-shards-across-nodes-and-workers">Splitting Shards across Nodes and Workers</h1>
+<p>Unlike traditional PyTorch <code>Dataset</code> instances, <code>WebDataset</code> splits data across nodes at the shard level, not at the sample level.</p>
+<p>This functionality is handled inside the <code>ShardList</code> class. Recall that <code>dataset = webdataset.Webdataset(urls)</code> is just a shorthand for:</p>
+<pre><code class="language-python">urls = list(braceexpand.braceexpand(&quot;dataset-{000000..000999}.tar&quot;))
+dataset = wds.ShardList(urls, splitter=wds.split_by_worker, nodesplitter=wds.split_by_node, shuffle=False)
+dataset = wds.Processor(dataset, wds.url_opener)
+dataset = wds.Processor(dataset, wds.tar_file_expander)
+dataset = wds.Processor(dataset, wds.group_by_keys)
+</code></pre>
+<p>Here, <code>nodesplitter</code> and <code>splitter</code> are functions that are called inside <code>ShardList</code> to split up the URLs in <code>urls</code> by node and worker. You can use any functions you like there, all they need to do is take a list of URLs and return a subset of those URLs as a result.</p>
+<p>The default <code>split_by_worker</code> looks roughly like:</p>
+<pre><code class="language-python">def my_split_by_worker(urls):
+    wi = torch.utils.data.get_worker_info()
+    if wi is None:
+        return urls
+    else:
+        return urls[wi.id::wi.num_workers]
+</code></pre>
+<p>The same approach works for multiple worker nodes:</p>
+<pre><code class="language-python">def my_split_by_node(urls):
+    node_id, node_count = torch.distributed.get_rank(), torch.distributed.get_world_size()
+    return urls[node_id::node_count]
+</code></pre>
+<pre><code class="language-python">dataset = wds.WebDataset(urls, splitter=my_split_by_worker, nodesplitter=my_split_by_node)
+</code></pre>
+<p>Of course, you can also create more complex splitting strategies if necessary.</p>
+<h1 id="distributeddataparallel">DistributedDataParallel</h1>
+<p>DistributedDataParallel training requires that each participating node receive exactly the same number of training batches as all others. The <code>ddp_equalize</code> method ensures this:</p>
+<pre><code class="language-python">urls = &quot;./shards/imagenet-train-{000000..001281}.tar&quot;
+dataset_size, batch_size = 1282000, 64
+dataset = wds.WebDataset(urls).decode(&quot;pil&quot;).shuffle(5000).batched(batch_size, partial=False)
+loader = wds.WebLoader(dataset, num_workers=4)
+loader = loader.ddp_equalize(dataset_size // batch_size)
+</code></pre>
+<p>You need to give the total number of batches in your dataset to <code>ddp_equalize</code>; it will compute the batches per node from this and equalize batches accordingly.</p>
+<p>You need to apply <code>ddp_equalize</code> to the <code>WebLoader</code> rather than the <code>Dataset</code>.</p>
+<pre><code class="language-python">
+</code></pre>
+              
+            </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="../sharding/" class="btn btn-neutral float-right" title="Sharding">Next <span class="icon icon-circle-arrow-right"></span></a>
+      
+      
+        <a href="../howitworks/" class="btn btn-neutral" title="How It Works"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+    
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+      
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="versions">
+    <span class="rst-current-version" data-toggle="rst-current-version">
+      
+          <a href="http://github.com/webdataset/webdataset/" class="fa fa-github" style="float: left; color: #fcfcfc"> GitHub</a>
+      
+      
+        <span><a href="../howitworks/" style="color: #fcfcfc;">&laquo; Previous</a></span>
+      
+      
+        <span style="margin-left: 15px"><a href="../sharding/" style="color: #fcfcfc">Next &raquo;</a></span>
+      
+    </span>
+</div>
+    <script>var base_url = '..';</script>
+    <script src="../js/theme.js" defer></script>
+      <script src="../search/main.js" defer></script>
+    <script defer>
+        window.onload = function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        };
+    </script>
+
+</body>
+</html>

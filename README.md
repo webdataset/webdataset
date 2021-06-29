@@ -35,14 +35,8 @@ augmentation code remains unchanged.
 
 # Documentation
 
-- [Getting Started](docs/gettingstarted.ipynb) -- a simple demonstration of how to use WebDataset
-- [How It Works](docs/howitworks.ipynb) -- WebDataset is just a collection of PyTorch IterableDataset implementations
-- [Decoding](docs/decoding.ipynb) -- WebDataset uses file-based representations internally and its Decoder makes turning these into PyTorch tensors easy
-- [Desktop Usage and Caching](docs/desktop.ipynb) -- WebDataset is great for desktop development and supports built-in caching
-- [Creating Datasets in WebDataset Format](docs/creating.ipynb) -- there are a variety of tools for creating datasets in WebDataset format
-- [Writing WebDataset from Python](docs/writing.ipynb) -- you can write WebDataset datasets directly from Python
-- [Multinode Training](docs/multinode.ipynb) -- what you need to know to handle distributed, multi-node training with WebDataset
-- [Data Sources](docs/sources.ipynb) -- accessing data on local disks, on web servers, or in cloud storage buckets
+- [Documentation](https://webdataset.github.io/webdataset)
+- [API](https://webdataset.github.io/webdataset/api)
 
 # Installation
 
@@ -63,18 +57,12 @@ Here are some videos talking about WebDataset and large scale deep learning:
 - [Creating Datasets in WebDataset Format](https://www.youtube.com/watch?v=v_PacO-3OGQ)
 - [Tools for Working with Large Datasets](https://www.youtube.com/watch?v=kIv8zDpRUec)
 
-# More Examples
-
-- [loading videos](https://github.com/tmbdev/webdataset/blob/master/docs/video-loading-example.ipynb)
-- [splitting raw videos into clips for training](https://github.com/tmbdev/webdataset/blob/master/docs/ytsamples-split.ipynb)
-- [converting the Falling Things dataset](https://github.com/tmbdev/webdataset/blob/master/docs/falling-things-make-shards.ipynb)
-
 # Related Libraries and Software
 
 The [AIStore](http://github.com/NVIDIA/aistore) server provides an efficient backend for WebDataset; it functions like a combination of web server, content distribution network, P2P network, and distributed file system. Together, AIStore and WebDataset can serve input data from rotational drives distributed across many servers at the speed of local SSDs to many GPUs, at a fraction of the cost. We can easily achieve hundreds of MBytes/s of I/O per GPU even in large, distributed training jobs.
 
 The [tarproc](http://github.com/tmbdev/tarproc) utilities provide command line manipulation and processing of webdatasets and other tar files, including splitting, concatenation, and `xargs`-like functionality.
 
-The [tensorcom](http://github.com/tmbdev/tensorcom/) library provides fast three-tiered I/O; it can be inserted between [AIStore](http://github.com/NVIDIA/aistore) and [WebDataset](http://github.com/tmbdev/webdataset) to permit distributed data augmentation and I/O. It is particularly useful when data augmentation requires more CPU than the GPU server has available.
+The [tensorcom](https://github.com/NVlabs/tensorcom) library provides fast three-tiered I/O; it can be inserted between [AIStore](http://github.com/NVIDIA/aistore) and [WebDataset](http://github.com/tmbdev/webdataset) to permit distributed data augmentation and I/O. It is particularly useful when data augmentation requires more CPU than the GPU server has available.
 
 You can find the full PyTorch ImageNet sample code converted to WebDataset at [tmbdev/pytorch-imagenet-wds](http://github.com/tmbdev/pytorch-imagenet-wds)

@@ -16,7 +16,7 @@ scripts = []
 
 setuptools.setup(
     name='webdataset',
-    version="0.1.57",
+    version="0.1.69",
     description="Record sequential storage for deep learning.",
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
@@ -36,5 +36,5 @@ setuptools.setup(
     packages=["webdataset"],
     python_requires=">=3.6",
     scripts=scripts,
-    install_requires="braceexpand numpy torch".split()
+    install_requires="braceexpand numpy".split()
 )

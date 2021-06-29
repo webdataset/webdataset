@@ -26,22 +26,28 @@ def venv(c):
     c.run(f"test -d {VENV} || python3 -m venv {VENV}")
     c.run(f"{ACTIVATE}{PIP} install -r requirements.dev.txt")
     c.run(f"{ACTIVATE}{PIP} install -r requirements.txt")
-    c.run(f"{ACTIVATE} jupyter labextension install @jupyter-widgets/jupyterlab-manager || true")
     print("done")
 
 
 @task
 def virtualenv(c):
+    "Build the virtualenv."
+    venv(c)
+
+
+@task
+def minenv(c):
     "Build the virtualenv (minimal)."
     c.run(f"git config core.hooksPath .githooks")
     c.run(f"test -d {VENV} || python3 -m venv {VENV}")
     c.run(f"{ACTIVATE}{PIP} install -r requirements.txt")
+    print("done")
 
 
 @task
 def test(c):
     "Run the tests."
-    virtualenv(c)
+    venv(c)
     c.run(f"{ACTIVATE}{PYTHON3} -m pytest")
 
 
@@ -96,44 +102,25 @@ command_template = """
 
 
 @task
+def nbgen(c):
+    "Reexecute IPython Notebooks."
+    opts = "--ExecutePreprocessor.timeout=-1"
+    for nb in glob.glob("notebooks/*.ipynb"):
+        if "/convert-" in nb:
+            continue
+        c.run(f"{ACTIVATE} jupyter nbconvert {opts} --execute --to notebook {nb}")
+
+
+@task
 def gendocs(c):
     "Generate docs."
 
     # convert IPython Notebooks
-    for nb in glob.glob("docs/*.ipynb"):
-        c.run(f"{ACTIVATE} jupyter nbconvert {nb} --to markdown")
-    c.run(f"cp README.md docs/index.md")
-
-    # generate pydoc for each module
-    document = ""
-    for module in MODULES:
-        with os.popen(f"{ACTIVATE}{PYTHON3} -m pydoc {module}") as stream:
-            text = stream.read()
-        document += pydoc_template.format(text=text, module=module)
-    with open("docs/pydoc.md", "w") as stream:
-        stream.write(document)
-
-    # generate help text for each command
-    document = ""
-    for command in COMMANDS:
-        with os.popen(f"{ACTIVATE}{PYTHON3}{command} --help ") as stream:
-            text = stream.read()
-        text = re.sub("```", "", text)
-        document = command_template.format(text=text, command=command)
-    with open("docs/commands.md", "w") as stream:
-        stream.write(document)
-
-
-@task(gendocs)
-def pubdocs(c):
-    "Generate and publish docs."
-    modified = os.popen("git status").readlines()
-    for line in modified:
-        if "modified:" in line and ".md" not in line:
-            print("non-documentation file modified; commit manually", file=sys.stderr)
-    c.run("git add docs/*.md README.md")
-    c.run("git commit -a -m 'documentation update'")
-    c.run("git push")
+    for nb in glob.glob("notebooks/*.ipynb"):
+        c.run(f"{ACTIVATE} jupyter nbconvert {nb} --to markdown --output-dir=docsrc/.")
+    c.run(f"mkdocs build")
+    c.run(f"pdoc -t docsrc -o docs/api webdataset")
+    c.run("git add docs")
 
 
 @task
