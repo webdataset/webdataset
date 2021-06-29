@@ -64,6 +64,7 @@ datasets:
     - cdipsub-{000000..000092}.tar
 
   - name: Google 1000 Books
+    sample: 20
     buckets:
       - ./gs/nvdata-ocropus/words/
     shards:
@@ -83,7 +84,7 @@ def test_yaml(tmp_path):
     with open(fname, "w") as stream:
         stream.write(shardspec)
     ds = dataset.read_shardlist(fname)
-    assert len(ds) == 295, len(ds)
+    assert len(ds) == 147, len(ds)
 
 
 def test_length():

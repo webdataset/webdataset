@@ -524,7 +524,7 @@ def read_shardlist(fname):
         urls = [u for url in urls for u in braceexpand.braceexpand(url)]
         if "sample" in ds:
             # FIXME make this random per epoch
-            n = urls[:ds["sample"]]
+            n = int(ds["sample"])
             urls = urls[:n]
         result += [bucket+url for url in urls]
     return result
