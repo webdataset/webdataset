@@ -18,6 +18,7 @@ import os
 import random
 import warnings
 import itertools as itt
+import yaml
 
 import braceexpand
 from torch.utils.data import IterableDataset, DataLoader
@@ -290,6 +291,10 @@ def WebDataset(
     handler=reraise_exception,
     length=None,
 ):
+    if urls.endswith(".list.yml"):
+        with open(urls) as stream:
+            urls = yaml.safe_load(stream)["shards"]
+        urls = [u for url in urls for u in braceexpand.braceexpand(url)]
     result = ShardList(
         urls,
         shuffle=shardshuffle,
