@@ -10,6 +10,7 @@ import webdataset.dataset as wds
 import webdataset.extradatasets as eds
 from webdataset import autodecode
 from webdataset import handlers
+from webdataset import dataset
 
 
 local_data = "testdata/imagenet-000000.tgz"
@@ -50,6 +51,39 @@ def count_samples(source, *args, n=1000):
 def test_dataset():
     ds = wds.WebDataset(local_data)
     assert count_samples_tuple(ds) == 47
+
+
+
+shardspec = """
+datasets:
+
+  - name: CDIP
+    buckets:
+      - ./gs/nvdata-ocropus/words/
+    shards:
+    - cdipsub-{000000..000092}.tar
+
+  - name: Google 1000 Books
+    buckets:
+      - ./gs/nvdata-ocropus/words/
+    shards:
+      - gsub-{000000..000167}.tar
+
+  - name: Internet Archive Sample
+    buckets:
+      - ./gs/nvdata-ocropus/words/
+    shards:
+      - ia1-{000000..000033}.tar
+"""
+
+
+def test_yaml(tmp_path):
+    tmp_path = str(tmp_path)
+    fname = tmp_path+"/test.shards.yml"
+    with open(fname, "w") as stream:
+        stream.write(shardspec)
+    ds = dataset.read_shardlist(fname)
+    assert len(ds) == 295, len(ds)
 
 
 def test_length():

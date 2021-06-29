@@ -512,6 +512,18 @@ class Processor(IterableDataset, Composable, Shorthands):
         assert callable(self.f), self.f
         return self.f(iter(self.source), *self.args, **self.kw)
 
+def read_shardlist(fname):
+    with open(fname) as stream:
+        spec = yaml.safe_load(stream)
+    result = []
+    for ds in spec["datasets"]:
+        buckets = ds.get("buckets", [""])
+        assert len(buckets) == 1, "support for multiple buckets unimplemented"
+        bucket = buckets[0]
+        urls = ds["shards"]
+        urls = [u for url in urls for u in braceexpand.braceexpand(url)]
+        result += [bucket+url for url in urls]
+    return result
 
 def WebDataset(
     urls,
@@ -544,10 +556,8 @@ def WebDataset(
     :param repeat: repeat infinitely if True
     """
     if not isinstance(urls, IterableDataset):
-        if urls.endswith(".list.yml"):
-            with open(urls) as stream:
-                urls = yaml.safe_load(stream)["shards"]
-            urls = [u for url in urls for u in braceexpand.braceexpand(url)]
+        if urls.endswith(".shards.yml"):
+            urls = read_shardlist(urls)
         result = PytorchShardList(urls)
     elif isinstance(urls, Composable):
         result = urls
