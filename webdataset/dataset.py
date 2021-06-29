@@ -518,10 +518,14 @@ def read_shardlist(fname):
     result = []
     for ds in spec["datasets"]:
         buckets = ds.get("buckets", [""])
-        assert len(buckets) == 1, "support for multiple buckets unimplemented"
+        assert len(buckets) == 1, "FIXME support for multiple buckets unimplemented"
         bucket = buckets[0]
         urls = ds["shards"]
         urls = [u for url in urls for u in braceexpand.braceexpand(url)]
+        if "sample" in ds:
+            # FIXME make this random per epoch
+            n = urls[:ds["sample"]]
+            urls = urls[:n]
         result += [bucket+url for url in urls]
     return result
 
@@ -559,6 +563,8 @@ def WebDataset(
         if urls.endswith(".shards.yml"):
             urls = read_shardlist(urls)
         result = PytorchShardList(urls)
+    elif isinstance(urls, str) and os.path.splitext(urls)[1] in ["yml", "yaml", "json"]:
+        raise ValueError("bad shard spec (only '.shards.yml' supported right now)")
     elif isinstance(urls, Composable):
         result = urls
     else:
