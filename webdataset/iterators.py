@@ -267,14 +267,17 @@ def map_dict(data, handler=reraise_exception, **kw):
         yield sample
 
 
-def to_tuple(data, *args, handler=reraise_exception):
+def to_tuple(data, *args, handler=reraise_exception, missing_is_error=True, none_is_error=True):
     """Convert dict samples to tuples."""
     if len(args) == 1 and isinstance(args[0], str) and " " in args[0]:
         args = args[0].split()
 
     for sample in data:
         try:
-            yield tuple([getfirst(sample, f, missing_is_error=True) for f in args])
+            result = tuple([getfirst(sample, f, missing_is_error=missing_is_error) for f in args])
+            if none_is_error and any(x is None for x in result):
+                raise ValueError(f"to_tuple {args} got {sample.keys()}")
+            yield result
         except Exception as exn:
             if handler(exn):
                 continue
