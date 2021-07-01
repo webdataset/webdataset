@@ -267,8 +267,10 @@ def map_dict(data, handler=reraise_exception, **kw):
         yield sample
 
 
-def to_tuple(data, *args, handler=reraise_exception, missing_is_error=True, none_is_error=True):
+def to_tuple(data, *args, handler=reraise_exception, missing_is_error=True, none_is_error=None):
     """Convert dict samples to tuples."""
+    if none_is_error is None:
+        none_is_error = missing_is_error
     if len(args) == 1 and isinstance(args[0], str) and " " in args[0]:
         args = args[0].split()
 
