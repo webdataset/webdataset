@@ -14,6 +14,9 @@ import itertools as itt
 import os
 import sys
 import random
+import warnings
+import itertools as itt
+import yaml
 
 import braceexpand
 
@@ -431,6 +434,7 @@ class Shorthands:
         )
 
     def with_epoch(self, length, by_node=False):
+        """Override the epoch size by repeating/slicding the dataset."""
         from .extradatasets import ChoppedDataset
 
         if by_node:
@@ -508,6 +512,22 @@ class Processor(IterableDataset, Composable, Shorthands):
         assert callable(self.f), self.f
         return self.f(iter(self.source), *self.args, **self.kw)
 
+def read_shardlist(fname):
+    with open(fname) as stream:
+        spec = yaml.safe_load(stream)
+    result = []
+    for ds in spec["datasets"]:
+        buckets = ds.get("buckets", [""])
+        assert len(buckets) == 1, "FIXME support for multiple buckets unimplemented"
+        bucket = buckets[0]
+        urls = ds["shards"]
+        urls = [u for url in urls for u in braceexpand.braceexpand(url)]
+        if "sample" in ds:
+            # FIXME make this random per epoch
+            n = int(ds["sample"])
+            urls = urls[:n]
+        result += [bucket+url for url in urls]
+    return result
 
 def WebDataset(
     urls,
@@ -540,7 +560,11 @@ def WebDataset(
     :param repeat: repeat infinitely if True
     """
     if not isinstance(urls, IterableDataset):
+        if urls.endswith(".shards.yml"):
+            urls = read_shardlist(urls)
         result = PytorchShardList(urls)
+    elif isinstance(urls, str) and os.path.splitext(urls)[1] in ["yml", "yaml", "json"]:
+        raise ValueError("bad shard spec (only '.shards.yml' supported right now)")
     elif isinstance(urls, Composable):
         result = urls
     else:
