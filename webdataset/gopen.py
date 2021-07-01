@@ -58,6 +58,9 @@ class Pipe:
                 raise ValueError(f"{args}: couldn't open")
         self.status = None
 
+    def __str__(self):
+        return f"<Pipe {self.args}>"
+
     def check_status(self):
         """Poll the process and handle any errors."""
         self.status = self.proc.poll()

@@ -103,6 +103,8 @@ def tar_file_iterator(fileobj, skip_meta=r"__[^/]*__($|/)", handler=reraise_exce
             data = stream.extractfile(tarinfo).read()
             yield fname, data
         except Exception as exn:
+            if hasattr(exn, "args") and len(exn.args) > 0:
+                exn.args = (exn.args[0] + " @ " + str(fileobj),) + exn.args[1:]
             if handler(exn):
                 continue
             else:
