@@ -319,6 +319,7 @@ def default_collation_fn(samples, combine_tensors=True, combine_scalars=True):
     :rtype: dict
 
     """
+    assert isinstance(samples[0], (list, tuple)), type(samples[0])
     batched = list(zip(*samples))
     result = []
     for b in batched:
@@ -357,13 +358,25 @@ def batched(
     batch = []
     for sample in data:
         if len(batch) >= batchsize:
-            yield collation_fn(batch)
+            if collation_fn is not None:
+                batch = collation_fn(batch)
+            yield batch
             batch = []
         batch.append(sample)
     if len(batch) == 0:
         return
     elif len(batch) == batchsize or partial:
-        yield collation_fn(batch)
+        if collation_fn is not None:
+            batch = collation_fn(batch)
+        yield batch
+
+
+def unlisted(data):
+    """Turn batched data back into unbatched data."""
+    for batch in data:
+        assert isinstance(batch, list), sample
+        for sample in batch:
+            yield sample
 
 
 def unbatched(data):

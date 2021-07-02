@@ -17,6 +17,7 @@ import random
 import warnings
 import itertools as itt
 import yaml
+from dataclasses import dataclass
 
 import braceexpand
 
@@ -254,6 +255,13 @@ class Shorthands:
         """Take a stream of batches and turn it back into a stream of samples."""
         return self.then(iterators.unbatched)
 
+    def listed(self, batchsize, partial=True):
+        return self.batched(batchsize, collation_fn=None, partial=partial)
+
+    def unlisted(self):
+        """Take a stream of batches and turn it back into a stream of samples."""
+        return self.then(iterators.unlisted)
+
     def shuffle(self, size, **kw):
         """Shuffle the dataset using an internal shuffle buffer.
 
@@ -448,6 +456,7 @@ class Shorthands:
     def with_length(self, length):
         """Return an IterableDataset with a __len__ method."""
         from .extradatasets import FakeLength
+
         return FakeLength(self, length)
 
     def ddp_equalize(self, length):
@@ -512,6 +521,7 @@ class Processor(IterableDataset, Composable, Shorthands):
         assert callable(self.f), self.f
         return self.f(iter(self.source), *self.args, **self.kw)
 
+
 def read_shardlist(fname):
     with open(fname) as stream:
         spec = yaml.safe_load(stream)
@@ -526,8 +536,92 @@ def read_shardlist(fname):
             # FIXME make this random per epoch
             n = int(ds["sample"])
             urls = urls[:n]
-        result += [bucket+url for url in urls]
+        result += [bucket + url for url in urls]
     return result
+
+
+@dataclass
+class Source:
+    dataset: IterableDataset
+    probability: float = 1.0
+    source: iter = None
+
+
+class RoundRobin(IterableDataset, Composable, Shorthands):
+    def __init__(self, sources):
+        super().__init__()
+        self.sources = sources
+
+    def __iter__(self):
+        index = 0
+        iters = [s for s in self.sources]
+        for s in iters:
+            s.source = iter(s.dataset)
+        while len(iters) > 0:
+            try:
+                sample = next(iters[index].source)
+                yield sample
+            except StopIteration:
+                del iters[index]
+            index += 1
+            if index >= len(iters):
+                index = 0
+
+
+def construct_dataset(
+    fname,
+    cache_dir=default_cache_dir,
+    cache_size=default_cache_size,
+    cache_name=default_cache_name,
+    cache_verbose=default_cache_verbose,
+    chunksize=10,
+    handler=reraise_exception,
+    repeat=False,
+):
+    with open(fname) as stream:
+        spec = yaml.safe_load(stream)
+    result = []
+    prefix = spec.get("prefix", "")
+    for ds in spec["datasets"]:
+        buckets = ds.get("buckets", [""])
+        assert len(buckets) == 1, "FIXME support for multiple buckets unimplemented"
+        bucket = buckets[0]
+        urls = ds["shards"]
+        urls = [u for url in urls for u in braceexpand.braceexpand(url)]
+        urls = [prefix + bucket + u for u in urls]
+        if ds.get("resampled", False):
+            urls = ResampledShards(urls)
+        dataset = WebDataset(
+            urls,
+            ds.get("cachedir", cache_dir),
+            ds.get("cachesize", cache_size),
+            ds.get("cachename", cache_name),
+            ds.get("cacheverbose", cache_verbose),
+        )
+        if "subsample" in ds:
+            dataset = dataset.rsample(ds["subsample"])
+        if "shuffle" in ds:
+            dataset = dataset.shuffle(ds["shuffle"])
+        if "epoch" in ds:
+            dataset = dataset.with_epoch(ds["epoch"])
+        bs = ds.get("chunksize", chunksize)
+        if bs > 0:
+            dataset = dataset.listed(bs)
+        nworkers = ds.get("nworkers", 1)
+        if nworkers >= 0:
+            dataset = WebLoader(dataset, num_workers=nworkers, batch_size=None, collate_fn=list)
+        p = ds.get("probability", 1.0)
+        result.append(Source(dataset=dataset, probability=p))
+    if len(result) > 1:
+        result = RoundRobin(result)
+    else:
+        result = result[0].dataset
+    if bs > 0:
+        result = result.unlisted()
+    if "epoch" in spec:
+        result = result.with_epoch(spec["epoch"]).with_length(spec["epoch"])
+    return result
+
 
 def WebDataset(
     urls,
@@ -559,9 +653,21 @@ def WebDataset(
     :param cache_verbose: when set, prints information about caching
     :param repeat: repeat infinitely if True
     """
-    if not isinstance(urls, IterableDataset):
+    if isinstance(urls, str) and urls.endswith(".ds.yml"):
+        return construct_dataset(
+            urls,
+            cache_dir=dcache_dir,
+            cache_size=cache_size,
+            cache_name=cache_name,
+            cache_verbose=cache_verbose,
+            handler=handler,
+            repeat=repeat,
+        )
+    if isinstance(urls, str):
         if urls.endswith(".shards.yml"):
             urls = read_shardlist(urls)
+        result = PytorchShardList(urls)
+    elif isinstance(urls, list):
         result = PytorchShardList(urls)
     elif isinstance(urls, str) and os.path.splitext(urls)[1] in ["yml", "yaml", "json"]:
         raise ValueError("bad shard spec (only '.shards.yml' supported right now)")

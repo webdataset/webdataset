@@ -87,6 +87,64 @@ def test_yaml(tmp_path):
     assert len(ds) == 147, len(ds)
 
 
+dsspec = """
+prefix: ""
+epoch: 111
+
+datasets:
+
+  - name: images
+    chunksize: 10
+    resampled: True
+    subsample: 0.5
+    nworkers: -1
+    buckets:
+      - ./testdata/
+    shards:
+      - imagenet-000000.tgz
+      - imagenet-000000.tgz
+"""
+
+def test_dsspec(tmp_path):
+    tmp_path = str(tmp_path)
+    fname = tmp_path+"/test.ds.yml"
+    with open(fname, "w") as stream:
+        stream.write(dsspec)
+    ds = dataset.construct_dataset(fname)
+    result = [x for x in ds]
+    assert len(result) == 111
+    assert isinstance(result[0], dict)
+    ds = dataset.construct_dataset(fname).decode("rgb").to_tuple("png", "cls")
+    result = [x for x in ds]
+    assert len(result) == 111
+    assert result[0][0].ndim == 3
+
+
+dsspec2 = """
+prefix: ""
+
+datasets:
+
+  - name: images
+    nworkers: 2
+    shards:
+      - ./testdata/imagenet-000000.tgz
+  - name: images2
+    nworkers: 2
+    shards:
+      - ./testdata/imagenet-000000.tgz
+"""
+
+def test_dsspec2(tmp_path):
+    tmp_path = str(tmp_path)
+    fname = tmp_path+"/test.ds.yml"
+    with open(fname, "w") as stream:
+        stream.write(dsspec2)
+    ds = dataset.construct_dataset(fname)
+    result = [x for x in ds]
+    assert len(result) == 2*47
+
+
 def test_length():
     ds = wds.WebDataset(local_data)
     with pytest.raises(TypeError):
@@ -601,7 +659,7 @@ def test_repeat():
 
 
 def test_repeat2():
-    ds = wds.WebDataset(local_data).batched(2)
+    ds = wds.WebDataset(local_data).to_tuple("png", "cls").batched(2)
     assert count_samples_tuple(ds.repeat(nbatches=20)) == 20
 
 
