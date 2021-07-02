@@ -658,7 +658,7 @@ def WebDataset(
     if isinstance(urls, str) and urls.endswith(".ds.yml"):
         return construct_dataset(
             urls,
-            cache_dir=dcache_dir,
+            cache_dir=cache_dir,
             cache_size=cache_size,
             cache_name=cache_name,
             cache_verbose=cache_verbose,
