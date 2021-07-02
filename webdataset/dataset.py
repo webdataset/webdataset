@@ -589,6 +589,8 @@ def construct_dataset(
         urls = ds["shards"]
         urls = [u for url in urls for u in braceexpand.braceexpand(url)]
         urls = [prefix + bucket + u for u in urls]
+        print(f"# input {ds.get('name', '')} {prefix+bucket+str(ds['shards'])} {len(urls)} "+
+              "{ds.get('epoch')} {ds.get('resampled')}", file=sys.stderr)
         if ds.get("resampled", False):
             urls = ResampledShards(urls)
         dataset = WebDataset(
