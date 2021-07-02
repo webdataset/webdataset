@@ -14,8 +14,6 @@ import itertools as itt
 import os
 import sys
 import random
-import warnings
-import itertools as itt
 import yaml
 from dataclasses import dataclass
 
@@ -589,10 +587,21 @@ def construct_dataset(
         urls = ds["shards"]
         urls = [u for url in urls for u in braceexpand.braceexpand(url)]
         urls = [prefix + bucket + u for u in urls]
-        print(f"# input {ds.get('name', '')} {prefix+bucket+str(ds['shards'])} {len(urls)} "+
-              "{ds.get('epoch')} {ds.get('resampled')}", file=sys.stderr)
+        print(
+            f"# input {ds.get('name', '')} {prefix+bucket+str(ds['shards'])} {len(urls)} "
+            + f"{ds.get('epoch')} {ds.get('resampled')}",
+            file=sys.stderr,
+        )
         if ds.get("resampled", False):
             urls = ResampledShards(urls)
+        else:
+            urls = PytorchShardList(
+                urls,
+                epoch_shuffle=ds.get("epoch_shuffle", False),
+                shuffle=ds.get("shuffle", True),
+                split_by_worker=ds.get("split_by_worker", True),
+                split_by_node=ds.get("split_by_node", True),
+            )
         dataset = WebDataset(
             urls,
             ds.get("cachedir", cache_dir),
