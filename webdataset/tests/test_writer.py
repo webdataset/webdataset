@@ -6,6 +6,9 @@ import webdataset.dataset as wds
 from webdataset import writer
 
 
+def getkeys(sample):
+    return set(x for x in sample if not x.startswith("_"))
+
 def test_writer(tmpdir):
     with writer.TarWriter(f"{tmpdir}/writer.tar") as sink:
         sink.write(dict(__key__="a", txt="hello", cls="3"))
@@ -15,7 +18,7 @@ def test_writer(tmpdir):
 
     ds = wds.WebDataset(f"{tmpdir}/writer.tar")
     for sample in ds:
-        assert set(sample.keys()) == set("__key__ txt cls".split())
+        assert getkeys(sample) == set("txt cls".split()), getkeys(sample)
         break
 
 
@@ -28,7 +31,7 @@ def test_writer2(tmpdir):
 
     ds = wds.WebDataset(f"{tmpdir}/writer2.tgz")
     for sample in ds:
-        assert set(sample.keys()) == set("__key__ txt cls".split())
+        assert getkeys(sample) == set("txt cls".split()), getkeys(sample)
         break
 
 
@@ -42,7 +45,7 @@ def test_writer3(tmpdir):
 
     ds = wds.WebDataset(f"{tmpdir}/writer3.tar").decode()
     for sample in ds:
-        assert set(sample.keys()) == set("__key__ pth pyd".split())
+        assert getkeys(sample) == set("pth pyd".split())
         assert isinstance(sample["pyd"], dict)
         assert sample["pyd"] == dict(x=0)
         assert isinstance(sample["pth"], list)
@@ -59,7 +62,7 @@ def test_writer4(tmpdir):
 
     ds = wds.WebDataset(f"{tmpdir}/writer4.tar").decode()
     for sample in ds:
-        assert set(sample.keys()) == set("__key__ tb ten".split())
+        assert getkeys(sample) == set("tb ten".split())
         assert isinstance(sample["ten"], list)
         assert isinstance(sample["ten"][0], np.ndarray)
         assert sample["ten"][0].shape == (3, 3)
@@ -76,7 +79,7 @@ def test_writer_pipe(tmpdir):
     os.system(f"ls -l {tmpdir}")
     ds = wds.WebDataset(f"pipe:cat {tmpdir}/writer3.tar")
     for sample in ds:
-        assert set(sample.keys()) == set("__key__ txt cls".split())
+        assert getkeys(sample) == set("txt cls".split())
         break
 
 

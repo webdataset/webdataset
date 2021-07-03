@@ -53,7 +53,6 @@ def test_dataset():
     assert count_samples_tuple(ds) == 47
 
 
-
 shardspec = """
 datasets:
 
@@ -80,7 +79,7 @@ datasets:
 
 def test_yaml(tmp_path):
     tmp_path = str(tmp_path)
-    fname = tmp_path+"/test.shards.yml"
+    fname = tmp_path + "/test.shards.yml"
     with open(fname, "w") as stream:
         stream.write(shardspec)
     ds = dataset.read_shardlist(fname)
@@ -105,9 +104,10 @@ datasets:
       - imagenet-000000.tgz
 """
 
+
 def test_dsspec(tmp_path):
     tmp_path = str(tmp_path)
-    fname = tmp_path+"/test.ds.yml"
+    fname = tmp_path + "/test.ds.yml"
     with open(fname, "w") as stream:
         stream.write(dsspec)
     ds = dataset.construct_dataset(fname)
@@ -135,14 +135,15 @@ datasets:
       - ./testdata/imagenet-000000.tgz
 """
 
+
 def test_dsspec2(tmp_path):
     tmp_path = str(tmp_path)
-    fname = tmp_path+"/test.ds.yml"
+    fname = tmp_path + "/test.ds.yml"
     with open(fname, "w") as stream:
         stream.write(dsspec2)
     ds = dataset.construct_dataset(fname)
     result = [x for x in ds]
-    assert len(result) == 2*47
+    assert len(result) == 2 * 47
 
 
 def test_length():
@@ -219,14 +220,16 @@ def test_dataset_missing_rename_raises():
         ds = wds.WebDataset(local_data).rename(x="foo", y="bar")
         count_samples_tuple(ds)
 
+def getkeys(sample):
+    return set(x for x in sample.keys() if not x.startswith("_"))
 
 def test_dataset_rename_keep():
     ds = wds.WebDataset(local_data).rename(image="png", keep=False)
     sample = next(iter(ds))
-    assert set(sample.keys()) == set(["image"]), set(sample.keys())
+    assert getkeys(sample) == set(["image"]), getkeys(sample)
     ds = wds.WebDataset(local_data).rename(image="png")
     sample = next(iter(ds))
-    assert set(sample.keys()) == set("__key__ cls image wnid xml".split()), set(sample.keys())
+    assert getkeys(sample) == set("cls image wnid xml".split()), getkeys(sample)
 
 
 def test_dataset_rsample():

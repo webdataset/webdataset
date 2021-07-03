@@ -80,7 +80,7 @@ def url_opener(data, handler=reraise_exception, **kw):
                 break
 
 
-def tar_file_iterator(fileobj, skip_meta=r"__[^/]*__($|/)", handler=reraise_exception):
+def tar_file_iterator(fileobj, skip_meta=r"__[^/]*__($|/)", handler=reraise_exception, info={}):
     """Iterate over tar file, yielding filename, content pairs for the given tar stream.
 
     :param fileobj: byte stream suitable for tarfile
@@ -101,7 +101,9 @@ def tar_file_iterator(fileobj, skip_meta=r"__[^/]*__($|/)", handler=reraise_exce
             if skip_meta is not None and re.match(skip_meta, fname):
                 continue
             data = stream.extractfile(tarinfo).read()
-            yield fname, data
+            result = dict(fname=fname, data=data)
+            result.update(info)
+            yield result
         except Exception as exn:
             if hasattr(exn, "args") and len(exn.args) > 0:
                 exn.args = (exn.args[0] + " @ " + str(fileobj),) + exn.args[1:]
@@ -121,8 +123,9 @@ def tar_file_expander(data, handler=reraise_exception):
         try:
             assert isinstance(source, dict)
             assert "stream" in source
-            for sample in tar_file_iterator(source["stream"]):
-                assert isinstance(sample, tuple) and len(sample) == 2
+            info = {k: v for k, v in source.items() if k.startswith("_")}
+            for sample in tar_file_iterator(source["stream"], info=info):
+                assert isinstance(sample, dict) and "data" in sample and "fname" in sample
                 yield sample
         except Exception as exn:
             if handler(exn):
@@ -138,7 +141,10 @@ def group_by_keys(data, keys=base_plus_ext, lcase=True, suffixes=None, handler=N
     :param lcase: convert suffixes to lower case (Default value = True)
     """
     current_sample = None
-    for fname, value in data:
+    for filesample in data:
+        assert isinstance(filesample, dict)
+        fname, value = filesample["fname"], filesample["data"]
+        info = {k: v for k, v in filesample.items() if k.startswith("__")}
         prefix, suffix = keys(fname)
         if trace:
             print(
@@ -154,6 +160,7 @@ def group_by_keys(data, keys=base_plus_ext, lcase=True, suffixes=None, handler=N
             if valid_sample(current_sample):
                 yield current_sample
             current_sample = dict(__key__=prefix)
+            current_sample.update(info)
         if suffix in current_sample:
             raise ValueError(f"{fname}: duplicate file name in tar file {suffix} {current_sample.keys()}")
         if suffixes is None or suffix in suffixes:

@@ -207,7 +207,13 @@ class PytorchShardList(IterableDataset, Composable, PytorchEnv):
         if self.verbose:
             print(f"PytorchShardList got {len(urls)} urls")
         for url in urls:
-            yield dict(url=url, worker=str(self.worker), rank=str(self.rank), nodeinfo=str(self.nodeinfo))
+            yield dict(
+                url=url,
+                __url__=url,
+                __worker__=str(self.worker),
+                __rank__=str(self.rank),
+                __nodeinfo__=str(self.nodeinfo),
+            )
 
 
 class ResampledShards(IterableDataset, Composable):
@@ -254,6 +260,7 @@ class Shorthands:
         return self.then(iterators.unbatched)
 
     def listed(self, batchsize, partial=True):
+        """Compute batches by just putting collections of samples into a list; analogous to batched."""
         return self.batched(batchsize, collation_fn=None, partial=partial)
 
     def unlisted(self):
@@ -521,6 +528,7 @@ class Processor(IterableDataset, Composable, Shorthands):
 
 
 def read_shardlist(fname):
+    """Construct a shardlist from multiple sources using a YAML spec."""
     with open(fname) as stream:
         spec = yaml.safe_load(stream)
     result = []
@@ -540,17 +548,23 @@ def read_shardlist(fname):
 
 @dataclass
 class Source:
+    """Class representing a data source."""
+
     dataset: IterableDataset
     probability: float = 1.0
     source: iter = None
 
 
 class RoundRobin(IterableDataset, Composable, Shorthands):
+    """Iterate through samples in a round-robin way."""
+
     def __init__(self, sources):
+        """Initialize from a set of sources."""
         super().__init__()
         self.sources = sources
 
     def __iter__(self):
+        """Iterate through the list of sources in a round-robin way until all sources have been exhausted."""
         index = 0
         iters = [s for s in self.sources]
         for s in iters:
@@ -576,6 +590,7 @@ def construct_dataset(
     handler=reraise_exception,
     repeat=False,
 ):
+    """Construct a composite dataset from multiple sources using a YAML spec."""
     with open(fname) as stream:
         spec = yaml.safe_load(stream)
     result = []
@@ -618,7 +633,7 @@ def construct_dataset(
         bs = ds.get("chunksize", chunksize)
         if bs > 0:
             dataset = dataset.listed(bs)
-        nworkers = ds.get("nworkers", 1)
+        nworkers = ds.get("nworkers", 0)
         if nworkers >= 0:
             dataset = WebLoader(dataset, num_workers=nworkers, batch_size=None, collate_fn=list)
         p = ds.get("probability", 1.0)
