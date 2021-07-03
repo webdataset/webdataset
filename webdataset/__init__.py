@@ -10,14 +10,16 @@
 from . import tenbin
 from .fluid import Dataset
 from .dataset import (
-    SimpleShardList,
-    PytorchShardList,
-    ResampledShards,
     Composable,
     Shorthands,
     WebDataset,
     WebLoader,
     Processor,
+)
+from .shardlists import (
+    SimpleShardList,
+    PytorchShardList,
+    ResampledShards,
 )
 from .extradatasets import (
     MockDataset
