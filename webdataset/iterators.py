@@ -188,7 +188,7 @@ def select(data, predicate):
 
 def log_keys(data, logfile=None):
     import fcntl
-    if logfile is None:
+    if logfile is None or logfile == "":
         for sample in data:
             yield sample
     else:
