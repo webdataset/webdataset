@@ -117,6 +117,10 @@ class MSSource:
 default_rng = random.Random()
 
 
+def expand(s):
+    return os.path.expanduser(os.path.expandvars(s))
+
+
 class MultiShardSample(ShardSample):
     def __init__(self, fname):
         """Construct a shardlist from multiple sources using a YAML spec."""
@@ -124,19 +128,19 @@ class MultiShardSample(ShardSample):
         with open(fname) as stream:
             spec = yaml.safe_load(stream)
         assert set(spec.keys()).issubset(set("prefix datasets".split()))
-        prefix = spec.get("prefix", "")
+        prefix = expand(spec.get("prefix", ""))
         self.sources = []
         for ds in spec["datasets"]:
-            assert set(ds.keys()).issubset(set("buckets name shards perepoch".split()))
-            buckets = ds.get("buckets", [""])
+            assert set(ds.keys()).issubset(set("buckets name shards perepoch choose".split()))
+            buckets = [expand(s) for s in ds.get("buckets", [""])]
             assert len(buckets) == 1, "FIXME support for multiple buckets unimplemented"
             bucket = buckets[0]
             name = ds.get("name", "@" + bucket)
             urls = ds["shards"]
             urls = [u for url in urls for u in braceexpand.braceexpand(url)]
             urls = [prefix + bucket + u for url in urls for u in braceexpand.braceexpand(url)]
-            resample = ds.get("resample", False)
-            nsample = ds.get("perepoch", len(urls))
+            resample = ds.get("choose", -1)
+            nsample = ds.get("perepoch", -1)
             entry = MSSource(name=name, urls=urls, perepoch=nsample, resample=resample)
             self.sources.append(entry)
             print(f"# {name} {len(urls)} {nsample}", file=sys.stderr)
@@ -148,12 +152,16 @@ class MultiShardSample(ShardSample):
     def sample(self):
         result = []
         for source in self.sources:
-            if source.resample:
+            if source.resample > 0:
+                # sample with replacement
                 l = self.rng.choices(source.urls, k=source.perepoch)
-            else:
+            elif source.perepoch > 0:
+                # sample without replacement
                 l = list(source.urls)
                 self.rng.shuffle(l)
                 l = l[: source.perepoch]
+            else:
+                l = list(source.urls)
             result += l
         self.rng.shuffle(result)
         return result
