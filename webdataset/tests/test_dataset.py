@@ -11,6 +11,7 @@ import webdataset.extradatasets as eds
 from webdataset import autodecode
 from webdataset import handlers
 from webdataset import dataset
+from webdataset import shardlists
 
 
 local_data = "testdata/imagenet-000000.tgz"
@@ -490,7 +491,7 @@ def test_multimode():
     count = count_samples_tuple(dl)
     assert count == 4 * nsamples, count
 
-    shardlist = wds.ResampledShards(urls)
+    shardlist = shardlists.ResampledShards(urls)
     ds = wds.WebDataset(shardlist).slice(170)
     dl = torch.utils.data.DataLoader(ds, num_workers=4)
     count = count_samples_tuple(dl)
