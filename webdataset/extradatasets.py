@@ -18,10 +18,11 @@ import random
 import braceexpand
 
 from .pytorch import IterableDataset
+from .composable import Composable, Shorthands
 from . import dataset
 from . import utils
 
-class MockDataset(IterableDataset, dataset.Composable, dataset.Shorthands):
+class MockDataset(IterableDataset, Composable, Shorthands):
     """MockDataset.
 
     A mock dataset for performance testing and unit testing.
@@ -42,7 +43,7 @@ class MockDataset(IterableDataset, dataset.Composable, dataset.Shorthands):
             yield self.sample
 
 
-class Repeatedly(IterableDataset, dataset.Composable, dataset.Shorthands):
+class Repeatedly(IterableDataset, Composable, Shorthands):
     """Repeatedly yield samples from a dataset."""
 
     def __init__(self, nepochs=None, nbatches=None, length=None):
@@ -64,7 +65,7 @@ class Repeatedly(IterableDataset, dataset.Composable, dataset.Shorthands):
         )
 
 
-class DatasetTest(IterableDataset, dataset.Composable, dataset.Shorthands):
+class DatasetTest(IterableDataset, Composable, Shorthands):
     """Perform final checks on an IterableDataset and permit easy mock tests.
 
     This is the implementation of the `dataset.Shorthands.test` method; you usually
@@ -104,7 +105,7 @@ class DatasetTest(IterableDataset, dataset.Composable, dataset.Shorthands):
                 yield sample
 
 
-class ChoppedDataset(IterableDataset, dataset.Composable, dataset.Shorthands):
+class ChoppedDataset(IterableDataset, Composable, Shorthands):
     """Change the actual and nominal length of an IterableDataset.
 
     This will continuously iterate through the original dataset, but
@@ -155,7 +156,7 @@ class ChoppedDataset(IterableDataset, dataset.Composable, dataset.Shorthands):
             yield sample
 
 
-class FakeLength(IterableDataset, dataset.Composable, dataset.Shorthands):
+class FakeLength(IterableDataset, Composable, Shorthands):
     """Repeatedly yield samples from a dataset."""
 
     def __init__(self, dataset, length):

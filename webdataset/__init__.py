@@ -10,10 +10,12 @@
 from . import tenbin
 from .fluid import Dataset
 from .dataset import (
-    Composable,
-    Shorthands,
     WebDataset,
     WebLoader,
+)
+from .composable import (
+    Composable,
+    Shorthands,
     Processor,
 )
 from .shardlists import (

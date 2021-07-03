@@ -114,9 +114,13 @@ class MSSource:
     urls: List[str] = None
 
 
+default_rng = random.Random()
+
+
 class MultiShardSample(ShardSample):
     def __init__(self, fname):
         """Construct a shardlist from multiple sources using a YAML spec."""
+        self.rng = default_rng  # capture default_rng if we fork
         with open(fname) as stream:
             spec = yaml.safe_load(stream)
         assert set(spec.keys()).issubset(set("prefix datasets".split()))
@@ -137,17 +141,21 @@ class MultiShardSample(ShardSample):
             self.sources.append(entry)
             print(f"# {name} {len(urls)} {nsample}", file=sys.stderr)
 
+    def set_epoch(self, seed):
+        """Set the current epoch (for consistent shard selection among nodes)."""
+        self.rng = random.Random(seed)
+
     def sample(self):
         result = []
         for source in self.sources:
             if source.resample:
-                l = random.choices(source.urls, k=source.perepoch)
+                l = self.rng.choices(source.urls, k=source.perepoch)
             else:
                 l = list(source.urls)
-                random.shuffle(l)
+                self.rng.shuffle(l)
                 l = l[: source.perepoch]
             result += l
-        random.shuffle(result)
+        self.rng.shuffle(result)
         return result
 
 
@@ -183,20 +191,28 @@ class PytorchShardList(IterableDataset, PytorchEnv, Composable):
         self.verbose = verbose
         if self.verbose:
             print("PytorchShardList init")
-        self.epoch = 0
+        self.epoch = -1
         self.epoch_shuffle = epoch_shuffle
         self.shuffle = shuffle
         self.split_by_worker = split_by_worker
         self.split_by_node = split_by_node
         if not isinstance(urls, ShardSample):
             urls = SimpleShardSample(urls)
-        self.urls = urls
+        self.shardsample = urls
+
+
+    def set_epoch(self, epoch):
+        """Set the current epoch. Used for per-node shuffling."""
+        self.epoch = epoch-1
+
 
     def __iter__(self):
         """Return an iterator over the shards."""
         self.epoch += 1
+        if hasattr(self.shardsample, "set_epoch"):
+            self.shardsample.set_epoch(self.epoch)
         self.update_env()
-        urls = self.urls.sample()
+        urls = self.shardsample.sample()
         if self.epoch_shuffle:
             if "WDS_EPOCH" not in os.environ:
                 raise ValueError(
