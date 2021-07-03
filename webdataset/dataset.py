@@ -134,6 +134,52 @@ class PytorchEnv:
         gopen.info["worker_id"], gopen.info["num_workers"] = self.worker or (-1, -1)
 
 
+class ShardSample:
+    pass
+
+
+class SimpleShardSample(ShardSample):
+    def __init__(self, urls):
+        if isinstance(urls, str):
+            urls = list(braceexpand.braceexpand(urls))
+        else:
+            urls = list(urls)
+        self.urls = list(urls)
+        assert isinstance(self.urls[0], str)
+    def sample(self):
+        return self.urls.copy()
+
+
+class MultiShardSample(ShardSample):
+    def __init__(self, fname):
+        """Construct a shardlist from multiple sources using a YAML spec."""
+        with open(fname) as stream:
+            spec = yaml.safe_load(stream)
+        assert set(spec.keys()).issubset(set("prefix datasets".split()))
+        prefix = spec.get("prefix", "")
+        self.sources = []
+        for ds in spec["datasets"]:
+            assert set(ds.keys()).issubset(set("buckets name shards perepoch".split()))
+            buckets = ds.get("buckets", [""])
+            assert len(buckets) == 1, "FIXME support for multiple buckets unimplemented"
+            bucket = buckets[0]
+            name = ds.get("name", "@"+bucket)
+            urls = ds["shards"]
+            urls = [u for url in urls for u in braceexpand.braceexpand(url)]
+            urls = [prefix+bucket+u for url in urls for u in braceexpand.braceexpand(url)]
+            nsample = ds.get("perepoch", len(urls))
+            self.sources.append((name, urls, nsample))
+            print(f"# {name} {len(urls)} {nsample}", file=sys.stderr)
+
+    def sample(self):
+        result = []
+        for name, urls, nsample in self.sources:
+            l = list(urls)
+            random.shuffle(l)
+            result += l[:nsample]
+        return result
+
+
 class PytorchShardList(IterableDataset, Composable, PytorchEnv):
     """An iterable dataset yielding a list of urls.
 
@@ -169,20 +215,17 @@ class PytorchShardList(IterableDataset, Composable, PytorchEnv):
         self.epoch = 0
         self.epoch_shuffle = epoch_shuffle
         self.shuffle = shuffle
-        if isinstance(urls, str):
-            urls = list(braceexpand.braceexpand(urls))
-        else:
-            urls = list(urls)
-        self.urls = list(urls)
-        assert isinstance(self.urls[0], str)
         self.split_by_worker = split_by_worker
         self.split_by_node = split_by_node
+        if not isinstance(urls, ShardSample):
+            urls = SimpleShardSample(urls)
+        self.urls = urls
 
     def __iter__(self):
         """Return an iterator over the shards."""
         self.epoch += 1
         self.update_env()
-        urls = self.urls.copy()
+        urls = self.urls.sample()
         if self.epoch_shuffle:
             if "WDS_EPOCH" not in os.environ:
                 raise ValueError(
@@ -266,6 +309,9 @@ class Shorthands:
     def unlisted(self):
         """Take a stream of batches and turn it back into a stream of samples."""
         return self.then(iterators.unlisted)
+
+    def log_keys(self, logfile=None):
+        return self.then(iterators.log_keys, logfile=logfile)
 
     def shuffle(self, size, **kw):
         """Shuffle the dataset using an internal shuffle buffer.
@@ -527,25 +573,6 @@ class Processor(IterableDataset, Composable, Shorthands):
         return self.f(iter(self.source), *self.args, **self.kw)
 
 
-def read_shardlist(fname):
-    """Construct a shardlist from multiple sources using a YAML spec."""
-    with open(fname) as stream:
-        spec = yaml.safe_load(stream)
-    result = []
-    for ds in spec["datasets"]:
-        buckets = ds.get("buckets", [""])
-        assert len(buckets) == 1, "FIXME support for multiple buckets unimplemented"
-        bucket = buckets[0]
-        urls = ds["shards"]
-        urls = [u for url in urls for u in braceexpand.braceexpand(url)]
-        if "sample" in ds:
-            # FIXME make this random per epoch
-            n = int(ds["sample"])
-            urls = urls[:n]
-        result += [bucket + url for url in urls]
-    return result
-
-
 @dataclass
 class Source:
     """Class representing a data source."""
@@ -556,7 +583,7 @@ class Source:
 
 
 class RoundRobin(IterableDataset, Composable, Shorthands):
-    """Iterate through samples in a round-robin way."""
+    """Iterate through datasets in a round-robin way."""
 
     def __init__(self, sources):
         """Initialize from a set of sources."""
@@ -594,8 +621,10 @@ def construct_dataset(
     with open(fname) as stream:
         spec = yaml.safe_load(stream)
     result = []
+    assert set(spec.keys()).issubset(set("prefix datasets epoch".split())), list(spec.keys())
     prefix = spec.get("prefix", "")
     for ds in spec["datasets"]:
+        assert set(ds.keys()).issubset(set("name buckets shards resampled epoch_shuffle shuffle split_by_worker split_by_node cachedir cachesize cachename cacheverbose subsample shuffle epoch chunksize nworkers probability".split())), list(ds.keys())
         buckets = ds.get("buckets", [""])
         assert len(buckets) == 1, "FIXME support for multiple buckets unimplemented"
         bucket = buckets[0]
@@ -691,7 +720,7 @@ def WebDataset(
         )
     if isinstance(urls, str):
         if urls.endswith(".shards.yml"):
-            urls = read_shardlist(urls)
+            urls = MultiShardSample(urls)
         result = PytorchShardList(urls)
     elif isinstance(urls, list):
         result = PytorchShardList(urls)

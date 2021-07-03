@@ -186,6 +186,23 @@ def select(data, predicate):
             yield sample
 
 
+def log_keys(data, logfile=None):
+    import fcntl
+    if logfile is None:
+        for sample in data:
+            yield sample
+    else:
+        with open(logfile, "a") as stream:
+            for i, sample in enumerate(data):
+                buf = f"{i}\t{sample.get('__worker__')}\t{sample.get('__rank__')}\t{sample.get('__key__')}\n"
+                try:
+                    fcntl.flock(stream.fileno(), fcntl.LOCK_EX)
+                    stream.write(buf)
+                finally:
+                    fcntl.flock(stream.fileno(), fcntl.LOCK_UN)
+                yield sample
+
+
 def decode(data, *args, handler=reraise_exception, **kw):
     """Decode data based on the decoding functions given as arguments."""
     f = autodecode.Decoder(list(args), **kw)

@@ -57,19 +57,21 @@ shardspec = """
 datasets:
 
   - name: CDIP
+    perepoch: 10
     buckets:
       - ./gs/nvdata-ocropus/words/
     shards:
     - cdipsub-{000000..000092}.tar
 
   - name: Google 1000 Books
-    sample: 20
+    perepoch: 20
     buckets:
       - ./gs/nvdata-ocropus/words/
     shards:
       - gsub-{000000..000167}.tar
 
   - name: Internet Archive Sample
+    perepoch: 30
     buckets:
       - ./gs/nvdata-ocropus/words/
     shards:
@@ -82,8 +84,9 @@ def test_yaml(tmp_path):
     fname = tmp_path + "/test.shards.yml"
     with open(fname, "w") as stream:
         stream.write(shardspec)
-    ds = dataset.read_shardlist(fname)
-    assert len(ds) == 147, len(ds)
+    ds = dataset.MultiShardSample(fname)
+    l = ds.sample()
+    assert len(l) == 60, len(l)
 
 
 dsspec = """
@@ -145,6 +148,16 @@ def test_dsspec2(tmp_path):
     result = [x for x in ds]
     assert len(result) == 2 * 47
 
+
+def test_log_keys(tmp_path):
+    tmp_path = str(tmp_path)
+    fname = tmp_path + "/test.ds.yml"
+    ds = wds.WebDataset(local_data).log_keys(fname)
+    result = [x for x in ds]
+    assert len(result) == 47
+    with open(fname) as stream:
+        lines = stream.readlines()
+    assert len(lines) == 47
 
 def test_length():
     ds = wds.WebDataset(local_data)
