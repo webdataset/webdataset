@@ -141,6 +141,10 @@ class MultiShardSample(ShardSample):
             urls = [prefix + bucket + u for url in urls for u in braceexpand.braceexpand(url)]
             resample = ds.get("choose", -1)
             nsample = ds.get("perepoch", -1)
+            if nsample > len(urls):
+                raise ValueError(f"perepoch {nsample} must be no greater than the number of shards")
+            if (nsample > 0) and (resample > 0):
+                raise ValueError(f"specify only one of perepoch or choose")
             entry = MSSource(name=name, urls=urls, perepoch=nsample, resample=resample)
             self.sources.append(entry)
             print(f"# {name} {len(urls)} {nsample}", file=sys.stderr)
