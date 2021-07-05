@@ -158,7 +158,7 @@ class MultiShardSample(ShardSample):
         for source in self.sources:
             if source.resample > 0:
                 # sample with replacement
-                l = self.rng.choices(source.urls, k=source.perepoch)
+                l = self.rng.choices(source.urls, k=source.resample)
             elif source.perepoch > 0:
                 # sample without replacement
                 l = list(source.urls)
