@@ -65,5 +65,6 @@ from .iterators import (
     map_tuple,
     batched,
     unbatched,
+    getfirst,
 )
 from .dbcache import DBCache
