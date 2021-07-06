@@ -63,8 +63,12 @@ class PytorchEnv:
         available only in the environment where the loader is created.
         This class retains that environment info when it is serialized.
         """
-        import torch
-        import torch.distributed
+        try:
+            import torch
+            import torch.distributed
+        except Exception:
+            return
+
         from . import gopen
         import socket
 
