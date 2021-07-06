@@ -50,10 +50,13 @@ class PytorchEnv:
 
     def __init__(self, group=None):
         """Initialize rank/worker information."""
+        import socket
+
         super().__init__()
         self.rank = None
         self.worker = None
         self.group = group
+        self.nodeinfo = (socket.gethostname(), os.getpid())
         self.update_env()
 
     def update_env(self):
@@ -63,16 +66,14 @@ class PytorchEnv:
         available only in the environment where the loader is created.
         This class retains that environment info when it is serialized.
         """
+
+        from . import gopen
+
         try:
             import torch
             import torch.distributed
         except Exception:
             return
-
-        from . import gopen
-        import socket
-
-        self.nodeinfo = (socket.gethostname(), os.getpid())
 
         if self.rank is None:
             if torch.distributed.is_available() and torch.distributed.is_initialized():
@@ -148,7 +149,7 @@ class MultiShardSample(ShardSample):
             if nsample > len(urls):
                 raise ValueError(f"perepoch {nsample} must be no greater than the number of shards")
             if (nsample > 0) and (resample > 0):
-                raise ValueError(f"specify only one of perepoch or choose")
+                raise ValueError("specify only one of perepoch or choose")
             entry = MSSource(name=name, urls=urls, perepoch=nsample, resample=resample)
             self.sources.append(entry)
             print(f"# {name} {len(urls)} {nsample}", file=sys.stderr)
@@ -216,11 +217,9 @@ class PytorchShardList(IterableDataset, PytorchEnv, Composable):
             urls = SimpleShardSample(urls)
         self.shardsample = urls
 
-
     def set_epoch(self, epoch):
         """Set the current epoch. Used for per-node shuffling."""
-        self.epoch = epoch-1
-
+        self.epoch = epoch - 1
 
     def __iter__(self):
         """Return an iterator over the shards."""
