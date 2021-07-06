@@ -12,11 +12,7 @@ import sys
 import uuid
 
 
-try:
-    from torch.utils.data import IterableDataset
-except ModuleNotFoundError:
-    from .mock import IterableDataset
-
+from .pytorch import IterableDataset
 
 def get_uuid(data):
     """Compute a UUID for data.
