@@ -69,11 +69,13 @@ def url_opener(data, handler=reraise_exception, **kw):
     for sample in data:
         assert isinstance(sample, dict), sample
         assert "url" in sample
+        url = sample["url"]
         try:
-            stream = gopen.gopen(sample["url"], **kw)
+            stream = gopen.gopen(url, **kw)
             sample.update(stream=stream)
             yield sample
         except Exception as exn:
+            exn.args = exn.args + (url,)
             if handler(exn):
                 continue
             else:
@@ -89,10 +91,10 @@ def tar_file_iterator(fileobj, skip_meta=r"__[^/]*__($|/)", handler=reraise_exce
     """
     stream = tarfile.open(fileobj=fileobj, mode="r|*")
     for tarinfo in stream:
+        fname = tarinfo.name
         try:
             if not tarinfo.isreg():
                 continue
-            fname = tarinfo.name
             if fname is None:
                 continue
             if "/" not in fname and fname.startswith(meta_prefix) and fname.endswith(meta_suffix):
@@ -120,6 +122,7 @@ def tar_file_expander(data, handler=reraise_exception):
     This returns an iterator over (filename, file_contents).
     """
     for source in data:
+        info = None
         try:
             assert isinstance(source, dict)
             assert "stream" in source
@@ -128,6 +131,7 @@ def tar_file_expander(data, handler=reraise_exception):
                 assert isinstance(sample, dict) and "data" in sample and "fname" in sample
                 yield sample
         except Exception as exn:
+            exn.args = exn.args + (source.get("stream"), info)
             if handler(exn):
                 continue
             else:
