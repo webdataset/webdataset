@@ -16,10 +16,7 @@ from .dataset import (
 )
 from .handlers import reraise_exception
 
-try:
-    from torch.utils.data import IterableDataset
-except ModuleNotFoundError:
-    from .mock import IterableDataset
+from .pytorch import IterableDataset
 
 
 class Dataset(IterableDataset):
