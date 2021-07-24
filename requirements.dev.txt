@@ -27,3 +27,6 @@ imageio
 
 nbconvert
 jupyter-contrib-nbextensions
+
+mkdocs
+pdoc
