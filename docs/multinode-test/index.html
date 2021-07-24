@@ -9,7 +9,7 @@
   
   
   <link rel="shortcut icon" href="../img/favicon.ico">
-  <title>Multinode - webdataset</title>
+  <title>Multinode test - webdataset</title>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700" />
 
   <link rel="stylesheet" href="../css/theme.css" />
@@ -18,8 +18,8 @@
   
   <script>
     // Current page data
-    var mkdocs_page_name = "Multinode";
-    var mkdocs_page_input_path = "multinode.md";
+    var mkdocs_page_name = "Multinode test";
+    var mkdocs_page_input_path = "multinode-test.md";
     var mkdocs_page_url = null;
   </script>
   
@@ -55,7 +55,7 @@
                     </li>
                 </ul>
                 <p class="caption"><span class="caption-text">Examples</span></p>
-                <ul class="current">
+                <ul>
                     <li class="toctree-l1"><a class="reference internal" href="../gettingstarted/">Getting Started</a>
                     </li>
                     <li class="toctree-l1"><a class="reference internal" href="../creating/">Creating Webdatasets</a>
@@ -66,9 +66,7 @@
                     </li>
                     <li class="toctree-l1"><a class="reference internal" href="../howitworks/">How It Works</a>
                     </li>
-                    <li class="toctree-l1 current"><a class="reference internal current" href="./">Multinode</a>
-    <ul class="current">
-    </ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../multinode/">Multinode</a>
                     </li>
                     <li class="toctree-l1"><a class="reference internal" href="../sharding/">Sharding</a>
                     </li>
@@ -106,15 +104,11 @@
     <li><a href="..">Docs</a> &raquo;</li>
     
       
-        
-          <li>Examples &raquo;</li>
-        
-      
     
-    <li>Multinode</li>
+    <li>Multinode test</li>
     <li class="wy-breadcrumbs-aside">
       
-        <a href="http://github.com/webdataset/webdataset/edit/master/docs/multinode.md"
+        <a href="http://github.com/webdataset/webdataset/edit/master/docs/multinode-test.md"
           class="icon icon-github"> Edit on GitHub</a>
       
     </li>
@@ -126,65 +120,115 @@
           <div role="main">
             <div class="section">
               
-                <pre><code class="language-python">%pylab inline
+                <pre><code class="language-python">import os
+import sys
+</code></pre>
+<pre><code class="language-python">for i in range(16):
+    target = f&quot;imagenet-{i:06d}.tgz&quot;
+    if os.path.islink(target):
+        continue
+    os.symlink(&quot;../testdata/imagenet-000000.tgz&quot;, target)
+</code></pre>
+<pre><code class="language-python">%%writefile demo.py
 
+import os
+import sys
+import tempfile
 import torch
+import torch.distributed as dist
+import torch.nn as nn
+import torch.optim as optim
+import torch.multiprocessing as mp
 import webdataset as wds
-import braceexpand
+from functools import partial
+
+from torch.nn.parallel import DistributedDataParallel as DDP
+
+def mockdata(_):
+    return torch.randn(10), torch.randn(5)
+
+os.environ[&quot;GOPEN_VERBOSE&quot;] = &quot;1&quot;
+
+def setup(rank, world_size):
+    os.environ['MASTER_ADDR'] = 'localhost'
+    os.environ['MASTER_PORT'] = '12355'
+    dist.init_process_group(&quot;gloo&quot;, rank=rank, world_size=world_size)
+
+def make_loader():
+    shardlist = partial(wds.PytorchShardList, epoch_shuffle=True, verbose=False)
+    dataset = wds.WebDataset(&quot;imagenet-{000000..000015}.tgz&quot;, shardlist=shardlist).map(mockdata)
+    loader = wds.WebLoader(dataset, num_workers=4, batch_size=20)
+    return loader
+
+def cleanup():
+    dist.destroy_process_group()
+
+class ToyModel(nn.Module):
+    def __init__(self):
+        super(ToyModel, self).__init__()
+        self.net1 = nn.Linear(10, 10)
+        self.relu = nn.ReLU()
+        self.net2 = nn.Linear(10, 5)
+
+    def forward(self, x):
+        return self.net2(self.relu(self.net1(x)))
+
+def demo_basic(rank, world_size):
+    print(f&quot;Running basic DDP example on rank {rank} of {world_size}.&quot;)
+    setup(rank, world_size)
+
+    # create model and move it to GPU with id rank
+    model = ToyModel().to(rank)
+    ddp_model = DDP(model, device_ids=[rank])
+
+    loss_fn = nn.MSELoss()
+    optimizer = optim.SGD(ddp_model.parameters(), lr=0.001)
+
+    loader = make_loader()
+    for epoch in range(2):
+        print(&quot;=== epoch&quot;, epoch)
+        os.environ[&quot;WDS_EPOCH&quot;] = str(epoch)
+        for inputs, labels in loader:
+            optimizer.zero_grad()
+            outputs = ddp_model(inputs.to(rank))
+            loss_fn(outputs, labels.to(rank)).backward()
+            optimizer.step()
+
+    cleanup()
 </code></pre>
-<pre><code>Populating the interactive namespace from numpy and matplotlib
+<pre><code>Overwriting demo.py
 </code></pre>
-<h1 id="splitting-shards-across-nodes-and-workers">Splitting Shards across Nodes and Workers</h1>
-<p>Unlike traditional PyTorch <code>Dataset</code> instances, <code>WebDataset</code> splits data across nodes at the shard level, not at the sample level.</p>
-<p>This functionality is handled inside the <code>ShardList</code> class. Recall that <code>dataset = webdataset.Webdataset(urls)</code> is just a shorthand for:</p>
-<pre><code class="language-python">urls = list(braceexpand.braceexpand(&quot;dataset-{000000..000999}.tar&quot;))
-dataset = wds.ShardList(urls, splitter=wds.split_by_worker, nodesplitter=wds.split_by_node, shuffle=False)
-dataset = wds.Processor(dataset, wds.url_opener)
-dataset = wds.Processor(dataset, wds.tar_file_expander)
-dataset = wds.Processor(dataset, wds.group_by_keys)
+<pre><code class="language-python">from imp import reload
+import demo
+reload(demo)
 </code></pre>
-<p>Here, <code>nodesplitter</code> and <code>splitter</code> are functions that are called inside <code>ShardList</code> to split up the URLs in <code>urls</code> by node and worker. You can use any functions you like there, all they need to do is take a list of URLs and return a subset of those URLs as a result.</p>
-<p>The default <code>split_by_worker</code> looks roughly like:</p>
-<pre><code class="language-python">def my_split_by_worker(urls):
-    wi = torch.utils.data.get_worker_info()
-    if wi is None:
-        return urls
-    else:
-        return urls[wi.id::wi.num_workers]
+<pre><code>&lt;module 'demo' from '/home1/tmb/proj/webdataset/notebooks/demo.py'&gt;
 </code></pre>
-<p>The same approach works for multiple worker nodes:</p>
-<pre><code class="language-python">def my_split_by_node(urls):
-    node_id, node_count = torch.distributed.get_rank(), torch.distributed.get_world_size()
-    return urls[node_id::node_count]
+<pre><code class="language-python">import os
+import sys
+import tempfile
+import torch
+import torch.distributed as dist
+import torch.nn as nn
+import torch.optim as optim
+import torch.multiprocessing as mp
+
+def run_demo(demo_fn, world_size):
+    mp.spawn(demo_fn,
+             args=(world_size,),
+             nprocs=world_size,
+             join=True)
+
+run_demo(demo.demo_basic, 2)
 </code></pre>
-<pre><code class="language-python">dataset = wds.WebDataset(urls, splitter=my_split_by_worker, nodesplitter=my_split_by_node)
+<pre><code class="language-python">
 </code></pre>
-<p>Of course, you can also create more complex splitting strategies if necessary.</p>
-<h1 id="distributeddataparallel">DistributedDataParallel</h1>
-<p>DistributedDataParallel training requires that each participating node receive exactly the same number of training batches as all others. The <code>ddp_equalize</code> method ensures this:</p>
-<pre><code class="language-python">urls = &quot;./shards/imagenet-train-{000000..001281}.tar&quot;
-dataset_size, batch_size = 1282000, 64
-dataset = wds.WebDataset(urls).decode(&quot;pil&quot;).shuffle(5000).batched(batch_size, partial=False)
-loader = wds.WebLoader(dataset, num_workers=4)
-loader = loader.ddp_equalize(dataset_size // batch_size)
-</code></pre>
-<p>You need to give the total number of batches in your dataset to <code>ddp_equalize</code>; it will compute the batches per node from this and equalize batches accordingly.</p>
-<p>You need to apply <code>ddp_equalize</code> to the <code>WebLoader</code> rather than the <code>Dataset</code>.</p>
 <pre><code class="language-python">
 </code></pre>
               
             </div>
           </div>
           <footer>
-  
-    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
-      
-        <a href="../sharding/" class="btn btn-neutral float-right" title="Sharding">Next <span class="icon icon-circle-arrow-right"></span></a>
-      
-      
-        <a href="../howitworks/" class="btn btn-neutral" title="How It Works"><span class="icon icon-circle-arrow-left"></span> Previous</a>
-      
-    </div>
   
 
   <hr/>
@@ -212,10 +256,6 @@ loader = loader.ddp_equalize(dataset_size // batch_size)
         </span>
     
     
-      <span><a href="../howitworks/" style="color: #fcfcfc">&laquo; Previous</a></span>
-    
-    
-      <span><a href="../sharding/" style="color: #fcfcfc">Next &raquo;</a></span>
     
   </span>
 </div>
