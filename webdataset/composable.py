@@ -181,7 +181,7 @@ class Shorthands:
         """
         return self.then(iterators.select, predicate, _kwa=kw)
 
-    def to_tuple(self, *args, handler=reraise_exception):
+    def to_tuple(self, *args, handler=reraise_exception, **kw):
         """Convert a dictionary-based sample to a tuple.
 
         Field names to be extracted can be specified as a Python list
@@ -191,8 +191,10 @@ class Shorthands:
 
         :param args: field names
         :param handler: exception handler
+        :param missing_is_error: whether to ignore fields missing from samples and replace them by None
+        :param none_is_error: whether reading a None triggers an exception, defaults to missing_is_error
         """
-        return self.then(iterators.to_tuple, *args, handler=handler)
+        return self.then(iterators.to_tuple, *args, handler=handler, **kw)
 
     def map_tuple(self, *args, handler=reraise_exception):
         """Map a tuple.
