@@ -10,6 +10,7 @@
 import random
 import re
 import tarfile
+import collections
 
 import braceexpand
 from .handlers import reraise_exception
@@ -144,7 +145,7 @@ def group_by_keys(data, keys=base_plus_ext, lcase=True, suffixes=None, handler=N
     :param keys: function that splits the key into key and extension (base_plus_ext)
     :param lcase: convert suffixes to lower case (Default value = True)
     """
-    current_sample = None
+    all_samples = collections.defaultdict(dict)
     for filesample in data:
         assert isinstance(filesample, dict)
         fname, value = filesample["fname"], filesample["data"]
@@ -160,14 +161,10 @@ def group_by_keys(data, keys=base_plus_ext, lcase=True, suffixes=None, handler=N
             continue
         if lcase:
             suffix = suffix.lower()
-        if current_sample is None or prefix != current_sample["__key__"]:
-            if valid_sample(current_sample):
-                yield current_sample
-            current_sample = dict(__key__=prefix)
-            current_sample.update(info)
-        if suffix in current_sample:
+        all_samples[prefix]["__key__"] = prefix
+        if suffix in all_samples[prefix]:
             raise ValueError(f"{fname}: duplicate file name in tar file {suffix} {current_sample.keys()}")
-        if suffixes is None or suffix in suffixes:
-            current_sample[suffix] = value
-    if valid_sample(current_sample):
-        yield current_sample
+        all_samples[prefix][suffix] = value
+    for current_sample in all_samples.values():
+        if valid_sample(current_sample):
+            yield current_sample
