@@ -10,21 +10,22 @@ import sys
 import re
 import importlib
 import itertools as itt
+from typing import Any, Union, Optional, Callable, Iterator
 
 
-def identity(x):
+def identity(x: Any) -> Any:
     """Return the argument as is."""
     return x
 
 
-def safe_eval(s, expr="{}"):
+def safe_eval(s: str, expr: str = "{}"):
     """Evaluate the given expression more safely."""
     if re.sub("[^A-Za-z0-9_]", "", s) != s:
         raise ValueError(f"safe_eval: illegal characters in: '{s}'")
     return eval(expr.format(s))
 
 
-def lookup_sym(sym, modules):
+def lookup_sym(sym: str, modules: list):
     """Look up a symbol in a list of modules."""
     for mname in modules:
         module = importlib.import_module(mname, package="webdataset")
@@ -34,19 +35,25 @@ def lookup_sym(sym, modules):
     return None
 
 
-def repeatedly0(loader, nepochs=sys.maxsize, nbatches=sys.maxsize):
+def repeatedly0(loader: Iterator, nepochs: int = sys.maxsize, nbatches: int = sys.maxsize):
     """Repeatedly returns batches from a DataLoader."""
     for epoch in range(nepochs):
         for sample in itt.islice(loader, nbatches):
             yield sample
 
 
-def guess_batchsize(batch):
+def guess_batchsize(batch: Union[tuple, list]):
     """Guess the batch size by looking at the length of the first element in a tuple."""
     return len(batch[0])
 
 
-def repeatedly(source, nepochs=None, nbatches=None, nsamples=None, batchsize=guess_batchsize):
+def repeatedly(
+    source: Iterator,
+    nepochs: int = None,
+    nbatches: int = None,
+    nsamples: int = None,
+    batchsize: Callable[..., int] = guess_batchsize,
+):
     """Repeatedly yield samples from an iterator."""
     epoch = 0
     batch = 0
