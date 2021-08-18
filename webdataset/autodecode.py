@@ -94,6 +94,9 @@ def basichandlers(key, data):
         stream = io.BytesIO(data)
         return numpy.lib.format.read_array(stream)
 
+    if extension in "npz".split():
+        return np.load(io.BytesIO(data))
+
 
 ################################################################
 # Generic extension handler.
