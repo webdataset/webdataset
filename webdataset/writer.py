@@ -97,6 +97,18 @@ def numpy_dumps(data: np.ndarray):
     return stream.getvalue()
 
 
+def numpy_npz_dumps(data: np.ndarray):
+    """Dump data into a bytestring using numpy npz format.
+
+    :param data: data to be dumped
+    """
+    import io
+
+    stream = io.BytesIO()
+    np.savez_compressed(stream, **data)
+    return stream.getvalue()
+
+
 def make_handlers():
     """Create a list of handlers for encoding data."""
     handlers = {}
@@ -120,6 +132,8 @@ def make_handlers():
         handlers[extension] = torch_dumps
     for extension in ["npy"]:
         handlers[extension] = numpy_dumps
+    for extension in ["npz"]:
+        handlers[extension] = numpy_npz_dumps
     for extension in ["json", "jsn"]:
         handlers[extension] = lambda x: json.dumps(x).encode("utf-8")
     for extension in ["ten", "tb"]:
