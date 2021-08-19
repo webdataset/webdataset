@@ -152,7 +152,10 @@ class ChoppedDataset(IterableDataset, Composable, Shorthands):
                 sample = next(self.source)
             except StopIteration:
                 self.source = iter(self.dataset)
-                sample = next(self.source)
+                try:
+                    sample = next(self.source)
+                except StopIteration:
+                    return
             yield sample
 
 
