@@ -30,7 +30,7 @@ def imageencoder(image: Any, format: str = "PNG"):  # skipcq: PYL-W0622
     """
     import PIL
 
-    assert isinstance(image, (PIL.Image, np.ndarray)), type(image)
+    assert isinstance(image, (PIL.Image.Image, np.ndarray)), type(image)
 
     if isinstance(image, np.ndarray):
         if image.dtype in [np.dtype("f"), np.dtype("d")]:
