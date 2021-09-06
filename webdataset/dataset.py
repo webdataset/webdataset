@@ -17,7 +17,7 @@ from .composable import Composable, Processor
 from .utils import lookup_sym, safe_eval
 from .handlers import reraise_exception
 from .pytorch import IterableDataset, DataLoader
-from .shardlists import PytorchShardList, MultiShardSample
+from .shardlists import PytorchShardList, MultiShardSample, ResampledShards
 from .dsspecs import construct_dataset
 
 default_cache_dir = os.path.expanduser(os.environ.get("WEBDATASET_CACHE", ""))
@@ -33,6 +33,7 @@ def WebDataset(
     cache_name=default_cache_name,
     cache_verbose=default_cache_verbose,
     handler=reraise_exception,
+    resampled=False,
     repeat=False,
 ):
     """Return a pipeline for WebDataset-style data files.
@@ -49,6 +50,7 @@ def WebDataset(
     via writing a new shardlist class.
 
     :param urls: the source URLs: a string, a list, or an IterableDataset
+    :param resampled: use shard resampling
     :param handler: an error handler
     :param cache_dir: when set, caches shards in this directory
     :param cache_size: when set, specifies a maximum size for the shard cache
@@ -66,7 +68,9 @@ def WebDataset(
             handler=handler,
             repeat=repeat,
         )
-    if isinstance(urls, str):
+    if resampled:
+        urls = ResampledShards(urls)
+    elif isinstance(urls, str):
         if urls.endswith(".shards.yml"):
             urls = MultiShardSample(urls)
         result = PytorchShardList(urls)
