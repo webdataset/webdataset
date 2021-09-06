@@ -69,7 +69,7 @@ def WebDataset(
             repeat=repeat,
         )
     if resampled:
-        urls = ResampledShards(urls)
+        result = ResampledShards(urls)
     elif isinstance(urls, str):
         if urls.endswith(".shards.yml"):
             urls = MultiShardSample(urls)
