@@ -48,7 +48,7 @@ class RoundRobin(IterableDataset, Composable, Shorthands):
         self.sources = sources
 
     def add_dataset(self, dataset, probability=1.0):
-        self.sources.add(Source(dataset=dataset, probability=probability))
+        self.sources.append(Source(dataset=dataset, probability=probability))
 
     def __iter__(self):
         """Iterate through the list of sources in a round-robin way until all sources have been exhausted."""
