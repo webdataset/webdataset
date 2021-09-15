@@ -37,6 +37,7 @@ class Source:
     dataset: IterableDataset
     probability: float = 1.0
     source: Optional[Iterator[Any]] = None
+    comment: str = ""
 
 
 class RoundRobin(IterableDataset, Composable, Shorthands):
@@ -47,8 +48,8 @@ class RoundRobin(IterableDataset, Composable, Shorthands):
         super().__init__()
         self.sources = sources
 
-    def add_dataset(self, dataset, probability=1.0):
-        self.sources.append(Source(dataset=dataset, probability=probability))
+    def add_dataset(self, dataset, probability=1.0, comment=""):
+        self.sources.append(Source(dataset=dataset, probability=probability, comment=comment))
 
     def __iter__(self):
         """Iterate through the list of sources in a round-robin way until all sources have been exhausted."""
@@ -65,6 +66,9 @@ class RoundRobin(IterableDataset, Composable, Shorthands):
             index += 1
             if index >= len(iters):
                 index = 0
+
+    def __str__(self):
+        return f"RoundRobin({self.sources})"
 
 
 def check_allowed(d, allowed, name="dictionary"):
