@@ -22,6 +22,7 @@ from .utils import lookup_sym, safe_eval
 from .handlers import reraise_exception
 from .pytorch import IterableDataset
 from .shardlists import PytorchShardList, ResampledShards
+from typing import Iterator, Any, Optional
 
 default_cache_dir = os.path.expanduser(os.environ.get("WEBDATASET_CACHE", ""))
 default_cache_name = lookup_sym(os.environ.get("WEBDATASET_CACHE_NAME", "shard_uuid"), ".shardcache".split())
@@ -35,16 +36,19 @@ class Source:
 
     dataset: IterableDataset
     probability: float = 1.0
-    source: iter = None
+    source: Optional[Iterator[Any]] = None
 
 
 class RoundRobin(IterableDataset, Composable, Shorthands):
     """Iterate through datasets in a round-robin way."""
 
-    def __init__(self, sources):
+    def __init__(self, sources=[]):
         """Initialize from a set of sources."""
         super().__init__()
         self.sources = sources
+
+    def add_dataset(self, dataset, probability=1.0):
+        self.sources.add(Source(dataset=dataset, probability=probability))
 
     def __iter__(self):
         """Iterate through the list of sources in a round-robin way until all sources have been exhausted."""
