@@ -43,10 +43,10 @@ class Source:
 class RoundRobin(IterableDataset, Composable, Shorthands):
     """Iterate through datasets in a round-robin way."""
 
-    def __init__(self, sources=[]):
+    def __init__(self, sources=None):
         """Initialize from a set of sources."""
         super().__init__()
-        self.sources = sources
+        self.sources = sources if sources is not None else []
 
     def add_dataset(self, dataset, probability=1.0, comment=""):
         self.sources.append(Source(dataset=dataset, probability=probability, comment=comment))
