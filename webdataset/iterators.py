@@ -11,6 +11,8 @@ in webdataset.filters, and you can find IterableDataset wrappers in
 webdataset.processing.
 """
 
+import os
+import time
 import random
 import sys
 from functools import reduce
@@ -142,7 +144,11 @@ def info(data, fmt=None, n=3, every=-1, width=50, stream=sys.stderr, name=""):
         yield sample
 
 
-def shuffle(data, bufsize=1000, initial=100, rng=random, handler=None):
+shuffle_rng = random.Random()
+shuffle_rng.seed((os.getpid(), time.time()))
+
+
+def shuffle(data, bufsize=1000, initial=100, rng=shuffle_rng, handler=None):
     """Shuffle the data in the stream.
 
     This uses a buffer of size `bufsize`. Shuffling at
