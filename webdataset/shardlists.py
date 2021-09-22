@@ -12,6 +12,7 @@ Code works locally or over HTTP connections.
 
 import os
 import sys
+import time
 import random
 import yaml
 from dataclasses import dataclass
@@ -268,6 +269,7 @@ class ResampledShards(IterableDataset, Composable):
         self,
         urls,
         nshards=sys.maxsize,
+        env=None,
     ):
         """Sample shards from the shard list with replacement.
 
@@ -280,9 +282,15 @@ class ResampledShards(IterableDataset, Composable):
             urls = list(urls)
         self.urls = urls
         self.nshards = nshards
+        self.env = env or PytorchEnv()
+        self.rng = random.Random()
         assert isinstance(self.urls[0], str)
 
     def __iter__(self):
         """Return an iterator over the shards."""
+        rank, world = self.env.rank or (0, 1)
+        worker, nworkers = self.env.worker or (0, 1)
+        seed = (rank, worker, os.getpid(), time.time())
+        self.rng.seed(seed)
         for _ in range(self.nshards):
-            yield dict(url=random.choice(self.urls))
+            yield dict(url=self.rng.choice(self.urls))
