@@ -15,11 +15,9 @@ from .dataset import (
     default_cache_verbose,
 )
 from .handlers import reraise_exception
+import warnings
 
-try:
-    from torch.utils.data import IterableDataset
-except ModuleNotFoundError:
-    from .mock import IterableDataset
+from .pytorch import IterableDataset
 
 
 class Dataset(IterableDataset):
@@ -40,6 +38,7 @@ class Dataset(IterableDataset):
     ):
         """Create a Dataset instance. See WebDataset for documentation."""
         super().__init__()
+        raise Exception("Dataset is deprecated; use webdataset.WebDataset instead")
         self._dataset = WebDataset(
             urls,
             shardshuffle=shuffle,

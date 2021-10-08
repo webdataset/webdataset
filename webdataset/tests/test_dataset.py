@@ -54,6 +54,11 @@ def test_dataset():
     assert count_samples_tuple(ds) == 47
 
 
+def test_dataset_resampled():
+    ds = wds.WebDataset(local_data, resampled=True)
+    assert count_samples_tuple(ds, n=100) == 100
+
+
 shardspec = """
 datasets:
 

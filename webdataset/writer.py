@@ -12,13 +12,14 @@ import re
 import tarfile
 import time
 import json
+from typing import Union, Any, Callable, Optional
 
 import numpy as np
 
 from . import gopen
 
 
-def imageencoder(image, format="PNG"):  # skipcq: PYL-W0622
+def imageencoder(image: Any, format: str = "PNG"):  # skipcq: PYL-W0622
     """Compress an image using PIL and return it as a string.
 
     Can handle float or uint8 images.
@@ -28,6 +29,8 @@ def imageencoder(image, format="PNG"):  # skipcq: PYL-W0622
 
     """
     import PIL
+
+    assert isinstance(image, (PIL.Image.Image, np.ndarray)), type(image)
 
     if isinstance(image, np.ndarray):
         if image.dtype in [np.dtype("f"), np.dtype("d")]:
@@ -52,7 +55,7 @@ def imageencoder(image, format="PNG"):  # skipcq: PYL-W0622
         return result.getvalue()
 
 
-def bytestr(data):
+def bytestr(data: Any):
     """Convert data into a bytestring.
 
     Uses str and ASCII encoding for data that isn't already in string format.
@@ -66,7 +69,7 @@ def bytestr(data):
     return str(data).encode("ascii")
 
 
-def torch_dumps(data):
+def torch_dumps(data: Any):
     """Dump data into a bytestring using torch.dumps.
 
     This delays importing torch until needed.
@@ -81,8 +84,8 @@ def torch_dumps(data):
     return stream.getvalue()
 
 
-def numpy_dumps(data):
-    """Dump data into a bytestring using numpy npy format
+def numpy_dumps(data: np.ndarray):
+    """Dump data into a bytestring using numpy npy format.
 
     :param data: data to be dumped
     """
@@ -91,6 +94,18 @@ def numpy_dumps(data):
 
     stream = io.BytesIO()
     numpy.lib.format.write_array(stream, data)
+    return stream.getvalue()
+
+
+def numpy_npz_dumps(data: np.ndarray):
+    """Dump data into a bytestring using numpy npz format.
+
+    :param data: data to be dumped
+    """
+    import io
+
+    stream = io.BytesIO()
+    np.savez_compressed(stream, **data)
     return stream.getvalue()
 
 
@@ -117,6 +132,8 @@ def make_handlers():
         handlers[extension] = torch_dumps
     for extension in ["npy"]:
         handlers[extension] = numpy_dumps
+    for extension in ["npz"]:
+        handlers[extension] = numpy_npz_dumps
     for extension in ["json", "jsn"]:
         handlers[extension] = lambda x: json.dumps(x).encode("utf-8")
     for extension in ["ten", "tb"]:
@@ -142,7 +159,7 @@ def make_handlers():
 default_handlers = {"default": make_handlers()}
 
 
-def encode_based_on_extension1(data, tname, handlers):
+def encode_based_on_extension1(data: Any, tname: str, handlers: dict):
     """Encode data based on its extension and a dict of handlers.
 
     :param data: data
@@ -164,7 +181,7 @@ def encode_based_on_extension1(data, tname, handlers):
     return handler(data)
 
 
-def encode_based_on_extension(sample, handlers):
+def encode_based_on_extension(sample: dict, handlers: dict):
     """Encode an entire sample with a collection of handlers.
 
     :param sample: data sample (a dict)
@@ -173,7 +190,7 @@ def encode_based_on_extension(sample, handlers):
     return {k: encode_based_on_extension1(v, k, handlers) for k, v in list(sample.items())}
 
 
-def make_encoder(spec):
+def make_encoder(spec: Union[bool, str, dict, Callable]):
     """Make an encoder function from a specification.
 
     :param spec: specification
@@ -237,12 +254,12 @@ class TarWriter:
     def __init__(
         self,
         fileobj,
-        user="bigdata",
-        group="bigdata",
-        mode=0o0444,
-        compress=None,
-        encoder=True,
-        keep_meta=False,
+        user: str = "bigdata",
+        group: str = "bigdata",
+        mode: int = 0o0444,
+        compress: Optional[bool] = None,
+        encoder: Union[None, bool, Callable] = True,
+        keep_meta: bool = False,
     ):
         """Create a tar writer.
 
@@ -334,7 +351,15 @@ class TarWriter:
 class ShardWriter:
     """Like TarWriter but splits into multiple shards."""
 
-    def __init__(self, pattern, maxcount=100000, maxsize=3e9, post=None, start_shard=0, **kw):
+    def __init__(
+        self,
+        pattern: str,
+        maxcount: int = 100000,
+        maxsize: float = 3e9,
+        post: Optional[Callable] = None,
+        start_shard: int = 0,
+        **kw,
+    ):
         """Create a ShardWriter.
 
         :param pattern: output file pattern

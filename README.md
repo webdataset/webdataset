@@ -46,7 +46,7 @@ For the Github version:
 
     $ pip install git+https://github.com/tmbdev/webdataset.git
 
-Documentation: [ReadTheDocs](http://webdataset.readthedocs.io)
+[Documentation](https://webdataset.github.io/webdataset)
 
 # Introductory Videos
 

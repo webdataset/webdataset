@@ -12,6 +12,7 @@ Code works locally or over HTTP connections.
 
 import os
 import sys
+import time
 import random
 import yaml
 from dataclasses import dataclass
@@ -50,10 +51,13 @@ class PytorchEnv:
 
     def __init__(self, group=None):
         """Initialize rank/worker information."""
+        import socket
+
         super().__init__()
         self.rank = None
         self.worker = None
         self.group = group
+        self.nodeinfo = (socket.gethostname(), os.getpid())
         self.update_env()
 
     def update_env(self):
@@ -63,12 +67,14 @@ class PytorchEnv:
         available only in the environment where the loader is created.
         This class retains that environment info when it is serialized.
         """
-        import torch
-        import torch.distributed
-        from . import gopen
-        import socket
 
-        self.nodeinfo = (socket.gethostname(), os.getpid())
+        from . import gopen
+
+        try:
+            import torch
+            import torch.distributed
+        except Exception:
+            return
 
         if self.rank is None:
             if torch.distributed.is_available() and torch.distributed.is_initialized():
@@ -144,7 +150,7 @@ class MultiShardSample(ShardSample):
             if nsample > len(urls):
                 raise ValueError(f"perepoch {nsample} must be no greater than the number of shards")
             if (nsample > 0) and (resample > 0):
-                raise ValueError(f"specify only one of perepoch or choose")
+                raise ValueError("specify only one of perepoch or choose")
             entry = MSSource(name=name, urls=urls, perepoch=nsample, resample=resample)
             self.sources.append(entry)
             print(f"# {name} {len(urls)} {nsample}", file=sys.stderr)
@@ -212,11 +218,9 @@ class PytorchShardList(IterableDataset, PytorchEnv, Composable):
             urls = SimpleShardSample(urls)
         self.shardsample = urls
 
-
     def set_epoch(self, epoch):
         """Set the current epoch. Used for per-node shuffling."""
-        self.epoch = epoch-1
-
+        self.epoch = epoch - 1
 
     def __iter__(self):
         """Return an iterator over the shards."""
@@ -265,6 +269,7 @@ class ResampledShards(IterableDataset, Composable):
         self,
         urls,
         nshards=sys.maxsize,
+        env=None,
     ):
         """Sample shards from the shard list with replacement.
 
@@ -277,9 +282,15 @@ class ResampledShards(IterableDataset, Composable):
             urls = list(urls)
         self.urls = urls
         self.nshards = nshards
+        self.env = env or PytorchEnv()
+        self.rng = random.Random()
         assert isinstance(self.urls[0], str)
 
     def __iter__(self):
         """Return an iterator over the shards."""
+        rank, world = self.env.rank or (0, 1)
+        worker, nworkers = self.env.worker or (0, 1)
+        seed = (rank, worker, os.getpid(), time.time())
+        self.rng.seed(seed)
         for _ in range(self.nshards):
-            yield dict(url=random.choice(self.urls))
+            yield dict(url=self.rng.choice(self.urls))

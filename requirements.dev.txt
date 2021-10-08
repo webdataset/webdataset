@@ -27,3 +27,7 @@ imageio
 
 nbconvert
 jupyter-contrib-nbextensions
+
+mkdocs
+pdoc
+pygments>=2.7.4 # not directly required, pinned by Snyk to avoid a vulnerability
