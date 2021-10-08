@@ -1,2 +1,3 @@
 braceexpand
 numpy
+pyyaml
