@@ -292,7 +292,7 @@ class Shorthands:
 
         return FakeLength(self, length)
 
-    def ddp_equalize(self, length):
+    def ddp_equalize(self, length, with_length=False):
         """Equalize number of training samples in DistributedDataParallel training.
 
         Torch's DistributedDataParallel requires the same number of samples in
@@ -312,8 +312,9 @@ class Shorthands:
         if torch.distributed.is_initialized():
             world_size = torch.distributed.get_world_size()
         numbatches = length // world_size
-        result = self.repeat(sys.maxsize).slice(numbatches)
-        result.length = numbatches
+        result = self.repeat(sys.maxsize).with_epoch(numbatches)
+        if with_length:
+            result = result.with_length(numbatches)
         return result
 
 

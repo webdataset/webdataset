@@ -54,7 +54,8 @@ def test(c):
 @task
 def newversion(c):
     "Increment the version number."
-    assert "working tree clean" in c.run("git status").stdout
+    if not "working tree clean" in c.run("git status").stdout:
+        input()
     text = open("setup.py").read()
     version = re.search('version *= *"([0-9.]+)"', text).group(1)
     print("old version", version)
