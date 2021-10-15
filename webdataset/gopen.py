@@ -72,6 +72,7 @@ class Pipe:
         verbose = int(os.environ.get("GOPEN_VERBOSE", 0))
         if self.status is not None and verbose:
             print(f"(waiting again)", file=sys.stderr)
+            return
         self.status = self.proc.wait()
         if verbose:
             print(f"pipe exit [{self.status} {os.getpid()}:{self.proc.pid}] {self.args} {info}", file=sys.stderr)
