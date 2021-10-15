@@ -71,7 +71,7 @@ class Pipe:
         """Check the status variable and raise an exception if necessary."""
         verbose = int(os.environ.get("GOPEN_VERBOSE", 0))
         if self.status is not None and verbose:
-            print(f"(waiting again [{self.status} {os.getpid()}:{self.proc.pid}])", file=sys.stderr)
+            # print(f"(waiting again [{self.status} {os.getpid()}:{self.proc.pid}])", file=sys.stderr)
             return
         self.status = self.proc.wait()
         if verbose:
