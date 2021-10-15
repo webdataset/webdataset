@@ -63,18 +63,20 @@ class Pipe:
 
     def check_status(self):
         """Poll the process and handle any errors."""
-        self.status = self.proc.poll()
-        self.handle_status()
+        status = self.proc.poll()
+        if status is not None:
+            self.wait_for_child()
 
-    def handle_status(self):
+    def wait_for_child(self):
         """Check the status variable and raise an exception if necessary."""
-        if self.status is not None:
-            self.status = self.proc.wait()
-            verbose = int(os.environ.get("GOPEN_VERBOSE", 0))
-            if verbose:
-                print(f"pipe exit [{self.status}] {self.args} {info}", file=sys.stderr)
-            if self.status not in self.ignore_status and not self.ignore_errors:
-                raise Exception(f"{self.args}: exit {self.status} (read) {info}")
+        verbose = int(os.environ.get("GOPEN_VERBOSE", 0))
+        if self.status is not None and verbose:
+            print(f"(waiting again)", file=sys.stderr)
+        self.status = self.proc.wait()
+        if verbose:
+            print(f"pipe exit [{self.status} {os.getpid()}:{self.proc.pid}] {self.args} {info}", file=sys.stderr)
+        if self.status not in self.ignore_status and not self.ignore_errors:
+            raise Exception(f"{self.args}: exit {self.status} (read) {info}")
 
     def read(self, *args, **kw):
         """Wrap stream.read and checks status."""
@@ -99,7 +101,7 @@ class Pipe:
         """Wrap stream.close, wait for the subprocess, and handle errors."""
         self.stream.close()
         self.status = self.proc.wait(self.timeout)
-        self.handle_status()
+        self.wait_for_child()
 
     def __enter__(self):
         """Context handler."""
