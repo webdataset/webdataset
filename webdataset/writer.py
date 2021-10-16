@@ -385,7 +385,13 @@ class ShardWriter:
     def next_stream(self):
         """Close the current stream and move to the next."""
         self.finish()
-        self.fname = self.pattern % self.shard
+
+        try:
+            self.fname = self.pattern % self.shard
+        except TypeError:
+            raise TypeError("The input pattern \"{}\" is malformed. It was expected to "
+                            "the pattern be like \"dataset%06d.tar\"".format(self.pattern))
+
         if self.verbose:
             print(
                 "# writing",
