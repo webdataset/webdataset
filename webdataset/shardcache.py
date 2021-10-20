@@ -124,5 +124,5 @@ def cache_shards(urls, cache_dir="./data", cache_size=1e15, cache_name=guess_sha
             if verbose:
                 print("[opening cached", cache_path, "]", file=sys.stderr, flush=True)
             yield dict(url=url, stream=open(cache_path, "rb"))
-    if verbose:
-        print(f"[finished {cache_path}]", file=sys.stderr, flush=True)
+        if verbose:
+            print(f"[finished {cache_path}]", file=sys.stderr, flush=True)
