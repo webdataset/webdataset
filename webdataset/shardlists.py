@@ -11,18 +11,19 @@ Code works locally or over HTTP connections.
 """
 
 import os
+import random
 import sys
 import time
-import random
-import yaml
-from dataclasses import dataclass
-from typing import List
+from dataclasses import dataclass, field
 from itertools import islice
+from typing import List
 
 import braceexpand
+import yaml
 
-from .pytorch import IterableDataset
 from .composable import Composable
+from .filters import Curried
+from .pytorch import IterableDataset
 
 
 class SimpleShardList(IterableDataset, Composable):
@@ -42,6 +43,9 @@ class SimpleShardList(IterableDataset, Composable):
         assert isinstance(self.urls[0], str)
         self.seed = seed
 
+    def __len__(self):
+        return len(self.urls)
+
     def __iter__(self):
         """Return an iterator over the shards."""
         urls = self.urls.copy()
@@ -50,6 +54,61 @@ class SimpleShardList(IterableDataset, Composable):
         print(urls)
         for url in urls:
             yield dict(url=url)
+
+
+def split_by_node(src, group=None):
+    import torch.distributed
+
+    if torch.distributed.is_available() and torch.distributed.is_initialized():
+        group = group or torch.distributed.group.WORLD
+        rank = torch.distributed.get_rank(group=group)
+        size = torch.distributed.get_world_size(group=group)
+        for s in islice(src, rank, None, size):
+            yield s
+    else:
+        for s in src:
+            yield s
+
+
+def split_by_worker(src):
+    import torch.utils.data
+
+    winfo = torch.utils.data.get_worker_info()
+    if winfo is None:
+        for s in src:
+            yield s
+    else:
+        for s in islice(src, winfo.id, None, winfo.num_workers):
+            yield s
+
+
+def resampled_(src, n=sys.maxsize):
+    import random
+
+    seed = time.time_ns()
+    try:
+        seed = open("/dev/random", "rb").read(20)
+    except Exception as exn:
+        print(repr(exn)[:50], file=sys.stderr)
+    rng = random.Random(seed)
+    items = list(src)
+    for i in range(n):
+        yield rng.choice(items)
+
+
+resampled = Curried(resampled_)
+
+
+def non_empty(src):
+    count = 0
+    for s in src:
+        yield s
+        count += 1
+    if count == 0:
+        raise ValueError("pipeline stage received no data at all and this was declared as an error")
+
+
+# BELOW IS DEPRECATED ###
 
 
 class PytorchEnv:
@@ -85,9 +144,9 @@ class PytorchEnv:
         if self.rank is None:
             if torch.distributed.is_available() and torch.distributed.is_initialized():
                 group = self.group or torch.distributed.group.WORLD
-                self.rank = torch.distributed.get_rank(
+                self.rank = torch.distributed.get_rank(group=group), torch.distributed.get_world_size(
                     group=group
-                ), torch.distributed.get_world_size(group=group)
+                )
 
         if self.worker is None:
             worker_info = torch.utils.data.get_worker_info()
@@ -98,36 +157,6 @@ class PytorchEnv:
         gopen.info["rank"], gopen.info["size"] = self.rank or (-1, -1)
         gopen.info["worker_id"], gopen.info["num_workers"] = self.worker or (-1, -1)
 
-
-def split_by_node(src):
-    import torch.distributed
-    if torch.distributed.is_available() and torch.distributed.is_initialized():
-        group = self.group or torch.distributed.group.WORLD
-        rank = torch.distributed.get_rank(group=group)
-        size = torch.distributed.get_world_size(group=group)
-        for s in islice(src, rank, None, size):
-            yield s
-    else:
-        for s in src:
-            yield s
-
-def split_by_worker(src):
-    import torch.utils.data
-    winfo = torch.utils.data.get_worker_info()
-    if winfo is None:
-        for s in src:
-            yield s
-    else:
-        for s in islice(src, winfo.id, None, winfo.num_workers):
-            yield s
-
-def non_empty(src):
-    count = 0
-    for s in src:
-        yield s
-        count += 1
-    if count == 0:
-        raise ValueError("pipeline stage received no data at all and this was declared as an error")
 
 class ShardSample:
     pass
@@ -153,7 +182,7 @@ class MSSource:
     name: str = ""
     perepoch: int = -1
     resample: bool = False
-    urls: List[str] = None
+    urls: List[str] = field(default_factory=list)
 
 
 default_rng = random.Random()
@@ -173,26 +202,18 @@ class MultiShardSample(ShardSample):
         prefix = expand(spec.get("prefix", ""))
         self.sources = []
         for ds in spec["datasets"]:
-            assert set(ds.keys()).issubset(
-                set("buckets name shards perepoch choose".split())
-            )
+            assert set(ds.keys()).issubset(set("buckets name shards perepoch choose".split()))
             buckets = [expand(s) for s in ds.get("buckets", [""])]
             assert len(buckets) == 1, "FIXME support for multiple buckets unimplemented"
             bucket = buckets[0]
             name = ds.get("name", "@" + bucket)
             urls = ds["shards"]
             urls = [u for url in urls for u in braceexpand.braceexpand(url)]
-            urls = [
-                prefix + bucket + u
-                for url in urls
-                for u in braceexpand.braceexpand(url)
-            ]
+            urls = [prefix + bucket + u for url in urls for u in braceexpand.braceexpand(url)]
             resample = ds.get("choose", -1)
             nsample = ds.get("perepoch", -1)
             if nsample > len(urls):
-                raise ValueError(
-                    f"perepoch {nsample} must be no greater than the number of shards"
-                )
+                raise ValueError(f"perepoch {nsample} must be no greater than the number of shards")
             if (nsample > 0) and (resample > 0):
                 raise ValueError("specify only one of perepoch or choose")
             entry = MSSource(name=name, urls=urls, perepoch=nsample, resample=resample)

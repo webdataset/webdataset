@@ -13,6 +13,10 @@ from .dataset import (
     WebDataset,
     WebLoader,
 )
+from .pipeline import (
+    DataPipeline,
+    stage,
+)
 from .composable import (
     Composable,
     Shorthands,
@@ -25,6 +29,7 @@ from .shardlists import (
     split_by_node,
     split_by_worker,
     non_empty,
+    resampled,
 )
 from .extradatasets import (
     MockDataset
