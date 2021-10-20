@@ -176,7 +176,8 @@ def shuffle(data, bufsize=1000, initial=100, rng=shuffle_rng, handler=None):
                 buf.append(next(data))  # skipcq: PYL-R1708
             except StopIteration:
                 pass
-        yield pick(buf, rng)
+        if len(buf) >= initial:
+            yield pick(buf, rng)
     while len(buf) > 0:
         yield pick(buf, rng)
 
