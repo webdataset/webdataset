@@ -147,6 +147,12 @@ def info(data, fmt=None, n=3, every=-1, width=50, stream=sys.stderr, name=""):
 shuffle_rng = random.Random()
 shuffle_rng.seed((os.getpid(), time.time()))
 
+def pick(buf, rng):
+    k = rng.randint(0, len(buf) - 1)
+    sample = buf[k]
+    buf[k] = buf[-1]
+    buf.pop()
+    return sample
 
 def shuffle(data, bufsize=1000, initial=100, rng=shuffle_rng, handler=None):
     """Shuffle the data in the stream.
@@ -163,22 +169,16 @@ def shuffle(data, bufsize=1000, initial=100, rng=shuffle_rng, handler=None):
     """
     initial = min(initial, bufsize)
     buf = []
-    startup = True
     for sample in data:
+        buf.append(sample)
         if len(buf) < bufsize:
             try:
                 buf.append(next(data))  # skipcq: PYL-R1708
             except StopIteration:
                 pass
-        k = rng.randint(0, len(buf) - 1)
-        sample, buf[k] = buf[k], sample
-        if startup and len(buf) < initial:
-            buf.append(sample)
-            continue
-        startup = False
-        yield sample
-    for sample in buf:
-        yield sample
+        yield pick(buf, rng)
+    while len(buf) > 0:
+        yield pick(buf, rng)
 
 
 def select(data, predicate):

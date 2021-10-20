@@ -59,6 +59,30 @@ def test_trivial_map4():
     result = list(iter(dataset))
     assert result == [5, 6, 7, 8]
 
+def test_shuffle():
+    dataset = DataPipeline(
+        wds.SimpleShardList(["testdata/imagenet-000000.tgz"]*3),
+        #wds.shuffle(10),
+    )
+    result = list(iter(dataset))
+    assert len(result) == 3
+
+def test_shuffle0():
+    dataset = DataPipeline(
+        lambda: iter([]),
+        wds.shuffle(10),
+    )
+    result = list(iter(dataset))
+    assert len(result) == 0
+
+def test_shuffle1():
+    dataset = DataPipeline(
+        wds.SimpleShardList(["testdata/imagenet-000000.tgz"]),
+        wds.shuffle(10),
+    )
+    result = list(iter(dataset))
+    assert len(result) == 1
+
 def test_pytorchshardlist():
     dataset = DataPipeline(
         wds.SimpleShardList("test-{000000..000099}.tar"),
@@ -104,7 +128,6 @@ def test_reader2():
     assert isinstance(result[0][0], np.ndarray)
     assert isinstance(result[0][1], int)
     assert len(result) == 470
-
 
 def resampled_(src, n):
     import random
