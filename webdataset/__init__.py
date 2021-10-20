@@ -24,6 +24,7 @@ from .shardlists import (
     ResampledShards,
     split_by_node,
     split_by_worker,
+    non_empty,
 )
 from .extradatasets import (
     MockDataset

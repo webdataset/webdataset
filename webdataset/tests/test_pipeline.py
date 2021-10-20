@@ -156,5 +156,25 @@ def test_seed():
     assert len(result) == 10
     assert result[0]["url"] == "7"
 
+def test_nonempty():
+    dataset = DataPipeline(
+        wds.SimpleShardList(list(map(str, range(10)))),
+        wds.split_by_node,
+        wds.split_by_worker,
+        wds.non_empty,
+    )
+    result = list(iter(dataset))
+    assert len(result) == 10
+    assert result[0]["url"] == "0"
+
+
+def test_nonempty2():
+    dataset = DataPipeline(
+        wds.SimpleShardList(list(map(str, range(10)))),
+        lambda src: iter([]),
+        wds.non_empty,
+    )
+    with pytest.raises(ValueError):
+        list(iter(dataset))
 
 

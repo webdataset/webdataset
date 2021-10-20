@@ -121,6 +121,13 @@ def split_by_worker(src):
         for s in islice(src, winfo.id, None, winfo.num_workers):
             yield s
 
+def non_empty(src):
+    count = 0
+    for s in src:
+        yield s
+        count += 1
+    if count == 0:
+        raise ValueError("pipeline stage received no data at all and this was declared as an error")
 
 class ShardSample:
     pass
