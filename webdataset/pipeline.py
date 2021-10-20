@@ -24,6 +24,8 @@ class DataPipeline(IterableDataset):
         super().__init__()
         self.pipeline = []
         for arg in args:
+            if arg is None:
+                continue
             if isinstance(arg, list):
                 self.pipeline.extend(arg)
             else:
@@ -42,7 +44,7 @@ class DataPipeline(IterableDataset):
             return result
         raise ValueError(f"{f}: not a valid pipeline stage")
 
-    
+
     def __iter__(self):
         source = self.invoke(self.pipeline[0])
         for step in self.pipeline[1:]:
