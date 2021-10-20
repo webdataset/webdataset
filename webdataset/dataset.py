@@ -35,6 +35,7 @@ def WebDataset(
     handler=reraise_exception,
     resampled=False,
     repeat=False,
+    shardshuffle=None,
 ):
     """Return a pipeline for WebDataset-style data files.
 
@@ -58,6 +59,7 @@ def WebDataset(
     :param cache_verbose: when set, prints information about caching
     :param repeat: repeat infinitely if True
     """
+    shardshuffle = True if shardshuffle is None else shardshuffle
     if isinstance(urls, str) and urls.endswith(".ds.yml"):
         return construct_dataset(
             urls,
@@ -73,9 +75,9 @@ def WebDataset(
     elif isinstance(urls, str):
         if urls.endswith(".shards.yml"):
             urls = MultiShardSample(urls)
-        result = PytorchShardList(urls)
+        result = PytorchShardList(urls, shuffle=shardshuffle)
     elif isinstance(urls, list):
-        result = PytorchShardList(urls)
+        result = PytorchShardList(urls, shuffle=shardshuffle)
     elif isinstance(urls, str) and os.path.splitext(urls)[1] in ["yml", "yaml", "json"]:
         raise ValueError("bad shard spec (only '.shards.yml' supported right now)")
     elif isinstance(urls, Composable):
