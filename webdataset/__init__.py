@@ -22,9 +22,14 @@ from .shardlists import (
     SimpleShardList,
     PytorchShardList,
     ResampledShards,
+    split_by_node,
+    split_by_worker,
 )
 from .extradatasets import (
     MockDataset
+)
+from .tariterators import (
+    tarfile_samples,
 )
 from .handlers import (
     reraise_exception,
@@ -50,9 +55,12 @@ from .tariterators import (
     tar_file_expander,
     group_by_keys,
 )
-
 from .iterators import (
     transform_with,
+    getfirst,
+)
+from .filters import (
+    Curried,
     info,
     shuffle,
     select,
@@ -65,7 +73,6 @@ from .iterators import (
     map_tuple,
     batched,
     unbatched,
-    getfirst,
 )
 from .dbcache import DBCache
 from .dsspecs import RoundRobin

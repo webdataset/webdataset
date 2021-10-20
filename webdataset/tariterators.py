@@ -172,3 +172,9 @@ def group_by_keys(data, keys=base_plus_ext, lcase=True, suffixes=None, handler=N
             current_sample[suffix] = value
     if valid_sample(current_sample):
         yield current_sample
+
+def tarfile_samples(src):
+    streams = url_opener(src)
+    files = tar_file_expander(streams)
+    samples = group_by_keys(files)
+    return samples

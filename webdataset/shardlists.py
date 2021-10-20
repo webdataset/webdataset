@@ -17,6 +17,7 @@ import random
 import yaml
 from dataclasses import dataclass
 from typing import List
+from itertools import islice
 
 import braceexpand
 
@@ -27,7 +28,7 @@ from .composable import Composable
 class SimpleShardList(IterableDataset, Composable):
     """An iterable dataset yielding a list of urls."""
 
-    def __init__(self, urls):
+    def __init__(self, urls, seed=None):
         """Iterate through the list of shards.
 
         :param urls: a list of URLs as a Python list or brace notation string
@@ -39,10 +40,15 @@ class SimpleShardList(IterableDataset, Composable):
             urls = list(urls)
         self.urls = urls
         assert isinstance(self.urls[0], str)
+        self.seed = seed
 
     def __iter__(self):
         """Return an iterator over the shards."""
-        for url in self.urls:
+        urls = self.urls.copy()
+        if self.seed is not None:
+            random.Random(self.seed).shuffle(urls)
+        print(urls)
+        for url in urls:
             yield dict(url=url)
 
 
@@ -79,9 +85,9 @@ class PytorchEnv:
         if self.rank is None:
             if torch.distributed.is_available() and torch.distributed.is_initialized():
                 group = self.group or torch.distributed.group.WORLD
-                self.rank = torch.distributed.get_rank(group=group), torch.distributed.get_world_size(
+                self.rank = torch.distributed.get_rank(
                     group=group
-                )
+                ), torch.distributed.get_world_size(group=group)
 
         if self.worker is None:
             worker_info = torch.utils.data.get_worker_info()
@@ -91,6 +97,29 @@ class PytorchEnv:
         gopen.info["nodeinfo"] = self.nodeinfo
         gopen.info["rank"], gopen.info["size"] = self.rank or (-1, -1)
         gopen.info["worker_id"], gopen.info["num_workers"] = self.worker or (-1, -1)
+
+
+def split_by_node(src):
+    import torch.distributed
+    if torch.distributed.is_available() and torch.distributed.is_initialized():
+        group = self.group or torch.distributed.group.WORLD
+        rank = torch.distributed.get_rank(group=group)
+        size = torch.distributed.get_world_size(group=group)
+        for s in islice(src, rank, None, size):
+            yield s
+    else:
+        for s in src:
+            yield s
+
+def split_by_worker(src):
+    import torch.utils.data
+    winfo = torch.utils.data.get_worker_info()
+    if winfo is None:
+        for s in src:
+            yield s
+    else:
+        for s in islice(src, winfo.id, None, winfo.num_workers):
+            yield s
 
 
 class ShardSample:
@@ -137,18 +166,26 @@ class MultiShardSample(ShardSample):
         prefix = expand(spec.get("prefix", ""))
         self.sources = []
         for ds in spec["datasets"]:
-            assert set(ds.keys()).issubset(set("buckets name shards perepoch choose".split()))
+            assert set(ds.keys()).issubset(
+                set("buckets name shards perepoch choose".split())
+            )
             buckets = [expand(s) for s in ds.get("buckets", [""])]
             assert len(buckets) == 1, "FIXME support for multiple buckets unimplemented"
             bucket = buckets[0]
             name = ds.get("name", "@" + bucket)
             urls = ds["shards"]
             urls = [u for url in urls for u in braceexpand.braceexpand(url)]
-            urls = [prefix + bucket + u for url in urls for u in braceexpand.braceexpand(url)]
+            urls = [
+                prefix + bucket + u
+                for url in urls
+                for u in braceexpand.braceexpand(url)
+            ]
             resample = ds.get("choose", -1)
             nsample = ds.get("perepoch", -1)
             if nsample > len(urls):
-                raise ValueError(f"perepoch {nsample} must be no greater than the number of shards")
+                raise ValueError(
+                    f"perepoch {nsample} must be no greater than the number of shards"
+                )
             if (nsample > 0) and (resample > 0):
                 raise ValueError("specify only one of perepoch or choose")
             entry = MSSource(name=name, urls=urls, perepoch=nsample, resample=resample)
