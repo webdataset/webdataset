@@ -51,7 +51,6 @@ class SimpleShardList(IterableDataset, Composable):
         urls = self.urls.copy()
         if self.seed is not None:
             random.Random(self.seed).shuffle(urls)
-        print(urls)
         for url in urls:
             yield dict(url=url)
 
