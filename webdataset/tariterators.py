@@ -181,4 +181,4 @@ def tarfile_samples(src, handler=reraise_exception):
     return samples
 
 
-tarfile_sampler = filters.Curried(tarfile_samples)
+tarfile_to_samples = filters.Curried(tarfile_samples)
