@@ -15,6 +15,7 @@ import braceexpand
 from .handlers import reraise_exception
 
 from . import gopen
+from . import filters
 
 
 trace = False
@@ -173,8 +174,11 @@ def group_by_keys(data, keys=base_plus_ext, lcase=True, suffixes=None, handler=N
     if valid_sample(current_sample):
         yield current_sample
 
-def tarfile_samples(src):
-    streams = url_opener(src)
-    files = tar_file_expander(streams)
-    samples = group_by_keys(files)
+def tarfile_samples(src, handler=reraise_exception):
+    streams = url_opener(src, handler=handler)
+    files = tar_file_expander(streams, handler=handler)
+    samples = group_by_keys(files, handler=handler)
     return samples
+
+
+tarfile_sampler = filters.Curried(tarfile_samples)
