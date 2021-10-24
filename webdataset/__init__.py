@@ -36,6 +36,7 @@ from .extradatasets import (
 )
 from .tariterators import (
     tarfile_samples,
+    tarfile_to_samples,
 )
 from .handlers import (
     reraise_exception,
