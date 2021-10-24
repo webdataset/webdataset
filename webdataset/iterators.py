@@ -212,7 +212,10 @@ def log_keys(data, logfile=None):
 
 def decode(data, *args, handler=reraise_exception, **kw):
     """Decode data based on the decoding functions given as arguments."""
-    f = autodecode.Decoder(list(args), **kw)
+
+    decoder = lambda x: autodecode.imagehandler(x) if isinstance(x, str) else x
+    handlers = [decoder(x) for x in args]
+    f = autodecode.Decoder(handlers, **kw)
 
     for sample in data:
         assert isinstance(sample, dict), sample
