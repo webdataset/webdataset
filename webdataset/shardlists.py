@@ -90,6 +90,7 @@ def resampled_(src, n=sys.maxsize):
     except Exception as exn:
         print(repr(exn)[:50], file=sys.stderr)
     rng = random.Random(seed)
+    print(f"# resampled loading", file=sys.stderr)
     items = list(src)
     print(f"# resampled got {len(items)} samples, yielding {n}", file=sys.stderr)
     for i in range(n):
