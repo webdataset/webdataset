@@ -91,6 +91,7 @@ def resampled_(src, n=sys.maxsize):
         print(repr(exn)[:50], file=sys.stderr)
     rng = random.Random(seed)
     items = list(src)
+    print(f"# resampled got {len(items)} samples, yielding {n}", file=sys.stderr)
     for i in range(n):
         yield rng.choice(items)
 
