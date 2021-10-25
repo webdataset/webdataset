@@ -142,6 +142,11 @@ def test_reader3():
     assert isinstance(result[0][0], np.ndarray)
     assert isinstance(result[0][1], int)
     assert len(result) == 470
+    result = list(iter(dataset))
+    assert len(result[0]) == 2
+    assert isinstance(result[0][0], np.ndarray)
+    assert isinstance(result[0][1], int)
+    assert len(result) == 470
 
 
 def test_splitting():
