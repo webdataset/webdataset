@@ -205,3 +205,12 @@ def test_resampled():
     )
     result = list(iter(dataset))
     assert len(result) == 27
+
+
+def test_slice():
+    dataset = wds.DataPipeline(
+        wds.SimpleShardList(list(map(str, range(200)))),
+        wds.slice(29),
+    )
+    result = list(iter(dataset))
+    assert len(result) == 29

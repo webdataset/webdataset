@@ -80,6 +80,7 @@ from .filters import (
     map_tuple,
     batched,
     unbatched,
+    slice,
 )
 from .dbcache import DBCache
 from .dsspecs import RoundRobin

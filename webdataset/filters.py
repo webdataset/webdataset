@@ -8,6 +8,7 @@
 
 
 from . import iterators
+import itertools
 
 
 class Curried2(object):
@@ -62,3 +63,4 @@ to_tuple = Curried(iterators.to_tuple)
 map_tuple = Curried(iterators.map_tuple)
 batched = Curried(iterators.batched)
 unbatched = Curried(iterators.unbatched)
+slice = Curried(itertools.islice)
