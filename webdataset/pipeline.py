@@ -10,7 +10,7 @@ from typing import List
 import braceexpand
 
 #from .pytorch import IterableDataset
-from torch.utils.data import IterableDataset
+from .pytorch import IterableDataset
 from .composable import Composable
 from .filters import Curried
 

@@ -14,6 +14,7 @@ import uuid
 
 from .pytorch import IterableDataset
 
+
 def get_uuid(data):
     """Compute a UUID for data.
 

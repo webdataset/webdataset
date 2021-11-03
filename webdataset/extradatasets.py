@@ -22,6 +22,7 @@ from .composable import Composable, Shorthands
 from . import dataset
 from . import utils
 
+
 class MockDataset(IterableDataset, Composable, Shorthands):
     """MockDataset.
 
