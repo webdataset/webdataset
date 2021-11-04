@@ -139,13 +139,13 @@ def make_handlers():
     for extension in ["ten", "tb"]:
         from . import tenbin
 
-        def f(x):  # skipcq: PYL-E0102
+        def g(x):  # skipcq: PYL-E0102
             if isinstance(x, list):
                 return memoryview(tenbin.encode_buffer(x))
             else:
                 return memoryview(tenbin.encode_buffer([x]))
 
-        handlers[extension] = f
+        handlers[extension] = g
     try:
         import msgpack
 
@@ -205,9 +205,11 @@ def make_encoder(spec: Union[bool, str, dict, Callable]):
         encoder = spec
     elif isinstance(spec, dict):
 
-        def encoder(sample):
+        def f(sample):
             """Encode based on extension."""
             return encode_based_on_extension(sample, spec)
+
+        encoder = f
 
     elif isinstance(spec, str) or spec is True:
         if spec is True:
@@ -216,9 +218,11 @@ def make_encoder(spec: Union[bool, str, dict, Callable]):
         if handlers is None:
             raise ValueError(f"no handler found for {spec}")
 
-        def encoder(sample):
+        def g(sample):
             """Encode based on extension."""
             return encode_based_on_extension(sample, handlers)
+
+        encoder = g
 
     else:
         raise ValueError(f"{spec}: unknown decoder spec")
