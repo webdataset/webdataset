@@ -767,23 +767,23 @@ def test_chopped():
     from torchvision import datasets
 
     ds = datasets.FakeData(size=100)
-    cds = eds.ChoppedDataset(ds, 20)
+    cds = eds.with_epoch(ds, 20)
     assert count_samples_tuple(cds, n=500) == 20
 
     ds = datasets.FakeData(size=100)
-    cds = eds.ChoppedDataset(ds, 250)
+    cds = eds.with_epoch(ds, 250)
     assert count_samples_tuple(cds, n=500) == 250
 
     ds = datasets.FakeData(size=100)
-    cds = eds.ChoppedDataset(ds, 77)
+    cds = eds.with_epoch(ds, 77)
     assert count_samples_tuple(cds, n=500) == 77
 
     ds = datasets.FakeData(size=100)
-    cds = eds.ChoppedDataset(ds, 250)
+    cds = eds.with_epoch(ds, 250)
     assert count_samples_tuple(cds, n=500) == 250
 
     ds = datasets.FakeData(size=100)
-    cds = eds.ChoppedDataset(ds, 250)
+    cds = eds.with_epoch(ds, 250)
     assert count_samples_tuple(cds, n=500) == 250
 
 

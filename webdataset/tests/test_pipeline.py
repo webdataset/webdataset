@@ -20,19 +20,23 @@ def test_trivial():
 
 
 def test_trivial_map():
-    dataset = wds.DataPipeline(lambda: iter([1, 2, 3, 4]), filters.map(lambda x: x + 1))
+    dataset = wds.DataPipeline(lambda: iter([1, 2, 3, 4]), wds.map(lambda x: x + 1))
     result = list(iter(dataset))
     assert result == [2, 3, 4, 5]
 
 
 def test_trivial_map2():
-    dataset = wds.DataPipeline(lambda: iter([1, 2, 3, 4]), lambda src: iterators.map(src, lambda x: x + 1))
+    dataset = wds.DataPipeline(lambda: iter([1, 2, 3, 4]), wds.map(lambda x: x + 1))
     result = list(iter(dataset))
     assert result == [2, 3, 4, 5]
 
 
+def mymap(src, f):
+    for x in src:
+        yield f(x)
+
 def test_trivial_map3():
-    dataset = wds.DataPipeline(lambda: iter([1, 2, 3, 4]), wds.stage(iterators.map, lambda x: x + 1))
+    dataset = wds.DataPipeline(lambda: iter([1, 2, 3, 4]), wds.stage(mymap, lambda x: x + 1))
     result = list(iter(dataset))
     assert result == [2, 3, 4, 5]
 
