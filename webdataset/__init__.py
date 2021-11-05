@@ -62,12 +62,10 @@ from .tariterators import (
     tar_file_expander,
     group_by_keys,
 )
-from .iterators import (
+from .filters import (
     transform_with,
     getfirst,
-)
-from .filters import (
-    Curried,
+    pipelinefilter,
     info,
     shuffle,
     select,

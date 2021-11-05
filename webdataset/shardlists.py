@@ -22,7 +22,7 @@ import braceexpand
 import yaml
 
 from .composable import Composable
-from .filters import Curried
+from .filters import pipelinefilter
 from .pytorch import IterableDataset
 
 
@@ -97,7 +97,7 @@ def resampled_(src, n=sys.maxsize):
         yield rng.choice(items)
 
 
-resampled = Curried(resampled_)
+resampled = pipelinefilter(resampled_)
 
 
 def non_empty(src):

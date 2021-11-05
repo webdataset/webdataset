@@ -12,11 +12,11 @@ import braceexpand
 #from .pytorch import IterableDataset
 from .pytorch import IterableDataset
 from .composable import Composable
-from .filters import Curried
+from .filters import pipelinefilter
 
 
 def stage(f, *args, **kw):
-    return Curried(f)(*args, **kw)
+    return pipelinefilter(f)(*args, **kw)
 
 class DataPipeline(IterableDataset):
 
