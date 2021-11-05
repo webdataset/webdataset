@@ -8,7 +8,6 @@ import pickle
 
 import webdataset as wds
 from webdataset import filters
-from webdataset import iterators
 from webdataset import tariterators
 from webdataset import autodecode
 from webdataset import PytorchShardList, SimpleShardList

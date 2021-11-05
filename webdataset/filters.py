@@ -77,7 +77,8 @@ class RestCurried(object):
 def pipelinefilter(f):
     """Turn the decorated function into one that is partially applied for
     all arguments other than the first."""
-    return RestCurried(f)
+    result = RestCurried(f)
+    return result
 
 
 def reraise_exception(exn):
@@ -164,8 +165,7 @@ def transform_with(sample, transformers):
 ###
 
 
-@pipelinefilter
-def info(data, fmt=None, n=3, every=-1, width=50, stream=sys.stderr, name=""):
+def _info(data, fmt=None, n=3, every=-1, width=50, stream=sys.stderr, name=""):
     """Print information about the samples that are passing through.
 
     :param data: source iterator
@@ -187,6 +187,9 @@ def info(data, fmt=None, n=3, every=-1, width=50, stream=sys.stderr, name=""):
         yield sample
 
 
+info = pipelinefilter(_info)
+
+
 shuffle_rng = random.Random()
 shuffle_rng.seed((os.getpid(), time.time()))
 
@@ -199,8 +202,7 @@ def pick(buf, rng):
     return sample
 
 
-@pipelinefilter
-def shuffle(data, bufsize=1000, initial=100, rng=shuffle_rng, handler=None):
+def _shuffle(data, bufsize=1000, initial=100, rng=shuffle_rng, handler=None):
     """Shuffle the data in the stream.
 
     This uses a buffer of size `bufsize`. Shuffling at
@@ -228,8 +230,10 @@ def shuffle(data, bufsize=1000, initial=100, rng=shuffle_rng, handler=None):
         yield pick(buf, rng)
 
 
-@pipelinefilter
-def select(data, predicate):
+shuffle = pipelinefilter(_shuffle)
+
+
+def _select(data, predicate):
     """Select samples based on a predicate.
 
     :param data: source iterator
@@ -240,8 +244,10 @@ def select(data, predicate):
             yield sample
 
 
-@pipelinefilter
-def log_keys(data, logfile=None):
+select = pipelinefilter(_select)
+
+
+def _log_keys(data, logfile=None):
     import fcntl
 
     if logfile is None or logfile == "":
@@ -259,8 +265,10 @@ def log_keys(data, logfile=None):
                 yield sample
 
 
-@pipelinefilter
-def decode(data, *args, handler=reraise_exception, **kw):
+log_keys = pipelinefilter(_log_keys)
+
+
+def _decode(data, *args, handler=reraise_exception, **kw):
     """Decode data based on the decoding functions given as arguments."""
 
     decoder = lambda x: autodecode.imagehandler(x) if isinstance(x, str) else x
@@ -279,8 +287,10 @@ def decode(data, *args, handler=reraise_exception, **kw):
         yield decoded
 
 
-@pipelinefilter
-def map(data, f, handler=reraise_exception):
+decode = pipelinefilter(_decode)
+
+
+def _map(data, f, handler=reraise_exception):
     """Map samples."""
     for sample in data:
         try:
@@ -295,8 +305,10 @@ def map(data, f, handler=reraise_exception):
         yield result
 
 
-@pipelinefilter
-def rename(data, handler=reraise_exception, keep=True, **kw):
+map = pipelinefilter(_map)
+
+
+def _rename(data, handler=reraise_exception, keep=True, **kw):
     """Rename samples based on keyword arguments."""
     for sample in data:
         try:
@@ -325,8 +337,10 @@ def rename(data, handler=reraise_exception, keep=True, **kw):
                 break
 
 
-@pipelinefilter
-def associate(data, associator, **kw):
+rename = pipelinefilter(_rename)
+
+
+def _associate(data, associator, **kw):
     """Associate additional data with samples."""
     for sample in data:
         if callable(associator):
@@ -337,8 +351,10 @@ def associate(data, associator, **kw):
         yield sample
 
 
-@pipelinefilter
-def map_dict(data, handler=reraise_exception, **kw):
+associate = pipelinefilter(_associate)
+
+
+def _map_dict(data, handler=reraise_exception, **kw):
     """Map the entries in a dict sample with individual functions."""
     assert len(list(kw.keys())) > 0
     for key, f in kw.items():
@@ -357,8 +373,10 @@ def map_dict(data, handler=reraise_exception, **kw):
         yield sample
 
 
-@pipelinefilter
-def to_tuple(
+map_dict = pipelinefilter(_map_dict)
+
+
+def _to_tuple(
     data, *args, handler=reraise_exception, missing_is_error=True, none_is_error=None
 ):
     """Convert dict samples to tuples."""
@@ -382,8 +400,10 @@ def to_tuple(
                 break
 
 
-@pipelinefilter
-def map_tuple(data, *args, handler=reraise_exception):
+to_tuple = pipelinefilter(_to_tuple)
+
+
+def _map_tuple(data, *args, handler=reraise_exception):
     """Map the entries of a tuple with individual functions."""
     args = [f if f is not None else utils.identity for f in args]
     for f in args:
@@ -401,6 +421,9 @@ def map_tuple(data, *args, handler=reraise_exception):
             else:
                 break
         yield tuple(sample)
+
+
+map_tuple = pipelinefilter(_map_tuple)
 
 
 def default_collation_fn(samples, combine_tensors=True, combine_scalars=True):
@@ -436,8 +459,7 @@ def default_collation_fn(samples, combine_tensors=True, combine_scalars=True):
     return result
 
 
-@pipelinefilter
-def batched(
+def _batched(
     data,
     batchsize=20,
     collation_fn=default_collation_fn,
@@ -468,8 +490,10 @@ def batched(
         yield batch
 
 
-@pipelinefilter
-def unlisted(data):
+batched = pipelinefilter(_batched)
+
+
+def _unlisted(data):
     """Turn batched data back into unbatched data."""
     for batch in data:
         assert isinstance(batch, list), sample
@@ -477,8 +501,10 @@ def unlisted(data):
             yield sample
 
 
-@pipelinefilter
-def unbatched(data):
+unlisted = pipelinefilter(_unlisted)
+
+
+def _unbatched(data):
     """Turn batched data back into unbatched data."""
     for sample in data:
         assert isinstance(sample, (tuple, list)), sample
@@ -487,8 +513,10 @@ def unbatched(data):
             yield tuple(x[i] for x in sample)
 
 
-@pipelinefilter
-def rsample(data, p=0.5):
+unbatched = pipelinefilter(_unbatched)
+
+
+def _rsample(data, p=0.5):
     """Randomly subsample a stream of data."""
     assert p >= 0.0 and p <= 1.0
     for sample in data:
@@ -496,4 +524,7 @@ def rsample(data, p=0.5):
             yield sample
 
 
+rsample = pipelinefilter(_rsample)
+
 slice = pipelinefilter(itertools.islice)
+

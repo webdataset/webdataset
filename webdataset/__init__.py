@@ -32,7 +32,9 @@ from .shardlists import (
     resampled,
 )
 from .extradatasets import (
-    MockDataset
+    MockDataset,
+    with_epoch,
+    with_length,
 )
 from .tariterators import (
     tarfile_samples,
@@ -78,7 +80,11 @@ from .filters import (
     map_tuple,
     batched,
     unbatched,
+    rsample,
     slice,
+)
+from .utils import (
+    repeatedly
 )
 from .dbcache import DBCache
 from .dsspecs import RoundRobin

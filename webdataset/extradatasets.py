@@ -44,69 +44,7 @@ class MockDataset(IterableDataset, Composable, Shorthands):
             yield self.sample
 
 
-class Repeatedly(IterableDataset, Composable, Shorthands):
-    """Repeatedly yield samples from a dataset."""
-
-    def __init__(self, nepochs=None, nbatches=None, length=None):
-        """Create an instance of Repeatedly.
-
-        :param nepochs: repeat for a maximum of nepochs
-        :param nbatches: repeat for a maximum of nbatches
-        """
-        self.length = length
-        self.nepochs = nepochs
-        self.nbatches = nbatches
-
-    def __iter__(self):
-        """Return an iterator that iterates repeatedly over a source."""
-        return utils.repeatedly(
-            self.source,
-            nepochs=self.nepochs,
-            nbatches=self.nbatches,
-        )
-
-
-class DatasetTest(IterableDataset, Composable, Shorthands):
-    """Perform final checks on an IterableDataset and permit easy mock tests.
-
-    This is the implementation of the `dataset.Shorthands.test` method; you usually
-    do not need to construct it explicitly.
-    """
-
-    def __init__(self, length=None, checker=None, mock_sample=None, mock_length=10000, mock=False):
-        """Create a DatasetTest.
-
-        :param length: length of the dataset
-        :param checker: any kind of final checking function you want to run over samples
-        :param mock_sample: mock sample
-        :param mock_length: size of mocked dataset
-        :param mock: turning mocking on/off
-        """
-        super().__init__()
-        self.source = None
-        self.length = length
-        self.checker = checker
-        self.mock = mock
-        self.mock_length = mock_length
-        self.mock_sample = mock_sample
-
-
-    def __iter__(self):
-        """Return an iterator either over the mock object or the underlying dataset."""
-        if self.mock:
-            if not callable(self.mock_sample):
-                for i in range(self.mock_length):
-                    yield self.mock_sample
-            else:
-                return self.mock_sample()
-        else:
-            for sample in self.source:
-                if self.checker is not None:
-                    self.checker(sample)
-                yield sample
-
-
-class ChoppedDataset(IterableDataset, Composable, Shorthands):
+class with_epoch(IterableDataset, Composable, Shorthands):
     """Change the actual and nominal length of an IterableDataset.
 
     This will continuously iterate through the original dataset, but
@@ -117,8 +55,8 @@ class ChoppedDataset(IterableDataset, Composable, Shorthands):
 
     """
 
-    def __init__(self, dataset, length=None, nominal=None):
-        """Create a ChoppedDataset.
+    def __init__(self, dataset, length):
+        """Chop the dataset to the given length.
 
         :param dataset: IterableDataset
         :param length: declared length of the dataset
@@ -126,10 +64,7 @@ class ChoppedDataset(IterableDataset, Composable, Shorthands):
         """
         super().__init__()
         self.dataset = dataset
-        if length is None:
-            length = len(dataset)
         self.length = length
-        self.nominal = self.length if nominal is None else nominal
         self.source = None
 
     def __getstate__(self):
@@ -160,7 +95,7 @@ class ChoppedDataset(IterableDataset, Composable, Shorthands):
             yield sample
 
 
-class FakeLength(IterableDataset, Composable, Shorthands):
+class with_length(IterableDataset, Composable, Shorthands):
     """Repeatedly yield samples from a dataset."""
 
     def __init__(self, dataset, length):

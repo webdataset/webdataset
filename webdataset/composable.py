@@ -14,7 +14,7 @@ import itertools as itt
 import os
 import sys
 
-from . import autodecode, dbcache, iterators
+from . import autodecode, dbcache, filters
 from .utils import lookup_sym, safe_eval
 from .handlers import reraise_exception
 from .pytorch import IterableDataset
@@ -68,18 +68,18 @@ class Composable:
 class Shorthands:
     """A convenient set of shorthands for common data transformations."""
 
-    def batched(self, batchsize, collation_fn=iterators.default_collation_fn, partial=True):
+    def batched(self, batchsize, collation_fn=filters.default_collation_fn, partial=True):
         """Compute batches for the given dataset.
 
         :param batchsize: desired batchsize
         :param collation_fn: collation function to turn list of objects into batches
         :param partial: return partial batches
         """
-        return self.then(iterators.batched, batchsize=batchsize, collation_fn=collation_fn, partial=partial)
+        return self.then(filters.batched, batchsize=batchsize, collation_fn=collation_fn, partial=partial)
 
     def unbatched(self):
         """Take a stream of batches and turn it back into a stream of samples."""
-        return self.then(iterators.unbatched)
+        return self.then(filters.unbatched)
 
     def listed(self, batchsize, partial=True):
         """Compute batches by just putting collections of samples into a list; analogous to batched."""
@@ -87,11 +87,11 @@ class Shorthands:
 
     def unlisted(self):
         """Take a stream of batches and turn it back into a stream of samples."""
-        return self.then(iterators.unlisted)
+        return self.then(filters.unlisted)
 
     def log_keys(self, logfile=None):
         """Log keys from current samples to the given logfile (used for debugging)."""
-        return self.then(iterators.log_keys, logfile=logfile)
+        return self.then(filters.log_keys, logfile=logfile)
 
     def shuffle(self, size, **kw):
         """Shuffle the dataset using an internal shuffle buffer.
@@ -106,11 +106,11 @@ class Shorthands:
         :param size: size of the shuffle buffer
         :param initial: buffer this many samples before yield training samples
         :param handler: The exception handling strategy.
-        :param kw: other keywords for iterators.shuffle
+        :param kw: other keywords for filters.shuffle
         """
         if size < 1:
             return self
-        return self.then(iterators.shuffle, size, **kw)
+        return self.then(filters.shuffle, size, **kw)
 
     def map(self, f, handler=reraise_exception):
         """Map a function over a stream of samples.
@@ -120,7 +120,7 @@ class Shorthands:
         :param f: The function to be mapped.
         :param handler: The exception handling strategy.
         """
-        return self.then(iterators.map, f, handler=handler)
+        return self.then(filters.map, f, handler=handler)
 
     def decode(
         self,
@@ -164,7 +164,7 @@ class Shorthands:
         :param handler: exception handler
         :param kw: list of renames
         """
-        return self.then(iterators.rename, handler=handler, _kwa=kw)
+        return self.then(filters.rename, handler=handler, _kwa=kw)
 
     def map_dict(self, handler=reraise_exception, **kw):
         """Map the fields of a dictionary.
@@ -172,14 +172,14 @@ class Shorthands:
         :param handler: exeption handler
         :param kw: list of key=function mappers
         """
-        return self.then(iterators.map_dict, handler=handler, _kwa=kw)
+        return self.then(filters.map_dict, handler=handler, _kwa=kw)
 
     def select(self, predicate, **kw):
         """Select samples matching some predicate.
 
         :param predicate: predicate used to select samples
         """
-        return self.then(iterators.select, predicate, _kwa=kw)
+        return self.then(filters.select, predicate, _kwa=kw)
 
     def to_tuple(self, *args, handler=reraise_exception, **kw):
         """Convert a dictionary-based sample to a tuple.
@@ -194,7 +194,7 @@ class Shorthands:
         :param missing_is_error: whether to ignore fields missing from samples and replace them by None
         :param none_is_error: whether reading a None triggers an exception, defaults to missing_is_error
         """
-        return self.then(iterators.to_tuple, *args, handler=handler, **kw)
+        return self.then(filters.to_tuple, *args, handler=handler, **kw)
 
     def map_tuple(self, *args, handler=reraise_exception):
         """Map a tuple.
@@ -202,7 +202,7 @@ class Shorthands:
         :param args: List of functions corresponding to the fields of the tuple.
         :param handler: exception handler
         """
-        return self.then(iterators.map_tuple, *args, handler=handler)
+        return self.then(filters.map_tuple, *args, handler=handler)
 
     def dbcache(self, fname, size):
         """Cache training samples in an SQLite database.
@@ -224,7 +224,7 @@ class Shorthands:
 
         :param associator: callable or dictionary-like object
         """
-        return self.then(iterators.associate, associator)
+        return self.then(filters.associate, associator)
 
     def slice(self, *args):
         """Slice the stream of training samples.
@@ -252,7 +252,7 @@ class Shorthands:
 
         :param args: probability of including a sample in the output stream.
         """
-        return self.then(iterators.rsample, p)
+        return self.then(filters.rsample, p)
 
     def repeat(
         self,
@@ -353,4 +353,6 @@ class Processor(IterableDataset, Composable, Shorthands):
         """Return an iterator over the source dataset processed by the given function."""
         assert self.source is not None, f"must set source before calling iter {self.f} {self.args} {self.kw}"
         assert callable(self.f), self.f
-        return self.f(iter(self.source), *self.args, **self.kw)
+        import random
+        result = self.f(iter(self.source), *self.args, **self.kw)
+        return result
