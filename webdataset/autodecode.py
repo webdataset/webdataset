@@ -16,8 +16,6 @@ from functools import partial
 
 import numpy as np
 
-from .checks import checkmember, checknotnone
-
 
 """Extensions passed on to the image decoder."""
 image_extensions = "jpg jpeg png ppm pgm pbm pnm".split()
@@ -194,7 +192,8 @@ class ImageHandler:
         :param imagespec: short string indicating the type of decoding
         :param extensions: list of extensions the image handler is invoked for
         """
-        checkmember(imagespec, list(imagespecs.keys()), "unknown image specification")
+        if imagespec not in list(imagespecs.keys()):
+            raise ValueError("Unknown imagespec: %s" % imagespec)
         self.imagespec = imagespec.lower()
         self.extensions = extensions
 
@@ -219,7 +218,8 @@ class ImageHandler:
             return img
         elif atype == "numpy":
             result = np.asarray(img)
-            checkmember(result.dtype, [np.uint8])
+            if result.dtype != np.uint8:
+                raise ValueError("ImageHandler: numpy image must be uint8")
             if etype == "uint8":
                 return result
             else:
@@ -228,7 +228,8 @@ class ImageHandler:
             import torch
 
             result = np.asarray(img)
-            checkmember(result.dtype, [np.uint8])
+            if result.dtype != np.uint8:
+                raise ValueError("ImageHandler: torch image must be uint8")
             if etype == "uint8":
                 result = np.array(result.transpose(2, 0, 1))
                 return torch.tensor(result)
@@ -406,7 +407,7 @@ class Decoder:
             if self.only is not None and k not in self.only:
                 result[k] = v
                 continue
-            checknotnone(v)
+            assert v is not None
             assert isinstance(v, bytes)
             result[k] = self.decode1(k, v)
         return result

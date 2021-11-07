@@ -16,6 +16,8 @@ mypy
 flake8
 pydocstyle
 bandit
+pytest
+pytest-cov
 
 Pillow
 numpy

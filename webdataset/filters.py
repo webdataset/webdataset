@@ -22,7 +22,6 @@ import numpy as np
 
 from . import autodecode
 from . import utils
-from .checks import checktype
 
 try:
     from torch import Tensor as TorchTensor

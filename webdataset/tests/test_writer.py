@@ -2,7 +2,7 @@ import os
 
 import numpy as np
 
-import webdataset.dataset as wds
+import webdataset as wds
 from webdataset import writer
 
 
@@ -43,7 +43,11 @@ def test_writer3(tmpdir):
     ftype = os.popen(f"file {tmpdir}/writer3.tar").read()
     assert "compress" not in ftype, ftype
 
-    ds = wds.WebDataset(f"{tmpdir}/writer3.tar").decode()
+    ds = wds.DataPipeline(
+        wds.SimpleShardList(f"{tmpdir}/writer3.tar"),
+        wds.tarfile_samples,
+        wds.decode("rgb")
+    )
     for sample in ds:
         assert getkeys(sample) == set("pth pyd".split())
         assert isinstance(sample["pyd"], dict)
@@ -60,7 +64,11 @@ def test_writer4(tmpdir):
     ftype = os.popen(f"file {tmpdir}/writer4.tar").read()
     assert "compress" not in ftype, ftype
 
-    ds = wds.WebDataset(f"{tmpdir}/writer4.tar").decode()
+    ds = wds.DataPipeline(
+        wds.SimpleShardList(f"{tmpdir}/writer4.tar"),
+        wds.tarfile_samples,
+        wds.decode(),
+    )
     for sample in ds:
         assert getkeys(sample) == set("tb ten".split())
         assert isinstance(sample["ten"], list)

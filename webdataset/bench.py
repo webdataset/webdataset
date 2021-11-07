@@ -10,9 +10,8 @@ import argparse
 import time
 from collections import Counter
 
-from . import dataset
-
-
+from . import pipeline
+from . import SimpleShardList
 class TotalSize:
     """Keep track of the total size of samples."""
 
@@ -39,10 +38,10 @@ def main(args):
     for shard in args.shards:
         print("===", shard)
         totals = TotalSize()
-        ds = dataset.Dataset(shard)
-        ds.map(totals)
+        ds = pipeline.DataPipeline(SimpleShardList(shard))
+        ds = ds.then(filters.map(total))
         if args.decode != "":
-            ds = ds.decode(*eval("(" + args.decode + ",)"))
+            ds = ds.then(filters.decode(*eval("(" + args.decode + ",)")))
         keys = set()
         skeys = Counter()
         delta = None

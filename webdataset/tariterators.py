@@ -53,6 +53,7 @@ def valid_sample(sample):
     )
 
 
+# FIXME: UNUSED
 def shardlist(urls, *, shuffle=False):
     """Given a list of URLs, yields that list, possibly shuffled."""
     if isinstance(urls, str):
@@ -83,7 +84,9 @@ def url_opener(data, handler=reraise_exception, **kw):
                 break
 
 
-def tar_file_iterator(fileobj, skip_meta=r"__[^/]*__($|/)", handler=reraise_exception, info={}):
+def tar_file_iterator(
+    fileobj, skip_meta=r"__[^/]*__($|/)", handler=reraise_exception, info={}
+):
     """Iterate over tar file, yielding filename, content pairs for the given tar stream.
 
     :param fileobj: byte stream suitable for tarfile
@@ -98,7 +101,11 @@ def tar_file_iterator(fileobj, skip_meta=r"__[^/]*__($|/)", handler=reraise_exce
                 continue
             if fname is None:
                 continue
-            if "/" not in fname and fname.startswith(meta_prefix) and fname.endswith(meta_suffix):
+            if (
+                "/" not in fname
+                and fname.startswith(meta_prefix)
+                and fname.endswith(meta_suffix)
+            ):
                 # skipping metadata for now
                 continue
             if skip_meta is not None and re.match(skip_meta, fname):
@@ -130,7 +137,9 @@ def tar_file_expander(data, handler=reraise_exception):
             assert "stream" in source
             info = {k: v for k, v in source.items() if k.startswith("_")}
             for sample in tar_file_iterator(source["stream"], info=info):
-                assert isinstance(sample, dict) and "data" in sample and "fname" in sample
+                assert (
+                    isinstance(sample, dict) and "data" in sample and "fname" in sample
+                )
                 yield sample
         except Exception as exn:
             exn.args = exn.args + (source.get("stream"), info)
@@ -168,11 +177,14 @@ def group_by_keys(data, keys=base_plus_ext, lcase=True, suffixes=None, handler=N
             current_sample = dict(__key__=prefix)
             current_sample.update(info)
         if suffix in current_sample:
-            raise ValueError(f"{fname}: duplicate file name in tar file {suffix} {current_sample.keys()}")
+            raise ValueError(
+                f"{fname}: duplicate file name in tar file {suffix} {current_sample.keys()}"
+            )
         if suffixes is None or suffix in suffixes:
             current_sample[suffix] = value
     if valid_sample(current_sample):
         yield current_sample
+
 
 def tarfile_samples(src, handler=reraise_exception):
     streams = url_opener(src, handler=handler)

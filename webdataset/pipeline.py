@@ -53,3 +53,11 @@ class DataPipeline(IterableDataset):
 
     def stage(self, i):
         return self.pipeline[i]
+
+    def append(self, f):
+        self.pipeline.append(f)
+
+    def then(self, f):
+        result = copy.copy(self)
+        result.append(f)
+        return result
