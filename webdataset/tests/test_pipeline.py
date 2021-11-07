@@ -10,8 +10,14 @@ from torch.utils.data import DataLoader
 
 import webdataset as wds
 import webdataset.extradatasets as eds
-from webdataset import (SimpleShardList, autodecode, filters, handlers,
-                        shardlists, tariterators)
+from webdataset import (
+    SimpleShardList,
+    autodecode,
+    filters,
+    handlers,
+    shardlists,
+    tariterators,
+)
 
 local_data = "testdata/imagenet-000000.tgz"
 compressed = "testdata/compressed.tar"
@@ -36,6 +42,7 @@ def count_samples_tuple(source, *args, n=10000):
         count += 1
     return count
 
+
 def test_trivial():
     dataset = wds.DataPipeline(lambda: iter([1, 2, 3, 4]))
     result = list(iter(dataset))
@@ -58,8 +65,11 @@ def mymap(src, f):
     for x in src:
         yield f(x)
 
+
 def test_trivial_map3():
-    dataset = wds.DataPipeline(lambda: iter([1, 2, 3, 4]), wds.stage(mymap, lambda x: x + 1))
+    dataset = wds.DataPipeline(
+        lambda: iter([1, 2, 3, 4]), wds.stage(mymap, lambda x: x + 1)
+    )
     result = list(iter(dataset))
     assert result == [2, 3, 4, 5]
 
@@ -240,8 +250,6 @@ def test_slice():
     )
     result = list(iter(dataset))
     assert len(result) == 29
-
-
 
 
 def count_samples(source, *args, n=1000):
@@ -465,7 +473,7 @@ def test_dataset_missing_totuple_raises():
         ds = wds.DataPipeline(
             wds.SimpleShardList(f"pipe:dd if={local_data} bs=1024 count=10"),
             wds.tarfile_to_samples(handler=handlers.ignore_and_stop),
-            wds.to_tuple("foo", "bar")
+            wds.to_tuple("foo", "bar"),
         )
         count_samples_tuple(ds)
 
@@ -475,7 +483,7 @@ def test_dataset_missing_rename_raises():
         ds = wds.DataPipeline(
             wds.SimpleShardList(f"pipe:dd if={local_data} bs=1024 count=10"),
             wds.tarfile_to_samples(handler=handlers.ignore_and_stop),
-            wds.rename(x="foo", y="bar")
+            wds.rename(x="foo", y="bar"),
         )
         count_samples_tuple(ds)
 
@@ -488,14 +496,14 @@ def test_dataset_rename_keep():
     ds = wds.DataPipeline(
         wds.SimpleShardList(local_data),
         wds.tarfile_to_samples(),
-        wds.rename(image="png", keep=False)
+        wds.rename(image="png", keep=False),
     )
     sample = next(iter(ds))
     assert getkeys(sample) == set(["image"]), getkeys(sample)
     ds = wds.DataPipeline(
         wds.SimpleShardList(local_data),
         wds.tarfile_to_samples(),
-        wds.rename(image="png")
+        wds.rename(image="png"),
     )
     sample = next(iter(ds))
     assert getkeys(sample) == set("cls image wnid xml".split()), getkeys(sample)
@@ -504,16 +512,12 @@ def test_dataset_rename_keep():
 def test_dataset_rsample():
 
     ds = wds.DataPipeline(
-        wds.SimpleShardList(local_data),
-        wds.tarfile_to_samples(),
-        wds.rsample(1.0)
+        wds.SimpleShardList(local_data), wds.tarfile_to_samples(), wds.rsample(1.0)
     )
     assert count_samples_tuple(ds) == 47
 
     ds = wds.DataPipeline(
-        wds.SimpleShardList(local_data),
-        wds.tarfile_to_samples(),
-        wds.rsample(0.5)
+        wds.SimpleShardList(local_data), wds.tarfile_to_samples(), wds.rsample(0.5)
     )
     result = [count_samples_tuple(ds) for _ in range(300)]
     assert np.mean(result) >= 0.3 * 47 and np.mean(result) <= 0.7 * 47, np.mean(result)
@@ -573,7 +577,7 @@ def test_dataset_map_dict_handler():
     ds = wds.DataPipeline(
         wds.SimpleShardList(local_data),
         wds.tarfile_to_samples(),
-        wds.map_dict(png=identity, cls=identity)
+        wds.map_dict(png=identity, cls=identity),
     )
     count_samples_tuple(ds)
 
@@ -581,7 +585,7 @@ def test_dataset_map_dict_handler():
         ds = wds.DataPipeline(
             wds.SimpleShardList(local_data),
             wds.tarfile_to_samples(),
-            wds.map_dict(png=identity, cls2=identity)
+            wds.map_dict(png=identity, cls2=identity),
         )
         count_samples_tuple(ds)
 
@@ -592,7 +596,7 @@ def test_dataset_map_dict_handler():
         ds = wds.DataPipeline(
             wds.SimpleShardList(local_data),
             wds.tarfile_to_samples(),
-            wds.map_dict(png=g, cls2=identity)
+            wds.map_dict(png=g, cls2=identity),
         )
         count_samples_tuple(ds)
 
@@ -604,7 +608,7 @@ def test_dataset_shuffle_decode_rename_extract():
         wds.shuffle(5),
         wds.decode("rgb"),
         wds.rename(image="png;jpg", cls="cls"),
-        wds.to_tuple("image", "cls")
+        wds.to_tuple("image", "cls"),
     )
     assert count_samples_tuple(ds) == 47
     image, cls = next(iter(ds))
@@ -619,7 +623,7 @@ def test_rgb8():
         wds.shuffle(5),
         wds.decode("rgb8"),
         wds.rename(image="png;jpg", cls="cls"),
-        wds.to_tuple("image", "cls")
+        wds.to_tuple("image", "cls"),
     )
     assert count_samples_tuple(ds) == 47
     image, cls = next(iter(ds))
@@ -635,7 +639,7 @@ def test_pil():
         wds.shuffle(5),
         wds.decode("pil"),
         wds.rename(image="png;jpg", cls="cls"),
-        wds.to_tuple("image", "cls")
+        wds.to_tuple("image", "cls"),
     )
     assert count_samples_tuple(ds) == 47
     image, cls = next(iter(ds))
@@ -647,7 +651,7 @@ def test_raw():
         wds.SimpleShardList(local_data),
         wds.tarfile_to_samples(),
         wds.rename(image="png;jpg", cls="cls"),
-        wds.to_tuple("image", "cls")
+        wds.to_tuple("image", "cls"),
     )
     assert count_samples_tuple(ds) == 47
     image, cls = next(iter(ds))
@@ -660,7 +664,7 @@ def IGNORE_test_only1():
         wds.SimpleShardList(local_data),
         wds.tarfile_to_samples(),
         wds.decode(only="cls"),
-        wds.to_tuple("png;jpg", "cls")
+        wds.to_tuple("png;jpg", "cls"),
     )
     assert count_samples_tuple(ds) == 47
     image, cls = next(iter(ds))
@@ -671,7 +675,7 @@ def IGNORE_test_only1():
         wds.SimpleShardList(local_data),
         wds.tarfile_to_samples(),
         wds.decode(only=["png", "jpg"]),
-        wds.to_tuple("jpg;png", "cls")
+        wds.to_tuple("jpg;png", "cls"),
     )
     assert count_samples_tuple(ds) == 47
     image, cls = next(iter(ds))
@@ -712,14 +716,14 @@ def test_float_np_vs_torch():
         wds.SimpleShardList(local_data),
         wds.tarfile_to_samples(),
         wds.decode("rgb"),
-        wds.to_tuple("png;jpg", "cls")
+        wds.to_tuple("png;jpg", "cls"),
     )
     image, cls = next(iter(ds))
     ds = wds.DataPipeline(
         wds.SimpleShardList(local_data),
         wds.tarfile_to_samples(),
         wds.decode("torchrgb"),
-        wds.to_tuple("png;jpg", "cls")
+        wds.to_tuple("png;jpg", "cls"),
     )
     image2, cls2 = next(iter(ds))
     assert (image == image2.permute(1, 2, 0).numpy()).all(), (image.shape, image2.shape)
@@ -842,7 +846,7 @@ def test_decode_handlers():
             wds.handle_extension("jpg", mydecoder),
             wds.handle_extension("png", mydecoder),
         ),
-        wds.to_tuple("jpg;png", "json")
+        wds.to_tuple("jpg;png", "json"),
     )
 
     for sample in ds:
@@ -858,7 +862,7 @@ def test_decoder():
         wds.SimpleShardList(remote_loc + remote_shards),
         wds.tarfile_to_samples(),
         wds.decode(mydecoder),
-        wds.to_tuple("jpg;png", "json")
+        wds.to_tuple("jpg;png", "json"),
     )
 
     for sample in ds:
@@ -871,7 +875,7 @@ def test_pipe():
         wds.SimpleShardList(f"pipe:curl -s '{remote_loc}{remote_shards}'"),
         wds.tarfile_to_samples(),
         wds.shuffle(100),
-        wds.to_tuple("jpg;png", "json")
+        wds.to_tuple("jpg;png", "json"),
     )
     assert count_samples_tuple(ds, n=10) == 10
 
@@ -1052,4 +1056,3 @@ def test_webloader2():
     )
     nsamples = count_samples_tuple(dl)
     assert nsamples == 45, nsamples
-
