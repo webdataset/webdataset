@@ -12,11 +12,11 @@ ZMQ, provided for high performance multithreaded queueing.
 """
 
 import multiprocessing as mp
-import zmq
 import pickle
-import weakref
 import uuid
+import weakref
 
+import zmq
 
 the_protocol = pickle.HIGHEST_PROTOCOL
 
@@ -31,8 +31,7 @@ class EOF:
         self.__dict__.update(kw)
 
 
-# FIXME: must pass worker info in the environment here
-def reader(dataset, sockname, index):
+def reader(dataset, sockname, index, num_workers):
     """Read samples from the dataset and send them over the socket.
 
     :param dataset: source dataset
@@ -40,6 +39,8 @@ def reader(dataset, sockname, index):
     :param index: index for this reader, using to indicate EOF
     """
     global the_protocol
+    os.environ["WORKER"] = str(index)
+    os.environ["NUM_WORKERS"] = str(num_workers)
     ctx = zmq.Context.instance()
     sock = ctx.socket(zmq.PUSH)
     sock.connect(sockname)
@@ -53,7 +54,9 @@ def reader(dataset, sockname, index):
 class MultiLoader:
     """Alternative to PyTorch DataLoader based on ZMQ."""
 
-    def __init__(self, dataset, workers=4, verbose=False, nokill=False, prefix="/tmp/_multi-"):
+    def __init__(
+        self, dataset, workers=4, verbose=False, nokill=False, prefix="/tmp/_multi-"
+    ):
         """Create a MultiLoader for a dataset.
 
         This creates ZMQ sockets, spawns `workers` subprocesses, and has them send data
@@ -99,7 +102,7 @@ class MultiLoader:
             print("#", self.sockname)
         self.pids = [None] * self.workers
         for index in range(self.workers):
-            args = (self.dataset, self.sockname, index)
+            args = (self.dataset, self.sockname, index, self.workers)
             self.pids[index] = mp.Process(target=reader, args=args)
         all_pids.update(self.pids)
         for pid in self.pids:

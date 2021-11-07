@@ -6,9 +6,9 @@
 
 """Implement caching for shards."""
 
-import sys
-import os.path
 import io
+import os.path
+import sys
 import uuid
 
 

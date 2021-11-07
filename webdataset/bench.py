@@ -10,8 +10,9 @@ import argparse
 import time
 from collections import Counter
 
-from . import pipeline
-from . import SimpleShardList
+from . import SimpleShardList, pipeline
+
+
 class TotalSize:
     """Keep track of the total size of samples."""
 

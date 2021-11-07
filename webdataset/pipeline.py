@@ -1,24 +1,23 @@
 #%%
 import os
+import random
 import sys
 import time
-import random
-import yaml
 from dataclasses import dataclass
 from typing import List
 
 import braceexpand
+import yaml
 
-#from .pytorch import IterableDataset
-from .pytorch import IterableDataset, DataLoader
 from .filters import pipelinefilter
+from .pytorch import DataLoader, IterableDataset
 
 
 def stage(f, *args, **kw):
     return pipelinefilter(f)(*args, **kw)
 
-class DataPipeline(IterableDataset):
 
+class DataPipeline(IterableDataset):
     def __init__(self, *args, **kwargs):
         super().__init__()
         self.pipeline = []
@@ -39,7 +38,6 @@ class DataPipeline(IterableDataset):
             result = f(*args, **kwargs)
             return result
         raise ValueError(f"{f}: not a valid pipeline stage")
-
 
     def __iter__(self):
         source = self.invoke(self.pipeline[0])

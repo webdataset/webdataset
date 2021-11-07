@@ -31,8 +31,8 @@ Header chunks have the following structure:
 - ...
 """
 
-import sys
 import struct
+import sys
 
 import numpy as np
 
@@ -124,11 +124,9 @@ def encode_header(a, info=""):
         raise ValueError("mismatch between size and shape")
     if a.dtype.name not in long_to_short:
         raise ValueError("unsupported array type")
-    header = [
-        str64(long_to_short[a.dtype.name]),
-        str64(info),
-        len(a.shape)
-    ] + list(a.shape)
+    header = [str64(long_to_short[a.dtype.name]), str64(info), len(a.shape)] + list(
+        a.shape
+    )
     return bytedata(np.array(header, dtype="i8"))
 
 
@@ -140,7 +138,7 @@ def decode_header(h):
     dtype = np.dtype(short_to_long[unstr64(h[0])])
     info = unstr64(h[1])
     rank = int(h[2])
-    shape = tuple(h[3:3 + rank])
+    shape = tuple(h[3 : 3 + rank])
     return shape, dtype, info
 
 
@@ -186,11 +184,11 @@ def encode_chunks(l):
     result = bytearray(size)
     offset = 0
     for b in l:
-        result[offset:offset + 8] = magic_bytes
+        result[offset : offset + 8] = magic_bytes
         offset += 8
-        result[offset:offset + 8] = struct.pack("@q", b.nbytes)
+        result[offset : offset + 8] = struct.pack("@q", b.nbytes)
         offset += 8
-        result[offset:offset + bytelen(b)] = b
+        result[offset : offset + bytelen(b)] = b
         offset += roundup(bytelen(b))
     return result
 
@@ -201,12 +199,12 @@ def decode_chunks(buf):
     offset = 0
     total = bytelen(buf)
     while offset < total:
-        if magic_bytes != buf[offset:offset + 8]:
+        if magic_bytes != buf[offset : offset + 8]:
             raise ValueError("magic bytes mismatch")
         offset += 8
-        nbytes = struct.unpack("@q", buf[offset:offset + 8])[0]
+        nbytes = struct.unpack("@q", buf[offset : offset + 8])[0]
         offset += 8
-        b = buf[offset:offset + nbytes]
+        b = buf[offset : offset + nbytes]
         offset += roundup(nbytes)
         result.append(b)
     return result

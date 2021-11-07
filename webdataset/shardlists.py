@@ -21,9 +21,9 @@ from typing import List
 import braceexpand
 import yaml
 
+from . import utils
 from .filters import pipelinefilter
 from .pytorch import IterableDataset
-from . import utils
 
 
 class SimpleShardList(IterableDataset):
@@ -226,7 +226,9 @@ class ResampledShards(IterableDataset):
         assert isinstance(self.urls[0], str)
         self.nshards = nshards
         self.rng = random.Random()
-        self.worker_seed = utils.pytorch_worker_seed if worker_seed is None else worker_seed
+        self.worker_seed = (
+            utils.pytorch_worker_seed if worker_seed is None else worker_seed
+        )
         self.deterministic = deterministic
         self.epoch = -1
 

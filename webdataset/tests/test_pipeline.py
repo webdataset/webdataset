@@ -1,32 +1,17 @@
 import io
 import os
+import pickle
+
 import numpy as np
 import PIL
 import pytest
 import torch
-import pickle
-import io
-import os
-import numpy as np
-import PIL
-import pytest
-import torch
-import pickle
+from torch.utils.data import DataLoader
 
 import webdataset as wds
 import webdataset.extradatasets as eds
-from webdataset import autodecode
-from webdataset import handlers
-from webdataset import shardlists
-from torch.utils.data import DataLoader
-
-
-
-import webdataset as wds
-from webdataset import filters
-from webdataset import tariterators
-from webdataset import autodecode
-from webdataset import SimpleShardList
+from webdataset import (SimpleShardList, autodecode, filters, handlers,
+                        shardlists, tariterators)
 
 local_data = "testdata/imagenet-000000.tgz"
 compressed = "testdata/compressed.tar"

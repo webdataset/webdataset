@@ -12,7 +12,6 @@ import sys
 from subprocess import PIPE, Popen
 from urllib.parse import urlparse
 
-
 # global used for printing additional node information during verbose output
 info = {}
 
@@ -75,7 +74,10 @@ class Pipe:
             return
         self.status = self.proc.wait()
         if verbose:
-            print(f"pipe exit [{self.status} {os.getpid()}:{self.proc.pid}] {self.args} {info}", file=sys.stderr)
+            print(
+                f"pipe exit [{self.status} {os.getpid()}:{self.proc.pid}] {self.args} {info}",
+                file=sys.stderr,
+            )
         if self.status not in self.ignore_status and not self.ignore_errors:
             raise Exception(f"{self.args}: exit {self.status} (read) {info}")
 
@@ -113,7 +115,9 @@ class Pipe:
         self.close()
 
 
-def set_options(obj, timeout=None, ignore_errors=None, ignore_status=None, handler=None):
+def set_options(
+    obj, timeout=None, ignore_errors=None, ignore_status=None, handler=None
+):
     """Set options for Pipes.
 
     This function can be called on any stream. It will set pipe options only
@@ -161,11 +165,19 @@ def gopen_pipe(url, mode="rb", bufsize=8192):
     cmd = url[5:]
     if mode[0] == "r":
         return Pipe(
-            cmd, mode=mode, shell=True, bufsize=bufsize, ignore_status=[141],
+            cmd,
+            mode=mode,
+            shell=True,
+            bufsize=bufsize,
+            ignore_status=[141],
         )  # skipcq: BAN-B604
     elif mode[0] == "w":
         return Pipe(
-            cmd, mode=mode, shell=True, bufsize=bufsize, ignore_status=[141],
+            cmd,
+            mode=mode,
+            shell=True,
+            bufsize=bufsize,
+            ignore_status=[141],
         )  # skipcq: BAN-B604
     else:
         raise ValueError(f"{mode}: unknown mode")
@@ -181,12 +193,20 @@ def gopen_curl(url, mode="rb", bufsize=8192):
     if mode[0] == "r":
         cmd = f"curl -s -L '{url}'"
         return Pipe(
-            cmd, mode=mode, shell=True, bufsize=bufsize, ignore_status=[141, 23],
+            cmd,
+            mode=mode,
+            shell=True,
+            bufsize=bufsize,
+            ignore_status=[141, 23],
         )  # skipcq: BAN-B604
     elif mode[0] == "w":
         cmd = f"curl -s -L -T - '{url}'"
         return Pipe(
-            cmd, mode=mode, shell=True, bufsize=bufsize, ignore_status=[141, 26],
+            cmd,
+            mode=mode,
+            shell=True,
+            bufsize=bufsize,
+            ignore_status=[141, 26],
         )  # skipcq: BAN-B604
     else:
         raise ValueError(f"{mode}: unknown mode")

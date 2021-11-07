@@ -12,15 +12,11 @@ import re
 import tarfile
 
 import braceexpand
+
+from . import filters, gopen
 from .handlers import reraise_exception
 
-from . import gopen
-from . import filters
-
-
 trace = False
-
-
 meta_prefix = "__"
 meta_suffix = "__"
 

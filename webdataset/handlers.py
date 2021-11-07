@@ -15,8 +15,8 @@ These are functions that take an exception as an argument and then return...
 They are used as handler= arguments in much of the library.
 """
 
-import warnings
 import time
+import warnings
 
 
 def reraise_exception(exn):
@@ -46,5 +46,3 @@ def warn_and_stop(exn):
     warnings.warn(repr(exn))
     time.sleep(0.5)
     return False
-
-

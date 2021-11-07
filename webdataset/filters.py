@@ -11,17 +11,16 @@ in webdataset.filters, and you can find IterableDataset wrappers in
 webdataset.processing.
 """
 
+import itertools
 import os
-import time
 import random
 import sys
+import time
 from functools import reduce, wraps
-import itertools
 
 import numpy as np
 
-from . import autodecode
-from . import utils
+from . import autodecode, utils
 
 try:
     from torch import Tensor as TorchTensor
@@ -526,4 +525,3 @@ def _rsample(data, p=0.5):
 rsample = pipelinefilter(_rsample)
 
 slice = pipelinefilter(itertools.islice)
-

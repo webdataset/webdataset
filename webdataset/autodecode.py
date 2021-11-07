@@ -16,7 +16,6 @@ from functools import partial
 
 import numpy as np
 
-
 """Extensions passed on to the image decoder."""
 image_extensions = "jpg jpeg png ppm pgm pbm pnm".split()
 
@@ -32,6 +31,7 @@ def torch_loads(data):
     :param data: data to be decoded
     """
     import io
+
     import torch
 
     stream = io.BytesIO(data)
@@ -95,6 +95,7 @@ def basichandlers(key, data):
     if extension in "npz".split():
         return np.load(io.BytesIO(data))
 
+    return None
 
 ################################################################
 # Generic extension handler.

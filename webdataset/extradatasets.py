@@ -51,7 +51,9 @@ class RoundRobin(IterableDataset):
         self.sources = sources if sources is not None else []
 
     def add_dataset(self, dataset, probability=1.0, comment=""):
-        self.sources.append(Source(dataset=dataset, probability=probability, comment=comment))
+        self.sources.append(
+            Source(dataset=dataset, probability=probability, comment=comment)
+        )
 
     def __iter__(self):
         """Iterate through the list of sources in a round-robin way until all sources have been exhausted."""
@@ -71,9 +73,6 @@ class RoundRobin(IterableDataset):
 
     def __str__(self):
         return f"RoundRobin({self.sources})"
-
-
-
 
 
 class with_epoch(IterableDataset):
