@@ -35,7 +35,9 @@ def lookup_sym(sym: str, modules: list):
     return None
 
 
-def repeatedly0(loader: Iterator, nepochs: int = sys.maxsize, nbatches: int = sys.maxsize):
+def repeatedly0(
+    loader: Iterator, nepochs: int = sys.maxsize, nbatches: int = sys.maxsize
+):
     """Repeatedly returns batches from a DataLoader."""
     for epoch in range(nepochs):
         for sample in itt.islice(loader, nbatches):
@@ -71,3 +73,40 @@ def repeatedly(
         epoch += 1
         if nepochs is not None and epoch >= nepochs:
             return
+
+
+def pytorch_worker_info(group=None):
+    """Return node and worker info for PyTorch and some distributed environments."""
+    rank = 0
+    world_size = 1
+    worker = 0
+    num_workers = 1
+    try:
+        import torch.distributed
+
+        if torch.distributed.is_available() and torch.distributed.is_initialized():
+            group = group or torch.distributed.group.WORLD
+            rank = torch.distributed.get_rank(group=group)
+            world_size = torch.distributed.get_world_size(group=group)
+    except ModuleNotFoundError:
+        try:
+            rank = int(os.environ["RANK"])
+            world_size = int(os.environ["WORLD_SIZE"])
+        except KeyError:
+            pass
+    try:
+        import torch.utils.data
+
+        worker_info = torch.utils.data.get_worker_info()
+        if worker_info is not None:
+            worker = worker_info.id
+            num_workers = worker_info.num_workers
+    except ModuleNotFoundError:
+        pass
+
+    return rank, world_size, worker, num_workers
+
+def pytorch_worker_seed(group=None):
+    """Compute a distinct, deterministic RNG seed for each worker and node."""
+    rank, world_size, worker, num_workers = pytorch_worker_info(group=group)
+    return rank * 1000 + worker

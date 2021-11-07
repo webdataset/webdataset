@@ -18,12 +18,10 @@ import random
 import braceexpand
 
 from .pytorch import IterableDataset
-from .composable import Composable, Shorthands
-from . import dataset
 from . import utils
 
 
-class MockDataset(IterableDataset, Composable, Shorthands):
+class MockDataset(IterableDataset):
     """MockDataset.
 
     A mock dataset for performance testing and unit testing.
@@ -44,7 +42,41 @@ class MockDataset(IterableDataset, Composable, Shorthands):
             yield self.sample
 
 
-class with_epoch(IterableDataset, Composable, Shorthands):
+class RoundRobin(IterableDataset):
+    """Iterate through datasets in a round-robin way."""
+
+    def __init__(self, sources=None):
+        """Initialize from a set of sources."""
+        super().__init__()
+        self.sources = sources if sources is not None else []
+
+    def add_dataset(self, dataset, probability=1.0, comment=""):
+        self.sources.append(Source(dataset=dataset, probability=probability, comment=comment))
+
+    def __iter__(self):
+        """Iterate through the list of sources in a round-robin way until all sources have been exhausted."""
+        index = 0
+        iters = [s for s in self.sources]
+        for s in iters:
+            s.source = iter(s.dataset)
+        while len(iters) > 0:
+            try:
+                sample = next(iters[index].source)
+                yield sample
+            except StopIteration:
+                del iters[index]
+            index += 1
+            if index >= len(iters):
+                index = 0
+
+    def __str__(self):
+        return f"RoundRobin({self.sources})"
+
+
+
+
+
+class with_epoch(IterableDataset):
     """Change the actual and nominal length of an IterableDataset.
 
     This will continuously iterate through the original dataset, but
@@ -95,7 +127,7 @@ class with_epoch(IterableDataset, Composable, Shorthands):
             yield sample
 
 
-class with_length(IterableDataset, Composable, Shorthands):
+class with_length(IterableDataset):
     """Repeatedly yield samples from a dataset."""
 
     def __init__(self, dataset, length):

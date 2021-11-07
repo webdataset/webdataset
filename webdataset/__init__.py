@@ -8,24 +8,14 @@
 """Exported globals for webdataset library."""
 
 from . import tenbin
-from .fluid import Dataset
-from .dataset import (
-    WebDataset,
-    WebLoader,
-)
 from .pipeline import (
     DataPipeline,
     stage,
 )
-from .composable import (
-    Composable,
-    Shorthands,
-    Processor,
-)
 from .shardlists import (
     SimpleShardList,
-    PytorchShardList,
     ResampledShards,
+    MultiShardSample,
     split_by_node,
     split_by_worker,
     non_empty,
@@ -33,6 +23,7 @@ from .shardlists import (
 )
 from .extradatasets import (
     MockDataset,
+    RoundRobin,
     with_epoch,
     with_length,
 )
@@ -83,8 +74,4 @@ from .filters import (
     rsample,
     slice,
 )
-from .utils import (
-    repeatedly
-)
-from .dbcache import DBCache
-from .dsspecs import RoundRobin
+from .utils import repeatedly

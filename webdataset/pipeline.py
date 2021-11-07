@@ -11,7 +11,6 @@ import braceexpand
 
 #from .pytorch import IterableDataset
 from .pytorch import IterableDataset, DataLoader
-from .composable import Composable
 from .filters import pipelinefilter
 
 
@@ -32,9 +31,6 @@ class DataPipeline(IterableDataset):
                 self.pipeline.append(arg)
 
     def invoke(self, f, *args, **kwargs):
-        if isinstance(f, Composable) and len(args) == 1:
-            f.source_(*args)
-            return f
         if isinstance(f, (IterableDataset, DataLoader)) and len(args) == 0:
             return iter(f)
         if isinstance(f, list):

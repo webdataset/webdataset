@@ -31,6 +31,7 @@ class EOF:
         self.__dict__.update(kw)
 
 
+# FIXME: must pass worker info in the environment here
 def reader(dataset, sockname, index):
     """Read samples from the dataset and send them over the socket.
 

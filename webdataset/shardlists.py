@@ -21,12 +21,12 @@ from typing import List
 import braceexpand
 import yaml
 
-from .composable import Composable
 from .filters import pipelinefilter
 from .pytorch import IterableDataset
+from . import utils
 
 
-class SimpleShardList(IterableDataset, Composable):
+class SimpleShardList(IterableDataset):
     """An iterable dataset yielding a list of urls."""
 
     def __init__(self, urls, seed=None):
@@ -106,57 +106,9 @@ def non_empty(src):
         yield s
         count += 1
     if count == 0:
-        raise ValueError("pipeline stage received no data at all and this was declared as an error")
-
-
-# BELOW IS DEPRECATED ###
-
-
-class PytorchEnv:
-    """A class encapsulating the PyTorch node/worker environment."""
-
-    def __init__(self, group=None):
-        """Initialize rank/worker information."""
-        import socket
-
-        super().__init__()
-        self.rank = None
-        self.worker = None
-        self.group = group
-        self.nodeinfo = (socket.gethostname(), os.getpid())
-        self.update_env()
-
-    def update_env(self):
-        """Update information about node and worker environment.
-
-        This code is written this way because the torch.distributed info is
-        available only in the environment where the loader is created.
-        This class retains that environment info when it is serialized.
-        """
-
-        from . import gopen
-
-        try:
-            import torch
-            import torch.distributed
-        except Exception:
-            return
-
-        if self.rank is None:
-            if torch.distributed.is_available() and torch.distributed.is_initialized():
-                group = self.group or torch.distributed.group.WORLD
-                self.rank = torch.distributed.get_rank(group=group), torch.distributed.get_world_size(
-                    group=group
-                )
-
-        if self.worker is None:
-            worker_info = torch.utils.data.get_worker_info()
-            if worker_info is not None:
-                self.worker = worker_info.id, worker_info.num_workers
-
-        gopen.info["nodeinfo"] = self.nodeinfo
-        gopen.info["rank"], gopen.info["size"] = self.rank or (-1, -1)
-        gopen.info["worker_id"], gopen.info["num_workers"] = self.worker or (-1, -1)
+        raise ValueError(
+            "pipeline stage received no data at all and this was declared as an error"
+        )
 
 
 class ShardSample:
@@ -203,18 +155,26 @@ class MultiShardSample(ShardSample):
         prefix = expand(spec.get("prefix", ""))
         self.sources = []
         for ds in spec["datasets"]:
-            assert set(ds.keys()).issubset(set("buckets name shards perepoch choose".split()))
+            assert set(ds.keys()).issubset(
+                set("buckets name shards perepoch choose".split())
+            )
             buckets = [expand(s) for s in ds.get("buckets", [""])]
             assert len(buckets) == 1, "FIXME support for multiple buckets unimplemented"
             bucket = buckets[0]
             name = ds.get("name", "@" + bucket)
             urls = ds["shards"]
             urls = [u for url in urls for u in braceexpand.braceexpand(url)]
-            urls = [prefix + bucket + u for url in urls for u in braceexpand.braceexpand(url)]
+            urls = [
+                prefix + bucket + u
+                for url in urls
+                for u in braceexpand.braceexpand(url)
+            ]
             resample = ds.get("choose", -1)
             nsample = ds.get("perepoch", -1)
             if nsample > len(urls):
-                raise ValueError(f"perepoch {nsample} must be no greater than the number of shards")
+                raise ValueError(
+                    f"perepoch {nsample} must be no greater than the number of shards"
+                )
             if (nsample > 0) and (resample > 0):
                 raise ValueError("specify only one of perepoch or choose")
             entry = MSSource(name=name, urls=urls, perepoch=nsample, resample=resample)
@@ -243,99 +203,15 @@ class MultiShardSample(ShardSample):
         return result
 
 
-class PytorchShardList(IterableDataset, PytorchEnv, Composable):
-    """An iterable dataset yielding a list of urls.
-
-    This understands the PyTorch distributed and worker APIs and splits shards
-    accordingly.
-    """
-
-    def __init__(
-        self,
-        urls,
-        epoch_shuffle=False,
-        shuffle=True,
-        split_by_worker=True,
-        split_by_node=True,
-        verbose=False,
-    ):
-        """Create a ShardList.
-
-        :param urls: a list of URLs as a Python list or brace notation string
-        :param shuffle: shuffle samples before iterating
-        :param split_by_node: split shards by node if True
-        :param split_by_worker: split shards by worker if True
-        :param group: group used for determining rank/world_size
-
-        If WDS_SHUFFLE is in the environment, it is used for shuffling shards prior
-        to splitting; this assigns different shards to different nodes on each epoch.
-        """
-        super().__init__()
-
-        self.verbose = verbose
-        if self.verbose:
-            print("PytorchShardList init")
-        self.epoch = -1
-        self.epoch_shuffle = epoch_shuffle
-        self.shuffle = shuffle
-        self.split_by_worker = split_by_worker
-        self.split_by_node = split_by_node
-        if not isinstance(urls, ShardSample):
-            urls = SimpleShardSample(urls)
-        self.shardsample = urls
-
-    def set_epoch(self, epoch):
-        """Set the current epoch. Used for per-node shuffling."""
-        self.epoch = epoch - 1
-
-    def __iter__(self):
-        """Return an iterator over the shards."""
-        self.epoch += 1
-        if hasattr(self.shardsample, "set_epoch"):
-            self.shardsample.set_epoch(self.epoch)
-        self.update_env()
-        urls = self.shardsample.sample()
-        if self.epoch_shuffle:
-            if "WDS_EPOCH" not in os.environ:
-                raise ValueError(
-                    "when specifying epoch_shuffle, you must provide the epoch in the WDS_EPOCH environment variable"
-                )
-            epoch = int(os.environ["WDS_EPOCH"])
-            if self.verbose:
-                print(f"PytorchShardList epochshuffle {epoch}")
-            random.Random(epoch).shuffle(urls)
-        if self.split_by_node:
-            rank, world = self.rank or (0, 1)
-            if self.verbose:
-                print(f"PytorchShardList rank {rank} of {world}")
-            urls = urls[rank::world]
-        if self.split_by_worker:
-            worker, nworkers = self.worker or (0, 1)
-            if self.verbose:
-                print(f"PytorchShardList worker {worker} of {nworkers}")
-            urls = urls[worker::nworkers]
-        if self.shuffle:
-            random.Random(self.epoch + 17).shuffle(urls)
-        if self.verbose:
-            print(f"PytorchShardList got {len(urls)} urls")
-        for url in urls:
-            yield dict(
-                url=url,
-                __url__=url,
-                __worker__=str(self.worker),
-                __rank__=str(self.rank),
-                __nodeinfo__=str(self.nodeinfo),
-            )
-
-
-class ResampledShards(IterableDataset, Composable):
+class ResampledShards(IterableDataset):
     """An iterable dataset yielding a list of urls."""
 
     def __init__(
         self,
         urls,
         nshards=sys.maxsize,
-        env=None,
+        worker_seed=None,
+        deterministic=False,
     ):
         """Sample shards from the shard list with replacement.
 
@@ -347,16 +223,20 @@ class ResampledShards(IterableDataset, Composable):
         else:
             urls = list(urls)
         self.urls = urls
-        self.nshards = nshards
-        self.env = env or PytorchEnv()
-        self.rng = random.Random()
         assert isinstance(self.urls[0], str)
+        self.nshards = nshards
+        self.rng = random.Random()
+        self.worker_seed = utils.pytorch_worker_seed if worker_seed is None else worker_seed
+        self.deterministic = deterministic
+        self.epoch = -1
 
     def __iter__(self):
         """Return an iterator over the shards."""
-        rank, world = self.env.rank or (0, 1)
-        worker, nworkers = self.env.worker or (0, 1)
-        seed = (rank, worker, os.getpid(), time.time())
+        self.epoch += 1
+        if self.deterministic:
+            seed = (self.worker_seed(), self.epoch)
+        else:
+            seed = (self.worker_seed(), self.epoch, os.getpid(), time.time())
         self.rng.seed(seed)
         for _ in range(self.nshards):
             yield dict(url=self.rng.choice(self.urls))

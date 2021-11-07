@@ -85,6 +85,12 @@ def release(c):
     os.system(f"hub release create {version}")  # interactive
 
 
+@task
+def coverage(c):
+    """Run tests and test coverage."""
+    c.run("coverage run -m pytest && coveragepy-lcov")
+
+
 pydoc_template = """
 # Module `{module}`
 
