@@ -9,7 +9,8 @@ from typing import List
 import braceexpand
 import yaml
 
-from . import filters
+from . import extradatasets as eds
+from . import filters, shardlists
 from .filters import pipelinefilter, reraise_exception
 from .pytorch import DataLoader, IterableDataset
 
@@ -57,7 +58,29 @@ class DataPipeline(IterableDataset):
         result.append(f)
         return result
 
+class ResampledDataset(DataPipeline):
+    def __init__(self, urls):
+        pipeline = [
+            eds.ResampledShards(urls),
+            tariterators.tarfile_samples
+        ]
+        super().__init__(*pipeline)
+
+
+class TarShards(DataPipeline):
+    def __init__(self, urls, shuffle=None):
+        pipeline = [
+            shardlists.SimpleShardList(urls),
+            tariterators.tarfile_samples,
+            shardlists.split_by_node,
+            shardlists.split_by_worker
+        ]
+        if shuffle:
+            pipeline.append(filters.shuffle(shuffle))
+        super().__init__(*pipeline)
+
 class WebDataset(DataPipeline):
+    """Small fluid-interface wrapper for DataPipeline."""
     def __init__(self, urls, handler=reraise_exception, resampled=False, repeat=False, shardshuffle=None):
         super().__init__()
         if resampled:

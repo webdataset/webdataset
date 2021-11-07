@@ -54,15 +54,10 @@ class SimpleShardList(IterableDataset):
         for url in urls:
             yield dict(url=url)
 
-
 def split_by_node(src, group=None):
-    import torch.distributed
-
-    if torch.distributed.is_available() and torch.distributed.is_initialized():
-        group = group or torch.distributed.group.WORLD
-        rank = torch.distributed.get_rank(group=group)
-        size = torch.distributed.get_world_size(group=group)
-        for s in islice(src, rank, None, size):
+    rank, world_size, worker, num_workers = utils.pytorch_worker_info(group=group)
+    if world_size > 1:
+        for s in islice(src, rank, None, world_size):
             yield s
     else:
         for s in src:
@@ -70,14 +65,12 @@ def split_by_node(src, group=None):
 
 
 def split_by_worker(src):
-    import torch.utils.data
-
-    winfo = torch.utils.data.get_worker_info()
-    if winfo is None:
-        for s in src:
+    rank, world_size, worker, num_workers = utils.pytorch_worker_info()
+    if num_workers > 1:
+        for s in islice(src, worker, None, num_workers):
             yield s
     else:
-        for s in islice(src, winfo.id, None, winfo.num_workers):
+        for s in src:
             yield s
 
 
