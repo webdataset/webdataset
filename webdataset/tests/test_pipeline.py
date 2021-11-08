@@ -309,66 +309,6 @@ def test_yaml(tmp_path):
     assert len(l) == 60, len(l)
 
 
-dsspec = """
-prefix: ""
-epoch: 111
-
-datasets:
-
-  - name: images
-    chunksize: 10
-    resampled: True
-    subsample: 0.5
-    nworkers: -1
-    buckets:
-      - ./testdata/
-    shards:
-      - imagenet-000000.tgz
-      - imagenet-000000.tgz
-"""
-
-
-def IGNORE_test_dsspec(tmp_path):
-    tmp_path = str(tmp_path)
-    fname = tmp_path + "/test.ds.yml"
-    with open(fname, "w") as stream:
-        stream.write(dsspec)
-    ds = dataset.construct_dataset(fname)
-    result = [x for x in ds]
-    assert len(result) == 111
-    assert isinstance(result[0], dict)
-    ds = dataset.construct_dataset(fname).decode("rgb").to_tuple("png", "cls")
-    result = [x for x in ds]
-    assert len(result) == 111
-    assert result[0][0].ndim == 3
-
-
-dsspec2 = """
-prefix: ""
-
-datasets:
-
-  - name: images
-    nworkers: 2
-    shards:
-      - ./testdata/imagenet-000000.tgz
-  - name: images2
-    nworkers: 2
-    shards:
-      - ./testdata/imagenet-000000.tgz
-"""
-
-
-def IGNORE_test_dsspec2(tmp_path):
-    tmp_path = str(tmp_path)
-    fname = tmp_path + "/test.ds.yml"
-    with open(fname, "w") as stream:
-        stream.write(dsspec2)
-    ds = dataset.construct_dataset(fname)
-    result = [x for x in ds]
-    assert len(result) == 2 * 47
-
-
 def IGNORE_test_log_keys(tmp_path):
     tmp_path = str(tmp_path)
     fname = tmp_path + "/test.ds.yml"
@@ -972,30 +912,6 @@ def test_unbatched():
     pickle.dumps(ds)
 
 
-def test_chopped():
-    from torchvision import datasets
-
-    ds = datasets.FakeData(size=100)
-    cds = eds.with_epoch(ds, 20)
-    assert count_samples_tuple(cds, n=500) == 20
-
-    ds = datasets.FakeData(size=100)
-    cds = eds.with_epoch(ds, 250)
-    assert count_samples_tuple(cds, n=500) == 250
-
-    ds = datasets.FakeData(size=100)
-    cds = eds.with_epoch(ds, 77)
-    assert count_samples_tuple(cds, n=500) == 77
-
-    ds = datasets.FakeData(size=100)
-    cds = eds.with_epoch(ds, 250)
-    assert count_samples_tuple(cds, n=500) == 250
-
-    ds = datasets.FakeData(size=100)
-    cds = eds.with_epoch(ds, 250)
-    assert count_samples_tuple(cds, n=500) == 250
-
-
 def test_with_epoch():
     ds = wds.DataPipeline(
         wds.SimpleShardList(local_data),
@@ -1003,10 +919,10 @@ def test_with_epoch():
     )
     for _ in range(10):
         assert count_samples_tuple(ds) == 47
-    be = wds.with_epoch(ds, 193)
+    be = ds.with_epoch(193)
     for _ in range(10):
         assert count_samples_tuple(be) == 193
-    be = wds.with_epoch(ds, 2)
+    be = ds.with_epoch(2)
     for _ in range(10):
         assert count_samples_tuple(be) == 2
 
@@ -1016,7 +932,7 @@ def test_repeat():
         wds.SimpleShardList(local_data),
         wds.tarfile_to_samples(),
     )
-    ds = wds.repeatedly(ds, 2)
+    ds = ds.repeat(nepochs=2)
     assert count_samples_tuple(ds) == 47 * 2
 
 
@@ -1027,7 +943,7 @@ def test_repeat2():
         wds.to_tuple("cls"),
         wds.batched(2),
     )
-    ds = wds.with_epoch(ds, 20)
+    ds = ds.with_epoch(20)
     assert count_samples_tuple(ds) == 20
 
 

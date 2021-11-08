@@ -14,6 +14,11 @@ import sys
 from typing import Any, Callable, Iterator, Optional, Union
 
 
+class PipelineStage:
+    def invoke(self, *args, **kw):
+        raise NotImplementedError
+
+
 def identity(x: Any) -> Any:
     """Return the argument as is."""
     return x

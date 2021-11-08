@@ -18,6 +18,7 @@ import random
 import braceexpand
 
 from .pytorch import IterableDataset
+from .utils import PipelineStage
 from . import utils
 
 
@@ -75,6 +76,30 @@ class RoundRobin(IterableDataset):
         return f"RoundRobin({self.sources})"
 
 
+class repeatedly(IterableDataset, PipelineStage):
+    """Repeatedly yield samples from a dataset."""
+
+    def __init__(self, nepochs=None, nbatches=None, length=None):
+        """Create an instance of Repeatedly.
+
+        :param nepochs: repeat for a maximum of nepochs
+        :param nbatches: repeat for a maximum of nbatches
+        """
+        self.source = source
+        self.length = length
+        self.nbatches = nbatches
+
+    def invoke(self, source):
+        """Return an iterator that iterates repeatedly over a source."""
+        return utils.repeatedly(
+            source,
+            nepochs=self.nepochs,
+            nbatches=self.nbatches,
+        )
+
+
+
+
 class with_epoch(IterableDataset):
     """Change the actual and nominal length of an IterableDataset.
 
@@ -94,7 +119,6 @@ class with_epoch(IterableDataset):
         :param nominal: nominal length of dataset (if different from declared)
         """
         super().__init__()
-        self.dataset = dataset
         self.length = length
         self.source = None
 
@@ -107,26 +131,26 @@ class with_epoch(IterableDataset):
         result["source"] = None
         return result
 
-    def __iter__(self):
+    def invoke(self, dataset):
         """Return an iterator over the dataset.
 
         This iterator returns as many samples as given by the `length` parameter.
         """
         if self.source is None:
-            self.source = iter(self.dataset)
+            self.source = iter(dataset)
         for i in range(self.length):
             try:
                 sample = next(self.source)
             except StopIteration:
-                self.source = iter(self.dataset)
+                self.source = iter(dataset)
                 try:
                     sample = next(self.source)
                 except StopIteration:
                     return
             yield sample
+        self.source = None
 
-
-class with_length(IterableDataset):
+class with_length(IterableDataset, PipelineStage):
     """Repeatedly yield samples from a dataset."""
 
     def __init__(self, dataset, length):
@@ -139,9 +163,9 @@ class with_length(IterableDataset):
         self.dataset = dataset
         self.length = length
 
-    def __iter__(self):
+    def invoke(self, dataset):
         """Return an iterator that iterates repeatedly over a source."""
-        return iter(self.dataset)
+        return iter(dataset)
 
     def __len__(self):
         """Return the user specified length."""

@@ -10,6 +10,8 @@
 from . import tenbin
 from .pipeline import (
     DataPipeline,
+    WebDataset,
+    WebLoader,
     stage,
 )
 from .shardlists import (
