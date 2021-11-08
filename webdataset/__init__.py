@@ -8,10 +8,12 @@
 """Exported globals for webdataset library."""
 
 from . import tenbin
-from .pipeline import (
-    DataPipeline,
+from .compat import (
     WebDataset,
     WebLoader,
+)
+from .pipeline import (
+    DataPipeline,
     stage,
 )
 from .shardlists import (
@@ -40,7 +42,12 @@ from .handlers import (
     ignore_and_stop,
     warn_and_stop,
 )
-from .writer import ShardWriter, TarWriter, torch_dumps, numpy_dumps
+from .writer import (
+    ShardWriter,
+    TarWriter,
+    torch_dumps,
+    numpy_dumps,
+)
 from .autodecode import (
     Continue,
     handle_extension,
