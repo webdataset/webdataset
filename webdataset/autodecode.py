@@ -31,11 +31,59 @@ def torch_loads(data):
     :param data: data to be decoded
     """
     import io
-
     import torch
 
     stream = io.BytesIO(data)
     return torch.load(stream)
+
+
+def tenbin_loads(data):
+    from . import tenbin
+
+    return tenbin.decode_buffer(data)
+
+
+def msgpack_loads(data):
+    import msgpack
+
+    return msgpack.unpackb(data)
+
+
+def npy_loads(data):
+    import numpy.lib.format
+
+    stream = io.BytesIO(data)
+    return numpy.lib.format.read_array(stream)
+
+
+def cbor_loads(data):
+    import cbor
+
+    return cbor.loads(data)
+
+
+decoders = {
+    "txt": lambda data: data.decode("utf-8"),
+    "text": lambda data: data.decode("utf-8"),
+    "transcript": lambda data: data.decode("utf-8"),
+    "cls": lambda data: int(data),
+    "cls2": lambda data: int(data),
+    "index": lambda data: int(data),
+    "inx": lambda data: int(data),
+    "id": lambda data: int(data),
+    "json": lambda data: json.loads(data),
+    "jsn": lambda data: json.loads(data),
+    "pyd": lambda data: pickle.loads(data),
+    "pickle": lambda data: pickle.loads(data),
+    "pth": lambda data: torch_loads(data),
+    "ten": tenbin_loads,
+    "tb": tenbin_loads,
+    "mp": msgpack_loads,
+    "msg": msgpack_loads,
+    "npy": npy_loads,
+    "npz": lambda data: np.load(io.BytesIO(data)),
+    "cbor": cbor_loads,
+}
 
 
 def basichandlers(key, data):
@@ -58,42 +106,8 @@ def basichandlers(key, data):
     """
     extension = re.sub(r".*[.]", "", key)
 
-    if extension in "txt text transcript":
-        return data.decode("utf-8")
-
-    if extension in "cls cls2 class count index inx id".split():
-        try:
-            return int(data)
-        except ValueError:
-            return None
-
-    if extension in "json jsn":
-        return json.loads(data)
-
-    if extension in "pyd pickle".split():
-        return pickle.loads(data)
-
-    if extension in "pth".split():
-        return torch_loads(data)
-
-    if extension in "ten tb".split():
-        from . import tenbin
-
-        return tenbin.decode_buffer(data)
-
-    if extension in "mp msgpack msg".split():
-        import msgpack
-
-        return msgpack.unpackb(data)
-
-    if extension in "npy".split():
-        import numpy.lib.format
-
-        stream = io.BytesIO(data)
-        return numpy.lib.format.read_array(stream)
-
-    if extension in "npz".split():
-        return np.load(io.BytesIO(data))
+    if extension in decoders:
+        return decoders[extension](data)
 
     return None
 

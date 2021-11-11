@@ -2,6 +2,9 @@ mkdocs
 setuptools
 wheel
 
+msgpack
+cbor
+
 torch
 torchvision
 torchaudio
@@ -16,8 +19,6 @@ mypy
 flake8
 pydocstyle
 bandit
-pytest
-pytest-cov
 
 Pillow
 numpy
