@@ -113,54 +113,55 @@ def numpy_npz_dumps(data: np.ndarray):
     return stream.getvalue()
 
 
+def tenbin_dumps(x):
+    from . import tenbin
+
+    if isinstance(x, list):
+        return memoryview(tenbin.encode_buffer(x))
+    else:
+        return memoryview(tenbin.encode_buffer([x]))
+
+
+def cbor_dumps(x):
+    import cbor
+
+    return cbor.dumps(x)
+
+
+def mp_dumps(x):
+    import msgpack
+
+    return msgpack.packb(x)
+
+
+def add_handlers(d, keys, value):
+    if isinstance(keys, str):
+        keys = keys.split()
+    for k in keys:
+        d[k] = value
+
 def make_handlers():
     """Create a list of handlers for encoding data."""
     handlers = {}
-    for extension in ["cls", "cls2", "class", "count", "index", "inx", "id"]:
-        handlers[extension] = lambda x: str(x).encode("ascii")
-    for extension in ["txt", "text", "transcript"]:
-        handlers[extension] = lambda x: x.encode("utf-8")
-    for extension in ["png", "jpg", "jpeg", "img", "image", "pbm", "pgm", "ppm"]:
-
-        def f(extension_):
-            """f.
-
-            :param extension_:
-            """
-            handlers[extension] = lambda data: imageencoder(data, extension_)
-
-        f(extension)
-    for extension in ["pyd", "pickle"]:
-        handlers[extension] = pickle.dumps
-    for extension in ["pth"]:
-        handlers[extension] = torch_dumps
-    for extension in ["npy"]:
-        handlers[extension] = numpy_dumps
-    for extension in ["npz"]:
-        handlers[extension] = numpy_npz_dumps
-    for extension in ["json", "jsn"]:
-        handlers[extension] = lambda x: json.dumps(x).encode("utf-8")
-    for extension in ["ten", "tb"]:
-        from . import tenbin
-
-        def g(x):  # skipcq: PYL-E0102
-            if isinstance(x, list):
-                return memoryview(tenbin.encode_buffer(x))
-            else:
-                return memoryview(tenbin.encode_buffer([x]))
-
-        handlers[extension] = g
-    try:
-        import msgpack
-
-        for extension in ["mp", "msgpack", "msg"]:
-            handlers[extension] = msgpack.packb
-    except ImportError:
-        pass
+    add_handlers(handlers, "cls cls2 class count index inx id", lambda x: str(x).encode("ascii"))
+    add_handlers(handlers, "txt text transcript", lambda x: x.encode("utf-8"))
+    add_handlers(handlers, "pyd pickle", pickle.dumps)
+    add_handlers(handlers, "pth", torch_dumps)
+    add_handlers(handlers, "npy", numpy_dumps)
+    add_handlers(handlers, "npz", numpy_npz_dumps)
+    add_handlers(handlers, "ten tenbin tb", tenbin_dumps)
+    add_handlers(handlers, "json jsn", lambda x: json.dumps(x).encode("utf-8"))
+    add_handlers(handlers, "mp msgpack msg", mp_dumps)
+    add_handlers(handlers, "cbor", cbor_dumps)
+    add_handlers(handlers, "jpg jpeg img image", lambda data: imageencoder(data, "jpg"))
+    add_handlers(handlers, "png", lambda data: imageencoder(data, "png"))
+    add_handlers(handlers, "pbm", lambda data: imageencoder(data, "pbm"))
+    add_handlers(handlers, "pgm", lambda data: imageencoder(data, "pgm"))
+    add_handlers(handlers, "ppm", lambda data: imageencoder(data, "ppm"))
     return handlers
 
 
-default_handlers = {"default": make_handlers()}
+default_handlers = make_handlers()
 
 
 def encode_based_on_extension1(data: Any, tname: str, handlers: dict):
@@ -217,12 +218,8 @@ def make_encoder(spec: Union[bool, str, dict, Callable]):
 
         encoder = f
 
-    elif isinstance(spec, str) or spec is True:
-        if spec is True:
-            spec = "default"
-        handlers = default_handlers.get(spec)
-        if handlers is None:
-            raise ValueError(f"no handler found for {spec}")
+    elif spec is True:
+        handlers = default_handlers
 
         def g(sample):
             """Encode based on extension."""
