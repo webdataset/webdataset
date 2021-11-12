@@ -43,43 +43,10 @@ class MockDataset(IterableDataset):
             yield self.sample
 
 
-class RoundRobin(IterableDataset):
-    """Iterate through datasets in a round-robin way."""
-
-    def __init__(self, sources=None):
-        """Initialize from a set of sources."""
-        super().__init__()
-        self.sources = sources if sources is not None else []
-
-    def add_dataset(self, dataset, probability=1.0, comment=""):
-        self.sources.append(
-            Source(dataset=dataset, probability=probability, comment=comment)
-        )
-
-    def __iter__(self):
-        """Iterate through the list of sources in a round-robin way until all sources have been exhausted."""
-        index = 0
-        iters = [s for s in self.sources]
-        for s in iters:
-            s.source = iter(s.dataset)
-        while len(iters) > 0:
-            try:
-                sample = next(iters[index].source)
-                yield sample
-            except StopIteration:
-                del iters[index]
-            index += 1
-            if index >= len(iters):
-                index = 0
-
-    def __str__(self):
-        return f"RoundRobin({self.sources})"
-
-
 class repeatedly(IterableDataset, PipelineStage):
     """Repeatedly yield samples from a dataset."""
 
-    def __init__(self, nepochs=None, nbatches=None, length=None):
+    def __init__(self, source, nepochs=None, nbatches=None, length=None):
         """Create an instance of Repeatedly.
 
         :param nepochs: repeat for a maximum of nepochs
@@ -96,8 +63,6 @@ class repeatedly(IterableDataset, PipelineStage):
             nepochs=self.nepochs,
             nbatches=self.nbatches,
         )
-
-
 
 
 class with_epoch(IterableDataset):
@@ -134,7 +99,8 @@ class with_epoch(IterableDataset):
     def invoke(self, dataset):
         """Return an iterator over the dataset.
 
-        This iterator returns as many samples as given by the `length` parameter.
+        This iterator returns as many samples as given by the `length`
+        parameter.
         """
         if self.source is None:
             self.source = iter(dataset)
@@ -149,6 +115,7 @@ class with_epoch(IterableDataset):
                     return
             yield sample
         self.source = None
+
 
 class with_length(IterableDataset, PipelineStage):
     """Repeatedly yield samples from a dataset."""

@@ -27,7 +27,6 @@ from .shardlists import (
 )
 from .extradatasets import (
     MockDataset,
-    RoundRobin,
     with_epoch,
     with_length,
 )

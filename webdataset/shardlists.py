@@ -54,6 +54,7 @@ class SimpleShardList(IterableDataset):
         for url in urls:
             yield dict(url=url)
 
+
 def split_by_node(src, group=None):
     rank, world_size, worker, num_workers = utils.pytorch_worker_info(group=group)
     if world_size > 1:
@@ -83,7 +84,7 @@ def resampled_(src, n=sys.maxsize):
     except Exception as exn:
         print(repr(exn)[:50], file=sys.stderr)
     rng = random.Random(seed)
-    print(f"# resampled loading", file=sys.stderr)
+    print("# resampled loading", file=sys.stderr)
     items = list(src)
     print(f"# resampled got {len(items)} samples, yielding {n}", file=sys.stderr)
     for i in range(n):
@@ -99,9 +100,7 @@ def non_empty(src):
         yield s
         count += 1
     if count == 0:
-        raise ValueError(
-            "pipeline stage received no data at all and this was declared as an error"
-        )
+        raise ValueError("pipeline stage received no data at all and this was declared as an error")
 
 
 class ShardSample:
@@ -148,26 +147,18 @@ class MultiShardSample(ShardSample):
         prefix = expand(spec.get("prefix", ""))
         self.sources = []
         for ds in spec["datasets"]:
-            assert set(ds.keys()).issubset(
-                set("buckets name shards perepoch choose".split())
-            )
+            assert set(ds.keys()).issubset(set("buckets name shards perepoch choose".split()))
             buckets = [expand(s) for s in ds.get("buckets", [""])]
             assert len(buckets) == 1, "FIXME support for multiple buckets unimplemented"
             bucket = buckets[0]
             name = ds.get("name", "@" + bucket)
             urls = ds["shards"]
             urls = [u for url in urls for u in braceexpand.braceexpand(url)]
-            urls = [
-                prefix + bucket + u
-                for url in urls
-                for u in braceexpand.braceexpand(url)
-            ]
+            urls = [prefix + bucket + u for url in urls for u in braceexpand.braceexpand(url)]
             resample = ds.get("choose", -1)
             nsample = ds.get("perepoch", -1)
             if nsample > len(urls):
-                raise ValueError(
-                    f"perepoch {nsample} must be no greater than the number of shards"
-                )
+                raise ValueError(f"perepoch {nsample} must be no greater than the number of shards")
             if (nsample > 0) and (resample > 0):
                 raise ValueError("specify only one of perepoch or choose")
             entry = MSSource(name=name, urls=urls, perepoch=nsample, resample=resample)
@@ -219,9 +210,7 @@ class ResampledShards(IterableDataset):
         assert isinstance(self.urls[0], str)
         self.nshards = nshards
         self.rng = random.Random()
-        self.worker_seed = (
-            utils.pytorch_worker_seed if worker_seed is None else worker_seed
-        )
+        self.worker_seed = utils.pytorch_worker_seed if worker_seed is None else worker_seed
         self.deterministic = deterministic
         self.epoch = -1
 

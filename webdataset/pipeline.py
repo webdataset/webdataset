@@ -25,11 +25,15 @@ def stage(f, *args, **kw):
 def add_length_method(obj):
     def length(self):
         return self.size
+
     Combined = type(obj.__class__.__name__ + "_Length", (obj.__class__, IterableDataset), {"__len__": length})
     obj.__class__ = Combined
     return obj
 
+
 class DataPipeline(IterableDataset, PipelineStage):
+    """A pipeline starting with an IterableDataset and a series of filters."""
+
     def __init__(self, *args, **kwargs):
         super().__init__()
         self.pipeline = []
@@ -45,6 +49,7 @@ class DataPipeline(IterableDataset, PipelineStage):
                 self.pipeline.append(arg)
 
     def invoke(self, f, *args, **kwargs):
+        """Apply a pipeline stage, possibly to the output of a previous stage."""
         if isinstance(f, PipelineStage):
             return f.run(*args, **kwargs)
         if isinstance(f, (IterableDataset, DataLoader)) and len(args) == 0:
@@ -57,17 +62,20 @@ class DataPipeline(IterableDataset, PipelineStage):
         raise ValueError(f"{f}: not a valid pipeline stage")
 
     def iterator1(self):
+        """Create an iterator through one epoch in the pipeline."""
         source = self.invoke(self.pipeline[0])
         for step in self.pipeline[1:]:
             source = self.invoke(step, source)
         return source
 
     def iterator(self):
+        """Create an iterator through the entire dataset, using the given number of repetitions."""
         for i in range(self.repetitions):
             for sample in self.iterator1():
                 yield sample
 
     def __iter__(self):
+        """Create an iterator through the pipeline, repeating and slicing as requested."""
         if self.repetitions != 1:
             if self.nsamples > 0:
                 return islice(self.iterator(), self.nsamples)
@@ -77,26 +85,40 @@ class DataPipeline(IterableDataset, PipelineStage):
             return self.iterator()
 
     def stage(self, i):
+        """Return pipeline stage i."""
         return self.pipeline[i]
 
     def append(self, f):
+        """Append a pipeline stage (modifies the object)."""
         self.pipeline.append(f)
 
     def compose(self, f):
+        """Append a pipeline stage to a copy of the pipeline and returns the copy."""
         result = copy.copy(self)
         result.append(f)
         return result
 
     def with_length(self, n):
+        """Add a __len__ method returning the desired value.
+
+        This does not change the actual number of samples in an epoch.
+        PyTorch IterableDataset should not have a __len__ method.
+        This is provided only as a workaround for some broken training environments
+        that require a __len__ method.
+        """
         self.size = n
         return add_length_method(self)
 
-    def with_epoch(self, nsamples):
+    def with_epoch(self, nsamples=-1, nbatches=-1):
+        """Change the epoch to return the given number of samples/batches.
+
+        The two arguments mean the same thing."""
         self.repetitions = sys.maxsize
-        self.nsamples = nsamples
+        self.nsamples = max(nsamples, nbatches)
         return self
 
     def repeat(self, nepochs=-1, nbatches=-1):
+        """Repeat iterating through the dataset for the given #epochs up to the given #samples."""
         if nepochs > 0:
             self.repetitions = nepochs
             self.nsamples = nbatches
@@ -104,24 +126,3 @@ class DataPipeline(IterableDataset, PipelineStage):
             self.repetitions = sys.maxsize
             self.nsamples = nbatches
         return self
-
-
-class ResampledDataset(DataPipeline):
-    def __init__(self, urls):
-        pipeline = [eds.ResampledShards(urls), tariterators.tarfile_samples]
-        super().__init__(*pipeline)
-
-
-class TarDataset(DataPipeline):
-    def __init__(self, urls, shuffle=None):
-        pipeline = [
-            shardlists.SimpleShardList(urls),
-            tariterators.tarfile_samples,
-            shardlists.split_by_node,
-            shardlists.split_by_worker,
-        ]
-        if shuffle:
-            pipeline.append(filters.shuffle(shuffle))
-        super().__init__(*pipeline)
-
-
