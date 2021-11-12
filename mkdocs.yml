@@ -6,17 +6,5 @@ nav:
     - Home: index.md
     - API: api/index.html
     - Examples:
-      - Getting Started: gettingstarted.md
-      - Creating Webdatasets: creating.md
-      - Decoding: decoding.md
-      - Desktop Usage: desktop.md
-      - How It Works: howitworks.md
-      - Multinode: multinode.md
-      - Sharding: sharding.md
-      - Sources: sources.md
-      - Writing: writing.md
-      - Video Loading: video-loading-example.md
-    - Dataset Conversions:
-      - Falling Things: convert-falling-things.md
-      - Objectron: convert-objectron.md
+      - CIFAR10: cifar10.md
 theme: readthedocs
