@@ -20,3 +20,12 @@ except ModuleNotFoundError:
         """Empty implementation of DataLoader when torch is not available."""
 
         pass
+
+try:
+    from torch import Tensor as TorchTensor
+except ModuleNotFoundError:
+
+    class TorchTensor:
+        """Empty implementation of TorchTensor when torch is not available."""
+
+        pass

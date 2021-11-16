@@ -61,6 +61,11 @@ from .autodecode import (
     Decoder,
     gzfilter,
 )
+from .cache import (
+    cached_tarfile_samples,
+    cached_tarfile_to_samples,
+    lru_cleanup,
+)
 from .filters import (
     transform_with,
     getfirst,

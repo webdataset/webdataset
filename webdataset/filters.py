@@ -21,15 +21,7 @@ from functools import reduce, wraps
 import numpy as np
 
 from . import autodecode, utils
-
-try:
-    from torch import Tensor as TorchTensor
-except ModuleNotFoundError:
-
-    class TorchTensor:
-        """TorchTensor."""
-
-        pass
+from .pytorch import TorchTensor
 
 
 class FilterFunction(object):
