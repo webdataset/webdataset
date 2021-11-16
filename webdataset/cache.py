@@ -57,7 +57,7 @@ def pipe_cleaner(spec):
     return spec
     
 
-def cached_url_opener(data, handler=reraise_exception, cache_size=1e10, cache_dir="./_cache", url_to_name=pipe_cleaner, verbose=False):
+def cached_url_opener(data, handler=reraise_exception, cache_size=1e10, cache_dir="./_shardcache", url_to_name=pipe_cleaner, verbose=False):
     """Given a stream of url names (packaged in `dict(url=url)`), yield opened streams."""
     for sample in data:
         assert isinstance(sample, dict), sample
