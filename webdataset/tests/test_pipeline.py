@@ -115,6 +115,7 @@ def test_shuffle1():
     result = list(iter(dataset))
     assert len(result) == 1
 
+
 def test_detshuffle():
     dataset1 = wds.DataPipeline(
         wds.SimpleShardList("{000000..000999}"),
