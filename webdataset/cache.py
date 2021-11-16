@@ -63,9 +63,9 @@ def cached_url_opener(data, handler=reraise_exception, cache_size=1e10, cache_di
         assert isinstance(sample, dict), sample
         assert "url" in sample
         url = sample["url"]
-        parsed = urlparse(url)
         path = url_to_name(parsed.path)
-        dirname, filename = os.path.split(path)
+        parsed = urlparse(path)
+        dirname, filename = os.path.split(parsed.path)
         dirname = re.sub(r"\W", "_", dirname)
         destdir = os.path.join(cache_dir, dirname)
         os.makedirs(destdir, exist_ok=True)
@@ -86,8 +86,8 @@ def cached_url_opener(data, handler=reraise_exception, cache_size=1e10, cache_di
                 break
 
 
-def cached_tarfile_samples(src, handler=reraise_exception, cache_size=1e10, cache_dir="./data", verbose=False):
-    streams = cached_url_opener(src, handler=handler, cache_size=cache_size, cache_dir=cache_dir, verbose=verbose, url_to_name=pipe_cleaner)
+def cached_tarfile_samples(src, handler=reraise_exception, cache_size=1e10, cache_dir="./_shardcache", verbose=False, url_to_name=pipe_cleaner):
+    streams = cached_url_opener(src, handler=handler, cache_size=cache_size, cache_dir=cache_dir, verbose=verbose, url_to_name=url_to_name)
     files = tar_file_expander(streams, handler=handler)
     samples = group_by_keys(files, handler=handler)
     return samples

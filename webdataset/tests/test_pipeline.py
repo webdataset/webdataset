@@ -214,6 +214,8 @@ def test_pipe_cleaner():
     assert wds.pipe_cleaner("pipe:curl gs://foo a b c") == "gs://foo"
     assert wds.pipe_cleaner("pipe:curl s3://foo a b c") == "s3://foo"
     assert wds.pipe_cleaner("pipe:curl xxx://foo a b c") == "curl xxx://foo a b c"
+    s = "pipe:curl -s -L http://storage.googleapis.com/nvdata-openimages/"
+    assert wds.pipe_cleaner(s) == "http://storage.googleapis.com/nvdata-openimages/"
 
 
 def test_cached(tmp_path):
