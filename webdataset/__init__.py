@@ -14,7 +14,6 @@ from .compat import (
 )
 from .pipeline import (
     DataPipeline,
-    stage,
 )
 from .shardlists import (
     SimpleShardList,
@@ -72,6 +71,7 @@ from .filters import (
     pipelinefilter,
     info,
     shuffle,
+    detshuffle,
     select,
     decode,
     map,
@@ -85,4 +85,7 @@ from .filters import (
     rsample,
     slice,
 )
-from .utils import repeatedly
+from .utils import (
+    repeatedly,
+    PipelineStage,
+)

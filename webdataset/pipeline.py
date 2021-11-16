@@ -13,13 +13,9 @@ import copy
 
 from . import extradatasets as eds
 from . import filters, shardlists, tariterators, autodecode
-from .filters import pipelinefilter, reraise_exception
+from .handlers import reraise_exception
 from .pytorch import DataLoader, IterableDataset
 from .utils import PipelineStage
-
-
-def stage(f, *args, **kw):
-    return pipelinefilter(f)(*args, **kw)
 
 
 def add_length_method(obj):

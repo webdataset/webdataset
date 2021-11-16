@@ -21,6 +21,7 @@ from functools import reduce, wraps
 import numpy as np
 
 from . import autodecode, utils
+from .utils import PipelineStage
 from .pytorch import TorchTensor
 
 
@@ -221,6 +222,19 @@ def _shuffle(data, bufsize=1000, initial=100, rng=shuffle_rng, handler=None):
 
 
 shuffle = pipelinefilter(_shuffle)
+
+
+class detshuffle(PipelineStage):
+    def __init__(self, bufsize=1000, initial=100, seed=0, epoch=-1):
+        self.bufsize = bufsize
+        self.initial = initial
+        self.seed = seed
+        self.epoch = epoch
+    def run(self, src):
+        self.epoch += 1
+        rng = random.Random()
+        rng.seed((self.seed, self.epoch))
+        return _shuffle(src, self.bufsize, self.initial, rng)
 
 
 def _select(data, predicate):

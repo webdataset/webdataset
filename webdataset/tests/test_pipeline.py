@@ -115,6 +115,24 @@ def test_shuffle1():
     result = list(iter(dataset))
     assert len(result) == 1
 
+def test_detshuffle():
+    dataset1 = wds.DataPipeline(
+        wds.SimpleShardList("{000000..000999}"),
+        wds.detshuffle(10),
+    )
+    result1 = list(iter(dataset1))
+    dataset2 = wds.DataPipeline(
+        wds.SimpleShardList("{000000..000999}"),
+        wds.detshuffle(10),
+    )
+    result2 = list(iter(dataset2))
+    assert result1 == result2
+    result22 = list(iter(dataset2))
+    assert result22 != result2
+    result12 = list(iter(dataset1))
+    assert result12 == result22
+    assert dataset2.stage(1).epoch == 1
+
 
 def test_pytorchshardlist():
     dataset = wds.DataPipeline(
@@ -221,9 +239,13 @@ def test_lru_cleanup(tmp_path):
         time.sleep(0.1)
     assert "000000" in os.listdir(tmp_path)
     assert "000019" in os.listdir(tmp_path)
-    total_before = sum(os.path.getsize(os.path.join(tmp_path, fname)) for fname in os.listdir(tmp_path))
+    total_before = sum(
+        os.path.getsize(os.path.join(tmp_path, fname)) for fname in os.listdir(tmp_path)
+    )
     wds.lru_cleanup(tmp_path, total_before / 2, verbose=True)
-    total_after = sum(os.path.getsize(os.path.join(tmp_path, fname)) for fname in os.listdir(tmp_path))
+    total_after = sum(
+        os.path.getsize(os.path.join(tmp_path, fname)) for fname in os.listdir(tmp_path)
+    )
     assert total_after <= total_before * 0.5
     assert "000000" not in os.listdir(tmp_path)
     assert "000019" in os.listdir(tmp_path)
