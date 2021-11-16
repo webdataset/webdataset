@@ -44,16 +44,28 @@ def download(url, dest, chunk_size=1024**2, verbose=False):
         with open(dest, "wb") as f:
             while data := stream.read(chunk_size):
                 f.write(data)
+
+
+def pipe_cleaner(spec):
+    """Guess the actual URL from a "pipe:" specification."""
+    if not spec.startswith("pipe:"):
+        return spec        
+    if " " not in spec:
+        return spec
+    if match := re.search(r"((https?|gs|s3|ais)://[^ ]+)", spec):
+        return match.group(1)
+    return spec
     
 
-def cached_url_opener(data, handler=reraise_exception, cache_size=1e10, cache_dir="./_cache", verbose=False):
+def cached_url_opener(data, handler=reraise_exception, cache_size=1e10, cache_dir="./_cache", url_to_name=pipe_cleaner, verbose=False):
     """Given a stream of url names (packaged in `dict(url=url)`), yield opened streams."""
     for sample in data:
         assert isinstance(sample, dict), sample
         assert "url" in sample
         url = sample["url"]
         parsed = urlparse(url)
-        dirname, filename = os.path.split(parsed.path)
+        path = url_to_name(parsed.path)
+        dirname, filename = os.path.split(path)
         dirname = re.sub(r"\W", "_", dirname)
         destdir = os.path.join(cache_dir, dirname)
         os.makedirs(destdir, exist_ok=True)
@@ -75,7 +87,7 @@ def cached_url_opener(data, handler=reraise_exception, cache_size=1e10, cache_di
 
 
 def cached_tarfile_samples(src, handler=reraise_exception, cache_size=1e10, cache_dir="./data", verbose=False):
-    streams = cached_url_opener(src, handler=handler, cache_size=cache_size, cache_dir=cache_dir, verbose=verbose)
+    streams = cached_url_opener(src, handler=handler, cache_size=cache_size, cache_dir=cache_dir, verbose=verbose, url_to_name=pipe_cleaner)
     files = tar_file_expander(streams, handler=handler)
     samples = group_by_keys(files, handler=handler)
     return samples
