@@ -46,7 +46,7 @@ def download(url, dest, chunk_size=1024**2, verbose=False):
                 f.write(data)
     
 
-def cached_url_opener(data, handler=reraise_exception, cache_size=1e10, cache_dir="./data", verbose=False):
+def cached_url_opener(data, handler=reraise_exception, cache_size=1e10, cache_dir="./_cache", verbose=False):
     """Given a stream of url names (packaged in `dict(url=url)`), yield opened streams."""
     for sample in data:
         assert isinstance(sample, dict), sample
