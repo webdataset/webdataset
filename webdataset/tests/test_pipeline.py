@@ -67,14 +67,6 @@ def mymap(src, f):
         yield f(x)
 
 
-def test_trivial_map3():
-    dataset = wds.DataPipeline(
-        lambda: iter([1, 2, 3, 4]), wds.stage(mymap, lambda x: x + 1)
-    )
-    result = list(iter(dataset))
-    assert result == [2, 3, 4, 5]
-
-
 def adder4(src):
     for x in src:
         yield x + 4
@@ -149,6 +141,22 @@ def test_composable():
     )
     result = list(iter(dataset))
     assert len(result) == 100
+
+def test_shardspec():
+    dataset = wds.DataPipeline(
+        wds.shardspec("testdata/imagenet-000000.tgz"),
+        wds.tarfile_samples,
+        wds.decode(autodecode.ImageHandler("rgb")),
+    )
+    result = list(iter(dataset))
+    keys = list(result[0].keys())
+    assert "__key__" in keys
+    assert "cls" in keys
+    assert "png" in keys
+    assert isinstance(result[0]["cls"], int)
+    assert isinstance(result[0]["png"], np.ndarray)
+    assert result[0]["png"].shape == (793, 600, 3)
+    assert len(result) == 47
 
 
 def test_reader1():

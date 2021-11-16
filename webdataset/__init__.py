@@ -23,6 +23,7 @@ from .shardlists import (
     split_by_worker,
     non_empty,
     resampled,
+    shardspec,
 )
 from .extradatasets import (
     MockDataset,

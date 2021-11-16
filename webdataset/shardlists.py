@@ -187,6 +187,13 @@ class MultiShardSample(ShardSample):
         return result
 
 
+def shardspec(spec):
+    if spec.endswith(".yaml"):
+        return MultiShardSample(spec)
+    else:
+        return SimpleShardList(spec)
+
+
 class ResampledShards(IterableDataset):
     """An iterable dataset yielding a list of urls."""
 

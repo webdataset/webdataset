@@ -10,6 +10,10 @@ from . import filters, gopen
 from .tariterators import tar_file_expander, group_by_keys
 
 
+default_cache_dir = "./_cache"
+default_cache_size = 1e10
+
+
 def lru_cleanup(cache_dir, cache_size, keyfn=os.path.getctime, verbose=False):
     """Performs cleanup of the file cache in cache_dir using an LRU strategy,
     keeping the total size of all remaining files below cache_size."""
@@ -36,10 +40,8 @@ def lru_cleanup(cache_dir, cache_size, keyfn=os.path.getctime, verbose=False):
         os.remove(fname)
 
 
-def download(url, dest, chunk_size=1024**2, verbose=False):
+def download(url, dest, chunk_size=1024 ** 2, verbose=False):
     """Download a file from `url` to `dest`."""
-    if verbose:
-        print("# downloading %s to %s" % (url, dest), file=sys.stderr)
     with gopen.gopen(url) as stream:
         with open(dest, "wb") as f:
             while data := stream.read(chunk_size):
@@ -55,25 +57,54 @@ def pipe_cleaner(spec):
             if re.match(r"^(https?|gs|ais|s3)", word):
                 return word
     return spec
-    
 
-def cached_url_opener(data, handler=reraise_exception, cache_size=1e10, cache_dir="./_shardcache", url_to_name=pipe_cleaner, verbose=False):
+
+def get_file_cached(
+    spec,
+    cache_size=default_cache_size,
+    cache_dir=default_cache_dir,
+    url_to_name=pipe_cleaner,
+    verbose=False,
+):
+    url = url_to_name(spec)
+    parsed = urlparse(url)
+    dirname, filename = os.path.split(parsed.path)
+    dirname = dirname.lstrip("/")
+    dirname = re.sub(r"[:/|;]", "_", dirname)
+    destdir = os.path.join(cache_dir, dirname)
+    os.makedirs(destdir, exist_ok=True)
+    dest = os.path.join(cache_dir, dirname, filename)
+    if not os.path.exists(dest):
+        if verbose:
+            print("# downloading %s to %s" % (url, dest), file=sys.stderr)
+        lru_cleanup(cache_dir, cache_size, verbose=verbose)
+        download(spec, dest, verbose=verbose)
+    return dest
+
+
+def cached_url_opener(
+    data,
+    handler=reraise_exception,
+    cache_size=default_cache_size,
+    cache_dir=default_cache_dir,
+    url_to_name=pipe_cleaner,
+    verbose=False,
+):
     """Given a stream of url names (packaged in `dict(url=url)`), yield opened streams."""
     for sample in data:
         assert isinstance(sample, dict), sample
         assert "url" in sample
         url = sample["url"]
-        path = url_to_name(parsed.path)
-        parsed = urlparse(path)
-        dirname, filename = os.path.split(parsed.path)
-        dirname = re.sub(r"\W", "_", dirname)
-        destdir = os.path.join(cache_dir, dirname)
-        os.makedirs(destdir, exist_ok=True)
-        dest = os.path.join(cache_dir, dirname, filename)
         try:
-            if not os.path.exists(dest):
-                lru_cleanup(cache_dir, cache_size, verbose=verbose)
-                download(url, dest, verbose=verbose)
+            dest = get_file_cached(
+                url,
+                cache_size=cache_size,
+                cache_dir=cache_dir,
+                url_to_name=url_to_name,
+                verbose=verbose,
+            )
+            if verbose:
+                print("# opening %s" % dest, file=sys.stderr)
             assert os.path.exists(dest)
             stream = open(dest, "rb")
             sample.update(stream=stream)
@@ -86,8 +117,22 @@ def cached_url_opener(data, handler=reraise_exception, cache_size=1e10, cache_di
                 break
 
 
-def cached_tarfile_samples(src, handler=reraise_exception, cache_size=1e10, cache_dir="./_shardcache", verbose=False, url_to_name=pipe_cleaner):
-    streams = cached_url_opener(src, handler=handler, cache_size=cache_size, cache_dir=cache_dir, verbose=verbose, url_to_name=url_to_name)
+def cached_tarfile_samples(
+    src,
+    handler=reraise_exception,
+    cache_size=default_cache_size,
+    cache_dir=default_cache_dir,
+    verbose=False,
+    url_to_name=pipe_cleaner,
+):
+    streams = cached_url_opener(
+        src,
+        handler=handler,
+        cache_size=cache_size,
+        cache_dir=cache_dir,
+        verbose=verbose,
+        url_to_name=url_to_name,
+    )
     files = tar_file_expander(streams, handler=handler)
     samples = group_by_keys(files, handler=handler)
     return samples
