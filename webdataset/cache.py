@@ -48,12 +48,12 @@ def download(url, dest, chunk_size=1024**2, verbose=False):
 
 def pipe_cleaner(spec):
     """Guess the actual URL from a "pipe:" specification."""
-    if not spec.startswith("pipe:"):
-        return spec        
-    if " " not in spec:
-        return spec
-    if match := re.search(r"((https?|gs|s3|ais)://[^ ]+)", spec):
-        return match.group(1)
+    if spec.startswith("pipe:"):
+        spec = spec[5:]
+        words = spec.split(" ")
+        for word in words:
+            if re.match(r"^(https?|gs|ais|s3)", word):
+                return word
     return spec
     
 

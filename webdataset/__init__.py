@@ -64,6 +64,7 @@ from .cache import (
     cached_tarfile_samples,
     cached_tarfile_to_samples,
     lru_cleanup,
+    pipe_cleaner,
 )
 from .filters import (
     transform_with,
