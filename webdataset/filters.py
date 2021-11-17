@@ -181,10 +181,6 @@ def _info(data, fmt=None, n=3, every=-1, width=50, stream=sys.stderr, name=""):
 info = pipelinefilter(_info)
 
 
-shuffle_rng = random.Random()
-shuffle_rng.seed((os.getpid(), time.time()))
-
-
 def pick(buf, rng):
     k = rng.randint(0, len(buf) - 1)
     sample = buf[k]
@@ -193,7 +189,7 @@ def pick(buf, rng):
     return sample
 
 
-def _shuffle(data, bufsize=1000, initial=100, rng=shuffle_rng, handler=None):
+def _shuffle(data, bufsize=1000, initial=100, rng=None, handler=None):
     """Shuffle the data in the stream.
 
     This uses a buffer of size `bufsize`. Shuffling at
@@ -206,6 +202,8 @@ def _shuffle(data, bufsize=1000, initial=100, rng=shuffle_rng, handler=None):
     rng: either random module or random.Random instance
 
     """
+    if rng is None:
+        rng = random.Random(int((os.getpid() + time.time()) * 1e9))
     initial = min(initial, bufsize)
     buf = []
     for sample in data:
