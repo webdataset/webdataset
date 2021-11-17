@@ -102,6 +102,7 @@ def cached_url_opener(
     url_to_name=pipe_cleaner,
     validator=check_tar_format,
     verbose=False,
+    always=False,    
 ):
     """Given a stream of url names (packaged in `dict(url=url)`), yield opened streams."""
     for sample in data:
@@ -109,13 +110,16 @@ def cached_url_opener(
         assert "url" in sample
         url = sample["url"]
         try:
-            dest = get_file_cached(
-                url,
-                cache_size=cache_size,
-                cache_dir=cache_dir,
-                url_to_name=url_to_name,
-                verbose=verbose,
-            )
+            if not always and os.path.exists(url):
+                dest = url
+            else:
+                dest = get_file_cached(
+                    url,
+                    cache_size=cache_size,
+                    cache_dir=cache_dir,
+                    url_to_name=url_to_name,
+                    verbose=verbose,
+                )
             if verbose:
                 print("# opening %s" % dest, file=sys.stderr)
             assert os.path.exists(dest)
@@ -146,6 +150,7 @@ def cached_tarfile_samples(
     cache_dir=default_cache_dir,
     verbose=False,
     url_to_name=pipe_cleaner,
+    always=False,
 ):
     streams = cached_url_opener(
         src,
@@ -154,6 +159,7 @@ def cached_tarfile_samples(
         cache_dir=cache_dir,
         verbose=verbose,
         url_to_name=url_to_name,
+        always=always,
     )
     files = tar_file_expander(streams, handler=handler)
     samples = group_by_keys(files, handler=handler)

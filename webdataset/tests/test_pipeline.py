@@ -233,7 +233,7 @@ def test_cached(tmp_path):
     dataset = wds.DataPipeline(
         wds.SimpleShardList([shardname] * 3),
         wds.resampled(10),
-        wds.cached_tarfile_to_samples(cache_dir=tmp_path, verbose=True),
+        wds.cached_tarfile_to_samples(cache_dir=tmp_path, verbose=True, always=True),
         wds.shuffle(100),
         wds.decode(autodecode.ImageHandler("rgb")),
         wds.to_tuple("png", "cls"),
