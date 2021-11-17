@@ -85,6 +85,8 @@ class WebDataset(DataPipeline, FluidInterface):
         repeat=False,
         shardshuffle=None,
         caching=None,
+        detshuffle=False,
+        nodesplitter=shardlists.single_node_only,
     ):
         super().__init__()
         if isinstance(urls, IterableDataset):
@@ -94,10 +96,13 @@ class WebDataset(DataPipeline, FluidInterface):
             self.append(shardlists.ResampledShards(urls))
         else:
             self.append(shardlists.SimpleShardList(urls))
-            self.append(shardlists.split_by_node)
+            self.append(nodesplitter)
             self.append(shardlists.split_by_worker)
             if shardshuffle is not None:
-                self.append(filters.shuffle(shardshuffle))
+                if detshuffle:
+                    self.append(filters.detshuffle(shardshuffle))
+                else:
+                    self.append(filters.shuffle(shardshuffle))
         if caching is None or caching is False:
             self.append(tariterators.tarfile_to_samples(handler=handler))
         elif caching is True:
