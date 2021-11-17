@@ -10,7 +10,7 @@ import braceexpand
 import yaml
 import copy
 
-from . import filters, shardlists, tariterators, autodecode
+from . import filters, shardlists, tariterators, autodecode, cache
 from .filters import reraise_exception
 from .pytorch import DataLoader, IterableDataset
 from .pipeline import DataPipeline
@@ -107,12 +107,17 @@ class WebDataset(DataPipeline, FluidInterface):
         if caching is None or caching is False:
             self.append(tariterators.tarfile_to_samples(handler=handler))
         elif caching is True:
-            self.append(tariterators.cached_tarfile_to_samples(handler=handler, verbose=verbose))
+            self.append(
+                cache.cached_tarfile_to_samples(handler=handler, verbose=verbose)
+            )
         else:
             dir, size = caching
             self.append(
-                tariterators.cached_tarfile_to_samples(
-                    handler=handler, cache_dir=dir, cache_size=size, verbose=verbose,
+                cache.cached_tarfile_to_samples(
+                    handler=handler,
+                    cache_dir=dir,
+                    cache_size=size,
+                    verbose=verbose,
                 )
             )
 
