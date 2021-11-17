@@ -87,6 +87,7 @@ class WebDataset(DataPipeline, FluidInterface):
         caching=None,
         detshuffle=False,
         nodesplitter=shardlists.single_node_only,
+        verbose=False,
     ):
         super().__init__()
         if isinstance(urls, IterableDataset):
@@ -106,12 +107,12 @@ class WebDataset(DataPipeline, FluidInterface):
         if caching is None or caching is False:
             self.append(tariterators.tarfile_to_samples(handler=handler))
         elif caching is True:
-            self.append(tariterators.cached_tarfile_to_samples(handler=handler))
+            self.append(tariterators.cached_tarfile_to_samples(handler=handler, verbose=verbose))
         else:
             dir, size = caching
             self.append(
                 tariterators.cached_tarfile_to_samples(
-                    handler=handler, cache_dir=dir, cache_size=size
+                    handler=handler, cache_dir=dir, cache_size=size, verbose=verbose,
                 )
             )
 
