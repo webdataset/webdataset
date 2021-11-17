@@ -10,8 +10,8 @@ from . import filters, gopen
 from .tariterators import tar_file_expander, group_by_keys
 
 
-default_cache_dir = "./_cache"
-default_cache_size = 1e10
+default_cache_dir = os.environ.get("WDS_CACHE", "./_cache")
+default_cache_size = float(os.environ.get("WDS_CACHE_SIZE", "1e10"))
 
 
 def lru_cleanup(cache_dir, cache_size, keyfn=os.path.getctime, verbose=False):
@@ -91,7 +91,7 @@ def get_filetype(fname):
 def check_tar_format(fname):
     """Check whether a file is a tar archive."""
     ftype = get_filetype(fname)
-    return "tar archive" in ftype
+    return "tar archive" in ftype or "gzip compressed" in ftype
 
 
 def cached_url_opener(
