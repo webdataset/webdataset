@@ -99,6 +99,8 @@ class WebDataset(DataPipeline, FluidInterface):
             self.append(shardlists.SimpleShardList(urls))
             self.append(nodesplitter)
             self.append(shardlists.split_by_worker)
+            if shardshuffle is True:
+                shardshuffle = 100
             if shardshuffle is not None:
                 if detshuffle:
                     self.append(filters.detshuffle(shardshuffle))
