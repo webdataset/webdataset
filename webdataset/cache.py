@@ -82,12 +82,25 @@ def get_file_cached(
     return dest
 
 
+def get_filetype(fname):
+    with os.popen("file '%s'" % fname) as f:
+        ftype = f.read()
+    return ftype
+
+
+def check_tar_format(fname):
+    """Check whether a file is a tar archive."""
+    ftype = get_filetype(fname)
+    return "tar archive" in ftype
+
+
 def cached_url_opener(
     data,
     handler=reraise_exception,
     cache_size=default_cache_size,
     cache_dir=default_cache_dir,
     url_to_name=pipe_cleaner,
+    validator=check_tar_format,
     verbose=False,
 ):
     """Given a stream of url names (packaged in `dict(url=url)`), yield opened streams."""
@@ -106,6 +119,15 @@ def cached_url_opener(
             if verbose:
                 print("# opening %s" % dest, file=sys.stderr)
             assert os.path.exists(dest)
+            if not validator(dest):
+                ftype = get_filetype(dest)
+                with open(dest, "rb") as f:
+                    data = f.read(200)
+                os.remove(dest)
+                raise ValueError(
+                    "%s (%s) is not a tar archive, but a %s, contains %s"
+                    % (dest, url, ftype, repr(data))
+                )
             stream = open(dest, "rb")
             sample.update(stream=stream)
             yield sample

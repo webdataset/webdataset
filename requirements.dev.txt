@@ -5,13 +5,11 @@ wheel
 msgpack
 cbor
 
-torch
-torchvision
-torchaudio
+# torch
+# torchvision
+# torchaudio
 jupyterlab
 pytest
-torch
-torchvision
 
 isort
 black
@@ -34,3 +32,5 @@ jupyter-contrib-nbextensions
 mkdocs
 pdoc
 pygments>=2.7.4 # not directly required, pinned by Snyk to avoid a vulnerability
+pytorch_lightning
+torchmore
