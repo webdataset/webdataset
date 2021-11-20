@@ -32,7 +32,9 @@ from .shardlists import (
     resampled,
 )
 from .extradatasets import (
-    MockDataset
+    MockDataset,
+    FakeLength,
+    ChoppedDataset,
 )
 from .tariterators import (
     tarfile_samples,
