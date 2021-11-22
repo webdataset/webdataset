@@ -151,8 +151,12 @@ class MultiShardSample(ShardSample):
     def __init__(self, fname):
         """Construct a shardlist from multiple sources using a YAML spec."""
         self.rng = default_rng  # capture default_rng if we fork
-        with open(fname) as stream:
-            spec = yaml.safe_load(stream)
+        if isinstance(fname, dict):
+            spec = fname
+            fname = "{dict}"
+        else:
+            with open(fname) as stream:
+                spec = yaml.safe_load(stream)
         assert set(spec.keys()).issubset(set("prefix datasets".split()))
         prefix = expand(spec.get("prefix", ""))
         self.sources = []
