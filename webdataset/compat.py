@@ -24,7 +24,7 @@ class FluidInterface:
         return self.compose(filters.unbatched())
 
     def listed(self, batchsize, partial=True):
-        return self.compose(iterators.batched, batchsize=batchsize, collation_fn=None)
+        return self.compose(filters.batched(), batchsize=batchsize, collation_fn=None)
 
     def unlisted(self):
         return self.compose(filters.unlisted())
@@ -88,13 +88,16 @@ class WebDataset(DataPipeline, FluidInterface):
         if isinstance(urls, IterableDataset):
             assert not resampled
             self.append(urls)
-        elif resampled:
-            self.append(shardlists.ResampledShards(urls))
-        elif urls.endswith(".yaml"):
-            self.append(shardlists.MultiShardSample(urls))
+        elif urls.endswith(".yaml") or urls.endswith(".yml"):
+            with(open(urls)) as stream:
+                spec = yaml.safe_load(stream)
+            assert "datasets" in spec
+            self.append(shardlists.MultiShardSample(spec))
         elif isinstance(urls, dict):
             assert "datasets" in urls
             self.append(shardlists.MultiShardSample(urls))
+        elif resampled:
+            self.append(shardlists.ResampledShards(urls))
         else:
             self.append(shardlists.SimpleShardList(urls))
             self.append(nodesplitter)

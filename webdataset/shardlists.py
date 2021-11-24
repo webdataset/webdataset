@@ -113,8 +113,10 @@ def non_empty(src):
         )
 
 
-class ShardSample:
-    pass
+class ShardSample(IterableDataset):
+    def __iter__(self):
+        while (sample := self.sample()) is not None:
+            yield sample
 
 
 class SimpleShardSample(ShardSample):

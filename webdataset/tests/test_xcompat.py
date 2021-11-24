@@ -5,6 +5,8 @@ import PIL
 import pytest
 import torch
 import pickle
+import yaml
+from io import StringIO
 
 import webdataset as wds
 
@@ -85,9 +87,32 @@ def test_yaml(tmp_path):
     fname = tmp_path + "/test.shards.yml"
     with open(fname, "w") as stream:
         stream.write(shardspec)
-    ds = wds.MultiShardSample(fname)
-    l = ds.sample()
+    ds = wds.WebDataset(fname)
+    l = list(ds)
     assert len(l) == 60, len(l)
+
+
+def test_yaml2():
+    spec = yaml.safe_load(StringIO(test_yaml))
+    ds = wds.WebDataset(spec)
+    l = list(ds)
+    assert len(l) == 60, len(l)
+
+
+test_yaml2 = """
+prefix: pipe:curl -s -L http://storage.googleapis.com/nvdata-ocropus-words/
+datasets:
+  - shards: uw3-word-0000{00..21}.tar
+  - shards: ia1-{000000..000033}.tar
+  - shards: gsub-{000000..000167}.tar
+  - shards: cdipsub-{000000..000092}.tar
+"""
+
+
+def test_yaml3():
+    spec = yaml.safe_load(StringIO(test_yaml2))
+    ds = wds.WebDataset(spec)
+    next(iter(ds))
 
 
 def test_length():
@@ -135,9 +160,7 @@ def test_dataset_eof():
 
 
 def test_dataset_eof_handler():
-    ds = wds.WebDataset(
-        f"pipe:dd if={local_data} bs=1024 count=10", handler=wds.ignore_and_stop
-    )
+    ds = wds.WebDataset(f"pipe:dd if={local_data} bs=1024 count=10", handler=wds.ignore_and_stop)
     assert count_samples(ds) < 47
 
 
@@ -205,9 +228,7 @@ def test_dataset_decode_handler():
             good[0] += 1
             return data
 
-    ds = wds.WebDataset(local_data).decode(
-        faulty_decoder, handler=wds.ignore_and_continue
-    )
+    ds = wds.WebDataset(local_data).decode(faulty_decoder, handler=wds.ignore_and_continue)
     result = count_samples_tuple(ds)
     assert count[0] == 47
     assert good[0] == 24
@@ -302,11 +323,7 @@ def test_only1():
     assert isinstance(image, bytes)
     assert isinstance(cls, int)
 
-    ds = (
-        wds.WebDataset(local_data)
-        .decode("l", only=["jpg", "png"])
-        .to_tuple("jpg;png", "cls")
-    )
+    ds = wds.WebDataset(local_data).decode("l", only=["jpg", "png"]).to_tuple("jpg;png", "cls")
     assert count_samples_tuple(ds) == 47
     image, cls = next(iter(ds))
     assert isinstance(image, np.ndarray)
@@ -434,11 +451,7 @@ def test_decoder():
     def mydecoder(key, sample):
         return len(sample)
 
-    ds = (
-        wds.WebDataset(remote_loc + remote_shard)
-        .decode(mydecoder)
-        .to_tuple("jpg;png", "json")
-    )
+    ds = wds.WebDataset(remote_loc + remote_shard).decode(mydecoder).to_tuple("jpg;png", "json")
     for sample in ds:
         assert isinstance(sample[0], int)
         break
@@ -469,9 +482,7 @@ def test_shard_syntax():
 
 def test_pipe():
     ds = (
-        wds.WebDataset(f"pipe:curl -s '{remote_loc}{remote_shards}'")
-        .shuffle(100)
-        .to_tuple("jpg;png", "json")
+        wds.WebDataset(f"pipe:curl -s '{remote_loc}{remote_shards}'").shuffle(100).to_tuple("jpg;png", "json")
     )
     assert count_samples_tuple(ds, n=10) == 10
 
@@ -480,9 +491,7 @@ def test_torchvision():
     import torch
     from torchvision import transforms
 
-    normalize = transforms.Normalize(
-        mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
-    )
+    normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
     preproc = transforms.Compose(
         [
             transforms.RandomResizedCrop(224),
@@ -508,9 +517,7 @@ def test_batched():
     import torch
     from torchvision import transforms
 
-    normalize = transforms.Normalize(
-        mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
-    )
+    normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
     preproc = transforms.Compose(
         [
             transforms.RandomResizedCrop(224),
@@ -520,12 +527,7 @@ def test_batched():
         ]
     )
     raw = wds.WebDataset(remote_loc + remote_shards)
-    ds = (
-        raw.decode("pil")
-        .to_tuple("jpg;png", "json")
-        .map_tuple(preproc, identity)
-        .batched(7)
-    )
+    ds = raw.decode("pil").to_tuple("jpg;png", "json").map_tuple(preproc, identity).batched(7)
     for sample in ds:
         assert isinstance(sample[0], torch.Tensor), type(sample[0])
         assert tuple(sample[0].size()) == (7, 3, 224, 224), sample[0].size()
@@ -538,9 +540,7 @@ def test_unbatched():
     import torch
     from torchvision import transforms
 
-    normalize = transforms.Normalize(
-        mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
-    )
+    normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
     preproc = transforms.Compose(
         [
             transforms.RandomResizedCrop(224),
