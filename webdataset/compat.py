@@ -116,8 +116,8 @@ class WebDataset(DataPipeline, FluidInterface):
                 cache.cached_tarfile_to_samples(
                     handler=handler,
                     verbose=verbose,
-                    cache_size=size,
-                    cache_dir=dir,
+                    cache_size=cache_size,
+                    cache_dir=cache_dir,
                 )
             )
 
