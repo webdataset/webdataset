@@ -90,6 +90,11 @@ class WebDataset(DataPipeline, FluidInterface):
             self.append(urls)
         elif resampled:
             self.append(shardlists.ResampledShards(urls))
+        elif urls.endswith(".yaml"):
+            self.append(shardlists.MultiShardSample(urls))
+        elif isinstance(urls, dict):
+            assert "datasets" in urls
+            self.append(shardlists.MultiShardSample(urls))
         else:
             self.append(shardlists.SimpleShardList(urls))
             self.append(nodesplitter)

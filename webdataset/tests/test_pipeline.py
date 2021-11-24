@@ -8,6 +8,8 @@ import PIL
 import pytest
 import torch
 from torch.utils.data import DataLoader
+from io import StringIO
+import yaml
 
 import webdataset as wds
 import webdataset.extradatasets as eds
@@ -393,6 +395,13 @@ def test_yaml(tmp_path):
     with open(fname, "w") as stream:
         stream.write(shardspec)
     ds = wds.MultiShardSample(fname)
+    l = ds.sample()
+    assert len(l) == 60, len(l)
+
+
+def test_yaml2():
+    spec = yaml.safe_load(StringIO(shardspec))
+    ds = wds.MultiShardSample(spec)
     l = ds.sample()
     assert len(l) == 60, len(l)
 
