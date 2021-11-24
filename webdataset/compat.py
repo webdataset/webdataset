@@ -17,12 +17,8 @@ from .pipeline import DataPipeline
 
 
 class FluidInterface:
-    def batched(
-        self, batchsize, collation_fn=filters.default_collation_fn, partial=True
-    ):
-        return self.compose(
-            filters.batched(batchsize, collation_fn=collation_fn, partial=partial)
-        )
+    def batched(self, batchsize, collation_fn=filters.default_collation_fn, partial=True):
+        return self.compose(filters.batched(batchsize, collation_fn=collation_fn, partial=partial))
 
     def unbatched(self):
         return self.compose(filters.unbatched())
@@ -46,9 +42,7 @@ class FluidInterface:
         return self.compose(filters.map(f, handler=handler))
 
     def decode(self, *args, pre=None, post=None, only=None, handler=reraise_exception):
-        handlers = [
-            autodecode.ImageHandler(x) if isinstance(x, str) else x for x in args
-        ]
+        handlers = [autodecode.ImageHandler(x) if isinstance(x, str) else x for x in args]
         decoder = autodecode.Decoder(handlers, pre=pre, post=post, only=only)
         return self.map(decoder, handler=handler)
 
@@ -84,7 +78,8 @@ class WebDataset(DataPipeline, FluidInterface):
         resampled=False,
         repeat=False,
         shardshuffle=None,
-        caching=None,
+        cache_size=-1,
+        cache_dir=None,
         detshuffle=False,
         nodesplitter=shardlists.single_node_only,
         verbose=False,
@@ -106,20 +101,23 @@ class WebDataset(DataPipeline, FluidInterface):
                     self.append(filters.detshuffle(shardshuffle))
                 else:
                     self.append(filters.shuffle(shardshuffle))
-        if caching is None or caching is False:
+        if cache_size <= 0:
             self.append(tariterators.tarfile_to_samples(handler=handler))
-        elif caching is True:
-            self.append(
-                cache.cached_tarfile_to_samples(handler=handler, verbose=verbose)
-            )
-        else:
-            dir, size = caching
+        elif cache_dir is None:
             self.append(
                 cache.cached_tarfile_to_samples(
                     handler=handler,
-                    cache_dir=dir,
-                    cache_size=size,
                     verbose=verbose,
+                    cache_size=cache_size,
+                )
+            )
+        else:
+            self.append(
+                cache.cached_tarfile_to_samples(
+                    handler=handler,
+                    verbose=verbose,
+                    cache_size=size,
+                    cache_dir=dir,
                 )
             )
 
