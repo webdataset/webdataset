@@ -62,11 +62,15 @@ def pipe_cleaner(spec):
 
 def get_file_cached(
     spec,
-    cache_size=default_cache_size,
-    cache_dir=default_cache_dir,
+    cache_size=-1,
+    cache_dir=None,
     url_to_name=pipe_cleaner,
     verbose=False,
 ):
+    if cache_size == -1:
+        cache_size = default_cache_size
+    if cache_dir is None:
+        cache_dir = default_cache_dir
     url = url_to_name(spec)
     parsed = urlparse(url)
     dirname, filename = os.path.split(parsed.path)
@@ -98,8 +102,8 @@ def check_tar_format(fname):
 def cached_url_opener(
     data,
     handler=reraise_exception,
-    cache_size=default_cache_size,
-    cache_dir=default_cache_dir,
+    cache_size=-1,
+    cache_dir=None,
     url_to_name=pipe_cleaner,
     validator=check_tar_format,
     verbose=False,
@@ -147,8 +151,8 @@ def cached_url_opener(
 def cached_tarfile_samples(
     src,
     handler=reraise_exception,
-    cache_size=default_cache_size,
-    cache_dir=default_cache_dir,
+    cache_size=-1,
+    cache_dir=None,
     verbose=False,
     url_to_name=pipe_cleaner,
     always=False,
