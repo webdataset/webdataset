@@ -152,12 +152,10 @@ class MultiShardSample(IterableDataset):
             assert set(ds.keys()).issubset(
                 set("buckets name shards perepoch choose".split())
             )
-            buckets = ds.get("buckets", [])
+            buckets = ds.get("buckets", spec.get("buckets", []))
             if isinstance(buckets, str):
                 buckets = [buckets]
             buckets = [expand(s) for s in buckets]
-            if "bucket" in ds:
-                buckets.append(expand(ds.get("bucket")))
             if buckets == []:
                 buckets = [""]
             assert len(buckets) == 1, f"{buckets}: FIXME support for multiple buckets unimplemented"
