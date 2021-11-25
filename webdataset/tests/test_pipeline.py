@@ -367,21 +367,19 @@ shardspec = """
 datasets:
 
   - name: CDIP
-    perepoch: 10
-    buckets:
-      - ./gs/nvdata-ocropus/words/
-    shards:
-    - cdipsub-{000000..000092}.tar
+    resample: 10
+    buckets: ./gs/nvdata-ocropus/words/
+    shards: cdipsub-{000000..000092}.tar
 
   - name: Google 1000 Books
-    perepoch: 20
+    choose: 20
     buckets:
       - ./gs/nvdata-ocropus/words/
     shards:
       - gsub-{000000..000167}.tar
 
   - name: Internet Archive Sample
-    perepoch: 30
+    resample: 30
     buckets:
       - ./gs/nvdata-ocropus/words/
     shards:

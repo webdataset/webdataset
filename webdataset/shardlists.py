@@ -142,15 +142,11 @@ class MultiShardSample(IterableDataset):
         else:
             with open(fname) as stream:
                 spec = yaml.safe_load(stream)
-        assert set(spec.keys()).issubset(
-            set("prefix datasets buckets".split()),
-        ), spec
+        assert set(spec.keys()).issubset(set("prefix datasets buckets".split())), list(spec.keys())
         prefix = expand(spec.get("prefix", ""))
         self.sources = []
         for ds in spec["datasets"]:
-            assert set(ds.keys()).issubset(
-                set("buckets name shards perepoch choose".split()),
-            ), ds
+            assert set(ds.keys()).issubset(set("buckets name shards resample choose".split())), list(ds.keys())
             buckets = ds.get("buckets", spec.get("buckets", []))
             if isinstance(buckets, str):
                 buckets = [buckets]
@@ -167,8 +163,8 @@ class MultiShardSample(IterableDataset):
             urls = [
                 prefix + os.path.join(bucket, u) for url in urls for u in braceexpand.braceexpand(expand(url))
             ]
-            resample = ds.get("choose", -1)
-            nsample = ds.get("perepoch", -1)
+            resample = ds.get("resample", -1)
+            nsample = ds.get("choose", -1)
             if nsample > len(urls):
                 raise ValueError(f"perepoch {nsample} must be no greater than the number of shards")
             if (nsample > 0) and (resample > 0):
