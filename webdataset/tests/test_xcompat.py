@@ -84,7 +84,7 @@ datasets:
 
 yaml3_data = """
 prefix: pipe:curl -s -L http://storage.googleapis.com/
-buckets: nvdata-ocropus-words/
+buckets: nvdata-ocropus-words
 datasets:
   - shards: uw3-word-0000{00..21}.tar
   - shards: ia1-{000000..000033}.tar

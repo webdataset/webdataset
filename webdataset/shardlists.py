@@ -145,7 +145,7 @@ class MultiShardSample(IterableDataset):
         else:
             with open(fname) as stream:
                 spec = yaml.safe_load(stream)
-        assert set(spec.keys()).issubset(set("prefix datasets".split()))
+        assert set(spec.keys()).issubset(set("prefix datasets buckets".split()))
         prefix = expand(spec.get("prefix", ""))
         self.sources = []
         for ds in spec["datasets"]:
@@ -166,7 +166,7 @@ class MultiShardSample(IterableDataset):
                 urls = [urls]
             # urls = [u for url in urls for u in braceexpand.braceexpand(url)]
             urls = [
-                prefix + bucket + u
+                prefix + os.path.join(bucket, u)
                 for url in urls
                 for u in braceexpand.braceexpand(expand(url))
             ]
