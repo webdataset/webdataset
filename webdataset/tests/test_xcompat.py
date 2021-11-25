@@ -82,35 +82,22 @@ datasets:
 """
 
 
-def test_yaml(tmp_path):
-    tmp_path = str(tmp_path)
-    fname = tmp_path + "/test.shards.yml"
-    with open(fname, "w") as stream:
-        stream.write(shardspec)
-    ds = wds.WebDataset(fname)
-    l = list(ds)
-    assert len(l) == 60, len(l)
-
-
-def test_yaml2():
-    spec = yaml.safe_load(StringIO(test_yaml))
-    ds = wds.WebDataset(spec)
-    l = list(ds)
-    assert len(l) == 60, len(l)
-
-
-test_yaml2 = """
-prefix: pipe:curl -s -L http://storage.googleapis.com/nvdata-ocropus-words/
+yaml3_data = """
+prefix: pipe:curl -s -L http://storage.googleapis.com/
 datasets:
-  - shards: uw3-word-0000{00..21}.tar
-  - shards: ia1-{000000..000033}.tar
-  - shards: gsub-{000000..000167}.tar
-  - shards: cdipsub-{000000..000092}.tar
+  - buckets: nvdata-ocropus-words/
+    shards: uw3-word-0000{00..21}.tar
+  - buckets: nvdata-ocropus-words/
+    shards: ia1-{000000..000033}.tar
+  - buckets: nvdata-ocropus-words/
+    shards: gsub-{000000..000167}.tar
+  - buckets: nvdata-ocropus-words/
+    shards: cdipsub-{000000..000092}.tar
 """
 
 
 def test_yaml3():
-    spec = yaml.safe_load(StringIO(test_yaml2))
+    spec = yaml.safe_load(StringIO(yaml3_data))
     ds = wds.WebDataset(spec)
     next(iter(ds))
 

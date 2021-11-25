@@ -395,14 +395,14 @@ def test_yaml(tmp_path):
     with open(fname, "w") as stream:
         stream.write(shardspec)
     ds = wds.MultiShardSample(fname)
-    l = ds.sample()
+    l = list(iter(ds))
     assert len(l) == 60, len(l)
 
 
 def test_yaml2():
     spec = yaml.safe_load(StringIO(shardspec))
     ds = wds.MultiShardSample(spec)
-    l = ds.sample()
+    l = list(iter(ds))
     assert len(l) == 60, len(l)
 
 

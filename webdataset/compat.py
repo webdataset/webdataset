@@ -88,8 +88,8 @@ class WebDataset(DataPipeline, FluidInterface):
         if isinstance(urls, IterableDataset):
             assert not resampled
             self.append(urls)
-        elif urls.endswith(".yaml") or urls.endswith(".yml"):
-            with(open(urls)) as stream:
+        elif isinstance(urls, str) and (urls.endswith(".yaml") or urls.endswith(".yml")):
+            with (open(urls)) as stream:
                 spec = yaml.safe_load(stream)
             assert "datasets" in spec
             self.append(shardlists.MultiShardSample(spec))

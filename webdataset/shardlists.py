@@ -113,24 +113,6 @@ def non_empty(src):
         )
 
 
-class ShardSample(IterableDataset):
-    def __iter__(self):
-        while (sample := self.sample()) is not None:
-            yield sample
-
-
-class SimpleShardSample(ShardSample):
-    def __init__(self, urls):
-        if isinstance(urls, str):
-            urls = list(braceexpand.braceexpand(urls))
-        else:
-            urls = list(urls)
-        self.urls = list(urls)
-        assert isinstance(self.urls[0], str)
-
-    def sample(self):
-        return self.urls.copy()
-
 
 @dataclass
 class MSSource:
@@ -149,9 +131,13 @@ def expand(s):
     return os.path.expanduser(os.path.expandvars(s))
 
 
-class MultiShardSample(ShardSample):
+class MultiShardSample(IterableDataset):
     def __init__(self, fname):
         """Construct a shardlist from multiple sources using a YAML spec."""
+        self.epoch = -1
+        self.parse_spec(fname)
+
+    def parse_spec(self, fname):
         self.rng = default_rng  # capture default_rng if we fork
         if isinstance(fname, dict):
             spec = fname
@@ -166,16 +152,25 @@ class MultiShardSample(ShardSample):
             assert set(ds.keys()).issubset(
                 set("buckets name shards perepoch choose".split())
             )
-            buckets = [expand(s) for s in ds.get("buckets", [""])]
-            assert len(buckets) == 1, "FIXME support for multiple buckets unimplemented"
+            buckets = ds.get("buckets", [])
+            if isinstance(buckets, str):
+                buckets = [buckets]
+            buckets = [expand(s) for s in buckets]
+            if "bucket" in ds:
+                buckets.append(expand(ds.get("bucket")))
+            if buckets == []:
+                buckets = [""]
+            assert len(buckets) == 1, f"{buckets}: FIXME support for multiple buckets unimplemented"
             bucket = buckets[0]
             name = ds.get("name", "@" + bucket)
             urls = ds["shards"]
-            urls = [u for url in urls for u in braceexpand.braceexpand(url)]
+            if isinstance(urls, str):
+                urls = [urls]
+            # urls = [u for url in urls for u in braceexpand.braceexpand(url)]
             urls = [
                 prefix + bucket + u
                 for url in urls
-                for u in braceexpand.braceexpand(url)
+                for u in braceexpand.braceexpand(expand(url))
             ]
             resample = ds.get("choose", -1)
             nsample = ds.get("perepoch", -1)
@@ -193,7 +188,7 @@ class MultiShardSample(ShardSample):
         """Set the current epoch (for consistent shard selection among nodes)."""
         self.rng = random.Random(seed)
 
-    def sample(self):
+    def get_shards_for_epoch(self):
         result = []
         for source in self.sources:
             if source.resample > 0:
@@ -209,6 +204,12 @@ class MultiShardSample(ShardSample):
             result += l
         self.rng.shuffle(result)
         return result
+
+
+    def __iter__(self):
+        shards = self.get_shards_for_epoch()
+        for shard in shards:
+            yield dict(url=shard)
 
 
 def shardspec(spec):
