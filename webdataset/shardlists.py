@@ -108,10 +108,7 @@ def non_empty(src):
         yield s
         count += 1
     if count == 0:
-        raise ValueError(
-            "pipeline stage received no data at all and this was declared as an error"
-        )
-
+        raise ValueError("pipeline stage received no data at all and this was declared as an error")
 
 
 @dataclass
@@ -145,13 +142,15 @@ class MultiShardSample(IterableDataset):
         else:
             with open(fname) as stream:
                 spec = yaml.safe_load(stream)
-        assert set(spec.keys()).issubset(set("prefix datasets buckets".split()))
+        assert set(spec.keys()).issubset(
+            set("prefix datasets buckets".split()),
+        ), spec
         prefix = expand(spec.get("prefix", ""))
         self.sources = []
         for ds in spec["datasets"]:
             assert set(ds.keys()).issubset(
-                set("buckets name shards perepoch choose".split())
-            )
+                set("buckets name shards perepoch choose".split()),
+            ), ds
             buckets = ds.get("buckets", spec.get("buckets", []))
             if isinstance(buckets, str):
                 buckets = [buckets]
@@ -166,16 +165,12 @@ class MultiShardSample(IterableDataset):
                 urls = [urls]
             # urls = [u for url in urls for u in braceexpand.braceexpand(url)]
             urls = [
-                prefix + os.path.join(bucket, u)
-                for url in urls
-                for u in braceexpand.braceexpand(expand(url))
+                prefix + os.path.join(bucket, u) for url in urls for u in braceexpand.braceexpand(expand(url))
             ]
             resample = ds.get("choose", -1)
             nsample = ds.get("perepoch", -1)
             if nsample > len(urls):
-                raise ValueError(
-                    f"perepoch {nsample} must be no greater than the number of shards"
-                )
+                raise ValueError(f"perepoch {nsample} must be no greater than the number of shards")
             if (nsample > 0) and (resample > 0):
                 raise ValueError("specify only one of perepoch or choose")
             entry = MSSource(name=name, urls=urls, perepoch=nsample, resample=resample)
@@ -202,7 +197,6 @@ class MultiShardSample(IterableDataset):
             result += l
         self.rng.shuffle(result)
         return result
-
 
     def __iter__(self):
         shards = self.get_shards_for_epoch()
@@ -240,9 +234,7 @@ class ResampledShards(IterableDataset):
         assert isinstance(self.urls[0], str)
         self.nshards = nshards
         self.rng = random.Random()
-        self.worker_seed = (
-            utils.pytorch_worker_seed if worker_seed is None else worker_seed
-        )
+        self.worker_seed = utils.pytorch_worker_seed if worker_seed is None else worker_seed
         self.deterministic = deterministic
         self.epoch = -1
 
