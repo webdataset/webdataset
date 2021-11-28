@@ -406,14 +406,15 @@ class ShardWriter:
         self.count = 0
         self.size = 0
 
-    def write(self, obj):
+    def write(self, obj, mtime=None):
         """Write a sample.
 
         :param obj: sample to be written
+        :param mtime: optional modification time for object in unix epochs
         """
         if self.tarstream is None or self.count >= self.maxcount or self.size >= self.maxsize:
             self.next_stream()
-        size = self.tarstream.write(obj)
+        size = self.tarstream.write(obj, mtime=mtime)
         self.count += 1
         self.total += 1
         self.size += size
