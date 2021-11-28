@@ -312,10 +312,11 @@ class TarWriter:
             self.own_fileobj.close()
             self.own_fileobj = None
 
-    def write(self, obj):
+    def write(self, obj, mtime=None):
         """Write a dictionary to the tar file.
 
         :param obj: dictionary of objects to be stored
+        :param mtime: optional modification time for object in unix epochs
         :returns: size of the entry
 
         """
@@ -337,10 +338,11 @@ class TarWriter:
             v = obj[k]
             if isinstance(v, str):
                 v = v.encode("utf-8")
-            now = time.time()
+            if mtime is None:
+                mtime = time.time()
             ti = tarfile.TarInfo(key + "." + k)
             ti.size = len(v)
-            ti.mtime = now
+            ti.mtime = mtime
             ti.mode = self.mode
             ti.uname = self.user
             ti.gname = self.group
