@@ -161,6 +161,15 @@ def test_shardspec():
     assert len(result) == 47
 
 
+def test_sep():
+    dataset = wds.DataPipeline(
+        wds.shardspec("testdata/imagenet-000000.tgz::testdata/imagenet-000000.tgz"),
+        wds.tarfile_samples,
+    )
+    result = list(iter(dataset))
+    assert len(result) == 47 * 2
+
+
 def test_reader1():
     dataset = wds.DataPipeline(
         wds.SimpleShardList("testdata/imagenet-000000.tgz"),

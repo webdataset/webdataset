@@ -22,6 +22,17 @@ from .filters import pipelinefilter
 from .pytorch import IterableDataset
 
 
+def expand_urls(urls):
+    if isinstance(urls, str):
+        urllist = urls.split("::")
+        result = []
+        for url in urllist:
+            result.extend(braceexpand.braceexpand(url))
+        return result
+    else:
+        return list(urls)
+
+
 class SimpleShardList(IterableDataset):
     """An iterable dataset yielding a list of urls."""
 
@@ -31,10 +42,7 @@ class SimpleShardList(IterableDataset):
         :param urls: a list of URLs as a Python list or brace notation string
         """
         super().__init__()
-        if isinstance(urls, str):
-            urls = list(braceexpand.braceexpand(urls))
-        else:
-            urls = list(urls)
+        urls = expand_urls(urls)
         self.urls = urls
         assert isinstance(self.urls[0], str)
         self.seed = seed
@@ -232,10 +240,7 @@ class ResampledShards(IterableDataset):
         :param urls: a list of URLs as a Python list or brace notation string
         """
         super().__init__()
-        if isinstance(urls, str):
-            urls = list(braceexpand.braceexpand(urls))
-        else:
-            urls = list(urls)
+        urls = expand_urls(urls)
         self.urls = urls
         assert isinstance(self.urls[0], str)
         self.nshards = nshards
