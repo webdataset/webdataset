@@ -1,14 +1,9 @@
-import itertools
-import os
-import random
-import re
-import sys
-
+import itertools, os, random, re, sys
 from urllib.parse import urlparse
-from .handlers import reraise_exception
-from . import filters, gopen
-from .tariterators import tar_file_expander, group_by_keys
 
+from . import filters, gopen
+from .handlers import reraise_exception
+from .tariterators import group_by_keys, tar_file_expander
 
 default_cache_dir = os.environ.get("WDS_CACHE", "./_cache")
 default_cache_size = float(os.environ.get("WDS_CACHE_SIZE", "1e10"))
@@ -42,7 +37,7 @@ def lru_cleanup(cache_dir, cache_size, keyfn=os.path.getctime, verbose=False):
 
 def download(url, dest, chunk_size=1024 ** 2, verbose=False):
     """Download a file from `url` to `dest`."""
-    temp = dest+f".temp{os.getpid()}"
+    temp = dest + f".temp{os.getpid()}"
     with gopen.gopen(url) as stream:
         with open(temp, "wb") as f:
             while data := stream.read(chunk_size):
@@ -108,7 +103,7 @@ def cached_url_opener(
     url_to_name=pipe_cleaner,
     validator=check_tar_format,
     verbose=False,
-    always=False,    
+    always=False,
 ):
     """Given a stream of url names (packaged in `dict(url=url)`), yield opened streams."""
     for sample in data:

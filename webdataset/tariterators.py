@@ -7,9 +7,7 @@
 
 """Low level iteration functions for tar archives."""
 
-import random
-import re
-import tarfile
+import random, re, tarfile
 
 import braceexpand
 

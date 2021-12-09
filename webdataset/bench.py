@@ -6,8 +6,7 @@
 
 """A simple command line program to benchmark I/O speeds."""
 
-import argparse
-import time
+import argparse, time
 from collections import Counter
 
 from . import SimpleShardList, pipeline

@@ -12,14 +12,14 @@ Code works locally or over HTTP connections.
 
 import itertools as itt
 import os
-import sys
 import random
+import sys
 
 import braceexpand
 
+from . import utils
 from .pytorch import IterableDataset
 from .utils import PipelineStage
-from . import utils
 
 
 class MockDataset(IterableDataset):

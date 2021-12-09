@@ -1,18 +1,12 @@
 #%%
-import os
-import random
-import sys
-import time
+import copy, os, random, sys, time
 from dataclasses import dataclass
-from typing import List
 from itertools import islice
+from typing import List
 
-import braceexpand
-import yaml
-import copy
+import braceexpand, yaml
 
-from . import extradatasets as eds
-from . import filters, shardlists, tariterators, autodecode
+from . import autodecode, extradatasets as eds, filters, shardlists, tariterators
 from .handlers import reraise_exception
 from .pytorch import DataLoader, IterableDataset
 from .utils import PipelineStage
@@ -22,7 +16,11 @@ def add_length_method(obj):
     def length(self):
         return self.size
 
-    Combined = type(obj.__class__.__name__ + "_Length", (obj.__class__, IterableDataset), {"__len__": length})
+    Combined = type(
+        obj.__class__.__name__ + "_Length",
+        (obj.__class__, IterableDataset),
+        {"__len__": length},
+    )
     obj.__class__ = Combined
     return obj
 

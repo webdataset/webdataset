@@ -6,12 +6,7 @@
 
 """Classes and functions for writing tar files and WebDataset files."""
 
-import io
-import json
-import pickle
-import re
-import tarfile
-import time
+import io, json, pickle, re, tarfile, time
 from typing import Any, Callable, Optional, Union
 
 import numpy as np
@@ -140,10 +135,13 @@ def add_handlers(d, keys, value):
     for k in keys:
         d[k] = value
 
+
 def make_handlers():
     """Create a list of handlers for encoding data."""
     handlers = {}
-    add_handlers(handlers, "cls cls2 class count index inx id", lambda x: str(x).encode("ascii"))
+    add_handlers(
+        handlers, "cls cls2 class count index inx id", lambda x: str(x).encode("ascii")
+    )
     add_handlers(handlers, "txt text transcript", lambda x: x.encode("utf-8"))
     add_handlers(handlers, "pyd pickle", pickle.dumps)
     add_handlers(handlers, "pth", torch_dumps)

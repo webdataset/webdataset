@@ -7,8 +7,7 @@
 
 """Open URLs by calling subcommands."""
 
-import os
-import sys
+import os, sys
 from subprocess import PIPE, Popen
 from urllib.parse import urlparse
 

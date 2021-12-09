@@ -31,8 +31,7 @@ Header chunks have the following structure:
 - ...
 """
 
-import struct
-import sys
+import struct, sys
 
 import numpy as np
 

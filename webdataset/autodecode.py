@@ -6,12 +6,7 @@
 
 """Automatically decode webdataset samples."""
 
-import io
-import json
-import os
-import pickle
-import re
-import tempfile
+import io, json, os, pickle, re, tempfile
 from functools import partial
 
 import numpy as np
@@ -31,6 +26,7 @@ def torch_loads(data):
     :param data: data to be decoded
     """
     import io
+
     import torch
 
     stream = io.BytesIO(data)
@@ -111,9 +107,11 @@ def basichandlers(key, data):
 
     return None
 
+
 ################################################################
 # Generic extension handler.
 ################################################################
+
 
 def call_extension_handler(key, data, f, extensions):
     """Call the function f with the given data if the key matches the extensions.
@@ -128,7 +126,7 @@ def call_extension_handler(key, data, f, extensions):
         target = target.split(".")
         if len(target) > len(extension):
             continue
-        if extension[-len(target):] == target:
+        if extension[-len(target) :] == target:
             return f(data)
     return None
 

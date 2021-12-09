@@ -11,18 +11,14 @@ in webdataset.filters, and you can find IterableDataset wrappers in
 webdataset.processing.
 """
 
-import itertools
-import os
-import random
-import sys
-import time
+import itertools, os, random, sys, time
 from functools import reduce, wraps
 
 import numpy as np
 
 from . import autodecode, utils
-from .utils import PipelineStage
 from .pytorch import TorchTensor
+from .utils import PipelineStage
 
 
 class FilterFunction(object):
@@ -228,6 +224,7 @@ class detshuffle(PipelineStage):
         self.initial = initial
         self.seed = seed
         self.epoch = epoch
+
     def run(self, src):
         self.epoch += 1
         rng = random.Random()
