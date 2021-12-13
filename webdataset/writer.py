@@ -290,7 +290,7 @@ class TarWriter:
         self.encoder = make_encoder(encoder)
         self.keep_meta = keep_meta
         self.stream = fileobj
-        self.tarstream = tarfile.open(fileobj=fileobj, mode=tarmode)
+        self.tarstream = tarfile.open(fileobj=fileobj, mode=tarmode, format=tarfile.PAX_FORMAT)
 
         self.user = user
         self.group = group
