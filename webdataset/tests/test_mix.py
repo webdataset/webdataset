@@ -36,6 +36,9 @@ def test_rr():
     mix = wds.RoundRobin([dataset, dataset, dataset])
     result = list(iter(mix))
     assert len(result) == 47 * 3
+    mix = wds.FluidWrapper(wds.RoundRobin([dataset, dataset, dataset])).shuffle(10)
+    result = list(iter(mix))
+    assert len(result) == 47 * 3
 
 
 def test_rs():

@@ -25,7 +25,7 @@ from .cache import (
     pipe_cleaner,
 )
 from .cborsiterators import cbors2_to_samples, cbors_to_samples
-from .compat import WebDataset, WebLoader
+from .compat import WebDataset, WebLoader, FluidWrapper
 from .extradatasets import MockDataset, with_epoch, with_length
 from .filters import (
     associate,

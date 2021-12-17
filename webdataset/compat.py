@@ -12,12 +12,8 @@ from .pytorch import DataLoader, IterableDataset
 
 
 class FluidInterface:
-    def batched(
-        self, batchsize, collation_fn=filters.default_collation_fn, partial=True
-    ):
-        return self.compose(
-            filters.batched(batchsize, collation_fn=collation_fn, partial=partial)
-        )
+    def batched(self, batchsize, collation_fn=filters.default_collation_fn, partial=True):
+        return self.compose(filters.batched(batchsize, collation_fn=collation_fn, partial=partial))
 
     def unbatched(self):
         return self.compose(filters.unbatched())
@@ -41,9 +37,7 @@ class FluidInterface:
         return self.compose(filters.map(f, handler=handler))
 
     def decode(self, *args, pre=None, post=None, only=None, handler=reraise_exception):
-        handlers = [
-            autodecode.ImageHandler(x) if isinstance(x, str) else x for x in args
-        ]
+        handlers = [autodecode.ImageHandler(x) if isinstance(x, str) else x for x in args]
         decoder = autodecode.Decoder(handlers, pre=pre, post=post, only=only)
         return self.map(decoder, handler=handler)
 
@@ -89,9 +83,7 @@ class WebDataset(DataPipeline, FluidInterface):
         if isinstance(urls, IterableDataset):
             assert not resampled
             self.append(urls)
-        elif isinstance(urls, str) and (
-            urls.endswith(".yaml") or urls.endswith(".yml")
-        ):
+        elif isinstance(urls, str) and (urls.endswith(".yaml") or urls.endswith(".yml")):
             with (open(urls)) as stream:
                 spec = yaml.safe_load(stream)
             assert "datasets" in spec
@@ -126,6 +118,14 @@ class WebDataset(DataPipeline, FluidInterface):
                     cache_dir=cache_dir,
                 )
             )
+
+
+class FluidWrapper(DataPipeline, FluidInterface):
+    """Small fluid-interface wrapper for DataPipeline."""
+
+    def __init__(self, initial):
+        super().__init__()
+        self.append(initial)
 
 
 class WebLoader(DataPipeline, FluidInterface):
