@@ -211,6 +211,36 @@ def gopen_curl(url, mode="rb", bufsize=8192):
         raise ValueError(f"{mode}: unknown mode")
 
 
+def gopen_gsutil(url, mode="rb", bufsize=8192):
+    """Open a URL with `curl`.
+
+    :param url: url (usually, http:// etc.)
+    :param mode: file mode
+    :param bufsize: buffer size
+    """
+    if mode[0] == "r":
+        cmd = f"gsutil cat '{url}'"
+        return Pipe(
+            cmd,
+            mode=mode,
+            shell=True,
+            bufsize=bufsize,
+            ignore_status=[141, 23],
+        )  # skipcq: BAN-B604
+    elif mode[0] == "w":
+        cmd = f"gsutil cp - '{url}'"
+        return Pipe(
+            cmd,
+            mode=mode,
+            shell=True,
+            bufsize=bufsize,
+            ignore_status=[141, 26],
+        )  # skipcq: BAN-B604
+    else:
+        raise ValueError(f"{mode}: unknown mode")
+
+
+
 def gopen_error(url, *args, **kw):
     """Raise a value error.
 
@@ -230,6 +260,7 @@ gopen_schemes = dict(
     sftp=gopen_curl,
     ftps=gopen_curl,
     scp=gopen_curl,
+    gs=gopen_gsutil,
 )
 
 
