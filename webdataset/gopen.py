@@ -7,7 +7,7 @@
 
 """Open URLs by calling subcommands."""
 
-import os, sys
+import os, sys, re
 from subprocess import PIPE, Popen
 from urllib.parse import urlparse
 
@@ -211,6 +211,30 @@ def gopen_curl(url, mode="rb", bufsize=8192):
         raise ValueError(f"{mode}: unknown mode")
 
 
+def gopen_htgs(url, mode="rb", bufsize=8192):
+    """Open a URL with `curl`.
+
+    :param url: url (usually, http:// etc.)
+    :param mode: file mode
+    :param bufsize: buffer size
+    """
+    if mode[0] == "r":
+        url = re.sub(r"(?i)^htgs://", "gs://", url)
+        cmd = f"curl -s -L '{url}'"
+        return Pipe(
+            cmd,
+            mode=mode,
+            shell=True,
+            bufsize=bufsize,
+            ignore_status=[141, 23],
+        )  # skipcq: BAN-B604
+    elif mode[0] == "w":
+        raise ValueError(f"{mode}: cannot write")
+    else:
+        raise ValueError(f"{mode}: unknown mode")
+
+
+
 def gopen_gsutil(url, mode="rb", bufsize=8192):
     """Open a URL with `curl`.
 
@@ -261,6 +285,7 @@ gopen_schemes = dict(
     ftps=gopen_curl,
     scp=gopen_curl,
     gs=gopen_gsutil,
+    htgs=gopen_htgs,
 )
 
 
