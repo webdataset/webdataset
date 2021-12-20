@@ -426,6 +426,8 @@ class Decoder:
             if self.partial:
                 if isinstance(v, bytes):
                     result[k] = self.decode1(k, v)
+                else:
+                    result[k] = v
             else:
                 assert isinstance(v, bytes)
                 result[k] = self.decode1(k, v)
