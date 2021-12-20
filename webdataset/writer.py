@@ -143,6 +143,7 @@ def make_handlers():
         handlers, "cls cls2 class count index inx id", lambda x: str(x).encode("ascii")
     )
     add_handlers(handlers, "txt text transcript", lambda x: x.encode("utf-8"))
+    add_handlers(handlers, "html htm", lambda x: x.encode("utf-8"))
     add_handlers(handlers, "pyd pickle", pickle.dumps)
     add_handlers(handlers, "pth", torch_dumps)
     add_handlers(handlers, "npy", numpy_dumps)
