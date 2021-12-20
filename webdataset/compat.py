@@ -36,9 +36,9 @@ class FluidInterface:
     def map(self, f, handler=reraise_exception):
         return self.compose(filters.map(f, handler=handler))
 
-    def decode(self, *args, pre=None, post=None, only=None, handler=reraise_exception):
+    def decode(self, *args, pre=None, post=None, only=None, partial=False, handler=reraise_exception):
         handlers = [autodecode.ImageHandler(x) if isinstance(x, str) else x for x in args]
-        decoder = autodecode.Decoder(handlers, pre=pre, post=post, only=only)
+        decoder = autodecode.Decoder(handlers, pre=pre, post=post, only=only, partial=partial)
         return self.map(decoder, handler=handler)
 
     def map_dict(self, handler=reraise_exception, **kw):

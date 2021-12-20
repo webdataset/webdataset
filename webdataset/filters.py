@@ -299,6 +299,8 @@ def _map(data, f, handler=reraise_exception):
                 continue
             else:
                 break
+        if result is None:
+            continue
         if isinstance(sample, dict) and isinstance(result, dict):
             result["__key__"] = sample.get("__key__")
         yield result
