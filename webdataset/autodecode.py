@@ -368,13 +368,14 @@ class Decoder:
     handlers until some handler returns something other than None.
     """
 
-    def __init__(self, handlers, pre=None, post=None, only=None):
+    def __init__(self, handlers, pre=None, post=None, only=None, partial=False):
         """Create a Decoder.
 
         :param handlers: main list of handlers
         :param pre: handlers called before the main list (.gz handler by default)
         :param post: handlers called after the main list (default handlers by default)
         :param only: a list of extensions; when give, only ignores files with those extensions
+        :param partial: allow partial decoding (i.e., don't decode fields that aren't of type bytes)
         """
         if isinstance(only, str):
             only = only.split()
@@ -387,6 +388,7 @@ class Decoder:
         assert all(callable(h) for h in pre), f"one of {pre} not callable"
         assert all(callable(h) for h in post), f"one of {post} not callable"
         self.handlers = pre + handlers + post
+        self.partial = partial
 
     def decode1(self, key, data):
         """Decode a single field of a sample.
@@ -421,8 +423,12 @@ class Decoder:
                 result[k] = v
                 continue
             assert v is not None
-            assert isinstance(v, bytes)
-            result[k] = self.decode1(k, v)
+            if self.partial:
+                if isinstance(v, bytes):
+                    result[k] = self.decode1(k, v)
+            else:
+                assert isinstance(v, bytes)
+                result[k] = self.decode1(k, v)
         return result
 
     def __call__(self, sample):
