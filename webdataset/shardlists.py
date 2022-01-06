@@ -308,10 +308,10 @@ class PytorchShardList(IterableDataset, PytorchEnv, Composable):
         """
         # 継承元クラスの初期化の方法を変更する
         # PytorchEnv のみ sagemaker のオプションを渡す
-        IterableDataset.__init__()
-        PytorchEnv.__init__(sagemaker)
-        Composable.__init__()
-        #super().__init__()
+        IterableDataset.__init__(self)
+        PytorchEnv.__init__(self, sagemaker=sagemaker)
+        Composable.__init__(self)
+        # super().__init__()
         
         self.verbose = verbose
         if self.verbose:
