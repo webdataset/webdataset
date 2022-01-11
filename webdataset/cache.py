@@ -110,6 +110,7 @@ def cached_url_opener(
         assert isinstance(sample, dict), sample
         assert "url" in sample
         url = sample["url"]
+        attempts = 5
         try:
             if not always and os.path.exists(url):
                 dest = url
@@ -133,9 +134,17 @@ def cached_url_opener(
                     "%s (%s) is not a tar archive, but a %s, contains %s"
                     % (dest, url, ftype, repr(data))
                 )
-            stream = open(dest, "rb")
-            sample.update(stream=stream)
-            yield sample
+            try:
+                stream = open(dest, "rb")
+                sample.update(stream=stream)
+                yield sample
+            except FileNotFoundError as exn:
+                # dealing with race conditions in lru_cleanup
+                attempts -= 1
+                if attempts > 0:
+                    time.sleep(random.random() * 10)
+                    continue
+                raise exn
         except Exception as exn:
             exn.args = exn.args + (url,)
             if handler(exn):
