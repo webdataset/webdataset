@@ -153,6 +153,7 @@ def test_shardspec():
     result = list(iter(dataset))
     keys = list(result[0].keys())
     assert "__key__" in keys
+    assert "__url__" in keys
     assert "cls" in keys
     assert "png" in keys
     assert isinstance(result[0]["cls"], int)
@@ -179,6 +180,7 @@ def test_reader1():
     result = list(iter(dataset))
     keys = list(result[0].keys())
     assert "__key__" in keys
+    assert "__url__" in keys
     assert "cls" in keys
     assert "png" in keys
     assert isinstance(result[0]["cls"], int)
@@ -736,6 +738,7 @@ def test_gz():
     sample = next(iter(ds))
     print(sample)
     assert sample["txt.gz"] == "hello\n", sample
+    assert "__url__" in sample, sample.keys()
 
 
 @pytest.mark.skip(reason="need to figure out unraisableexceptionwarning")
