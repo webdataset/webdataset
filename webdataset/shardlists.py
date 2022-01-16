@@ -68,6 +68,19 @@ def split_by_node(src, group=None):
         for s in src:
             yield s
 
+def split_by_node_sm(src, group=None):
+    # for SageMaker
+    import smdistributed.dataparallel.torch.distributed as dist
+    
+    if dist.is_available() and dist.is_initialized():
+        group = group or dist.group.WORLD
+        rank = dist.get_rank(group=group)
+        size = dist.get_world_size(group=group)
+        for s in islice(src, rank, None, size):
+            yield s
+    else:
+        for s in src:
+            yield s
 
 def split_by_worker(src):
     import torch.utils.data
@@ -320,7 +333,7 @@ class PytorchShardList(IterableDataset, PytorchEnv, Composable):
         self.epoch_shuffle = epoch_shuffle
         self.shuffle = shuffle
         self.split_by_worker = split_by_worker
-        self.split_by_node = split_by_node
+        self.split_by_node = split_by_node_sm if sagemaker else split_by_node
         if not isinstance(urls, ShardSample):
             urls = SimpleShardSample(urls)
         self.shardsample = urls
