@@ -240,7 +240,8 @@ def map(data, f, handler=reraise_exception):
             else:
                 break
         if isinstance(sample, dict) and isinstance(result, dict):
-            result["__key__"] = sample.get("__key__")
+            if "__key__" in sample:
+                result["__key__"] = sample.get("__key__")
         yield result
 
 
