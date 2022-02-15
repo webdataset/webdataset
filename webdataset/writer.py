@@ -312,11 +312,10 @@ class TarWriter:
             self.own_fileobj.close()
             self.own_fileobj = None
 
-    def write(self, obj, mtime=None):
+    def write(self, obj):
         """Write a dictionary to the tar file.
 
         :param obj: dictionary of objects to be stored
-        :param mtime: optional modification time for object in unix epochs
         :returns: size of the entry
 
         """
@@ -338,11 +337,9 @@ class TarWriter:
             v = obj[k]
             if isinstance(v, str):
                 v = v.encode("utf-8")
-            if mtime is None:
-                mtime = time.time()
             ti = tarfile.TarInfo(key + "." + k)
             ti.size = len(v)
-            ti.mtime = mtime
+            ti.mtime = 0.0
             ti.mode = self.mode
             ti.uname = self.user
             ti.gname = self.group
@@ -406,15 +403,14 @@ class ShardWriter:
         self.count = 0
         self.size = 0
 
-    def write(self, obj, mtime=None):
+    def write(self, obj):
         """Write a sample.
 
         :param obj: sample to be written
-        :param mtime: optional modification time for object in unix epochs
         """
         if self.tarstream is None or self.count >= self.maxcount or self.size >= self.maxsize:
             self.next_stream()
-        size = self.tarstream.write(obj, mtime=mtime)
+        size = self.tarstream.write(obj)
         self.count += 1
         self.total += 1
         self.size += size
