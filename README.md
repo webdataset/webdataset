@@ -40,6 +40,15 @@ curl -s http://storage.googleapis.com/nvdata-openimages/openimages-train-000000.
     ff47e649b23f446d.json
 
 
+# Related Projects
+
+- the new `torchdata` library in PyTorch will add native (built-in) support for WebDataset
+- the AIStore server provides high-speed storage, caching, and data transformation for WebDataset data
+- WebDataset training can be carried out directly against S3, GCS, and other cloud storage buckets
+- NVIDIA's DALI library supports reading WebDataset format data directly
+- there is a companion project to read WebDataset data in Julia
+- the `tarp` command line program can be used for quick and easy dataset transformations of WebDataset data
+
 # WebDataset
 
 WebDataset makes it easy to write I/O pipelines for large datasets. Datasets can be stored locally or in the cloud.
@@ -87,7 +96,7 @@ plt.imshow(image)
 
 
     
-![png](readme_files/readme_9_1.png)
+![png](readme_files/readme_10_1.png)
     
 
 
@@ -119,7 +128,7 @@ print(label)
 
 
     
-![png](readme_files/readme_12_1.png)
+![png](readme_files/readme_13_1.png)
     
 
 
@@ -162,7 +171,7 @@ plt.imshow(image)
 
 
     
-![png](readme_files/readme_16_1.png)
+![png](readme_files/readme_17_1.png)
     
 
 
@@ -313,9 +322,14 @@ For the Github version:
 
     $ pip install git+https://github.com/tmbdev/webdataset.git
 
-Documentation: [ReadTheDocs](http://webdataset.readthedocs.io)
+Here are some videos talking about WebDataset and large scale deep learning:
 
-Examples:
+- [Introduction to Large Scale Deep Learning](https://www.youtube.com/watch?v=kNuA2wflygM)
+- [Loading Training Data with WebDataset](https://www.youtube.com/watch?v=mTv_ePYeBhs)
+- [Creating Datasets in WebDataset Format](https://www.youtube.com/watch?v=v_PacO-3OGQ)
+- [Tools for Working with Large Datasets](https://www.youtube.com/watch?v=kIv8zDpRUec)
+
+Examples: (NB: some of these are for older versions of WebDataset, but the differences should be small)
 
 - [loading videos](https://github.com/tmbdev/webdataset/blob/master/docs/video-loading-example.ipynb)
 - [splitting raw videos into clips for training](https://github.com/tmbdev/webdataset/blob/master/docs/ytsamples-split.ipynb)
@@ -334,15 +348,6 @@ WebDataset loads a few additional libraries dynamically only when they are actua
 - the Google/Amazon/Azure command line tools for accessing cloud storage buckets
 
 Loading of one of these libraries is triggered by configuring a decoder that attempts to decode content in the given format and encountering a file in that format during decoding. (Eventually, the torch... dependencies will be refactored into those libraries.)
-
-# Introductory Videos
-
-Here are some videos talking about WebDataset and large scale deep learning:
-
-- [Introduction to Large Scale Deep Learning](https://www.youtube.com/watch?v=kNuA2wflygM)
-- [Loading Training Data with WebDataset](https://www.youtube.com/watch?v=mTv_ePYeBhs)
-- [Creating Datasets in WebDataset Format](https://www.youtube.com/watch?v=v_PacO-3OGQ)
-- [Tools for Working with Large Datasets](https://www.youtube.com/watch?v=kIv8zDpRUec)
 
 # Data Decoding
 

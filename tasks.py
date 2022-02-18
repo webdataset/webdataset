@@ -57,7 +57,6 @@ def test(c):
 @task
 def newversion(c):
     "Increment the version number."
-    c.run("jupyter nbconvert --to markdown readme.ipynb && mv readme.md README.md")
     if not "working tree clean" in c.run("git status").stdout:
         input()
     text = open("setup.py").read()
@@ -126,6 +125,7 @@ def nbgen(c):
 def gendocs(c):
     "Generate docs."
 
+    c.run("jupyter nbconvert --to markdown readme.ipynb && mv readme.md README.md")
     # convert IPython Notebooks
     for nb in glob.glob("notebooks/*.ipynb"):
         c.run(f"{ACTIVATE} jupyter nbconvert {nb} --to markdown --output-dir=docsrc/.")
