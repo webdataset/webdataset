@@ -57,6 +57,7 @@ def test(c):
 @task
 def newversion(c):
     "Increment the version number."
+    c.run("jupyter nbconvert --to markdown readme.ipynb && mv readme.md README.md")
     if not "working tree clean" in c.run("git status").stdout:
         input()
     text = open("setup.py").read()
