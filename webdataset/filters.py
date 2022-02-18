@@ -135,7 +135,6 @@ def transform_with(sample, transformers):
     function is None, then the identity function is used for the
     corresponding sample fields.
     """
-    checktype(sample, (tuple, list))
     if transformers is None or len(transformers) == 0:
         return sample
     result = list(sample)

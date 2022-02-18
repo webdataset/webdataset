@@ -95,6 +95,9 @@ def check_tar_format(fname):
     return "tar archive" in ftype or "gzip compressed" in ftype
 
 
+verbose_cache = int(os.environ.get("WDS_VERBOSE_CACHE", "0"))
+
+
 def cached_url_opener(
     data,
     handler=reraise_exception,
@@ -106,6 +109,7 @@ def cached_url_opener(
     always=False,
 ):
     """Given a stream of url names (packaged in `dict(url=url)`), yield opened streams."""
+    verbose = verbose or verbose_cache
     for sample in data:
         assert isinstance(sample, dict), sample
         assert "url" in sample
