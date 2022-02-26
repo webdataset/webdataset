@@ -90,7 +90,7 @@ plt.imshow(image)
 
 
 
-    <matplotlib.image.AxesImage at 0x7f85e8e355b0>
+    <matplotlib.image.AxesImage at 0x7f40849aa5b0>
 
 
 
@@ -165,7 +165,7 @@ plt.imshow(image)
 
 
 
-    <matplotlib.image.AxesImage at 0x7f85e8d889d0>
+    <matplotlib.image.AxesImage at 0x7f40848c18e0>
 
 
 
@@ -227,7 +227,7 @@ dataset = wds.WebDataset(url).shuffle(1000).decode("rgb").to_tuple("png", "json"
 dataset = dataset.compose(get_patches)
 dataset = dataset.batched(16)
 
-loader = wds.WebLoader(dataset, num_workers=4, batch_size=8)
+loader = wds.WebLoader(dataset, num_workers=4, batch_size=None)
 loader = loader.unbatched().shuffle(1000).batched(12)
 
 batch = next(iter(loader))
@@ -237,7 +237,7 @@ batch[0].shape, batch[1].shape
 
 
 
-    (torch.Size([12, 16, 256, 256, 3]), torch.Size([12, 16]))
+    (torch.Size([12, 256, 256, 3]), torch.Size([12]))
 
 
 
@@ -270,7 +270,7 @@ batch[0].shape, batch[1].shape
 
 
 
-    (torch.Size([12, 16, 256, 256, 3]), torch.Size([12, 16]))
+    (torch.Size([12, 256, 256, 3]), torch.Size([12]))
 
 
 
@@ -310,7 +310,7 @@ batch[0].shape, batch[1].shape
 
 
 
-    (torch.Size([12, 16, 256, 256, 3]), torch.Size([12, 16]))
+    (torch.Size([12, 256, 256, 3]), torch.Size([12]))
 
 
 
@@ -586,9 +586,17 @@ Webdataset can be used for filters and offline augmentation of datasets. Here is
 
 
 ```python
+from torchvision import transforms
+from itertools import islice
+
 def extract_class(data):
     # mock implementation
     return 0
+
+def preproc(image):
+    image = transforms.ToTensor()(image)
+    # more preprocessing here
+    return image
 
 def augment_wds(input, output, maxcount=999999999):
     src = wds.DataPipeline(
@@ -602,8 +610,8 @@ def augment_wds(input, output, maxcount=999999999):
         for key, image, data in islice(src, 0, maxcount):
             print(key)
             image = image.numpy().transpose(1, 2, 0)
-            image -= amin(image)
-            image /= amax(image)
+            image -= np.amin(image)
+            image /= np.amax(image)
             sample = {
                 "__key__": key,
                 "png": image,
@@ -697,8 +705,3 @@ The [tensorcom](http://github.com/tmbdev/tensorcom/) library provides fast three
 
 You can find the full PyTorch ImageNet sample code converted to WebDataset at [tmbdev/pytorch-imagenet-wds](http://github.com/tmbdev/pytorch-imagenet-wds)
 
-
-
-```python
-
-```
