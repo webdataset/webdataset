@@ -1,3 +1,4 @@
 braceexpand
 numpy
 pyyaml
+dataclasses
