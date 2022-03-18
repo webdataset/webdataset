@@ -15,6 +15,7 @@ import os
 import time
 import random
 import sys
+import fnmatch
 from functools import reduce
 
 import numpy as np
@@ -77,8 +78,9 @@ def getfirst(a, keys, default=None, missing_is_error=True):
         assert " " not in keys
         keys = keys.split(";")
     for k in keys:
-        if k in a:
-            return a[k]
+        for file in a:
+            if fnmatch.fnmatch(file, k):
+                return a[file]
     if missing_is_error:
         raise ValueError(f"didn't find {keys} in {list(a.keys())}")
     return default
