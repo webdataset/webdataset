@@ -6,7 +6,7 @@ from .handlers import reraise_exception
 from .tariterators import group_by_keys, tar_file_expander
 
 default_cache_dir = os.environ.get("WDS_CACHE", "./_cache")
-default_cache_size = float(os.environ.get("WDS_CACHE_SIZE", "1e10"))
+default_cache_size = float(os.environ.get("WDS_CACHE_SIZE", "1e18"))
 
 
 def lru_cleanup(cache_dir, cache_size, keyfn=os.path.getctime, verbose=False):
