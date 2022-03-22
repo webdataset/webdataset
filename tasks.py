@@ -83,7 +83,8 @@ def newversion(c):
 @task
 def release(c):
     "Tag the current version as a release on Github."
-    assert "working tree clean" in c.run("git status").stdout
+    if not "working tree clean" in c.run("git status").stdout:
+        input()
     version = open("VERSION").read().strip()
     os.system(f"hub release create {version}")  # interactive
 
