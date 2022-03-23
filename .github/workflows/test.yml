@@ -1,4 +1,4 @@
-name: Test
+name: Test and publish
 on: [push, pull_request]
 jobs:
   test:
@@ -15,3 +15,31 @@ jobs:
       - run: python3 -m pip install invoke
       - run: invoke virtualenv
       - run: invoke test
+  publish:
+    name: build-and-publish
+    runs-on: ubuntu-18.04
+    if: github.event_name == 'push'
+    needs: [test]
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.6", "3.7", "3.8", "3.9", "3.10"]
+    steps:
+    - uses: actions/checkout@master
+    - uses: actions/setup-python@v1
+      with:
+        python-version: ${{ matrix.python-version }}
+    - run: python -m pip install build
+    - run: python -m build
+    - name: publish to test.pypi.org
+      if: matrix.python-version == '3.9'
+      uses: pypa/gh-action-pypi-publish@master
+      with:
+        password: ${{ secrets.test_pypi_token }}
+        repository_url: https://test.pypi.org/legacy/
+      continue-on-error: true
+    - name: publish to pypi.org
+      if: matrix.python-version == '3.9' && startsWith(github.event.ref, 'refs/tags')
+      uses: pypa/gh-action-pypi-publish@master
+      with:
+        password: ${{ secrets.pypi_token }}
