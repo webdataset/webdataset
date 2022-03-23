@@ -3,11 +3,15 @@ on: [push, pull_request]
 jobs:
   test:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.6", "3.7", "3.8", "3.9", "3.10"]
     steps:
       - uses: actions/checkout@master
       - uses: actions/setup-python@v1
         with:
-          python-version: 3.9
+          python-version: ${{ matrix.python-version }}
       - run: python3 -m pip install invoke
       - run: invoke virtualenv
       - run: invoke test

@@ -1,15 +1,12 @@
 *.pyc
 _*
 !__init__.py
-.*
-!.gitignore
 __pycache___
 .ipynb_checkpoints
 OLD
 data
 models
 Untitled*.ipynb
-.*
 *.tar
 temp
 *.bak
