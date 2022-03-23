@@ -5,9 +5,9 @@ wheel
 msgpack
 cbor
 
-# torch
-# torchvision
-# torchaudio
+torch
+torchvision
+torchaudio
 jupyterlab
 pytest
 
@@ -16,7 +16,6 @@ black
 mypy
 flake8
 pydocstyle
-bandit
 
 Pillow
 numpy

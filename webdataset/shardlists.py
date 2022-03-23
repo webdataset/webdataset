@@ -92,7 +92,7 @@ def split_by_worker(src):
 def resampled_(src, n=sys.maxsize):
     import random
 
-    seed = time.time_ns()
+    seed = time.time()
     try:
         seed = open("/dev/random", "rb").read(20)
     except Exception as exn:
