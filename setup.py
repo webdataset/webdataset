@@ -15,7 +15,7 @@ if sys.version_info < (3, 6):
 scripts = []
 
 setuptools.setup(
-    name="webdataset-py36",
+    name="webdataset",
     version="0.2.4",
     description="Record sequential storage for deep learning.",
     long_description=open("README.md").read(),
