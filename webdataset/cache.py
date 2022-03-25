@@ -41,7 +41,7 @@ def download(url, dest, chunk_size=1024 ** 2, verbose=False):
     with gopen.gopen(url) as stream:
         with open(temp, "wb") as f:
             while True:
-                data = stream.read(chunk_size):
+                data = stream.read(chunk_size)
                 if not data:
                     break
                 f.write(data)
