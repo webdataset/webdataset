@@ -40,7 +40,10 @@ def download(url, dest, chunk_size=1024 ** 2, verbose=False):
     temp = dest + f".temp{os.getpid()}"
     with gopen.gopen(url) as stream:
         with open(temp, "wb") as f:
-            while data := stream.read(chunk_size):
+            while True:
+                data = stream.read(chunk_size):
+                if not data:
+                    break
                 f.write(data)
     os.rename(temp, dest)
 
