@@ -241,10 +241,8 @@ def pypitest(c):
 required_files = f"""
 .github/workflows/pypi.yml
 .github/workflows/test.yml
-.github/workflows/testpip.yml
 .githooks/pre-push
 .gitignore
-mkdocs.yml
 """.strip().split()
 
 
