@@ -34,3 +34,6 @@ pdoc
 pygments>=2.7.4 # not directly required, pinned by Snyk to avoid a vulnerability
 pytorch_lightning
 torchmore
+
+torch
+torchvision
