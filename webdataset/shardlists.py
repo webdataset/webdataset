@@ -255,9 +255,11 @@ class ResampledShards(IterableDataset):
         """Return an iterator over the shards."""
         self.epoch += 1
         if self.deterministic:
-            seed = (self.worker_seed(), self.epoch)
+            seed = utils.make_seed(self.worker_seed(), self.epoch)
         else:
-            seed = (self.worker_seed(), self.epoch, os.getpid(), time.time())
+            seed = utils.make_seed(self.worker_seed(), self.epoch, os.getpid(), time.time())
+        if os.environ.get("WDS_SHOW_SEED", "0") == "1":
+            print(f"# ResampledShards seed {seed}", file=sys.stderr)
         self.rng.seed(seed)
         for _ in range(self.nshards):
             yield dict(url=self.rng.choice(self.urls))

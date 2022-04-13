@@ -14,6 +14,13 @@ import sys
 from typing import Any, Callable, Iterator, Optional, Union
 
 
+def make_seed(*args):
+    seed = 0
+    for arg in args:
+        seed = (seed * 31 + hash(arg)) & 0x7FFFFFFF
+    return seed
+
+
 class PipelineStage:
     def invoke(self, *args, **kw):
         raise NotImplementedError
