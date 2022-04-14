@@ -70,3 +70,5 @@ from .tariterators import tarfile_samples, tarfile_to_samples
 from .utils import PipelineStage, repeatedly
 from .writer import ShardWriter, TarWriter, numpy_dumps, torch_dumps
 from .mix import RandomMix, RoundRobin
+
+__vesion__ = ""

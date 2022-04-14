@@ -41,7 +41,7 @@ def virtualenv(c):
 @task
 def minenv(c):
     "Build the virtualenv (minimal)."
-    c.run(f"git config core.hooksPath .githooks")
+    c.run("git config core.hooksPath .githooks")
     c.run(f"test -d {VENV} || python3 -m venv {VENV}")
     c.run(f"{ACTIVATE}{PIP} install -r requirements.txt")
     print("done")
@@ -56,16 +56,15 @@ def test(c):
 
 @task
 def newversion(c):
-    "Increment the version number."
-    if not "working tree clean" in c.run("git status").stdout:
+    """Increment the version number."""
+    if "working tree clean" not in c.run("git status").stdout:
         input()
     text = open("setup.py").read()
     version = re.search('version *= *"([0-9.]+)"', text).group(1)
     print("old version", version)
     text = re.sub(
         r'(version *= *"[0-9]+[.][0-9]+[.])([0-9]+)"',
-        lambda m: f'{m.group(1)}{1+int(m.group(2))}"',
-        text,
+        f'version = "{version}"',
     )
     version = re.search('version *= *"([0-9.]+)"', text).group(1)
     print("new version", version)
@@ -73,17 +72,23 @@ def newversion(c):
         stream.write(text)
     with open("VERSION", "w") as stream:
         stream.write(version)
-    c.run(f"grep 'version *=' setup.py")
-    c.run(f"git add VERSION setup.py")
-    c.run(f"git commit -m 'incremented version'")
+    text = open("webdataset/__init__.py").read()
+    text = re.sub(
+        r'__version__ *= *")([0-9]+[.][0-9]+[.])([0-9]+)"',
+        f'__version__ = "{version}"',
+    )
+    c.run("grep 'version *=' setup.py")
+    c.run("grep '__version__ *=' webdataset/__init__.py")
+    c.run("git add VERSION setup.py webdataset/__init__.py")
+    c.run("git commit -m 'incremented version'")
     # the git push will do a test
-    c.run(f"git push")
+    c.run("git push")
 
 
 @task
 def release(c):
     "Tag the current version as a release on Github."
-    if not "working tree clean" in c.run("git status").stdout:
+    if "working tree clean" not in c.run("git status").stdout:
         input()
     version = open("VERSION").read().strip()
     os.system(f"hub release create {version}")  # interactive
