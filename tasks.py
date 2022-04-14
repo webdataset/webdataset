@@ -62,20 +62,24 @@ def newversion(c):
     text = open("setup.py").read()
     version = re.search('version *= *"([0-9.]+)"', text).group(1)
     print("old version", version)
-    text = re.sub(
-        r'(version *= *"[0-9]+[.][0-9]+[.])([0-9]+)"',
-        f'version = "{version}"',
-    )
-    version = re.search('version *= *"([0-9.]+)"', text).group(1)
+    version = [int(x) for x in version.split(".")]
+    version[-1] += 1
+    version = ".".join(str(x) for x in version)
     print("new version", version)
+    text = re.sub(
+        r'version *= *"[0-9]+[.][0-9]+[.][0-9]+"',
+        f'version = "{version}"',
+        text,
+    )
     with open("setup.py", "w") as stream:
         stream.write(text)
     with open("VERSION", "w") as stream:
         stream.write(version)
     text = open("webdataset/__init__.py").read()
     text = re.sub(
-        r'__version__ *= *")([0-9]+[.][0-9]+[.])([0-9]+)"',
+        r'__version__ *= *"[0-9]+[.][0-9]+[.][0-9]+"',
         f'__version__ = "{version}"',
+        text,
     )
     c.run("grep 'version *=' setup.py")
     c.run("grep '__version__ *=' webdataset/__init__.py")
