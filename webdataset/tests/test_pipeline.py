@@ -10,6 +10,7 @@ import torch
 from torch.utils.data import DataLoader
 from io import StringIO
 import yaml
+from itertools import islice
 
 import webdataset as wds
 import webdataset.extradatasets as eds
@@ -144,6 +145,7 @@ def test_composable():
     result = list(iter(dataset))
     assert len(result) == 100
 
+
 def test_shardspec():
     dataset = wds.DataPipeline(
         wds.shardspec("testdata/imagenet-000000.tgz"),
@@ -274,13 +276,9 @@ def test_lru_cleanup(tmp_path):
         time.sleep(0.1)
     assert "000000" in os.listdir(tmp_path)
     assert "000019" in os.listdir(tmp_path)
-    total_before = sum(
-        os.path.getsize(os.path.join(tmp_path, fname)) for fname in os.listdir(tmp_path)
-    )
+    total_before = sum(os.path.getsize(os.path.join(tmp_path, fname)) for fname in os.listdir(tmp_path))
     wds.lru_cleanup(tmp_path, total_before / 2, verbose=True)
-    total_after = sum(
-        os.path.getsize(os.path.join(tmp_path, fname)) for fname in os.listdir(tmp_path)
-    )
+    total_after = sum(os.path.getsize(os.path.join(tmp_path, fname)) for fname in os.listdir(tmp_path))
     assert total_after <= total_before * 0.5
     assert "000000" not in os.listdir(tmp_path)
     assert "000019" in os.listdir(tmp_path)
@@ -442,9 +440,7 @@ def test_mock():
 
 
 def IGNORE_test_ddp_equalize():
-    ds = wds.DataPipeline(
-        wds.SimpleShardList(local_data), wds.tarfile_to_samples(), wds.ddp_equalize(773)
-    )
+    ds = wds.DataPipeline(wds.SimpleShardList(local_data), wds.tarfile_to_samples(), wds.ddp_equalize(773))
     assert count_samples_tuple(ds) == 733
 
 
@@ -468,9 +464,7 @@ def test_dataset_pipe_cat():
 
 
 def test_slice():
-    ds = wds.DataPipeline(
-        wds.SimpleShardList(local_data), wds.tarfile_to_samples(), wds.slice(10)
-    )
+    ds = wds.DataPipeline(wds.SimpleShardList(local_data), wds.tarfile_to_samples(), wds.slice(10))
     assert count_samples_tuple(ds) == 10
 
 
@@ -557,14 +551,10 @@ def test_dataset_rename_keep():
 
 def test_dataset_rsample():
 
-    ds = wds.DataPipeline(
-        wds.SimpleShardList(local_data), wds.tarfile_to_samples(), wds.rsample(1.0)
-    )
+    ds = wds.DataPipeline(wds.SimpleShardList(local_data), wds.tarfile_to_samples(), wds.rsample(1.0))
     assert count_samples_tuple(ds) == 47
 
-    ds = wds.DataPipeline(
-        wds.SimpleShardList(local_data), wds.tarfile_to_samples(), wds.rsample(0.5)
-    )
+    ds = wds.DataPipeline(wds.SimpleShardList(local_data), wds.tarfile_to_samples(), wds.rsample(0.5))
     result = [count_samples_tuple(ds) for _ in range(300)]
     assert np.mean(result) >= 0.3 * 47 and np.mean(result) <= 0.7 * 47, np.mean(result)
 
@@ -859,9 +849,7 @@ def IGNORE_test_multimode():
     urls = [local_data] * 8
     nsamples = 47 * 8
 
-    shardlist = wds.PytorchShardList(
-        urls, verbose=True, epoch_shuffle=True, shuffle=True
-    )
+    shardlist = wds.PytorchShardList(urls, verbose=True, epoch_shuffle=True, shuffle=True)
     os.environ["WDS_EPOCH"] = "7"
     ds = wds.WebDataset(shardlist)
     dl = torch.utils.data.DataLoader(ds, num_workers=4)
@@ -880,6 +868,16 @@ def IGNORE_test_multimode():
     dl = torch.utils.data.DataLoader(ds, num_workers=4)
     count = count_samples_tuple(dl)
     assert count == 170 * 4, count
+
+
+def test_resampled_initialization():
+    shardlist = shardlists.ResampledShards([str(i) for i in range(100000)])
+    list1 = [x for x in islice(shardlist, 0, 10)]
+    list2 = [x for x in islice(shardlist, 0, 10)]
+    assert list1 != list2
+    shardlist2 = shardlists.ResampledShards([str(i) for i in range(100000)])
+    list3 = [x for x in islice(shardlist2, 0, 10)]
+    assert list1 != list3
 
 
 def test_decode_handlers():
@@ -931,9 +929,7 @@ def test_torchvision():
     import torch
     from torchvision import transforms
 
-    normalize = transforms.Normalize(
-        mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
-    )
+    normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
     preproc = transforms.Compose(
         [
             transforms.RandomResizedCrop(224),
@@ -960,9 +956,7 @@ def test_batched():
     import torch
     from torchvision import transforms
 
-    normalize = transforms.Normalize(
-        mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
-    )
+    normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
     preproc = transforms.Compose(
         [
             transforms.RandomResizedCrop(224),
@@ -991,9 +985,7 @@ def test_unbatched():
     import torch
     from torchvision import transforms
 
-    normalize = transforms.Normalize(
-        mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
-    )
+    normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
     preproc = transforms.Compose(
         [
             transforms.RandomResizedCrop(224),

@@ -18,6 +18,7 @@ def make_seed(*args):
     seed = 0
     for arg in args:
         seed = (seed * 31 + hash(arg)) & 0x7FFFFFFF
+        print("...", arg, seed)
     return seed
 
 
