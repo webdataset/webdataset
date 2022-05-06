@@ -43,7 +43,7 @@ def imageencoder(image: Any, format: str = "PNG"):  # skipcq: PYL-W0622
         format = "JPEG"
     elif format.upper() in ["IMG", "IMAGE"]:
         format = "PPM"
-    if format == "JPEG":
+    if format in ["JPEG", "tiff"]:
         opts = dict(quality=100)
     else:
         opts = {}
@@ -157,6 +157,7 @@ def make_handlers():
     add_handlers(handlers, "pbm", lambda data: imageencoder(data, "pbm"))
     add_handlers(handlers, "pgm", lambda data: imageencoder(data, "pgm"))
     add_handlers(handlers, "ppm", lambda data: imageencoder(data, "ppm"))
+    add_handlers(handlers, "tiff tif", lambda data: imageencoder(data, "tiff"))
     return handlers
 
 
