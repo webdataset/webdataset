@@ -32,6 +32,7 @@ from .filters import (
     batched,
     decode,
     detshuffle,
+    extract_keys,
     getfirst,
     info,
     map,
@@ -39,6 +40,7 @@ from .filters import (
     map_tuple,
     pipelinefilter,
     rename,
+    rename_keys,
     rsample,
     select,
     shuffle,
@@ -46,6 +48,7 @@ from .filters import (
     to_tuple,
     transform_with,
     unbatched,
+    xdecode,
 )
 from .handlers import (
     ignore_and_continue,

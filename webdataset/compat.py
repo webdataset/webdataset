@@ -62,6 +62,15 @@ class FluidInterface:
     def rsample(self, p=0.5):
         return self.compose(filters.rsample(p))
 
+    def rename_keys(self, *args, **kw):
+        return self.compose(filters.rename_keys(*args, **kw))
+
+    def extract_keys(self, *args, **kw):
+        return self.compose(filters.extract_keys(*args, **kw))
+
+    def xdecode(self, *args, **kw):
+        return self.compose(filters.xdecode(*args, **kw))
+
 
 class WebDataset(DataPipeline, FluidInterface):
     """Small fluid-interface wrapper for DataPipeline."""

@@ -11,6 +11,7 @@ from torch.utils.data import DataLoader
 from io import StringIO
 import yaml
 from itertools import islice
+from imageio import imread
 
 import webdataset as wds
 import webdataset.extradatasets as eds
@@ -151,6 +152,28 @@ def test_shardspec():
         wds.shardspec("testdata/imagenet-000000.tgz"),
         wds.tarfile_samples,
         wds.decode(autodecode.ImageHandler("rgb")),
+    )
+    result = list(iter(dataset))
+    keys = list(result[0].keys())
+    assert "__key__" in keys
+    assert "__url__" in keys
+    assert "cls" in keys
+    assert "png" in keys
+    assert isinstance(result[0]["cls"], int)
+    assert isinstance(result[0]["png"], np.ndarray)
+    assert result[0]["png"].shape == (793, 600, 3)
+    assert len(result) == 47
+
+
+def test_xdecode():
+    dataset = wds.DataPipeline(
+        wds.shardspec("testdata/imagenet-000000.tgz"),
+        wds.tarfile_samples,
+        wds.xdecode(
+            png=imread,
+            cls=lambda stream: int(stream.read()),
+            must_decode=False,
+        )
     )
     result = list(iter(dataset))
     keys = list(result[0].keys())
@@ -463,6 +486,16 @@ def test_dataset_pipe_cat():
     assert count_samples_tuple(ds) == 47
 
 
+def test_dataset_extract_keys():
+    ds = wds.DataPipeline(
+        wds.SimpleShardList(local_data),
+        wds.tarfile_to_samples(),
+        wds.shuffle(5),
+        wds.extract_keys("*.png;*.jpg", "*.cls"),
+    )
+    assert count_samples_tuple(ds) == 47
+
+
 def test_slice():
     ds = wds.DataPipeline(wds.SimpleShardList(local_data), wds.tarfile_to_samples(), wds.slice(10))
     assert count_samples_tuple(ds) == 10
@@ -544,6 +577,16 @@ def test_dataset_rename_keep():
         wds.SimpleShardList(local_data),
         wds.tarfile_to_samples(),
         wds.rename(image="png"),
+    )
+    sample = next(iter(ds))
+    assert getkeys(sample) == set("cls image wnid xml".split()), getkeys(sample)
+
+
+def test_dataset_rename_keys():
+    ds = wds.DataPipeline(
+        wds.SimpleShardList(local_data),
+        wds.tarfile_to_samples(),
+        wds.rename_keys(image="png", keep_unselected=True),
     )
     sample = next(iter(ds))
     assert getkeys(sample) == set("cls image wnid xml".split()), getkeys(sample)
