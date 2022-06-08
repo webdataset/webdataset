@@ -337,7 +337,9 @@ Examples: (NB: some of these are for older versions of WebDataset, but the diffe
 
 # Dependencies
 
-The WebDataset library only requires PyTorch, NumPy, and a small library called `braceexpand`.
+The WebDataset library only requires NumPy, and a small library called `braceexpand.
+
+WebDataset is usually used with PyTorch, but you can use it with Tensorflow, Jax, or any other machine learning project.
 
 WebDataset loads a few additional libraries dynamically only when they are actually needed and only in the decoder:
 
