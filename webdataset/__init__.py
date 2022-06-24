@@ -7,8 +7,6 @@
 
 """Exported globals for webdataset library."""
 
-import pkg_resources
-
 from . import tenbin
 from .autodecode import (
     Continue,
@@ -76,4 +74,14 @@ from .utils import PipelineStage, repeatedly
 from .writer import ShardWriter, TarWriter, numpy_dumps, torch_dumps
 from .mix import RandomMix, RoundRobin
 
-__version__ = pkg_resources.require("webdataset")[0].version
+try:
+    import pkg_resources
+    __version__ = pkg_resources.require("webdataset")[0].version
+except (ImportError, ModuleNotFoundError):
+    import warnings
+    warnings.warn(
+        "Could not infer version information of webdataset package",
+        RuntimeWarning
+    )
+    __version__ = None
+
