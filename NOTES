@@ -1,2 +1,4 @@
+
+0.2.14
 - improved error messages
 - fixed rng initialization in detshuffle
