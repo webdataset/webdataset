@@ -230,7 +230,7 @@ class detshuffle(PipelineStage):
     def run(self, src):
         self.epoch += 1
         rng = random.Random()
-        rng.seed((self.seed, self.epoch))
+        rng.seed(self.seed + self.epoch)
         return _shuffle(src, self.bufsize, self.initial, rng)
 
 

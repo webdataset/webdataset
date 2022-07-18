@@ -72,7 +72,7 @@ def split_by_node(src, group=None):
 def single_node_only(src, group=None):
     rank, world_size, worker, num_workers = utils.pytorch_worker_info(group=group)
     if world_size > 1:
-        raise ValueError("input pipeline needs to be reconfigured for multinode training")
+        raise ValueError("you need to add an explicit node splitter to your input pipeline for multi-node training")
     for s in src:
         yield s
 

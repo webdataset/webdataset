@@ -1,0 +1,2 @@
+- improved error messages
+- fixed rng initialization in detshuffle
