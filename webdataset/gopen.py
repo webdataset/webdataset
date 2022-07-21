@@ -114,9 +114,7 @@ class Pipe:
         self.close()
 
 
-def set_options(
-    obj, timeout=None, ignore_errors=None, ignore_status=None, handler=None
-):
+def set_options(obj, timeout=None, ignore_errors=None, ignore_status=None, handler=None):
     """Set options for Pipes.
 
     This function can be called on any stream. It will set pipe options only
@@ -234,7 +232,6 @@ def gopen_htgs(url, mode="rb", bufsize=8192):
         raise ValueError(f"{mode}: unknown mode")
 
 
-
 def gopen_gsutil(url, mode="rb", bufsize=8192):
     """Open a URL with `curl`.
 
@@ -264,6 +261,34 @@ def gopen_gsutil(url, mode="rb", bufsize=8192):
         raise ValueError(f"{mode}: unknown mode")
 
 
+def gopen_ais(url, mode="rb", bufsize=8192):
+    """Open a URL with `curl`.
+
+    :param url: url (usually, http:// etc.)
+    :param mode: file mode
+    :param bufsize: buffer size
+    """
+    if mode[0] == "r":
+        cmd = f"ais get '{url}' -"
+        return Pipe(
+            cmd,
+            mode=mode,
+            shell=True,
+            bufsize=bufsize,
+            ignore_status=[141, 23],
+        )  # skipcq: BAN-B604
+    elif mode[0] == "w":
+        cmd = f"ais put - '{url}'"
+        return Pipe(
+            cmd,
+            mode=mode,
+            shell=True,
+            bufsize=bufsize,
+            ignore_status=[141, 26],
+        )  # skipcq: BAN-B604
+    else:
+        raise ValueError(f"{mode}: unknown mode")
+
 
 def gopen_error(url, *args, **kw):
     """Raise a value error.
@@ -281,6 +306,7 @@ gopen_schemes = dict(
     pipe=gopen_pipe,
     http=gopen_curl,
     https=gopen_curl,
+    ais=gopen_ais,
     sftp=gopen_curl,
     ftps=gopen_curl,
     scp=gopen_curl,
