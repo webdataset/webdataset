@@ -263,7 +263,7 @@ dataset = wds.DataPipeline(
     wds.batched(16)
 )
 
-batch = next(iter(loader))
+batch = next(iter(dataset))
 batch[0].shape, batch[1].shape
 ```
 
