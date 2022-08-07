@@ -314,6 +314,10 @@ gopen_schemes = dict(
     htgs=gopen_htgs,
 )
 
+if "USE_AIS_FOR" in os.environ:
+    for proto in os.environ["USE_AIS_FOR"].split(":"):
+        gopen_schemes[proto] = gopen_ais
+
 
 def gopen(url, mode="rb", bufsize=8192, **kw):
     """Open the URL.
@@ -326,8 +330,11 @@ def gopen(url, mode="rb", bufsize=8192, **kw):
 
     When no scheme is given the url is treated as a file.
 
-    You can use the OPEN_VERBOSE argument to get info about
+    You can use the GOPEN_VERBOSE argument to get info about
     files being opened.
+
+    YOu can use the USE_AIS_FOR=aws:gs:s3 to use AIS (and its cache)
+    to access urls via the "ais" command.
 
     :param url: the source URL
     :param mode: the mode ("rb", "r")
