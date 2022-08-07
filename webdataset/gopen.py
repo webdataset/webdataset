@@ -320,16 +320,16 @@ if "USE_AIS_FOR" in os.environ:
 
 
 def rewrite_url(url):
-    name = "GOPEN_REPLACE"
+    name = "GOPEN_REWRITE"
     verbose = int(os.environ.get("GOPEN_VERBOSE", 0))
     if name not in os.environ:
         return url
-    for r in os.environ[name].split(":"):
+    for r in os.environ[name].split(";"):
         k, v = r.split("=", 1)
         nurl = re.sub("^"+k, v, url)
         if nurl != url:
             if verbose:
-                print(f"GOPEN REPLACED {url} -> {nurl}")
+                print(f"GOPEN REWRITE {url} -> {nurl}")
             return nurl
     return url
 
