@@ -319,6 +319,21 @@ if "USE_AIS_FOR" in os.environ:
         gopen_schemes[proto] = gopen_ais
 
 
+def rewrite_url(url):
+    name = "GOPEN_REPLACE"
+    verbose = int(os.environ.get("GOPEN_VERBOSE", 0))
+    if name not in os.environ:
+        return url
+    for r in os.environ[name].split(":"):
+        k, v = r.split("=", 1)
+        nurl = re.sub("^"+k, v, url)
+        if nurl != url:
+            if verbose:
+                print(f"GOPEN REPLACED {url} -> {nurl}")
+            return nurl
+    return url
+
+
 def gopen(url, mode="rb", bufsize=8192, **kw):
     """Open the URL.
 
@@ -352,6 +367,7 @@ def gopen(url, mode="rb", bufsize=8192, **kw):
             return sys.stdout.buffer
         else:
             raise ValueError(f"unknown mode {mode}")
+    url = rewrite_url(url)
     pr = urlparse(url)
     if pr.scheme == "":
         bufsize = int(os.environ.get("GOPEN_BUFFER", -1))
