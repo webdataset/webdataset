@@ -467,6 +467,31 @@ Here are different usage scenarios:
 
 WebDataset makes it easy to use a single specification for your datasets and run your code without change in different environments.
 
+## Loadable Dataset Specifications
+
+If you write your input pipelines such that they are defined by a dataset specification in some language, you can most easily retarget your training pipelines to different datasets. You can do this either by dynamically loading the Python code that constructs the pipeline or by using a YAML/JSON dataset specification. 
+
+A YAML dataset specification looks like this:
+
+```
+dataset:
+  - shards: gs://nvdata-ocropus-tess/ia1-{000000..000033}.tar
+    scaleprob: 0.3
+  - shards: gs://nvdata-ocropus-tess/cdipsub-{000000..000022}.tar
+    scale: [1.0, 3.0]
+  - shards: gs://nvdata-ocropus-tess/gsub-{000000..000167}.tar
+    scale: [0.4, 1.0]
+  - shards: gs://nvdata-ocropus-tess/bin-gsub-{000000..000167}.tar
+    extensions: nrm.jpg
+    scale: [0.3, 1.0]
+  - shards: gs://nvdata-ocropus/rendered.tar
+    scaleprob: 1.0
+```
+
+Note that datasets can be composed from different shard collections, mixed in different proportions.
+
+The dataset specification reader will be integrated in the next minor version update.
+
 ## AIStore Proxy
 
 
