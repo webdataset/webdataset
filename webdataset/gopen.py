@@ -314,6 +314,25 @@ gopen_schemes = dict(
     htgs=gopen_htgs,
 )
 
+if "USE_AIS_FOR" in os.environ:
+    for proto in os.environ["USE_AIS_FOR"].split(":"):
+        gopen_schemes[proto] = gopen_ais
+
+
+def rewrite_url(url):
+    name = "GOPEN_REWRITE"
+    verbose = int(os.environ.get("GOPEN_VERBOSE", 0))
+    if name not in os.environ:
+        return url
+    for r in os.environ[name].split(";"):
+        k, v = r.split("=", 1)
+        nurl = re.sub("^"+k, v, url)
+        if nurl != url:
+            if verbose:
+                print(f"GOPEN REWRITE {url} -> {nurl}")
+            return nurl
+    return url
+
 
 def gopen(url, mode="rb", bufsize=8192, **kw):
     """Open the URL.
@@ -326,8 +345,11 @@ def gopen(url, mode="rb", bufsize=8192, **kw):
 
     When no scheme is given the url is treated as a file.
 
-    You can use the OPEN_VERBOSE argument to get info about
+    You can use the GOPEN_VERBOSE argument to get info about
     files being opened.
+
+    YOu can use the USE_AIS_FOR=aws:gs:s3 to use AIS (and its cache)
+    to access urls via the "ais" command.
 
     :param url: the source URL
     :param mode: the mode ("rb", "r")
@@ -345,6 +367,7 @@ def gopen(url, mode="rb", bufsize=8192, **kw):
             return sys.stdout.buffer
         else:
             raise ValueError(f"unknown mode {mode}")
+    url = rewrite_url(url)
     pr = urlparse(url)
     if pr.scheme == "":
         bufsize = int(os.environ.get("GOPEN_BUFFER", -1))
