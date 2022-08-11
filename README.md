@@ -337,9 +337,7 @@ Examples: (NB: some of these are for older versions of WebDataset, but the diffe
 
 # Dependencies
 
-The WebDataset library only requires NumPy, and a small library called `braceexpand.
-
-WebDataset is usually used with PyTorch, but you can use it with Tensorflow, Jax, or any other machine learning project.
+The WebDataset library only requires PyTorch, NumPy, and a small library called `braceexpand`.
 
 WebDataset loads a few additional libraries dynamically only when they are actually needed and only in the decoder:
 
@@ -464,6 +462,43 @@ Here are different usage scenarios:
 - **on premises training with slower object stores and/or slower networks**
     - use automatic shard caching
     
+
+# Location Independence, Caching, Etc.
+
+WebDataset makes it easy to use a single specification for your datasets and run your code without change in different environments.
+
+## AIStore Proxy
+
+
+If you want to use an AISTore server as a cache, you can tell any WebDataset pipeline to replace direct accesses to your URLs to proxied accesses via the AIStore server. To do that, you need to set a couple of environment variables.
+
+```
+export AIS_ENDPOINT=http://nix:51080
+export USE_AIS_FOR="gs"
+```
+
+Now, any accesses to Google Cloud Storage (`gs://` urls) will be routed through the AIS server.
+
+## URL Rewriting
+
+You can rewrite URLs using regular expressions via an environment variable; the syntax is `WDS_REWRITE=regex=regex;regex=regex`.
+
+For example, to replace `gs://` accesses with local file accesses, use
+
+```
+export WDS_REWRITE="gs://=/shared/data/"
+```
+
+To access Google cloud data via ssh, you might use something like:
+
+```
+export WDS_REWRITE="gs://=pipe:ssh proxyhost gsutil cat "
+```
+
+## Use the Caching Mechanism
+
+If you use the built-in caching mechanism, you can simply download shards to a local directory and specify that directory as the cache directory. The shards in that directory will override the shards that are being downloaded. Shards in the cache are mapped based on the pathname and file name of your shard names.
+
 
 ## Direct Copying of Shards
 
