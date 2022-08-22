@@ -1142,3 +1142,11 @@ def test_lmdb_cached(tmp_path):
     result2 = list(iter(dataset))
     assert os.path.exists(dest)
     assert len(result1) == len(result2)
+    del dataset
+    dataset = wds.DataPipeline(
+        wds.SimpleShardList([shardname]),
+        wds.tarfile_to_samples(),
+        wds.LMDBCached(dest),
+    )
+    result3 = list(iter(dataset))
+    assert len(result1) == len(result3)

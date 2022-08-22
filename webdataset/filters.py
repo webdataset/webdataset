@@ -317,7 +317,9 @@ def _rename(data, handler=reraise_exception, keep=True, **kw):
     for sample in data:
         try:
             if not keep:
-                yield {k: getfirst(sample, v, missing_is_error=True) for k, v in kw.items()}
+                yield {
+                    k: getfirst(sample, v, missing_is_error=True) for k, v in kw.items()
+                }
             else:
 
                 def listify(v):
@@ -325,7 +327,12 @@ def _rename(data, handler=reraise_exception, keep=True, **kw):
 
                 to_be_replaced = {x for v in kw.values() for x in listify(v)}
                 result = {k: v for k, v in sample.items() if k not in to_be_replaced}
-                result.update({k: getfirst(sample, v, missing_is_error=True) for k, v in kw.items()})
+                result.update(
+                    {
+                        k: getfirst(sample, v, missing_is_error=True)
+                        for k, v in kw.items()
+                    }
+                )
                 yield result
         except Exception as exn:
             if handler(exn):
@@ -373,7 +380,9 @@ def _map_dict(data, handler=reraise_exception, **kw):
 map_dict = pipelinefilter(_map_dict)
 
 
-def _to_tuple(data, *args, handler=reraise_exception, missing_is_error=True, none_is_error=None):
+def _to_tuple(
+    data, *args, handler=reraise_exception, missing_is_error=True, none_is_error=None
+):
     """Convert dict samples to tuples."""
     if none_is_error is None:
         none_is_error = missing_is_error
@@ -382,7 +391,9 @@ def _to_tuple(data, *args, handler=reraise_exception, missing_is_error=True, non
 
     for sample in data:
         try:
-            result = tuple([getfirst(sample, f, missing_is_error=missing_is_error) for f in args])
+            result = tuple(
+                [getfirst(sample, f, missing_is_error=missing_is_error) for f in args]
+            )
             if none_is_error and any(x is None for x in result):
                 raise ValueError(f"to_tuple {args} got {sample.keys()}")
             yield result
@@ -527,14 +538,20 @@ def _extract_keys(source, *patterns, duplicate_is_error=True, ignore_missing=Fal
         result = []
         for pattern in patterns:
             pattern = pattern.split(";") if isinstance(pattern, str) else pattern
-            matches = [x for x in sample.keys() if any(fnmatch("." + x, p) for p in pattern)]
+            matches = [
+                x for x in sample.keys() if any(fnmatch("." + x, p) for p in pattern)
+            ]
             if len(matches) == 0:
                 if ignore_missing:
                     continue
                 else:
-                    raise ValueError(f"Cannot find {pattern} in sample keys {sample.keys()}.")
+                    raise ValueError(
+                        f"Cannot find {pattern} in sample keys {sample.keys()}."
+                    )
             if len(matches) > 1 and duplicate_is_error:
-                raise ValueError(f"Multiple sample keys {sample.keys()} match {pattern}.")
+                raise ValueError(
+                    f"Multiple sample keys {sample.keys()} match {pattern}."
+                )
             value = sample[matches[0]]
             result.append(value)
         yield tuple(result)
@@ -543,7 +560,9 @@ def _extract_keys(source, *patterns, duplicate_is_error=True, ignore_missing=Fal
 extract_keys = pipelinefilter(_extract_keys)
 
 
-def _rename_keys(source, *args, keep_unselected=False, must_match=True, duplicate_is_error=True, **kw):
+def _rename_keys(
+    source, *args, keep_unselected=False, must_match=True, duplicate_is_error=True, **kw
+):
     renamings = [(pattern, output) for output, pattern in args]
     renamings += [(pattern, output) for output, pattern in kw.items()]
     for sample in source:
@@ -563,11 +582,15 @@ def _rename_keys(source, *args, keep_unselected=False, must_match=True, duplicat
                 continue
             if new_name in new_sample:
                 if duplicate_is_error:
-                    raise ValueError(f"Duplicate value in sample {sample.keys()} after rename.")
+                    raise ValueError(
+                        f"Duplicate value in sample {sample.keys()} after rename."
+                    )
                 continue
             new_sample[new_name] = value
         if must_match and not all(matched.values()):
-            raise ValueError(f"Not all patterns ({matched}) matched sample keys ({sample.keys()}).")
+            raise ValueError(
+                f"Not all patterns ({matched}) matched sample keys ({sample.keys()})."
+            )
 
         yield new_sample
 
@@ -634,13 +657,15 @@ def _xdecode(
             new_sample[path] = value
         yield new_sample
 
+
 xdecode = pipelinefilter(_xdecode)
+
 
 class Cached(PipelineStage):
     def __init__(self):
         super().__init__()
         self.cached = None
-        
+
     def run(self, source):
         if self.cached is None:
             self.temp = []
@@ -652,17 +677,18 @@ class Cached(PipelineStage):
             for sample in self.cached:
                 yield sample
 
-class LMDBCached(PipelineStage):
 
+class LMDBCached(PipelineStage):
     def __init__(self, fname, map_size=1e12, pickler=pickle, chunksize=500):
         import lmdb
+
         self.db = lmdb.open(fname, readonly=False, map_size=int(map_size))
         self.pickler = pickler
         self.chunksize = chunksize
 
     def is_complete(self):
-        with self.db.begin() as txn:
-            return txn.get(b'_') is not None
+        with self.db.begin(write=False) as txn:
+            return txn.get(b"_") is not None
 
     def add_samples(self, samples):
         with self.db.begin(write=True) as txn:
@@ -688,4 +714,4 @@ class LMDBCached(PipelineStage):
             if len(buffer) > 0:
                 self.add_samples(buffer)
             with self.db.begin(write=True) as txn:
-                txn.put(b'_', b'1')
+                txn.put(b"_", b"1")

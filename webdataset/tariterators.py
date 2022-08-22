@@ -78,9 +78,7 @@ def url_opener(data, handler=reraise_exception, **kw):
                 break
 
 
-def tar_file_iterator(
-    fileobj, skip_meta=r"__[^/]*__($|/)", handler=reraise_exception
-):
+def tar_file_iterator(fileobj, skip_meta=r"__[^/]*__($|/)", handler=reraise_exception):
     """Iterate over tar file, yielding filename, content pairs for the given tar stream.
 
     :param fileobj: byte stream suitable for tarfile

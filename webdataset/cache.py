@@ -35,7 +35,7 @@ def lru_cleanup(cache_dir, cache_size, keyfn=os.path.getctime, verbose=False):
         os.remove(fname)
 
 
-def download(url, dest, chunk_size=1024 ** 2, verbose=False):
+def download(url, dest, chunk_size=1024**2, verbose=False):
     """Download a file from `url` to `dest`."""
     temp = dest + f".temp{os.getpid()}"
     with gopen.gopen(url) as stream:
