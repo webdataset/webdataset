@@ -95,7 +95,8 @@ def release(c):
     if "working tree clean" not in c.run("git status").stdout:
         input()
     version = open("VERSION").read().strip()
-    os.system(f"hub release create {version}")  # interactive
+    # os.system(f"hub release create {version}")  # interactive
+    os.system(f"gh release create {version}")  # interactive
 
 
 @task
