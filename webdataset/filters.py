@@ -16,6 +16,7 @@ from fnmatch import fnmatch
 import re
 import itertools, os, random, sys, time
 from functools import reduce, wraps
+import pickle
 
 import numpy as np
 
@@ -634,3 +635,57 @@ def _xdecode(
         yield new_sample
 
 xdecode = pipelinefilter(_xdecode)
+
+class Cached(PipelineStage):
+    def __init__(self):
+        super().__init__()
+        self.cached = None
+        
+    def run(self, source):
+        if self.cached is None:
+            self.temp = []
+            for sample in source:
+                self.temp.append(sample)
+                yield sample
+            self.cached = self.temp
+        else:
+            for sample in self.cached:
+                yield sample
+
+class LMDBCached(PipelineStage):
+
+    def __init__(self, fname, map_size=1e12, pickler=pickle, chunksize=500):
+        import lmdb
+        self.db = lmdb.open(fname, readonly=False, map_size=int(map_size))
+        self.pickler = pickler
+        self.chunksize = chunksize
+
+    def is_complete(self):
+        with self.db.begin() as txn:
+            return txn.get(b'_') is not None
+
+    def add_samples(self, samples):
+        with self.db.begin(write=True) as txn:
+            for key, sample in samples:
+                txn.put(key.encode(), self.pickler.dumps(sample))
+
+    def run(self, source):
+        if self.is_complete():
+            with self.db.begin(write=False) as txn:
+                for key, value in txn.cursor():
+                    if key == b"_":
+                        continue
+                    yield self.pickler.loads(value)
+        else:
+            buffer = []
+            for i, sample in enumerate(source):
+                key = (isinstance(sample, dict) and sample.get("__key__")) or str(i)
+                buffer.append((key, sample))
+                if len(buffer) >= self.chunksize:
+                    self.add_samples(buffer)
+                    buffer = []
+                yield sample
+            if len(buffer) > 0:
+                self.add_samples(buffer)
+            with self.db.begin(write=True) as txn:
+                txn.put(b'_', b'1')
