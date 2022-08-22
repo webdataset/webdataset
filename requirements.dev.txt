@@ -5,6 +5,8 @@ wheel
 msgpack
 cbor
 
+lmdb
+
 # torch
 # torchvision
 # torchaudio

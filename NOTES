@@ -1,6 +1,14 @@
+0.2.18
+- added Cached and LMDBCached (to simplify use with small datasets)
+- added ais: URL scheme
+- added GOPEN_REWRITE environment variable to allow rewriting of URLs prior to opening
+- added USE_AIS_FOR environment variable to allow proxying of gs/s3 through AIStore
+
 0.2.15
 - added ais: back in again
 
 0.2.14
 - improved error messages
 - fixed rng initialization in detshuffle
+
+
