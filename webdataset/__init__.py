@@ -30,6 +30,8 @@ from .extradatasets import MockDataset, with_epoch, with_length
 from .filters import (
     associate,
     batched,
+    Cached,
+    LMDBCached,
     decode,
     detshuffle,
     extract_keys,

@@ -71,11 +71,11 @@ class FluidInterface:
     def xdecode(self, *args, **kw):
         return self.compose(filters.xdecode(*args, **kw))
 
-    def mcache(self):
+    def mcached(self):
         return self.compose(filters.Cached())
 
-    def lmdb_cache(self, *args, **kw):
-        return self.compose(filters.LMDBCache(*args, **kw))
+    def lmdb_cached(self, *args, **kw):
+        return self.compose(filters.LMDBCached(*args, **kw))
 
 
 class WebDataset(DataPipeline, FluidInterface):

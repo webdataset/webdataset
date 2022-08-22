@@ -1114,3 +1114,31 @@ def test_webloader2():
     )
     nsamples = count_samples_tuple(dl)
     assert nsamples == 45, nsamples
+
+
+def test_mcached():
+    shardname = "testdata/imagenet-000000.tgz"
+    dataset = wds.DataPipeline(
+        wds.SimpleShardList([shardname]),
+        wds.tarfile_to_samples(),
+        wds.Cached(),
+    )
+    result1 = list(iter(dataset))
+    result2 = list(iter(dataset))
+    assert len(result1) == len(result2)
+
+
+def test_lmdb_cached(tmp_path):
+    shardname = "testdata/imagenet-000000.tgz"
+    dest = os.path.join(tmp_path, "test.lmdb")
+    assert not os.path.exists(dest)
+    dataset = wds.DataPipeline(
+        wds.SimpleShardList([shardname]),
+        wds.tarfile_to_samples(),
+        wds.LMDBCached(dest),
+    )
+    result1 = list(iter(dataset))
+    assert os.path.exists(dest)
+    result2 = list(iter(dataset))
+    assert os.path.exists(dest)
+    assert len(result1) == len(result2)
