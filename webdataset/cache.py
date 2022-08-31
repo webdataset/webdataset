@@ -3,7 +3,7 @@ from urllib.parse import urlparse
 
 from . import filters, gopen
 from .handlers import reraise_exception
-from .tariterators import group_by_keys, tar_file_expander
+from .tariterators import group_by_keys, tar_file_expander, tarfile_to_samples
 
 default_cache_dir = os.environ.get("WDS_CACHE", "./_cache")
 default_cache_size = float(os.environ.get("WDS_CACHE_SIZE", "1e18"))
@@ -184,3 +184,25 @@ def cached_tarfile_samples(
 
 
 cached_tarfile_to_samples = filters.pipelinefilter(cached_tarfile_samples)
+
+def maybe_cached_tarfile_to_samples(
+    src,
+    handler=reraise_exception,
+    cache_size=-1,
+    cache_dir=None,
+    verbose=False,
+    url_to_name=pipe_cleaner,
+    always=False,
+):
+    """Either read from a tarfile or from a cache of tarfiles."""
+    if cache_dir is None or cache_size == 1:
+        return tarfile_to_samples(handler=handler)
+    else:
+        return cached_tarfile_to_samples(
+            handler=handler,
+            cache_size=cache_size,
+            cache_dir=cache_dir,
+            verbose=verbose,
+            url_to_name=url_to_name,
+            always=always,
+        )

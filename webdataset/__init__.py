@@ -21,6 +21,7 @@ from .autodecode import (
 from .cache import (
     cached_tarfile_samples,
     cached_tarfile_to_samples,
+    maybe_cached_tarfile_to_samples,
     lru_cleanup,
     pipe_cleaner,
 )
