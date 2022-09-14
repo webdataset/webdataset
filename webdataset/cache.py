@@ -169,6 +169,7 @@ def cached_tarfile_samples(
     url_to_name=pipe_cleaner,
     always=False,
 ):
+    verbose = verbose or int(os.envrion.get("GOPEN_VERBOSE", 0))
     streams = cached_url_opener(
         src,
         handler=handler,
