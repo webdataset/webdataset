@@ -77,4 +77,4 @@ from .utils import PipelineStage, repeatedly
 from .writer import ShardWriter, TarWriter, numpy_dumps, torch_dumps
 from .mix import RandomMix, RoundRobin
 
-__vesion__ = ""
+__version__ = ""
