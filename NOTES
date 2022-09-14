@@ -1,3 +1,6 @@
+0.2.22
+- GOPEN_VERBOSE now works for cache
+
 0.2.20
 - added maybe_cached_tarfile_to_samples for simple pipeline building with caches
 
