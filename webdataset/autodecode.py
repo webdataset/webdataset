@@ -227,28 +227,55 @@ class ImageHandler:
             img = PIL.Image.open(stream)
             img.load()
             img = img.convert(mode.upper())
+
         if atype == "pil":
-            return img
-        elif atype == "numpy":
-            result = np.asarray(img)
-            if result.dtype != np.uint8:
-                raise ValueError("ImageHandler: numpy image must be uint8")
-            if etype == "uint8":
-                return result
+            if mode == "l":
+                img = img.convert("L")
+                return img
+            elif mode == "rgb":
+                img = img.convert("RGB")
+                return img
+            elif mode == "rgba":
+                img = img.convert("RGBA")
+                return img
             else:
-                return result.astype("f") / 255.0
+                raise ValueError("Unknown mode: %s" % mode)
+
+        result = result = np.asarray(img)
+
+        if etype == "float":
+            result = result.astype(np.float32) / 255.0
+
+        assert result.ndim in [2, 3], result.shape
+        assert mode in ["l", "rgb", "rgba"], mode
+
+        if mode == "l":
+            if result.ndim == 3:
+                result = np.mean(result[:, :, :3], axis=2)
+        elif mode == "rgb":
+            if result.ndim == 2:
+                result = np.repeat(result[:, :, np.newaxis], 3, axis=2)
+            elif result.shape[2] == 4:
+                result = result[:, :, :3]
+        elif mode == "rgba":
+            if result.ndim == 2:
+                result = np.repeat(result[:, :, np.newaxis], 4, axis=2)
+                result[:, :, 3] = 255
+            elif result.shape[2] == 3:
+                result = np.concatenate([result, 255 * np.ones(result.shape[:2])], axis=2)
+
+        assert atype in ["numpy", "torch"], atype
+
+        if atype == "numpy":
+            return result
         elif atype == "torch":
             import torch
 
-            result = np.asarray(img)
-            if result.dtype != np.uint8:
-                raise ValueError("ImageHandler: torch image must be uint8")
-            if etype == "uint8":
-                result = np.array(result.transpose(2, 0, 1))
-                return torch.tensor(result)
+            if result.ndim == 3:
+                return torch.from_numpy(result.transpose(2, 0, 1))
             else:
-                result = np.array(result.transpose(2, 0, 1))
-                return torch.tensor(result) / 255.0
+                return torch.from_numpy(result)
+
         return None
 
 

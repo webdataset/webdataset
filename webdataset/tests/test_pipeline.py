@@ -290,6 +290,41 @@ def test_cached(tmp_path):
     assert len(result) == 470
 
 
+def test_decoders():
+    ref = None
+    for spec in autodecode.imagespecs.keys():
+        print(spec)
+        shardname = "testdata/imagenet-000000.tgz"
+        dataset = wds.DataPipeline(
+            wds.SimpleShardList([shardname]),
+            wds.tarfile_to_samples(),
+            wds.decode(autodecode.ImageHandler(spec)),
+            wds.to_tuple("png", "cls"),
+        )
+        out = list(iter(dataset))
+        if "8" in spec:
+            for x in out:
+                assert x[0].dtype in [np.uint8, torch.uint8], (x[0].dtype, spec)
+        elif not spec.startswith("pil"):
+            for x in out:
+                assert x[0].dtype in [np.float32, torch.float32], (x[0].dtype, spec)
+        if spec in ["l", "l8", "torchl", "torchl8"]:
+            for x in out:
+                assert x[0].ndim == 2, (spec, x[0].shape)
+        shapes = [x[0].shape for x in out] if not spec.startswith("pil") else None
+        if ref is None:
+            ref = shapes
+        else:
+            if spec.startswith("torch"):
+                for x, y in zip(ref, shapes):
+                    assert x[-2:] == y[-2:], (x, y, spec)
+            elif spec.startswith("pil"):
+                pass
+            else:
+                for x, y in zip(ref, shapes):
+                    assert x[:2] == y[:2], (x, y, spec)
+
+
 def test_lru_cleanup(tmp_path):
     for i in range(20):
         fname = os.path.join(tmp_path, "%06d" % i)
