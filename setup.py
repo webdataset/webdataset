@@ -16,7 +16,7 @@ scripts = []
 
 setuptools.setup(
     name="webdataset",
-    version = "0.2.20",
+    version="0.2.26",
     description="Record sequential storage for deep learning.",
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
@@ -31,11 +31,11 @@ setuptools.setup(
         "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
-        "Programming Language :: Python :: 3.9"
+        "Programming Language :: Python :: 3.9",
     ],
     keywords="object store, client, deep learning",
     packages=["webdataset"],
     python_requires=">=3.6",
     scripts=scripts,
-    install_requires="braceexpand numpy pyyaml".split()
+    install_requires="braceexpand numpy pyyaml".split(),
 )

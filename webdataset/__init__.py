@@ -21,6 +21,7 @@ from .autodecode import (
 from .cache import (
     cached_tarfile_samples,
     cached_tarfile_to_samples,
+    maybe_cached_tarfile_to_samples,
     lru_cleanup,
     pipe_cleaner,
 )
@@ -76,4 +77,4 @@ from .utils import PipelineStage, repeatedly
 from .writer import ShardWriter, TarWriter, numpy_dumps, torch_dumps
 from .mix import RandomMix, RoundRobin
 
-__vesion__ = ""
+__version__ = ""

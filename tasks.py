@@ -81,6 +81,8 @@ def newversion(c):
         f'__version__ = "{version}"',
         text,
     )
+    with open("webdataset/__init__.py", "w") as stream:
+        stream.write(text)
     c.run("grep 'version *=' setup.py")
     c.run("grep '__version__ *=' webdataset/__init__.py")
     c.run("git add VERSION setup.py webdataset/__init__.py")
