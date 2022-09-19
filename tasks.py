@@ -85,10 +85,11 @@ def newversion(c):
         stream.write(text)
     c.run("grep 'version *=' setup.py")
     c.run("grep '__version__ *=' webdataset/__init__.py")
-    c.run("git add VERSION setup.py webdataset/__init__.py")
-    c.run("git commit -m 'incremented version'")
-    # the git push will do a test
-    c.run("git push")
+    venv(c)
+    c.run(f"{ACTIVATE}{PYTHON3} -m pytest")
+    # c.run("git add VERSION setup.py webdataset/__init__.py")
+    # c.run("git commit -m 'incremented version'")
+    # c.run("git push")
 
 
 @task
