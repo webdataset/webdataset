@@ -7,7 +7,9 @@
 
 """Open URLs by calling subcommands."""
 
-import os, sys, re
+import os
+import sys
+import re
 from subprocess import PIPE, Popen
 from urllib.parse import urlparse
 
@@ -114,9 +116,7 @@ class Pipe:
         self.close()
 
 
-def set_options(
-    obj, timeout=None, ignore_errors=None, ignore_status=None, handler=None
-):
+def set_options(obj, timeout=None, ignore_errors=None, ignore_status=None, handler=None):
     """Set options for Pipes.
 
     This function can be called on any stream. It will set pipe options only
@@ -144,12 +144,14 @@ def set_options(
 def gopen_file(url, mode="rb", bufsize=8192):
     """Open a file.
 
-    This works for local files, files over HTTP, and pipe: files.
+    This works for local files; path names only.
 
     :param url: URL to be opened
     :param mode: mode to open it with
     :param bufsize: requested buffer size
     """
+    if url.startswith("file:"):
+        url = re.sub(r"^file://?", "", url)
     return open(url, mode)
 
 
@@ -199,7 +201,7 @@ def gopen_curl(url, mode="rb", bufsize=8192):
             ignore_status=[141, 23],
         )  # skipcq: BAN-B604
     elif mode[0] == "w":
-        cmd = f"curl -s -L -T - '{url}'"
+        cmd = f"curl -s -X PUT -L -T - '{url}'"
         return Pipe(
             cmd,
             mode=mode,
