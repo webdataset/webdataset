@@ -11,9 +11,82 @@ from functools import partial
 
 import numpy as np
 
-"""Extensions passed on to the image decoder."""
-image_extensions = "jpg jpeg png ppm pgm pbm pnm".split()
 
+# Obtained with:
+# ```
+# import PIL.Image
+# IMAGE_EXTENSIONS = []
+# PIL.Image.init()
+# for ext, format in PIL.Image.EXTENSION.items():
+#     if format in PIL.Image.OPEN:
+#         IMAGE_EXTENSIONS.append(ext[1:])
+# ```
+"""Extensions passed on to the image decoder."""
+IMAGE_EXTENSIONS = [
+    "blp",
+    "bmp",
+    "dib",
+    "bufr",
+    "cur",
+    "pcx",
+    "dcx",
+    "dds",
+    "ps",
+    "eps",
+    "fit",
+    "fits",
+    "fli",
+    "flc",
+    "ftc",
+    "ftu",
+    "gbr",
+    "gif",
+    "grib",
+    "h5",
+    "hdf",
+    "png",
+    "apng",
+    "jp2",
+    "j2k",
+    "jpc",
+    "jpf",
+    "jpx",
+    "j2c",
+    "icns",
+    "ico",
+    "im",
+    "iim",
+    "tif",
+    "tiff",
+    "jfif",
+    "jpe",
+    "jpg",
+    "jpeg",
+    "mpg",
+    "mpeg",
+    "msp",
+    "pcd",
+    "pxr",
+    "pbm",
+    "pgm",
+    "ppm",
+    "pnm",
+    "psd",
+    "bw",
+    "rgb",
+    "rgba",
+    "sgi",
+    "ras",
+    "tga",
+    "icb",
+    "vda",
+    "vst",
+    "webp",
+    "wmf",
+    "emf",
+    "xbm",
+    "xpm",
+]
 
 ################################################################
 # handle basic datatypes
@@ -199,7 +272,7 @@ class ImageHandler:
 
     """
 
-    def __init__(self, imagespec, extensions=image_extensions):
+    def __init__(self, imagespec, extensions=IMAGE_EXTENSIONS):
         """Create an image handler.
 
         :param imagespec: short string indicating the type of decoding
@@ -279,7 +352,7 @@ class ImageHandler:
         return None
 
 
-def imagehandler(imagespec, extensions=image_extensions):
+def imagehandler(imagespec, extensions=IMAGE_EXTENSIONS):
     """Create an image handler.
 
     This is just a lower case alias for ImageHander.
