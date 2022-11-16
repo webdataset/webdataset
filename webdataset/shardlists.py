@@ -68,6 +68,19 @@ def split_by_node(src, group=None):
         for s in src:
             yield s
 
+def split_by_node_sm(src, group=None):
+    # for SageMaker
+    import smdistributed.dataparallel.torch.distributed as dist
+    
+    if dist.is_available() and dist.is_initialized():
+        group = group or dist.group.WORLD
+        rank = dist.get_rank(group=group)
+        size = dist.get_world_size(group=group)
+        for s in islice(src, rank, None, size):
+            yield s
+    else:
+        for s in src:
+            yield s
 
 def split_by_worker(src):
     import torch.utils.data
@@ -113,9 +126,13 @@ def non_empty(src):
 
 
 class PytorchEnv:
-    """A class encapsulating the PyTorch node/worker environment."""
-
-    def __init__(self, group=None):
+    """A class encapsulating the PyTorch node/worker environment.
+      
+       2021.12.24
+       sagemaker の smdistributedを利用できるようにオプションを追加
+    """
+    
+    def __init__(self, group=None, sagemaker=False):
         """Initialize rank/worker information."""
         import socket
 
@@ -123,8 +140,13 @@ class PytorchEnv:
         self.rank = None
         self.worker = None
         self.group = group
+        self.sagemaker = sagemaker
         self.nodeinfo = (socket.gethostname(), os.getpid())
-        self.update_env()
+        if sagemaker:
+            # sagemaker 利用のオプション押下時
+            self.update_sm_env()
+        else:
+            self.update_env()
 
     def update_env(self):
         """Update information about node and worker environment.
@@ -158,7 +180,33 @@ class PytorchEnv:
         gopen.info["rank"], gopen.info["size"] = self.rank or (-1, -1)
         gopen.info["worker_id"], gopen.info["num_workers"] = self.worker or (-1, -1)
 
+    def update_sm_env(self):
+        """smdistributed.dataparallel.torch.distributed を利用してupdate_env と同じ動作を実現"""
+        from . import gopen
+        
+        try:
+            import torch
+            import smdistributed.dataparallel.torch.distributed as dist
+        except Exception:
+            return
 
+        if self.rank is None:
+            if dist.is_available() and dist.is_initialized():
+                group = self.group or dist.group.WORLD
+                self.rank = dist.get_rank(group=group), dist.get_world_size(
+                    group=group
+                )
+
+        if self.worker is None:
+            worker_info = torch.utils.data.get_worker_info()
+            if worker_info is not None:
+                self.worker = worker_info.id, worker_info.num_workers
+
+        gopen.info["nodeinfo"] = self.nodeinfo
+        gopen.info["rank"], gopen.info["size"] = self.rank or (-1, -1)
+        gopen.info["worker_id"], gopen.info["num_workers"] = self.worker or (-1, -1)
+
+        
 class ShardSample:
     pass
 
@@ -251,13 +299,14 @@ class PytorchShardList(IterableDataset, PytorchEnv, Composable):
     """
 
     def __init__(
-        self,
-        urls,
-        epoch_shuffle=False,
-        shuffle=True,
-        split_by_worker=True,
-        split_by_node=True,
-        verbose=False,
+            self,
+            urls,
+            epoch_shuffle=False,
+            shuffle=True,
+            split_by_worker=True,
+            split_by_node=True,
+            verbose=False,
+            sagemaker=False
     ):
         """Create a ShardList.
 
@@ -270,8 +319,13 @@ class PytorchShardList(IterableDataset, PytorchEnv, Composable):
         If WDS_SHUFFLE is in the environment, it is used for shuffling shards prior
         to splitting; this assigns different shards to different nodes on each epoch.
         """
-        super().__init__()
-
+        # 継承元クラスの初期化の方法を変更する
+        # PytorchEnv のみ sagemaker のオプションを渡す
+        IterableDataset.__init__(self)
+        PytorchEnv.__init__(self, sagemaker=sagemaker)
+        Composable.__init__(self)
+        # super().__init__()
+        
         self.verbose = verbose
         if self.verbose:
             print("PytorchShardList init")
@@ -279,7 +333,7 @@ class PytorchShardList(IterableDataset, PytorchEnv, Composable):
         self.epoch_shuffle = epoch_shuffle
         self.shuffle = shuffle
         self.split_by_worker = split_by_worker
-        self.split_by_node = split_by_node
+        self.split_by_node = split_by_node_sm if sagemaker else split_by_node
         if not isinstance(urls, ShardSample):
             urls = SimpleShardSample(urls)
         self.shardsample = urls
