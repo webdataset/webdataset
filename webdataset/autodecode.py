@@ -441,9 +441,12 @@ class Decoder:
         result = {}
         assert isinstance(sample, dict), sample
         for k, v in list(sample.items()):
-            if k[0] == "_":
+            if k[0:2] == "__":
                 if isinstance(v, bytes):
-                    v = v.decode("utf-8")
+                    try:
+                        v = v.decode("utf-8")
+                    except:
+                        print(f"Can't decode v of k = {k} as utf-8: v = {v}")
                 result[k] = v
                 continue
             if self.only is not None and k not in self.only:
@@ -456,7 +459,7 @@ class Decoder:
                 else:
                     result[k] = v
             else:
-                assert isinstance(v, bytes)
+                assert isinstance(v, bytes), f"k,v = {k}, {v}"
                 result[k] = self.decode1(k, v)
         return result
 

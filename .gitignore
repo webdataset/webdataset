@@ -28,3 +28,10 @@ docs/webdataset
 dist
 webdataset.egg-info
 docsrc/*.md
+openimages.py
+rust-test.ipynb
+test.cbors
+test.py
+notebooks/openimages.py
+notebooks/wordtrain.ipynb
+webdataset/tests/test_pipeline.log
