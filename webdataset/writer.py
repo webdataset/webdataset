@@ -267,6 +267,7 @@ class TarWriter:
         compress: Optional[bool] = None,
         encoder: Union[None, bool, Callable] = True,
         keep_meta: bool = False,
+        format: Any = None,
     ):
         """Create a tar writer.
 
@@ -278,6 +279,7 @@ class TarWriter:
         :param encoder: encoder function
         :param keep_meta: keep metadata (entries starting with "_")
         """
+        format = getattr(tarfile, format, format) if format else tarfile.USTAR_FORMAT
         if isinstance(fileobj, str):
             if compress is False:
                 tarmode = "w|"
