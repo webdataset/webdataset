@@ -126,7 +126,7 @@ def tar_file_expander(data, handler=reraise_exception):
         try:
             assert isinstance(source, dict)
             assert "stream" in source
-            for sample in tar_file_iterator(source["stream"]):
+            for sample in tar_file_iterator(source["stream"], handler=handler):
                 assert (
                     isinstance(sample, dict) and "data" in sample and "fname" in sample
                 )
