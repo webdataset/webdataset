@@ -3,7 +3,7 @@ from urllib.parse import urlparse
 
 from . import filters, gopen
 from .handlers import reraise_exception
-from .tariterators import group_by_keys, tar_file_expander, tarfile_to_samples
+from .tariterators import group_by_keys, tarfile_expander, tarfile_to_samples
 
 default_cache_dir = os.environ.get("WDS_CACHE", "./_cache")
 default_cache_size = float(os.environ.get("WDS_CACHE_SIZE", "1e18"))
@@ -179,7 +179,7 @@ def cached_tarfile_samples(
         url_to_name=url_to_name,
         always=always,
     )
-    files = tar_file_expander(streams, handler=handler)
+    files = tarfile_expander(streams, handler=handler)
     samples = group_by_keys(files, handler=handler)
     return samples
 

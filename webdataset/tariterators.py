@@ -78,7 +78,7 @@ def url_opener(data, handler=reraise_exception, **kw):
                 break
 
 
-def tar_file_iterator(fileobj, skip_meta=r"__[^/]*__($|/)", handler=reraise_exception):
+def tarfile_iterator(fileobj, skip_meta=r"__[^/]*__($|/)", handler=reraise_exception):
     """Iterate over tar file, yielding filename, content pairs for the given tar stream.
 
     :param fileobj: byte stream suitable for tarfile
@@ -116,7 +116,7 @@ def tar_file_iterator(fileobj, skip_meta=r"__[^/]*__($|/)", handler=reraise_exce
     del stream
 
 
-def tar_file_expander(data, handler=reraise_exception):
+def tarfile_expander(data, handler=reraise_exception):
     """Expand a stream of open tar files into a stream of tar file contents.
 
     This returns an iterator over (filename, file_contents).
@@ -126,7 +126,7 @@ def tar_file_expander(data, handler=reraise_exception):
         try:
             assert isinstance(source, dict)
             assert "stream" in source
-            for sample in tar_file_iterator(source["stream"], handler=handler):
+            for sample in tarfile_iterator(source["stream"], handler=handler):
                 assert (
                     isinstance(sample, dict) and "data" in sample and "fname" in sample
                 )
@@ -177,7 +177,7 @@ def group_by_keys(data, keys=base_plus_ext, lcase=True, suffixes=None, handler=N
 
 def tarfile_samples(src, handler=reraise_exception):
     streams = url_opener(src, handler=handler)
-    files = tar_file_expander(streams, handler=handler)
+    files = tarfile_expander(streams, handler=handler)
     samples = group_by_keys(files, handler=handler)
     return samples
 
