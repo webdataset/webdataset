@@ -741,8 +741,8 @@ Whether you prefer `WebDataset` or `Dataset` is a matter of style.
 The `SimpleShardList` and `ResampledShards` take either a string or a list of URLs as an argument. If it is given a string, the string is expanded using the `braceexpand` library. So, the following are equivalent:
 
 ```Python
-ShardList("dataset-{000..001}.tar")
-ShardList(["dataset-000.tar", "dataset-001.tar"])
+SimpleShardList("dataset-{000..001}.tar")
+SimpleShardList(["dataset-000.tar", "dataset-001.tar"])
 ```
 
 The url strings in a shard list are handled by default by the `webdataset.url_opener` filter. It recognizes three simple kinds of strings: "-", "/path/to/file", and "pipe:command":
