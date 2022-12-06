@@ -267,6 +267,7 @@ class TarWriter:
         compress: Optional[bool] = None,
         encoder: Union[None, bool, Callable] = True,
         keep_meta: bool = False,
+        mtime: Optional[float] = None,
         format: Any = None,
     ):
         """Create a tar writer.
@@ -278,8 +279,10 @@ class TarWriter:
         :param compress: desired compression
         :param encoder: encoder function
         :param keep_meta: keep metadata (entries starting with "_")
+        :param mtime: modification time (set this to some fixed value to get reproducible tar files)
         """
         format = getattr(tarfile, format, format) if format else tarfile.USTAR_FORMAT
+        self.mtime = mtime
         if isinstance(fileobj, str):
             if compress is False:
                 tarmode = "w|"
@@ -347,7 +350,7 @@ class TarWriter:
             now = time.time()
             ti = tarfile.TarInfo(key + "." + k)
             ti.size = len(v)
-            ti.mtime = now
+            ti.mtime = self.mtime if self.mtime is not None else now
             ti.mode = self.mode
             ti.uname = self.user
             ti.gname = self.group
