@@ -77,16 +77,17 @@ def newversion(c):
         stream.write(version)
     text = open("webdataset/__init__.py").read()
     text = re.sub(
-        r'__version__ *= *"[0-9]+[.][0-9]+[.][0-9]+"',
+        r'^__version__ = ".*',
         f'__version__ = "{version}"',
         text,
+        flags=re.MULTILINE,
     )
     with open("webdataset/__init__.py", "w") as stream:
         stream.write(text)
-    c.run("grep 'version *=' setup.py")
-    c.run("grep '__version__ *=' webdataset/__init__.py")
-    venv(c)
-    c.run(f"{ACTIVATE}{PYTHON3} -m pytest")
+    os.system("grep 'version *=' setup.py")
+    os.system("grep '__version__ *=' webdataset/__init__.py")
+    # venv(c)
+    # c.run(f"{ACTIVATE}{PYTHON3} -m pytest")
     # c.run("git add VERSION setup.py webdataset/__init__.py")
     # c.run("git commit -m 'incremented version'")
     # c.run("git push")
