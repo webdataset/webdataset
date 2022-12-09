@@ -263,7 +263,7 @@ dataset = wds.DataPipeline(
     wds.batched(16)
 )
 
-batch = next(iter(dataset))
+batch = next(iter(loader))
 batch[0].shape, batch[1].shape
 ```
 
@@ -741,8 +741,8 @@ Whether you prefer `WebDataset` or `Dataset` is a matter of style.
 The `SimpleShardList` and `ResampledShards` take either a string or a list of URLs as an argument. If it is given a string, the string is expanded using the `braceexpand` library. So, the following are equivalent:
 
 ```Python
-SimpleShardList("dataset-{000..001}.tar")
-SimpleShardList(["dataset-000.tar", "dataset-001.tar"])
+ShardList("dataset-{000..001}.tar")
+ShardList(["dataset-000.tar", "dataset-001.tar"])
 ```
 
 The url strings in a shard list are handled by default by the `webdataset.url_opener` filter. It recognizes three simple kinds of strings: "-", "/path/to/file", and "pipe:command":
@@ -756,6 +756,16 @@ The url strings in a shard list are handled by default by the `webdataset.url_op
     - `pipe:ssh host cat file` accesses a file via `ssh`
 
 It might seem at first glance to be "more efficient" to use built-in Python libraries for accessing object stores rather than subprocesses, but efficient object store access from Python really requires spawning a separate process anyway, so this approach to accessing object stores is not only convenient, it also is as efficient as we can make it in Python.
+
+# Length Properties
+
+WebDataset instances are subclasses of `IterableDataset`. These instances are not supposed to have a `__len__` method, and some code actually tests for that.
+
+If you want to have a length property on your dataset, use the `with_length(n)` method with whatever length you would like to  set.
+
+If you want to change the size of the epoch, i.e., if you want to force the iterator to quit after a given number of samples or batches, use the `with_epoch` method.
+
+You can combine both methods; use `with_length` last.
 
 # Related Libraries and Software
 
