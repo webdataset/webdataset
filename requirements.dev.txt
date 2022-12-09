@@ -1,6 +1,7 @@
 mkdocs
 setuptools
 wheel
+invoke
 
 msgpack
 cbor

@@ -90,7 +90,7 @@ plt.imshow(image)
 
 
 
-    <matplotlib.image.AxesImage at 0x7f40849aa5b0>
+    <matplotlib.image.AxesImage at 0x7fd9951816c0>
 
 
 
@@ -165,7 +165,7 @@ plt.imshow(image)
 
 
 
-    <matplotlib.image.AxesImage at 0x7f40848c18e0>
+    <matplotlib.image.AxesImage at 0x7fd994dbd300>
 
 
 
@@ -766,6 +766,33 @@ If you want to have a length property on your dataset, use the `with_length(n)` 
 If you want to change the size of the epoch, i.e., if you want to force the iterator to quit after a given number of samples or batches, use the `with_epoch` method.
 
 You can combine both methods; use `with_length` last.
+
+# Tar Header Overhead
+
+Tar imposes a 512 byte overhead for each file stored in the archive. For most applications, this is not an issue because images and other content tends to be much larger.
+
+If you have datasets that contain large amounts of small files (e.g., text-only training, etc.), this overhead may become significant. In that case, you have several options:
+
+- store some or all of your sample in JSON, MsgPack, or CBOR format
+- gzip-compress your tar file (use .tgz instead of .tar); WebDatset will automatically decompress
+- pre-batch the data (not recommended)
+
+Both of the first options are very simple. To store your entire sample in MsgPack format, do something like this:
+
+```
+# Writing
+
+    ... construct sample ...
+    sample = dict(mp=sample)
+    writer.write(sample)
+
+# Reading
+
+    dataset = ... initial construction ...
+    dataset = dataset.map(sample: sample["mp"])
+    ... use sample as usual ...
+```
+
 
 # Related Libraries and Software
 
