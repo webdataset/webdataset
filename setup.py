@@ -16,7 +16,7 @@ scripts = []
 
 setuptools.setup(
     name="webdataset",
-    version = "0.2.32",
+    version="0.2.32",
     description="Record sequential storage for deep learning.",
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
@@ -38,4 +38,5 @@ setuptools.setup(
     python_requires=">=3.6",
     scripts=scripts,
     install_requires="braceexpand numpy pyyaml".split(),
+    license_files=["LICENSE"],
 )
