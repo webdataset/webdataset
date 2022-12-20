@@ -87,6 +87,7 @@ def get_file_cached(
 
 
 def get_filetype(fname):
+    assert os.system("file .") == 0, "UNIX/Linux file command not available"
     with os.popen("file '%s'" % fname) as f:
         ftype = f.read()
     return ftype
