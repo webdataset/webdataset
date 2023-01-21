@@ -25,6 +25,10 @@ def imageencoder(image: Any, format: str = "PNG"):  # skipcq: PYL-W0622
     """
     import PIL
 
+    # Fix `AttributeError: module 'PIL' has no attribute 'Image'` triggered otherwise
+    # by the next line.
+    from PIL import Image
+
     assert isinstance(image, (PIL.Image.Image, np.ndarray)), type(image)
 
     if isinstance(image, np.ndarray):
