@@ -409,7 +409,7 @@ class ShardWriter:
                 self.total,
             )
         self.shard += 1
-        stream = open(self.fname, "wb")
+        stream = gopen.gopen(self.fname, "wb")
         self.tarstream = TarWriter(stream, **self.kw)
         self.count = 0
         self.size = 0
