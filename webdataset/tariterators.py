@@ -140,7 +140,7 @@ def tar_file_expander(data, handler=reraise_exception):
                 break
 
 
-def group_by_keys(data, keys=base_plus_ext, lcase=True, suffixes=None, handler=None):
+def group_by_keys(data, keys=base_plus_ext, lcase=True, suffixes=None, handler=reraise_exception):
     """Return function over iterator that groups key, value pairs into samples.
 
     :param keys: function that splits the key into key and extension (base_plus_ext)
@@ -148,29 +148,36 @@ def group_by_keys(data, keys=base_plus_ext, lcase=True, suffixes=None, handler=N
     """
     current_sample = None
     for filesample in data:
-        assert isinstance(filesample, dict)
-        fname, value = filesample["fname"], filesample["data"]
-        prefix, suffix = keys(fname)
-        if trace:
-            print(
-                prefix,
-                suffix,
-                current_sample.keys() if isinstance(current_sample, dict) else None,
-            )
-        if prefix is None:
-            continue
-        if lcase:
-            suffix = suffix.lower()
-        if current_sample is None or prefix != current_sample["__key__"]:
-            if valid_sample(current_sample):
-                yield current_sample
-            current_sample = dict(__key__=prefix, __url__=filesample["__url__"])
-        if suffix in current_sample:
-            raise ValueError(
-                f"{fname}: duplicate file name in tar file {suffix} {current_sample.keys()}"
-            )
-        if suffixes is None or suffix in suffixes:
-            current_sample[suffix] = value
+        try:
+            assert isinstance(filesample, dict)
+            fname, value = filesample["fname"], filesample["data"]
+            prefix, suffix = keys(fname)
+            if trace:
+                print(
+                    prefix,
+                    suffix,
+                    current_sample.keys() if isinstance(current_sample, dict) else None,
+                )
+            if prefix is None:
+                continue
+            if lcase:
+                suffix = suffix.lower()
+            if current_sample is None or prefix != current_sample["__key__"]:
+                if valid_sample(current_sample):
+                    yield current_sample
+                current_sample = dict(__key__=prefix, __url__=filesample["__url__"])
+            if suffix in current_sample:
+                raise ValueError(
+                    f"{fname}: duplicate file name in tar file {suffix} {current_sample.keys()}"
+                )
+            if suffixes is None or suffix in suffixes:
+                current_sample[suffix] = value
+        except Exception as exn:
+            exn.args = exn.args + (source.get("stream"), source.get("url"))
+            if handler(exn):
+                continue
+            else:
+                break
     if valid_sample(current_sample):
         yield current_sample
 

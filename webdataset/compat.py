@@ -106,6 +106,7 @@ class WebDataset(DataPipeline, FluidInterface):
         shardshuffle=None,
         cache_size=-1,
         cache_dir=None,
+        url_to_name=cache.pipe_cleaner,
         detshuffle=False,
         nodesplitter=shardlists.single_node_only,
         verbose=False,
@@ -145,6 +146,7 @@ class WebDataset(DataPipeline, FluidInterface):
                 cache.cached_tarfile_to_samples(
                     handler=handler,
                     verbose=verbose,
+                    url_to_name=url_to_name,
                     cache_size=cache_size,
                     cache_dir=cache_dir,
                 )

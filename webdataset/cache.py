@@ -54,7 +54,7 @@ def pipe_cleaner(spec):
         spec = spec[5:]
         words = spec.split(" ")
         for word in words:
-            if re.match(r"^(https?|gs|ais|s3)", word):
+            if re.match(r"^(https?|gs|ais|s3):", word):
                 return word
     return spec
 
