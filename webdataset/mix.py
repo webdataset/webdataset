@@ -28,8 +28,10 @@ def round_robin_shortest(*sources):
 
 
 def round_robin_longest(*sources):
+    sources = list(sources)
     i = 0
     while len(sources) > 0:
+        i %= len(sources)
         try:
             sample = next(sources[i])
             i += 1
