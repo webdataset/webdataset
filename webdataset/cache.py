@@ -14,25 +14,29 @@ def lru_cleanup(cache_dir, cache_size, keyfn=os.path.getctime, verbose=False):
     keeping the total size of all remaining files below cache_size."""
     if not os.path.exists(cache_dir):
         return
-    total_size = 0
-    for dirpath, dirnames, filenames in os.walk(cache_dir):
-        for filename in filenames:
-            total_size += os.path.getsize(os.path.join(dirpath, filename))
-    if total_size <= cache_size:
-        return
-    # sort files by last access time
-    files = []
-    for dirpath, dirnames, filenames in os.walk(cache_dir):
-        for filename in filenames:
-            files.append(os.path.join(dirpath, filename))
-    files.sort(key=keyfn, reverse=True)
-    # delete files until we're under the cache size
-    while len(files) > 0 and total_size > cache_size:
-        fname = files.pop()
-        total_size -= os.path.getsize(fname)
-        if verbose:
-            print("# deleting %s" % fname, file=sys.stderr)
-        os.remove(fname)
+    try:
+        total_size = 0
+        for dirpath, dirnames, filenames in os.walk(cache_dir):
+            for filename in filenames:
+                total_size += os.path.getsize(os.path.join(dirpath, filename))
+        if total_size <= cache_size:
+            return
+        # sort files by last access time
+        files = []
+        for dirpath, dirnames, filenames in os.walk(cache_dir):
+            for filename in filenames:
+                files.append(os.path.join(dirpath, filename))
+        files.sort(key=keyfn, reverse=True)
+        # delete files until we're under the cache size
+        while len(files) > 0 and total_size > cache_size:
+            fname = files.pop()
+            total_size -= os.path.getsize(fname)
+            if verbose:
+                print("# deleting %s" % fname, file=sys.stderr)
+            os.remove(fname)
+    except (OSError, FileNotFoundError):
+        # files may be deleted by other processes between walking the directory and getting their size/deleting them
+        pass
 
 
 def download(url, dest, chunk_size=1024**2, verbose=False):
