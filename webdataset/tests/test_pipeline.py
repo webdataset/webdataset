@@ -493,7 +493,7 @@ def IGNORE_test_length():
 
 
 def test_mock():
-    ds = eds.MockDataset((True, True), 193)
+    ds = wds.MockDataset((True, True), 193)
     assert count_samples_tuple(ds) == 193
 
 
@@ -1185,3 +1185,18 @@ def test_lmdb_cached(tmp_path):
     )
     result3 = list(iter(dataset))
     assert len(result1) == len(result3)
+
+def test_missing_throws(tmp_path):
+    path = os.path.join(tmp_path, "missing.tar")
+    ds = wds.WebDataset(path)
+    with pytest.raises(IOError):
+        for sample in ds:
+            pass
+
+def test_missing_throws2(tmp_path):
+    # path = os.path.join("http://storage.googleapis.com/torch-ml/vision/imagenet", "missing.tar)
+    path = "http://storage.googleapis.com/nvdata-openimages/missing.tar"
+    ds = wds.WebDataset(path)
+    with pytest.raises(IOError):
+        for sample in ds:
+            pass

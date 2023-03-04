@@ -80,7 +80,7 @@ class Pipe:
                 file=sys.stderr,
             )
         if self.status not in self.ignore_status and not self.ignore_errors:
-            raise Exception(f"{self.args}: exit {self.status} (read) {info}")
+            raise IOError(f"{self.args}: exit {self.status} (read) {info}")
 
     def read(self, *args, **kw):
         """Wrap stream.read and checks status."""
@@ -192,7 +192,7 @@ def gopen_curl(url, mode="rb", bufsize=8192):
     :param bufsize: buffer size
     """
     if mode[0] == "r":
-        cmd = f"curl -s -L '{url}'"
+        cmd = f"curl -f -s -L '{url}'"
         return Pipe(
             cmd,
             mode=mode,
@@ -201,7 +201,7 @@ def gopen_curl(url, mode="rb", bufsize=8192):
             ignore_status=[141, 23],
         )  # skipcq: BAN-B604
     elif mode[0] == "w":
-        cmd = f"curl -s -X PUT -L -T - '{url}'"
+        cmd = f"curl -f -s -X PUT -L -T - '{url}'"
         return Pipe(
             cmd,
             mode=mode,
