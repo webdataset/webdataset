@@ -314,7 +314,7 @@ class ImageHandler:
             else:
                 raise ValueError("Unknown mode: %s" % mode)
 
-        result = result = np.asarray(img)
+        result = np.asarray(img)
 
         if etype == "float":
             result = result.astype(np.float32) / 255.0
