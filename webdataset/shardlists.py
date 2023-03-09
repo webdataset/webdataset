@@ -10,12 +10,16 @@
 Code works locally or over HTTP connections.
 """
 
-import os, random, sys, time
+import os
+import os.path
+import random
+import sys
+import time
 from dataclasses import dataclass, field
 from itertools import islice
 from typing import List
-
-import braceexpand, yaml
+import braceexpand
+import yaml
 
 from . import utils
 from .filters import pipelinefilter
@@ -27,6 +31,7 @@ def expand_urls(urls):
         urllist = urls.split("::")
         result = []
         for url in urllist:
+            url = os.path.expandvars(url)
             result.extend(braceexpand.braceexpand(url))
         return result
     else:

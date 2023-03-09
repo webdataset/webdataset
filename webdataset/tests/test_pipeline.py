@@ -425,6 +425,14 @@ def test_dataset():
     assert count_samples_tuple(ds) == 47
 
 
+def test_expandvars():
+    os.environ["TESTDATA"] = "testdata"
+    with_var = "$TESTDATA/imagenet-000000.tgz"
+    ds = wds.DataPipeline(wds.SimpleShardList(with_var), wds.tarfile_to_samples())
+    assert count_samples_tuple(ds) == 47
+    del os.environ["TESTDATA"]
+
+
 def test_dataset_resampled():
     ds = wds.DataPipeline(wds.ResampledShards(local_data), wds.tarfile_to_samples())
     assert count_samples_tuple(ds, n=100) == 100
