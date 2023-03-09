@@ -10,6 +10,7 @@
 Code works locally or over HTTP connections.
 """
 
+import re
 import os
 import os.path
 import random
@@ -25,13 +26,53 @@ from . import utils
 from .filters import pipelinefilter
 from .pytorch import IterableDataset
 
+def envlookup(m):
+    """Look up match in the environment with prefix WDS_.
+
+    Args:
+        m: a match object
+
+    Returns:
+        str: the value of the environment variable WDS_<m.group(1)>
+    """
+    key = m.group(1)
+    key = "WDS_" + key
+    assert key in os.environ, f"missing environment variable wds_{key}"
+    return os.environ[key]
+
+def envsubst(s):
+    """Substitute ${var} with the value of the environment variable WDS_var.
+
+    Args:
+        s (str): string to be substituted
+
+    Returns:
+        str: the substituted string
+    """
+    return re.sub(r"\$\{(\w+)\}", envlookup, s)
 
 def expand_urls(urls):
+    """Expand the urls if they are a string.
+    
+    If input is a string:
+    - split on '::'
+    - expand environment variables (using WDS_ prefix)
+    - expand braces
+    
+    Otherwise:
+    - return the input as a list
+
+    Args:
+        urls (str OR List[str]): url list or url string
+
+    Returns:
+        List[str]: list of  urls
+    """
     if isinstance(urls, str):
         urllist = urls.split("::")
         result = []
         for url in urllist:
-            url = os.path.expandvars(url)
+            url = envsubst(url)
             result.extend(braceexpand.braceexpand(url))
         return result
     else:
