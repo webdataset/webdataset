@@ -112,6 +112,12 @@ class WebDataset(DataPipeline, FluidInterface):
         verbose=False,
     ):
         super().__init__()
+        cache_size = int(os.environ.get("WDS_CACHE_SIZE", cache_size))
+        cache_dir = os.environ.get("WDS_CACHE", cache_dir)
+        if cache_dir is not None:
+            cache_dir = os.path.expanduser(cache_dir)
+            if not os.path.exists(cache_dir):
+                raise ValueError(f"cache directory {cache_dir} does not exist")
         if isinstance(urls, IterableDataset):
             assert not resampled
             self.append(urls)

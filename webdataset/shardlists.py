@@ -72,7 +72,11 @@ def expand_urls(urls):
         urllist = urls.split("::")
         result = []
         for url in urllist:
-            url = envsubst(url)
+            for i in range(10):
+                last = url
+                url = envsubst(url)
+                if url == last:
+                    break
             result.extend(braceexpand.braceexpand(url))
         return result
     else:
