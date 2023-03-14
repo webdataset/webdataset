@@ -1,4 +1,4 @@
-import itertools, os, random, re, sys
+import itertools, os, random, re, sys, time
 from urllib.parse import urlparse
 
 from . import filters, gopen
@@ -91,7 +91,7 @@ def get_file_cached(
 
 
 def get_filetype(fname):
-    assert os.system("file .") == 0, "UNIX/Linux file command not available"
+    assert os.system("file . > /dev/null") == 0, "UNIX/Linux file command not available"
     with os.popen("file '%s'" % fname) as f:
         ftype = f.read()
     return ftype
