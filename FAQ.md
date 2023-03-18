@@ -19,7 +19,8 @@ considers the backslash as an escape character, which causes WebDataset to
 decode it incorrectly. A possible solution is to represent paths using forward
 slashes, which works across all platforms. Alternatively, you can translate the
 backslash to a different character that isn't recognized as an escape character
-by brace-expand.
+by brace-expand. Or you can just expand the list of files using any Windows glob
+function and then pass the resulting list to WebDataset.
 
 ---
 
@@ -134,7 +135,7 @@ which print diagnostics to stdout when using stdout for data.
 ---
 
 Q: How can I solve the "gopen handler not defined" error when trying to iterate
-through a locally-stored dataset in WebDataset?
+through a locally-stored dataset in WebDataset on Windows with file paths?
 
 A: One solution proposed on the WebDataset issue tracker is to use the `file:`
 scheme in the URL for local addresses, for example
@@ -185,30 +186,6 @@ doesn't want/need based on the selection function. When you train on very small
 subsets of the original dataset (less than 10%) and you need maximal I/O
 performance, you may want to prefilter the data based on some criteria and
 generate a new dataset representing just that subset.
-
----
-
-Q: Is there a changelog or release note file available for the WebDataset
-library?
-
-A: At the moment there is no changelog or release note file available for
-WebDataset library, but the contributor is aware of the benefits of having one
-and is working towards enhancing the library's release management, change logs,
-and version management. In the meantime, it is advisable to pin the project to a
-particular version until otherwise stated. Alternatively, one can install from
-PyPI only when the packaged releases seem stable.
-
----
-
-Q: What is the issue with the decoding documentation in WebDataset?
-
-A: The documentation for WebDataset decoding has various typos and mistakes,
-including the misuse of `wds.filters.Curried` and `wds.filters.Curried2`. The
-author suggests writing a user-defined decoder, wrapping the decoder that only
-takes a `sample` as input to an iterator, and using `wds.Processor(dataset,
-wrapped_decoder)`. The author also suggests fixing the `wds.filters` or the
-documentation. This issue is fixed in version 2 of WebDataset, which has a
-simpler API and better documentation.
 
 ---
 
@@ -455,9 +432,6 @@ dataset = wds.Processor(dataset, wds.url_opener)
 dataset = wds.Processor(dataset, wds.tar_file_expander)
 dataset = wds.Processor(dataset, wds.group_by_keys)
 ```
-
-Note that `wds.gopen` can be used in place of `braceexpand.braceexpand` to
-simplify the list creation step.
 
 ---
 
