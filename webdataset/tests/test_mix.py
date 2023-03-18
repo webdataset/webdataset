@@ -1,13 +1,4 @@
-import io
-import os
-import pickle
-import time
-
 import numpy as np
-import pytest
-import torch
-from torch.utils.data import DataLoader
-from io import StringIO
 
 import webdataset as wds
 

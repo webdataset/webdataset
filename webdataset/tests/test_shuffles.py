@@ -1,28 +1,5 @@
-import io
-import os
-import pickle
-import time
-
-import numpy as np
-import PIL
-import pytest
-import torch
-from torch.utils.data import DataLoader
-from io import StringIO
-import yaml
-from itertools import islice
-from imageio import imread
-
 import webdataset as wds
-import webdataset.extradatasets as eds
-from webdataset import (
-    SimpleShardList,
-    autodecode,
-    filters,
-    handlers,
-    shardlists,
-    tariterators,
-)
+
 
 def test_shuffle():
     dataset = wds.DataPipeline(
@@ -68,4 +45,3 @@ def test_detshuffle():
     result12 = list(iter(dataset1))
     assert result12 == result22
     assert dataset2.stage(1).epoch == 1
-

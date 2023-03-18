@@ -9,6 +9,7 @@ from webdataset import writer
 def getkeys(sample):
     return set(x for x in sample if not x.startswith("_"))
 
+
 def test_writer(tmpdir):
     with writer.TarWriter(f"{tmpdir}/writer.tar") as sink:
         sink.write(dict(__key__="a", txt="hello", cls="3"))
@@ -19,7 +20,7 @@ def test_writer(tmpdir):
     ds = wds.DataPipeline(
         wds.SimpleShardList(f"{tmpdir}/writer.tar"),
         wds.tarfile_samples,
-        wds.decode("rgb")
+        wds.decode("rgb"),
     )
     for sample in ds:
         assert getkeys(sample) == set("txt cls".split()), getkeys(sample)
@@ -36,7 +37,7 @@ def test_writer2(tmpdir):
     ds = wds.DataPipeline(
         wds.SimpleShardList(f"{tmpdir}/writer2.tgz"),
         wds.tarfile_samples,
-        wds.decode("rgb")
+        wds.decode("rgb"),
     )
     for sample in ds:
         assert getkeys(sample) == set("txt cls".split()), getkeys(sample)
@@ -54,7 +55,7 @@ def test_writer3(tmpdir):
     ds = wds.DataPipeline(
         wds.SimpleShardList(f"{tmpdir}/writer3.tar"),
         wds.tarfile_samples,
-        wds.decode("rgb")
+        wds.decode("rgb"),
     )
     for sample in ds:
         assert getkeys(sample) == set("pth pyd".split())
@@ -96,7 +97,7 @@ def test_writer_pipe(tmpdir):
     ds = wds.DataPipeline(
         wds.SimpleShardList(f"{tmpdir}/writer_pipe.tar"),
         wds.tarfile_samples,
-        wds.decode("rgb")
+        wds.decode("rgb"),
     )
     for sample in ds:
         assert getkeys(sample) == set("txt cls".split())

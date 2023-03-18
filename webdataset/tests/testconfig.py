@@ -5,6 +5,7 @@ remote_shards = "openimages-train-0000{00..99}.tar"
 remote_shard = "openimages-train-000321.tar"
 remote_pattern = "openimages-train-{}.tar"
 
+
 def count_samples_tuple(source, *args, n=10000):
     count = 0
     for i, sample in enumerate(iter(source)):
@@ -15,5 +16,3 @@ def count_samples_tuple(source, *args, n=10000):
             assert f(sample)
         count += 1
     return count
-
-

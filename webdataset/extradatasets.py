@@ -10,12 +10,6 @@
 Code works locally or over HTTP connections.
 """
 
-import itertools as itt
-import os
-import random
-import sys
-
-import braceexpand
 
 from . import utils
 from .pytorch import IterableDataset

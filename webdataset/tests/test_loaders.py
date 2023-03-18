@@ -1,30 +1,9 @@
-import io
-import os
-import pickle
-import time
-
-import numpy as np
-import PIL
-import pytest
-import torch
 from torch.utils.data import DataLoader
-from io import StringIO
-import yaml
-from itertools import islice
-from imageio import imread
 
 import webdataset as wds
-import webdataset.extradatasets as eds
-from webdataset import (
-    SimpleShardList,
-    autodecode,
-    filters,
-    handlers,
-    shardlists,
-    tariterators,
-)
 
 from webdataset.tests.testconfig import *
+
 
 def test_webloader():
     ds = wds.DataPipeline(
@@ -80,4 +59,3 @@ def test_webloader_unbatched():
     dl = wds.WebLoader(ds, num_workers=4, batch_size=3).unbatched()
     nsamples = count_samples_tuple(dl)
     assert nsamples == 47, nsamples
-

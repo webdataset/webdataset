@@ -6,14 +6,11 @@
 
 """Classes for mixing samples from multiple sources."""
 
-import itertools, os, random, time, sys
-from functools import reduce, wraps
+import random
 
 import numpy as np
 
-from . import autodecode, utils
-from .pytorch import TorchTensor, IterableDataset
-from .utils import PipelineStage
+from .pytorch import IterableDataset
 
 
 def round_robin_shortest(*sources):

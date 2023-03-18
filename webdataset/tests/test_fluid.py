@@ -1,4 +1,3 @@
-import io
 import os
 import numpy as np
 import PIL
@@ -44,7 +43,7 @@ def count_samples_tuple(source: iter, *args: callable, n: int = 10000) -> int:
     """
 
     count: int = 0
-    
+
     for i, sample in enumerate(source):
         if i >= n:
             break
@@ -56,16 +55,14 @@ def count_samples_tuple(source: iter, *args: callable, n: int = 10000) -> int:
     return count
 
 
-
-
 def count_samples(source: iter, *args: callable, n: int = 1000) -> int:
     """
     Counts the number of samples from an iterable source that pass a set of conditions specified as callables.
 
     Args:
         source: An iterable source containing samples to be counted.
-        *args: A set of callables representing conditions that a candidate sample has to meet to be considered for 
-            the count. These functions accept a single argument, which is the sample being considered, and 
+        *args: A set of callables representing conditions that a candidate sample has to meet to be considered for
+            the count. These functions accept a single argument, which is the sample being considered, and
             return True or False indicating whether the condition is met.
         n: Maximum number of samples to consider for the count. Defaults to 1000.
 
@@ -77,7 +74,7 @@ def count_samples(source: iter, *args: callable, n: int = 1000) -> int:
     """
 
     count: int = 0
-    
+
     for i, sample in enumerate(source):
         if i >= n:
             break
@@ -86,7 +83,6 @@ def count_samples(source: iter, *args: callable, n: int = 1000) -> int:
         count += 1
 
     return count
-
 
 
 def test_dataset():
@@ -188,7 +184,9 @@ def test_dataset_eof():
 
 
 def test_dataset_eof_handler():
-    ds = wds.WebDataset(f"pipe:dd if={local_data} bs=1024 count=10", handler=wds.ignore_and_stop)
+    ds = wds.WebDataset(
+        f"pipe:dd if={local_data} bs=1024 count=10", handler=wds.ignore_and_stop
+    )
     assert count_samples(ds) < 47
 
 
@@ -256,7 +254,9 @@ def test_dataset_decode_handler():
             good[0] += 1
             return data
 
-    ds = wds.WebDataset(local_data).decode(faulty_decoder, handler=wds.ignore_and_continue)
+    ds = wds.WebDataset(local_data).decode(
+        faulty_decoder, handler=wds.ignore_and_continue
+    )
     result = count_samples_tuple(ds)
     assert count[0] == 47
     assert good[0] == 24
@@ -351,7 +351,11 @@ def test_only1():
     assert isinstance(image, bytes)
     assert isinstance(cls, int)
 
-    ds = wds.WebDataset(local_data).decode("l", only=["jpg", "png"]).to_tuple("jpg;png", "cls")
+    ds = (
+        wds.WebDataset(local_data)
+        .decode("l", only=["jpg", "png"])
+        .to_tuple("jpg;png", "cls")
+    )
     assert count_samples_tuple(ds) == 47
     image, cls = next(iter(ds))
     assert isinstance(image, np.ndarray)
@@ -449,13 +453,15 @@ def test_tenbin_dec():
 #         assert ys.shape == (28, 28)
 
 
-
-
 def test_decoder():
     def mydecoder(key, sample):
         return len(sample)
 
-    ds = wds.WebDataset(remote_loc + remote_shard).decode(mydecoder).to_tuple("jpg;png", "json")
+    ds = (
+        wds.WebDataset(remote_loc + remote_shard)
+        .decode(mydecoder)
+        .to_tuple("jpg;png", "json")
+    )
     for sample in ds:
         assert isinstance(sample[0], int)
         break
@@ -488,7 +494,9 @@ def test_opener():
 @pytest.mark.skip(reason="failing for unknown reason")
 def test_pipe():
     ds = (
-        wds.WebDataset(f"pipe:curl -s -L '{remote_loc}{remote_shards}'").shuffle(100).to_tuple("jpg;png", "json")
+        wds.WebDataset(f"pipe:curl -s -L '{remote_loc}{remote_shards}'")
+        .shuffle(100)
+        .to_tuple("jpg;png", "json")
     )
     assert count_samples_tuple(ds, n=10) == 10
 
@@ -497,7 +505,9 @@ def test_torchvision():
     import torch
     from torchvision import transforms
 
-    normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+    normalize = transforms.Normalize(
+        mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
+    )
     preproc = transforms.Compose(
         [
             transforms.RandomResizedCrop(224),
@@ -523,7 +533,9 @@ def test_batched():
     import torch
     from torchvision import transforms
 
-    normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+    normalize = transforms.Normalize(
+        mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
+    )
     preproc = transforms.Compose(
         [
             transforms.RandomResizedCrop(224),
@@ -533,7 +545,12 @@ def test_batched():
         ]
     )
     raw = wds.WebDataset(remote_loc + remote_shards)
-    ds = raw.decode("pil").to_tuple("jpg;png", "json").map_tuple(preproc, identity).batched(7)
+    ds = (
+        raw.decode("pil")
+        .to_tuple("jpg;png", "json")
+        .map_tuple(preproc, identity)
+        .batched(7)
+    )
     for sample in ds:
         assert isinstance(sample[0], torch.Tensor), type(sample[0])
         assert tuple(sample[0].size()) == (7, 3, 224, 224), sample[0].size()
@@ -546,7 +563,9 @@ def test_unbatched():
     import torch
     from torchvision import transforms
 
-    normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+    normalize = transforms.Normalize(
+        mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
+    )
     preproc = transforms.Compose(
         [
             transforms.RandomResizedCrop(224),
@@ -592,6 +611,7 @@ def test_repeat2():
     ds = wds.WebDataset(local_data).to_tuple("png", "cls").batched(2)
     assert count_samples_tuple(ds.repeat(nbatches=20)) == 20
 
+
 @pytest.mark.skip(reason="not implemented")
 def test_log_keys(tmp_path):
     tmp_path = str(tmp_path)
@@ -614,6 +634,7 @@ def test_length():
     dsl2 = dsl.repeat(17).with_length(19)
     assert len(dsl2) == 19
 
+
 @pytest.mark.skip(reason="need to figure out unraisableexceptionwarning")
 def test_rgb8_np_vs_torch():
     import warnings
@@ -629,7 +650,6 @@ def test_rgb8_np_vs_torch():
     assert isinstance(cls, int), type(cls)
     assert (image == image2.permute(1, 2, 0).numpy()).all, (image.shape, image2.shape)
     assert cls == cls2
-
 
 
 @pytest.mark.skip(reason="fixme")
@@ -665,7 +685,8 @@ def test_container_ten():
         assert ys.dtype == np.float64
         assert xs.shape == (28, 28)
         assert ys.shape == (28, 28)
-        
+
+
 @pytest.mark.skip(reason="fixme")
 def test_multimode():
     import torch
@@ -673,7 +694,9 @@ def test_multimode():
     urls = [local_data] * 8
     nsamples = 47 * 8
 
-    shardlist = wds.PytorchShardList(urls, verbose=True, epoch_shuffle=True, shuffle=True)
+    shardlist = wds.PytorchShardList(
+        urls, verbose=True, epoch_shuffle=True, shuffle=True
+    )
     os.environ["WDS_EPOCH"] = "7"
     ds = wds.WebDataset(shardlist)
     dl = torch.utils.data.DataLoader(ds, num_workers=4)
@@ -692,7 +715,3 @@ def test_multimode():
     dl = torch.utils.data.DataLoader(ds, num_workers=4)
     count = count_samples_tuple(dl)
     assert count == 170 * 4, count
-
-
-
-

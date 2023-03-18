@@ -1,27 +1,19 @@
 import io
 import os
 import pickle
-import time
 
 import numpy as np
 import PIL
 import pytest
-import torch
-from torch.utils.data import DataLoader
 from io import StringIO
 import yaml
 from itertools import islice
-from imageio import imread
 
 import webdataset as wds
-import webdataset.extradatasets as eds
 from webdataset import (
-    SimpleShardList,
     autodecode,
-    filters,
     handlers,
     shardlists,
-    tariterators,
 )
 from webdataset.tests.testconfig import *
 
@@ -67,7 +59,6 @@ def test_trivial_map4():
     assert result == [5, 6, 7, 8]
 
 
-
 def test_pytorchshardlist():
     dataset = wds.DataPipeline(
         wds.SimpleShardList("test-{000000..000099}.tar"),
@@ -100,9 +91,11 @@ def test_shardspec():
     assert isinstance(result[0]["png"], np.ndarray)
     assert result[0]["png"].shape == (793, 600, 3)
     assert len(result) == 47
-    
+
+
 def select_png(name):
     return name.endswith(".png")
+
 
 def test_select_files():
     dataset = wds.DataPipeline(
@@ -119,11 +112,13 @@ def test_select_files():
     assert isinstance(result[0]["png"], np.ndarray)
     assert result[0]["png"].shape == (793, 600, 3)
     assert len(result) == 47
-    
+
+
 def rename_cls(name):
     if name.endswith(".cls"):
-        return name[:-4]+".txt"
+        return name[:-4] + ".txt"
     return name
+
 
 def test_rename_files():
     dataset = wds.DataPipeline(
@@ -139,11 +134,10 @@ def test_rename_files():
     assert "txt" in keys
     assert "png" in keys
     assert isinstance(result[0]["txt"], str)
-    assert int(result[0]["txt"]) >= 0 # also tests format
+    assert int(result[0]["txt"]) >= 0  # also tests format
     assert isinstance(result[0]["png"], np.ndarray)
     assert result[0]["png"].shape == (793, 600, 3)
     assert len(result) == 47
-
 
 
 def test_sep():
@@ -221,7 +215,6 @@ def test_pipe_cleaner():
     assert wds.pipe_cleaner("pipe:curl xxx://foo a b c") == "curl xxx://foo a b c"
     s = "pipe:curl -s -L http://storage.googleapis.com/nvdata-openimages/"
     assert wds.pipe_cleaner(s) == "http://storage.googleapis.com/nvdata-openimages/"
-
 
 
 def test_splitting():
@@ -368,7 +361,9 @@ def test_mock():
 
 @pytest.mark.skip(reason="obsolete")
 def test_ddp_equalize():
-    ds = wds.DataPipeline(wds.SimpleShardList(local_data), wds.tarfile_to_samples(), wds.ddp_equalize(773))
+    ds = wds.DataPipeline(
+        wds.SimpleShardList(local_data), wds.tarfile_to_samples(), wds.ddp_equalize(773)
+    )
     assert count_samples_tuple(ds) == 733
 
 
@@ -402,7 +397,9 @@ def test_dataset_extract_keys():
 
 
 def test_slice():
-    ds = wds.DataPipeline(wds.SimpleShardList(local_data), wds.tarfile_to_samples(), wds.slice(10))
+    ds = wds.DataPipeline(
+        wds.SimpleShardList(local_data), wds.tarfile_to_samples(), wds.slice(10)
+    )
     assert count_samples_tuple(ds) == 10
 
 
@@ -499,10 +496,14 @@ def test_dataset_rename_keys():
 
 def test_dataset_rsample():
 
-    ds = wds.DataPipeline(wds.SimpleShardList(local_data), wds.tarfile_to_samples(), wds.rsample(1.0))
+    ds = wds.DataPipeline(
+        wds.SimpleShardList(local_data), wds.tarfile_to_samples(), wds.rsample(1.0)
+    )
     assert count_samples_tuple(ds) == 47
 
-    ds = wds.DataPipeline(wds.SimpleShardList(local_data), wds.tarfile_to_samples(), wds.rsample(0.5))
+    ds = wds.DataPipeline(
+        wds.SimpleShardList(local_data), wds.tarfile_to_samples(), wds.rsample(0.5)
+    )
     result = [count_samples_tuple(ds) for _ in range(300)]
     assert np.mean(result) >= 0.3 * 47 and np.mean(result) <= 0.7 * 47, np.mean(result)
 
@@ -698,8 +699,6 @@ def test_float_np_vs_torch():
     assert cls == cls2
 
 
-
-
 def test_tenbin():
     from webdataset import tenbin
 
@@ -730,6 +729,7 @@ def test_tenbin_dec():
         assert xs.shape == (28, 28)
         assert ys.shape == (28, 28)
 
+
 def test_dataloader():
     import torch
 
@@ -741,7 +741,6 @@ def test_dataloader():
     )
     dl = torch.utils.data.DataLoader(ds, num_workers=4)
     assert count_samples_tuple(dl, n=100) == 100
-
 
 
 def test_resampled_initialization():
@@ -803,7 +802,9 @@ def test_torchvision():
     import torch
     from torchvision import transforms
 
-    normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+    normalize = transforms.Normalize(
+        mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
+    )
     preproc = transforms.Compose(
         [
             transforms.RandomResizedCrop(224),
@@ -830,7 +831,9 @@ def test_batched():
     import torch
     from torchvision import transforms
 
-    normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+    normalize = transforms.Normalize(
+        mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
+    )
     preproc = transforms.Compose(
         [
             transforms.RandomResizedCrop(224),
@@ -859,7 +862,9 @@ def test_unbatched():
     import torch
     from torchvision import transforms
 
-    normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+    normalize = transforms.Normalize(
+        mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
+    )
     preproc = transforms.Compose(
         [
             transforms.RandomResizedCrop(224),
@@ -918,4 +923,3 @@ def test_repeat2():
     )
     ds = ds.with_epoch(20)
     assert count_samples_tuple(ds) == 20
-

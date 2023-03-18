@@ -14,12 +14,8 @@ except ModuleNotFoundError:
     class IterableDataset:
         """Empty implementation of IterableDataset when torch is not available."""
 
-        pass
-
     class DataLoader:
         """Empty implementation of DataLoader when torch is not available."""
-
-        pass
 
 
 try:
@@ -28,5 +24,3 @@ except ModuleNotFoundError:
 
     class TorchTensor:
         """Empty implementation of TorchTensor when torch is not available."""
-
-        pass

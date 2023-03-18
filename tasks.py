@@ -36,6 +36,14 @@ def venv(c):
 def virtualenv(c):
     "Build the virtualenv."
     venv(c)
+    
+@task
+def black(c):
+    c.run(f"{ACTIVATE}{PYTHON3} -m black webdataset")
+    
+@task
+def autoflake(c):
+    c.run(f"{ACTIVATE}{PYTHON3} -m autoflake --in-place --remove-all-unused-imports webdataset/[a-z]*.py webdataset/tests/[a-z]*.py")
 
 
 @task

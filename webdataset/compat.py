@@ -1,9 +1,6 @@
-import copy, os, random, sys, time
-from dataclasses import dataclass
-from itertools import islice
-from typing import List
+import os
 
-import braceexpand, yaml
+import yaml
 
 from . import autodecode, cache, filters, shardlists, tariterators
 from .filters import reraise_exception
@@ -47,7 +44,7 @@ class FluidInterface:
         post=None,
         only=None,
         partial=False,
-        handler=reraise_exception
+        handler=reraise_exception,
     ):
         handlers = [
             autodecode.ImageHandler(x) if isinstance(x, str) else x for x in args
@@ -146,7 +143,11 @@ class WebDataset(DataPipeline, FluidInterface):
                 else:
                     self.append(filters.shuffle(shardshuffle))
         if cache_dir is None or cache_size == 0:
-            self.append(tariterators.tarfile_to_samples(handler=handler, select_files=select_files))
+            self.append(
+                tariterators.tarfile_to_samples(
+                    handler=handler, select_files=select_files
+                )
+            )
         else:
             assert cache_size == -1 or cache_size > 0
             self.append(

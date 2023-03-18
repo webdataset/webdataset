@@ -1,28 +1,13 @@
-import io
 import os
-import pickle
 import time
 
 import numpy as np
-import PIL
-import pytest
-import torch
-from torch.utils.data import DataLoader
-from io import StringIO
-import yaml
-from itertools import islice
-from imageio import imread
 
 import webdataset as wds
-import webdataset.extradatasets as eds
 from webdataset import (
-    SimpleShardList,
     autodecode,
-    filters,
-    handlers,
-    shardlists,
-    tariterators,
 )
+
 
 def test_mcached():
     shardname = "testdata/imagenet-000000.tgz"
@@ -60,7 +45,6 @@ def test_lmdb_cached(tmp_path):
     assert len(result1) == len(result3)
 
 
-
 def test_cached(tmp_path):
     shardname = "testdata/imagenet-000000.tgz"
     dest = os.path.join(tmp_path, shardname)
@@ -87,7 +71,6 @@ def test_cached(tmp_path):
     assert len(result) == 470
 
 
-
 def test_lru_cleanup(tmp_path):
     for i in range(20):
         fname = os.path.join(tmp_path, "%06d" % i)
@@ -97,10 +80,13 @@ def test_lru_cleanup(tmp_path):
         time.sleep(0.1)
     assert "000000" in os.listdir(tmp_path)
     assert "000019" in os.listdir(tmp_path)
-    total_before = sum(os.path.getsize(os.path.join(tmp_path, fname)) for fname in os.listdir(tmp_path))
+    total_before = sum(
+        os.path.getsize(os.path.join(tmp_path, fname)) for fname in os.listdir(tmp_path)
+    )
     wds.lru_cleanup(tmp_path, total_before / 2, verbose=True)
-    total_after = sum(os.path.getsize(os.path.join(tmp_path, fname)) for fname in os.listdir(tmp_path))
+    total_after = sum(
+        os.path.getsize(os.path.join(tmp_path, fname)) for fname in os.listdir(tmp_path)
+    )
     assert total_after <= total_before * 0.5
     assert "000000" not in os.listdir(tmp_path)
     assert "000019" in os.listdir(tmp_path)
-

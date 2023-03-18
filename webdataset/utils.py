@@ -11,7 +11,7 @@ import itertools as itt
 import os
 import re
 import sys
-from typing import Any, Callable, Iterator, Optional, Union
+from typing import Any, Callable, Iterator, Union
 
 
 def make_seed(*args):

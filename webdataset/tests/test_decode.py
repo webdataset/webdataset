@@ -1,30 +1,17 @@
 import io
-import os
-import pickle
-import time
 
 import numpy as np
 import PIL
-import pytest
 import torch
-from torch.utils.data import DataLoader
-from io import StringIO
-import yaml
-from itertools import islice
 from imageio import imread
 
 import webdataset as wds
-import webdataset.extradatasets as eds
 from webdataset import (
-    SimpleShardList,
     autodecode,
-    filters,
-    handlers,
-    shardlists,
-    tariterators,
 )
 
 from webdataset.tests.testconfig import *
+
 
 def test_xdecode():
     dataset = wds.DataPipeline(
@@ -34,7 +21,7 @@ def test_xdecode():
             png=imread,
             cls=lambda stream: int(stream.read()),
             must_decode=False,
-        )
+        ),
     )
     result = list(iter(dataset))
     keys = list(result[0].keys())
@@ -83,7 +70,6 @@ def test_decoders():
                     assert x[:2] == y[:2], (x, y, spec)
 
 
-
 def test_handlers():
     def mydecoder(data):
         return PIL.Image.open(io.BytesIO(data)).resize((128, 128))
@@ -100,4 +86,3 @@ def test_handlers():
     for sample in ds:
         assert isinstance(sample[0], PIL.Image.Image)
         break
-

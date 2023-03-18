@@ -26,6 +26,7 @@ from . import utils
 from .filters import pipelinefilter
 from .pytorch import IterableDataset
 
+
 def envlookup(m):
     """Look up match in the environment with prefix WDS_.
 
@@ -40,6 +41,7 @@ def envlookup(m):
     assert key in os.environ, f"missing environment variable wds_{key}"
     return os.environ[key]
 
+
 def envsubst(s):
     """Substitute ${var} with the value of the environment variable WDS_var.
 
@@ -51,14 +53,15 @@ def envsubst(s):
     """
     return re.sub(r"\$\{(\w+)\}", envlookup, s)
 
+
 def expand_urls(urls):
     """Expand the urls if they are a string.
-    
+
     If input is a string:
     - split on '::'
     - expand environment variables (using WDS_ prefix)
     - expand braces
-    
+
     Otherwise:
     - return the input as a list
 

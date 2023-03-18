@@ -1,6 +1,4 @@
-import braceexpand
-
-from . import filters, gopen
+from . import filters
 from .handlers import reraise_exception
 from .tariterators import url_opener
 

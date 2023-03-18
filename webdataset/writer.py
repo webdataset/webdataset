@@ -35,7 +35,9 @@ def imageencoder(image: Any, format: str = "PNG"):  # skipcq: PYL-W0622
     if isinstance(image, np.ndarray):
         if image.dtype in [np.dtype("f"), np.dtype("d")]:
             if not (np.amin(image) > -0.001 and np.amax(image) < 1.001):
-                raise ValueError(f"image values out of range {np.amin(image)} {np.amax(image)}")
+                raise ValueError(
+                    f"image values out of range {np.amin(image)} {np.amax(image)}"
+                )
             image = np.clip(image, 0.0, 1.0)
             image = np.array(image * 255.0, "uint8")
         assert image.ndim in [2, 3]
@@ -142,7 +144,9 @@ def add_handlers(d, keys, value):
 def make_handlers():
     """Create a list of handlers for encoding data."""
     handlers = {}
-    add_handlers(handlers, "cls cls2 class count index inx id", lambda x: str(x).encode("ascii"))
+    add_handlers(
+        handlers, "cls cls2 class count index inx id", lambda x: str(x).encode("ascii")
+    )
     add_handlers(handlers, "txt text transcript", lambda x: x.encode("utf-8"))
     add_handlers(handlers, "html htm", lambda x: x.encode("utf-8"))
     add_handlers(handlers, "pyd pickle", pickle.dumps)
@@ -193,7 +197,9 @@ def encode_based_on_extension(sample: dict, handlers: dict):
     :param sample: data sample (a dict)
     :param handlers: handlers for encoding
     """
-    return {k: encode_based_on_extension1(v, k, handlers) for k, v in list(sample.items())}
+    return {
+        k: encode_based_on_extension1(v, k, handlers) for k, v in list(sample.items())
+    }
 
 
 def make_encoder(spec: Union[bool, str, dict, Callable]):
@@ -334,7 +340,9 @@ class TarWriter:
             if k[0] == "_":
                 continue
             if not isinstance(v, (bytes, bytearray, memoryview)):
-                raise ValueError(f"{k} doesn't map to a bytes after encoding ({type(v)})")
+                raise ValueError(
+                    f"{k} doesn't map to a bytes after encoding ({type(v)})"
+                )
         key = obj["__key__"]
         for k in sorted(obj.keys()):
             if k == "__key__":
@@ -416,7 +424,11 @@ class ShardWriter:
 
         :param obj: sample to be written
         """
-        if self.tarstream is None or self.count >= self.maxcount or self.size >= self.maxsize:
+        if (
+            self.tarstream is None
+            or self.count >= self.maxcount
+            or self.size >= self.maxsize
+        ):
             self.next_stream()
         size = self.tarstream.write(obj)
         self.count += 1

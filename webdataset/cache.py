@@ -1,4 +1,8 @@
-import itertools, os, random, re, sys, time
+import os
+import random
+import re
+import sys
+import time
 from urllib.parse import urlparse
 
 from . import filters, gopen
@@ -191,6 +195,7 @@ def cached_tarfile_samples(
 
 
 cached_tarfile_to_samples = filters.pipelinefilter(cached_tarfile_samples)
+
 
 def maybe_cached_tarfile_to_samples(
     src,
