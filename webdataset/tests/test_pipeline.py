@@ -23,29 +23,11 @@ from webdataset import (
     shardlists,
     tariterators,
 )
-
-local_data = "testdata/imagenet-000000.tgz"
-compressed = "testdata/compressed.tar"
-remote_loc = "http://storage.googleapis.com/nvdata-openimages/"
-remote_shards = "openimages-train-0000{00..99}.tar"
-remote_shard = "openimages-train-000321.tar"
-remote_pattern = "openimages-train-{}.tar"
+from webdataset.tests.testconfig import *
 
 
 def identity(x):
     return x
-
-
-def count_samples_tuple(source, *args, n=10000):
-    count = 0
-    for i, sample in enumerate(iter(source)):
-        if i >= n:
-            break
-        assert isinstance(sample, (tuple, dict, list)), (type(sample), sample)
-        for f in args:
-            assert f(sample)
-        count += 1
-    return count
 
 
 def test_trivial():
@@ -84,51 +66,6 @@ def test_trivial_map4():
     result = list(iter(dataset))
     assert result == [5, 6, 7, 8]
 
-
-def test_shuffle():
-    dataset = wds.DataPipeline(
-        wds.SimpleShardList(["testdata/imagenet-000000.tgz"] * 3),
-        # wds.shuffle(10),
-    )
-    result = list(iter(dataset))
-    assert len(result) == 3
-
-
-def test_shuffle0():
-    dataset = wds.DataPipeline(
-        lambda: iter([]),
-        wds.shuffle(10),
-    )
-    result = list(iter(dataset))
-    assert len(result) == 0
-
-
-def test_shuffle1():
-    dataset = wds.DataPipeline(
-        wds.SimpleShardList(["testdata/imagenet-000000.tgz"]),
-        wds.shuffle(10),
-    )
-    result = list(iter(dataset))
-    assert len(result) == 1
-
-
-def test_detshuffle():
-    dataset1 = wds.DataPipeline(
-        wds.SimpleShardList("{000000..000999}"),
-        wds.detshuffle(10),
-    )
-    result1 = list(iter(dataset1))
-    dataset2 = wds.DataPipeline(
-        wds.SimpleShardList("{000000..000999}"),
-        wds.detshuffle(10),
-    )
-    result2 = list(iter(dataset2))
-    assert result1 == result2
-    result22 = list(iter(dataset2))
-    assert result22 != result2
-    result12 = list(iter(dataset1))
-    assert result12 == result22
-    assert dataset2.stage(1).epoch == 1
 
 
 def test_pytorchshardlist():
@@ -208,27 +145,6 @@ def test_rename_files():
     assert len(result) == 47
 
 
-def test_xdecode():
-    dataset = wds.DataPipeline(
-        wds.shardspec("testdata/imagenet-000000.tgz"),
-        wds.tarfile_samples,
-        wds.xdecode(
-            png=imread,
-            cls=lambda stream: int(stream.read()),
-            must_decode=False,
-        )
-    )
-    result = list(iter(dataset))
-    keys = list(result[0].keys())
-    assert "__key__" in keys
-    assert "__url__" in keys
-    assert "cls" in keys
-    assert "png" in keys
-    assert isinstance(result[0]["cls"], int)
-    assert isinstance(result[0]["png"], np.ndarray)
-    assert result[0]["png"].shape == (793, 600, 3)
-    assert len(result) == 47
-
 
 def test_sep():
     dataset = wds.DataPipeline(
@@ -306,83 +222,6 @@ def test_pipe_cleaner():
     s = "pipe:curl -s -L http://storage.googleapis.com/nvdata-openimages/"
     assert wds.pipe_cleaner(s) == "http://storage.googleapis.com/nvdata-openimages/"
 
-
-def test_cached(tmp_path):
-    shardname = "testdata/imagenet-000000.tgz"
-    dest = os.path.join(tmp_path, shardname)
-    assert not os.path.exists(dest)
-    dataset = wds.DataPipeline(
-        wds.SimpleShardList([shardname] * 3),
-        wds.resampled(10),
-        wds.cached_tarfile_to_samples(cache_dir=tmp_path, verbose=True, always=True),
-        wds.shuffle(100),
-        wds.decode(autodecode.ImageHandler("rgb")),
-        wds.to_tuple("png", "cls"),
-    )
-    result = list(iter(dataset))
-    assert os.path.exists(dest)
-    assert os.system(f"cmp {shardname} {dest}") == 0
-    assert len(result[0]) == 2
-    assert isinstance(result[0][0], np.ndarray)
-    assert isinstance(result[0][1], int)
-    assert len(result) == 470
-    result = list(iter(dataset))
-    assert len(result[0]) == 2
-    assert isinstance(result[0][0], np.ndarray)
-    assert isinstance(result[0][1], int)
-    assert len(result) == 470
-
-
-def test_decoders():
-    ref = None
-    for spec in autodecode.imagespecs.keys():
-        print(spec)
-        shardname = "testdata/imagenet-000000.tgz"
-        dataset = wds.DataPipeline(
-            wds.SimpleShardList([shardname]),
-            wds.tarfile_to_samples(),
-            wds.decode(autodecode.ImageHandler(spec)),
-            wds.to_tuple("png", "cls"),
-        )
-        out = list(iter(dataset))
-        if "8" in spec:
-            for x in out:
-                assert x[0].dtype in [np.uint8, torch.uint8], (x[0].dtype, spec)
-        elif not spec.startswith("pil"):
-            for x in out:
-                assert x[0].dtype in [np.float32, torch.float32], (x[0].dtype, spec)
-        if spec in ["l", "l8", "torchl", "torchl8"]:
-            for x in out:
-                assert x[0].ndim == 2, (spec, x[0].shape)
-        shapes = [x[0].shape for x in out] if not spec.startswith("pil") else None
-        if ref is None:
-            ref = shapes
-        else:
-            if spec.startswith("torch"):
-                for x, y in zip(ref, shapes):
-                    assert x[-2:] == y[-2:], (x, y, spec)
-            elif spec.startswith("pil"):
-                pass
-            else:
-                for x, y in zip(ref, shapes):
-                    assert x[:2] == y[:2], (x, y, spec)
-
-
-def test_lru_cleanup(tmp_path):
-    for i in range(20):
-        fname = os.path.join(tmp_path, "%06d" % i)
-        with open(fname, "wb") as f:
-            f.write(b"x" * 4096)
-        print(fname, os.path.getctime(fname))
-        time.sleep(0.1)
-    assert "000000" in os.listdir(tmp_path)
-    assert "000019" in os.listdir(tmp_path)
-    total_before = sum(os.path.getsize(os.path.join(tmp_path, fname)) for fname in os.listdir(tmp_path))
-    wds.lru_cleanup(tmp_path, total_before / 2, verbose=True)
-    total_after = sum(os.path.getsize(os.path.join(tmp_path, fname)) for fname in os.listdir(tmp_path))
-    assert total_after <= total_before * 0.5
-    assert "000000" not in os.listdir(tmp_path)
-    assert "000019" in os.listdir(tmp_path)
 
 
 def test_splitting():
@@ -522,33 +361,13 @@ def test_yaml2():
     assert len(l) == 60, len(l)
 
 
-def IGNORE_test_log_keys(tmp_path):
-    tmp_path = str(tmp_path)
-    fname = tmp_path + "/test.ds.yml"
-    ds = wds.WebDataset(local_data).log_keys(fname)
-    result = [x for x in ds]
-    assert len(result) == 47
-    with open(fname) as stream:
-        lines = stream.readlines()
-    assert len(lines) == 47
-
-
-def IGNORE_test_length():
-    ds = wds.WebDataset(local_data)
-    with pytest.raises(TypeError):
-        len(ds)
-    dsl = ds.with_length(1793)
-    assert len(dsl) == 1793
-    dsl2 = dsl.repeat(17).with_length(19)
-    assert len(dsl2) == 19
-
-
 def test_mock():
     ds = wds.MockDataset((True, True), 193)
     assert count_samples_tuple(ds) == 193
 
 
-def IGNORE_test_ddp_equalize():
+@pytest.mark.skip(reason="obsolete")
+def test_ddp_equalize():
     ds = wds.DataPipeline(wds.SimpleShardList(local_data), wds.tarfile_to_samples(), wds.ddp_equalize(773))
     assert count_samples_tuple(ds) == 733
 
@@ -860,23 +679,6 @@ def test_gz():
     assert "__url__" in sample, sample.keys()
 
 
-@pytest.mark.skip(reason="need to figure out unraisableexceptionwarning")
-def test_rgb8_np_vs_torch():
-    import warnings
-
-    warnings.filterwarnings("error")
-    ds = wds.WebDataset(local_data).decode("rgb8").to_tuple("png;jpg", "cls")
-    image, cls = next(iter(ds))
-    assert isinstance(image, np.ndarray), type(image)
-    assert isinstance(cls, int), type(cls)
-    ds = wds.WebDataset(local_data).decode("torchrgb8").to_tuple("png;jpg", "cls")
-    image2, cls2 = next(iter(ds))
-    assert isinstance(image2, torch.Tensor), type(image2)
-    assert isinstance(cls, int), type(cls)
-    assert (image == image2.permute(1, 2, 0).numpy()).all, (image.shape, image2.shape)
-    assert cls == cls2
-
-
 def test_float_np_vs_torch():
     ds = wds.DataPipeline(
         wds.SimpleShardList(local_data),
@@ -896,18 +698,6 @@ def test_float_np_vs_torch():
     assert cls == cls2
 
 
-# def test_associate():
-#     with open("testdata/imagenet-extra.json") as stream:
-#         extra_data = simplejson.load(stream)
-
-#     def associate(key):
-#         return dict(MY_EXTRA_DATA=extra_data[key])
-
-#     ds = wds.WebDataset(local_data).associate(associate)
-
-#     for sample in ds:
-#         assert "MY_EXTRA_DATA" in sample.keys()
-#         break
 
 
 def test_tenbin():
@@ -940,25 +730,6 @@ def test_tenbin_dec():
         assert xs.shape == (28, 28)
         assert ys.shape == (28, 28)
 
-
-# def test_container_mp():
-#     ds = wds.WebDataset("testdata/mpdata.tar", container="mp", decoder=None)
-#     assert count_samples_tuple(ds) == 100
-#     for sample in ds:
-#         assert isinstance(sample, dict)
-#         assert set(sample.keys()) == set("__key__ x y".split()), sample
-
-
-# def test_container_ten():
-#     ds = wds.WebDataset("testdata/tendata.tar", container="ten", decoder=None)
-#     assert count_samples_tuple(ds) == 100
-#     for xs, ys in ds:
-#         assert xs.dtype == np.float64
-#         assert ys.dtype == np.float64
-#         assert xs.shape == (28, 28)
-#         assert ys.shape == (28, 28)
-
-
 def test_dataloader():
     import torch
 
@@ -971,32 +742,6 @@ def test_dataloader():
     dl = torch.utils.data.DataLoader(ds, num_workers=4)
     assert count_samples_tuple(dl, n=100) == 100
 
-
-def IGNORE_test_multimode():
-    import torch
-
-    urls = [local_data] * 8
-    nsamples = 47 * 8
-
-    shardlist = wds.PytorchShardList(urls, verbose=True, epoch_shuffle=True, shuffle=True)
-    os.environ["WDS_EPOCH"] = "7"
-    ds = wds.WebDataset(shardlist)
-    dl = torch.utils.data.DataLoader(ds, num_workers=4)
-    count = count_samples_tuple(dl)
-    assert count == nsamples, count
-    del os.environ["WDS_EPOCH"]
-
-    shardlist = wds.PytorchShardList(urls, verbose=True, split_by_worker=False)
-    ds = wds.WebDataset(shardlist)
-    dl = torch.utils.data.DataLoader(ds, num_workers=4)
-    count = count_samples_tuple(dl)
-    assert count == 4 * nsamples, count
-
-    shardlist = shardlists.ResampledShards(urls)
-    ds = wds.WebDataset(shardlist).slice(170)
-    dl = torch.utils.data.DataLoader(ds, num_workers=4)
-    count = count_samples_tuple(dl)
-    assert count == 170 * 4, count
 
 
 def test_resampled_initialization():
@@ -1174,80 +919,3 @@ def test_repeat2():
     ds = ds.with_epoch(20)
     assert count_samples_tuple(ds) == 20
 
-
-def test_webloader():
-    ds = wds.DataPipeline(
-        wds.SimpleShardList(local_data),
-        wds.split_by_worker,
-        wds.tarfile_to_samples(),
-        wds.to_tuple("png;jpg", "cls"),
-    )
-    dl = DataLoader(ds, num_workers=4, batch_size=3)
-    nsamples = count_samples_tuple(dl)
-    assert nsamples == (47 + 2) // 3, nsamples
-
-
-def test_webloader2():
-    ds = wds.DataPipeline(
-        wds.SimpleShardList(local_data),
-        wds.split_by_worker,
-        wds.tarfile_to_samples(),
-        wds.to_tuple("png;jpg", "cls"),
-    )
-    dl = wds.DataPipeline(
-        DataLoader(ds, num_workers=4, batch_size=3, drop_last=True),
-        wds.unbatched(),
-    )
-    nsamples = count_samples_tuple(dl)
-    assert nsamples == 45, nsamples
-
-
-def test_mcached():
-    shardname = "testdata/imagenet-000000.tgz"
-    dataset = wds.DataPipeline(
-        wds.SimpleShardList([shardname]),
-        wds.tarfile_to_samples(),
-        wds.Cached(),
-    )
-    result1 = list(iter(dataset))
-    result2 = list(iter(dataset))
-    assert len(result1) == len(result2)
-
-
-def test_lmdb_cached(tmp_path):
-    shardname = "testdata/imagenet-000000.tgz"
-    dest = os.path.join(tmp_path, "test.lmdb")
-    assert not os.path.exists(dest)
-    dataset = wds.DataPipeline(
-        wds.SimpleShardList([shardname]),
-        wds.tarfile_to_samples(),
-        wds.LMDBCached(dest),
-    )
-    result1 = list(iter(dataset))
-    assert os.path.exists(dest)
-    result2 = list(iter(dataset))
-    assert os.path.exists(dest)
-    assert len(result1) == len(result2)
-    del dataset
-    dataset = wds.DataPipeline(
-        wds.SimpleShardList([shardname]),
-        wds.tarfile_to_samples(),
-        wds.LMDBCached(dest),
-    )
-    result3 = list(iter(dataset))
-    assert len(result1) == len(result3)
-
-def test_missing_throws(tmp_path):
-    path = os.path.join(tmp_path, "missing.tar")
-    ds = wds.WebDataset(path)
-    with pytest.raises(IOError):
-        for sample in ds:
-            pass
-
-def test_missing_throws2(tmp_path):
-    # path = os.path.join("http://storage.googleapis.com/torch-ml/vision/imagenet", "missing.tar)
-    path = "http://storage.googleapis.com/nvdata-openimages/missing.tar"
-    ds = wds.WebDataset(path)
-    with pytest.raises(IOError):
-        for sample in ds:
-            pass
