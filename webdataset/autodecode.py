@@ -93,10 +93,21 @@ IMAGE_EXTENSIONS = [
 ################################################################
 
 
-def torch_loads(data):
-    """Load data using torch.loads, importing torch only if needed.
+def torch_loads(data: bytes):
+    """Function: torch_loads
 
-    :param data: data to be decoded
+    Description:
+    This function loads data using torch.loads. It first imports torch only if necessary. Then it decodes the input data using torch.load.
+        
+    Parameters:
+    - data (bytes): The data to be decoded.
+
+    Returns:
+    It returns the decoded input data.
+        
+    Example:
+        data = b'...'
+        output = torch_loads(data)
     """
     import io
 
