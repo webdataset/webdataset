@@ -109,6 +109,7 @@ class WebDataset(DataPipeline, FluidInterface):
         url_to_name=cache.pipe_cleaner,
         detshuffle=False,
         nodesplitter=shardlists.single_node_only,
+        select_files=None,
         verbose=False,
     ):
         super().__init__()
@@ -145,7 +146,7 @@ class WebDataset(DataPipeline, FluidInterface):
                 else:
                     self.append(filters.shuffle(shardshuffle))
         if cache_dir is None or cache_size == 0:
-            self.append(tariterators.tarfile_to_samples(handler=handler))
+            self.append(tariterators.tarfile_to_samples(handler=handler, select_files=select_files))
         else:
             assert cache_size == -1 or cache_size > 0
             self.append(
@@ -155,6 +156,7 @@ class WebDataset(DataPipeline, FluidInterface):
                     url_to_name=url_to_name,
                     cache_size=cache_size,
                     cache_dir=cache_dir,
+                    select_files=select_files,
                 )
             )
 

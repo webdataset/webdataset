@@ -163,6 +163,49 @@ def test_shardspec():
     assert isinstance(result[0]["png"], np.ndarray)
     assert result[0]["png"].shape == (793, 600, 3)
     assert len(result) == 47
+    
+def select_png(name):
+    return name.endswith(".png")
+
+def test_select_files():
+    dataset = wds.DataPipeline(
+        wds.shardspec("testdata/imagenet-000000.tgz"),
+        wds.tarfile_to_samples(select_files=select_png),
+        wds.decode(autodecode.ImageHandler("rgb")),
+    )
+    result = list(iter(dataset))
+    keys = list(result[0].keys())
+    assert "__key__" in keys
+    assert "__url__" in keys
+    assert "cls" not in keys
+    assert "png" in keys
+    assert isinstance(result[0]["png"], np.ndarray)
+    assert result[0]["png"].shape == (793, 600, 3)
+    assert len(result) == 47
+    
+def rename_cls(name):
+    if name.endswith(".cls"):
+        return name[:-4]+".txt"
+    return name
+
+def test_rename_files():
+    dataset = wds.DataPipeline(
+        wds.shardspec("testdata/imagenet-000000.tgz"),
+        wds.tarfile_to_samples(rename_files=rename_cls),
+        wds.decode(autodecode.ImageHandler("rgb")),
+    )
+    result = list(iter(dataset))
+    keys = list(result[0].keys())
+    assert "__key__" in keys
+    assert "__url__" in keys
+    assert "cls" not in keys
+    assert "txt" in keys
+    assert "png" in keys
+    assert isinstance(result[0]["txt"], str)
+    assert int(result[0]["txt"]) >= 0 # also tests format
+    assert isinstance(result[0]["png"], np.ndarray)
+    assert result[0]["png"].shape == (793, 600, 3)
+    assert len(result) == 47
 
 
 def test_xdecode():

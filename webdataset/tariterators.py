@@ -7,6 +7,8 @@
 
 """Low level iteration functions for tar archives."""
 
+from typing import Any, Callable, Dict, Iterable, Iterator, Optional, Set, Tuple
+
 import random, re, tarfile
 
 import braceexpand
@@ -24,9 +26,11 @@ def base_plus_ext(path):
 
     Returns base, allext.
 
-    :param path: path with extensions
-    :param returns: path with all extensions removed
-
+    Args:
+        path: path with extensions
+        
+    Returns:
+        path with all extensions removed
     """
     match = re.match(r"^((?:.*/|)[^.]+)[.]([^/]*)$", path)
     if not match:
@@ -34,10 +38,14 @@ def base_plus_ext(path):
     return match.group(1), match.group(2)
 
 
-def valid_sample(sample):
+def valid_sample(sample: Dict[str, Any]) -> bool:
     """Check whether a sample is valid.
 
-    :param sample: sample to be checked
+    Args:
+        sample: a 
+
+    Returns:
+        boolean indicating whether the sample is valid.
     """
     return (
         sample is not None
@@ -60,8 +68,21 @@ def shardlist(urls, *, shuffle=False):
         yield dict(url=url)
 
 
-def url_opener(data, handler=reraise_exception, **kw):
-    """Given a stream of url names (packaged in `dict(url=url)`), yield opened streams."""
+def url_opener(
+    data: Iterable[Dict[str, Any]],
+    handler: Callable[[Exception], bool]=reraise_exception,
+    **kw: Dict[str, Any]
+):
+    """Open URLs and yield a stream of url+stream pairs.
+
+    Args:
+        data: iterator over dict(url=...)
+        handler: exception handler.
+        kw: keyword arguments for gopen.gopen.
+
+    Yields:
+        a stream of url+stream pairs.
+    """
     for sample in data:
         assert isinstance(sample, dict), sample
         assert "url" in sample
@@ -78,13 +99,24 @@ def url_opener(data, handler=reraise_exception, **kw):
                 break
 
 
-def tar_file_iterator(fileobj, skip_meta=r"__[^/]*__($|/)", handler=reraise_exception):
+def tar_file_iterator(
+    fileobj: tarfile.TarFile,
+    skip_meta: Optional[str] = r"__[^/]*__($|/)", 
+    handler: Callable[[Exception], bool] = reraise_exception,
+    select_files: Optional[Callable[[str], bool]] = None,
+    rename_files: Optional[Callable[[str], str]] = None,
+) -> Iterator[Dict[str, Any]]:
     """Iterate over tar file, yielding filename, content pairs for the given tar stream.
 
-    :param fileobj: byte stream suitable for tarfile
-    :param skip_meta: regexp for keys that are skipped entirely (Default value = r"__[^/]*__($|/)")
+    Args:
+        fileobj: the tar file stream.
+        skip_meta: regexp for keys that are skipped entirely. Defaults to r"__[^/]*__($|/)".
+        handler: exception handler. Defaults to reraise_exception.
+        select: predicate for selecting files. Defaults to None.
 
-    """
+    Yields:
+        a stream of samples.
+    """    
     stream = tarfile.open(fileobj=fileobj, mode="r|*")
     for tarinfo in stream:
         fname = tarinfo.name
@@ -102,6 +134,10 @@ def tar_file_iterator(fileobj, skip_meta=r"__[^/]*__($|/)", handler=reraise_exce
                 continue
             if skip_meta is not None and re.match(skip_meta, fname):
                 continue
+            if rename_files:
+                fname = rename_files(fname)
+            if select_files is not None and not select_files(fname):
+                continue
             data = stream.extractfile(tarinfo).read()
             result = dict(fname=fname, data=data)
             yield result
@@ -116,17 +152,28 @@ def tar_file_iterator(fileobj, skip_meta=r"__[^/]*__($|/)", handler=reraise_exce
     del stream
 
 
-def tar_file_expander(data, handler=reraise_exception):
-    """Expand a stream of open tar files into a stream of tar file contents.
+def tar_file_expander(
+    data: Iterable[Dict[str, Any]], 
+    handler: Callable[[Exception], bool] = reraise_exception, 
+    select_files: Optional[Callable[[str], bool]] = None,
+    rename_files: Optional[Callable[[str], str]] = None,
+) -> Iterator[Dict[str, Any]]:
+    """Expand tar files.
 
-    This returns an iterator over (filename, file_contents).
+    Args:
+        data: iterator over opened tar file streams.
+        handler: exception handler.
+        select_files: select files from tarfiles by name (permits skipping files).
+
+    Yields:
+        a stream of samples.
     """
     for source in data:
         url = source["url"]
         try:
             assert isinstance(source, dict)
             assert "stream" in source
-            for sample in tar_file_iterator(source["stream"], handler=handler):
+            for sample in tar_file_iterator(source["stream"], handler=handler, select_files=select_files, rename_files=rename_files):
                 assert (
                     isinstance(sample, dict) and "data" in sample and "fname" in sample
                 )
@@ -140,11 +187,27 @@ def tar_file_expander(data, handler=reraise_exception):
                 break
 
 
-def group_by_keys(data, keys=base_plus_ext, lcase=True, suffixes=None, handler=reraise_exception):
-    """Return function over iterator that groups key, value pairs into samples.
+def group_by_keys(
+    data: Iterable[Dict[str, Any]],
+    keys: Callable[[str], Tuple[str, str]] = base_plus_ext,
+    lcase: bool = True,
+    suffixes: Optional[Set[str]] = None,
+    handler: Callable[[Exception], bool] = reraise_exception,
+) -> Iterator[Dict[str, Any]]:
+    """Group tarfile contents by keys and yield samples.
 
-    :param keys: function that splits the key into key and extension (base_plus_ext)
-    :param lcase: convert suffixes to lower case (Default value = True)
+    Args:
+        data: iterator over tarfile contents
+        keys: function that takes a file name and returns a key and a suffix.
+        lcase: whether to lowercase the suffix.
+        suffixes: list of suffixes to keep.
+        handler: exception handler.
+
+    Raises:
+        ValueError: raised if there are duplicate file names in the tar file.
+
+    Yields:
+        iterator over samples.
     """
     current_sample = None
     for filesample in data:
@@ -182,9 +245,24 @@ def group_by_keys(data, keys=base_plus_ext, lcase=True, suffixes=None, handler=r
         yield current_sample
 
 
-def tarfile_samples(src, handler=reraise_exception):
+def tarfile_samples(
+    src: Iterable[Dict[str, Any]],
+    handler: Callable[[Exception], bool]=reraise_exception, 
+    select_files: Optional[Callable[[str], bool]]=None,
+    rename_files: Optional[Callable[[str], str]]=None,
+) -> Iterable[Dict[str, Any]]:
+    """Given a stream of tar files, yield samples.
+
+    Args:
+        src: stream of tar files
+        handler: exception handler
+        select_files: function that selects files to be included
+
+    Returns:
+        stream of samples        
+    """
     streams = url_opener(src, handler=handler)
-    files = tar_file_expander(streams, handler=handler)
+    files = tar_file_expander(streams, handler=handler, select_files=select_files, rename_files=rename_files)
     samples = group_by_keys(files, handler=handler)
     return samples
 
