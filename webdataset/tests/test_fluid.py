@@ -86,11 +86,35 @@ def count_samples(source: iter, *args: callable, n: int = 1000) -> int:
 
 
 def test_dataset():
+    """
+    Tests that the WebDataset object created from locally hosted data contains the expected number of samples.
+
+    Args:
+        None
+
+    Returns:
+        None
+
+    Raises:
+        AssertionError: If the number of samples in the WebDataset object does not match the expected value.
+    """
     ds = wds.WebDataset(local_data)
     assert count_samples_tuple(ds) == 47
 
 
 def test_dataset_resampled():
+    """
+    Tests that the WebDataset object created from resampled locally hosted data contains the expected number of samples.
+
+    Args:
+        None
+
+    Returns:
+        None
+
+    Raises:
+        AssertionError: If the number of samples in the WebDataset object does not match the expected value.
+    """
     ds = wds.WebDataset(local_data, resampled=True)
     assert count_samples_tuple(ds, n=100) == 100
 
@@ -133,25 +157,36 @@ datasets:
 
 
 def test_yaml3():
+    """Create a WebDataset from a YAML spec.
+
+    The spec is a list of datasets, each of which is a list of shards.
+    """
     spec = yaml.safe_load(StringIO(yaml3_data))
     ds = wds.WebDataset(spec)
     next(iter(ds))
 
 
 def test_length():
+    """Test the with_length and repeat methods."""
     ds = wds.WebDataset(local_data)
+    # ensure that the dataset does not have a length property
     with pytest.raises(TypeError):
         len(ds)
+    # ensure that the dataset has a length property after setting it
     dsl = ds.with_length(1793)
     assert len(dsl) == 1793
+    # repeat the dataset 17 times
     dsl2 = ds.repeat(17)
+    # ensure that the dataset has a length property after setting it
     dsl3 = dsl2.with_length(19)
     assert len(dsl3) == 19
 
 
 def test_mock():
+    """Test that MockDataset works as expected."""
     ds = wds.MockDataset((True, True), 193)
     assert count_samples_tuple(ds) == 193
+    assert next(iter(ds)) == (True, True)
 
 
 @pytest.mark.skip(reason="ddp_equalize is obsolete")
@@ -161,21 +196,25 @@ def test_ddp_equalize():
 
 
 def test_dataset_shuffle_extract():
+    """Basic WebDataset usage: shuffle, extract, and count samples."""
     ds = wds.WebDataset(local_data).shuffle(5).to_tuple("png;jpg cls")
     assert count_samples_tuple(ds) == 47
 
 
 def test_dataset_pipe_cat():
+    """Test that WebDataset can read from a pipe."""
     ds = wds.WebDataset(f"pipe:cat {local_data}").shuffle(5).to_tuple("png;jpg cls")
     assert count_samples_tuple(ds) == 47
 
 
 def test_slice():
+    """Test the slice method."""
     ds = wds.WebDataset(local_data).slice(10)
     assert count_samples_tuple(ds) == 10
 
 
 def test_dataset_eof():
+    """Test that truncated tar files raise an error."""
     import tarfile
 
     with pytest.raises(tarfile.ReadError):
@@ -184,6 +223,7 @@ def test_dataset_eof():
 
 
 def test_dataset_eof_handler():
+    """Test that we can ignore EOF errors by using a handler."""
     ds = wds.WebDataset(
         f"pipe:dd if={local_data} bs=1024 count=10", handler=wds.ignore_and_stop
     )
@@ -191,6 +231,7 @@ def test_dataset_eof_handler():
 
 
 def test_dataset_decode_nohandler():
+    """Test that errors in a custom decoder without handler are raised."""
     count = [0]
 
     def faulty_decoder(key, data):
@@ -206,12 +247,14 @@ def test_dataset_decode_nohandler():
 
 
 def test_dataset_missing_totuple_raises():
+    """Test that missing keys in to_tuple raise an error."""
     with pytest.raises(ValueError):
         ds = wds.WebDataset(local_data).to_tuple("foo", "bar")
         count_samples_tuple(ds)
 
 
 def test_dataset_missing_rename_raises():
+    """Test that missing keys in rename raise an error."""
     with pytest.raises(ValueError):
         ds = wds.WebDataset(local_data).rename(x="foo", y="bar")
         count_samples_tuple(ds)
@@ -222,6 +265,9 @@ def getkeys(sample):
 
 
 def test_dataset_rename_keep():
+    """Test the keep option of rename.
+
+    This option determines whether the original keys are kept or only the renamed keys."""
     ds = wds.WebDataset(local_data).rename(image="png", keep=False)
     sample = next(iter(ds))
     assert getkeys(sample) == set(["image"]), getkeys(sample)
@@ -231,7 +277,9 @@ def test_dataset_rename_keep():
 
 
 def test_dataset_rsample():
+    """Test the rsample method.
 
+    The rsample method selects samples from a stream with a given probability."""
     ds = wds.WebDataset(local_data).rsample(1.0)
     assert count_samples_tuple(ds) == 47
 
@@ -241,6 +289,7 @@ def test_dataset_rsample():
 
 
 def test_dataset_decode_handler():
+    """Test that we can handle a faulty decoder with a handler."""
     count = [0]
     good = [0]
 
@@ -264,6 +313,7 @@ def test_dataset_decode_handler():
 
 
 def test_dataset_rename_handler():
+    """Test basic rename functionality."""
 
     ds = wds.WebDataset(local_data).rename(image="png;jpg", cls="cls")
     count_samples_tuple(ds)
@@ -274,6 +324,8 @@ def test_dataset_rename_handler():
 
 
 def test_dataset_map_handler():
+    """Test the map method on a dataset, including error handling."""
+
     def f(x):
         assert isinstance(x, dict)
         return x
@@ -290,6 +342,7 @@ def test_dataset_map_handler():
 
 
 def test_dataset_map_dict_handler():
+    """Test the map_dict method on a dataset, including error handling."""
 
     ds = wds.WebDataset(local_data).map_dict(png=identity, cls=identity)
     count_samples_tuple(ds)
@@ -307,6 +360,7 @@ def test_dataset_map_dict_handler():
 
 
 def test_dataset_shuffle_decode_rename_extract():
+    """Test the basic shuffle-decode-rename-to_tuple pipeline."""
     ds = (
         wds.WebDataset(local_data)
         .shuffle(5)
@@ -321,6 +375,7 @@ def test_dataset_shuffle_decode_rename_extract():
 
 
 def test_rgb8():
+    """Test decoding to RGB8 numpy arrays."""
     ds = wds.WebDataset(local_data).decode("rgb8").to_tuple("png;jpg", "cls")
     assert count_samples_tuple(ds) == 47
     image, cls = next(iter(ds))
@@ -330,6 +385,7 @@ def test_rgb8():
 
 
 def test_pil():
+    """Test decoding to PIL images."""
     ds = wds.WebDataset(local_data).decode("pil").to_tuple("jpg;png", "cls")
     assert count_samples_tuple(ds) == 47
     image, cls = next(iter(ds))
@@ -337,6 +393,7 @@ def test_pil():
 
 
 def test_raw():
+    """Test absence of decoding."""
     ds = wds.WebDataset(local_data).to_tuple("jpg;png", "cls")
     assert count_samples_tuple(ds) == 47
     image, cls = next(iter(ds))
@@ -345,6 +402,7 @@ def test_raw():
 
 
 def test_only1():
+    """Test partial decoding using the only option to decode."""
     ds = wds.WebDataset(local_data).decode(only="cls").to_tuple("jpg;png", "cls")
     assert count_samples_tuple(ds) == 47
     image, cls = next(iter(ds))
@@ -363,6 +421,7 @@ def test_only1():
 
 
 def test_gz():
+    """Test chained decoding: txt.gz is first decompressed then decoded."""
     ds = wds.WebDataset(compressed).decode()
     sample = next(iter(ds))
     print(sample)
@@ -387,6 +446,7 @@ def test_rgb8_np_vs_torch():
 
 
 def test_float_np_vs_torch():
+    """Compare decoding to numpy and to torch and ensure that they give the same results."""
     ds = wds.WebDataset(local_data).decode("rgb").to_tuple("png;jpg", "cls")
     image, cls = next(iter(ds))
     ds = wds.WebDataset(local_data).decode("torchrgb").to_tuple("png;jpg", "cls")
@@ -395,21 +455,24 @@ def test_float_np_vs_torch():
     assert cls == cls2
 
 
-# def test_associate():
-#     with open("testdata/imagenet-extra.json") as stream:
-#         extra_data = simplejson.load(stream)
+@pytest.mark.skip(reason="untested")
+def test_associate():
+    """Test associating extra data with samples."""
+    with open("testdata/imagenet-extra.json") as stream:
+        extra_data = simplejson.load(stream)
 
-#     def associate(key):
-#         return dict(MY_EXTRA_DATA=extra_data[key])
+    def associate(key):
+        return dict(MY_EXTRA_DATA=extra_data[key])
 
-#     ds = wds.WebDataset(local_data).associate(associate)
+    ds = wds.WebDataset(local_data).associate(associate)
 
-#     for sample in ds:
-#         assert "MY_EXTRA_DATA" in sample.keys()
-#         break
+    for sample in ds:
+        assert "MY_EXTRA_DATA" in sample.keys()
+        break
 
 
 def test_tenbin():
+    """Test tensor binary encoding."""
     from webdataset import tenbin
 
     for d0 in [0, 1, 2, 10, 100, 1777]:
@@ -425,6 +488,7 @@ def test_tenbin():
 
 
 def test_tenbin_dec():
+    """Test tensor binary decoding."""
     ds = wds.WebDataset("testdata/tendata.tar").decode().to_tuple("ten")
     assert count_samples_tuple(ds) == 100
     for sample in ds:
@@ -435,25 +499,29 @@ def test_tenbin_dec():
         assert ys.shape == (28, 28)
 
 
-# def test_container_mp():
-#     ds = wds.WebDataset("testdata/mpdata.tar", container="mp", decoder=None)
-#     assert count_samples_tuple(ds) == 100
-#     for sample in ds:
-#         assert isinstance(sample, dict)
-#         assert set(sample.keys()) == set("__key__ x y".split()), sample
+@pytest.mark.skip(reason="untested")
+def test_container_mp():
+    ds = wds.WebDataset("testdata/mpdata.tar", container="mp", decoder=None)
+    assert count_samples_tuple(ds) == 100
+    for sample in ds:
+        assert isinstance(sample, dict)
+        assert set(sample.keys()) == set("__key__ x y".split()), sample
 
 
-# def test_container_ten():
-#     ds = wds.WebDataset("testdata/tendata.tar", container="ten", decoder=None)
-#     assert count_samples_tuple(ds) == 100
-#     for xs, ys in ds:
-#         assert xs.dtype == np.float64
-#         assert ys.dtype == np.float64
-#         assert xs.shape == (28, 28)
-#         assert ys.shape == (28, 28)
+@pytest.mark.skip(reason="untested")
+def test_container_ten():
+    ds = wds.WebDataset("testdata/tendata.tar", container="ten", decoder=None)
+    assert count_samples_tuple(ds) == 100
+    for xs, ys in ds:
+        assert xs.dtype == np.float64
+        assert ys.dtype == np.float64
+        assert xs.shape == (28, 28)
+        assert ys.shape == (28, 28)
 
 
 def test_decoder():
+    """Test a custom decoder function."""
+
     def mydecoder(key, sample):
         return len(sample)
 
@@ -468,6 +536,7 @@ def test_decoder():
 
 
 def test_shard_syntax():
+    """Test that remote shards are correctly handled."""
     print(remote_loc, remote_shards)
     ds = wds.WebDataset(remote_loc + remote_shards).decode().to_tuple("jpg;png", "json")
     assert count_samples_tuple(ds, n=10) == 10
@@ -502,6 +571,7 @@ def test_pipe():
 
 
 def test_torchvision():
+    """Test that torchvision transforms work correctly when used with WebDataset and map_tuple."""
     import torch
     from torchvision import transforms
 
@@ -530,6 +600,7 @@ def test_torchvision():
 
 
 def test_batched():
+    """Test batching with WebDataset and batched(n) method."""
     import torch
     from torchvision import transforms
 
@@ -560,6 +631,7 @@ def test_batched():
 
 
 def test_unbatched():
+    """Test unbatching with WebDataset and unbatched() method."""
     import torch
     from torchvision import transforms
 
@@ -591,6 +663,7 @@ def test_unbatched():
 
 
 def test_with_epoch():
+    """Test the with_epoch(n) method, forcing epochs of a given size."""
     ds = wds.WebDataset(local_data)
     for _ in range(10):
         assert count_samples_tuple(ds) == 47
@@ -603,11 +676,13 @@ def test_with_epoch():
 
 
 def test_repeat():
+    """Test the repeatn(n) method, repeating the dataset n times."""
     ds = wds.WebDataset(local_data)
     assert count_samples_tuple(ds.repeat(nepochs=2)) == 47 * 2
 
 
 def test_repeat2():
+    """Testing the repeat(nbatches=n) method, repeating the dataset n batches."""
     ds = wds.WebDataset(local_data).to_tuple("png", "cls").batched(2)
     assert count_samples_tuple(ds.repeat(nbatches=20)) == 20
 
