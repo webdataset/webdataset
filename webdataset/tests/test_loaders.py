@@ -12,8 +12,8 @@ def test_webloader():
         wds.SimpleShardList(local_data),
         wds.split_by_worker,
         wds.tarfile_to_samples(),
-        wds.decode("rgb"),
-        wds.to_tuple("png;jpg", "cls"),
+        wds.decode(),
+        wds.to_tuple("cls"),
     )
     dl = DataLoader(ds, num_workers=4, batch_size=3)
     nsamples = count_samples_tuple(dl)
@@ -25,8 +25,8 @@ def test_webloader2():
         wds.SimpleShardList(local_data),
         wds.split_by_worker,
         wds.tarfile_to_samples(),
-        wds.decode("rgb"),
-        wds.to_tuple("png;jpg", "cls"),
+        wds.decode("torchrgb"),
+        wds.to_tuple("cls"),
     )
     dl = wds.DataPipeline(
         DataLoader(ds, num_workers=4, batch_size=3, drop_last=True),
@@ -37,22 +37,20 @@ def test_webloader2():
 
 
 def test_dataloader():
-    import torch
-
     ds = wds.WebDataset(remote_loc + remote_shards)
-    dl = torch.utils.data.DataLoader(ds, num_workers=4)
+    dl = DataLoader(ds, num_workers=4)
     assert count_samples_tuple(dl, n=100) == 100
 
 
 def test_webloader_repeat():
-    ds = wds.WebDataset(local_data).decode("rgb").to_tuple("png", "cls")
+    ds = wds.WebDataset(local_data).decode().to_tuple("cls")
     dl = wds.WebLoader(ds, num_workers=4, batch_size=3).repeat(nepochs=2)
     nsamples = count_samples_tuple(dl)
     assert nsamples == 2 * (47 + 2) // 3, nsamples
 
 
 def test_webloader_unbatched():
-    ds = wds.WebDataset(local_data).decode("rgb").to_tuple("png", "cls")
+    ds = wds.WebDataset(local_data).decode().to_tuple("cls")
     dl = wds.WebLoader(ds, num_workers=4, batch_size=3).unbatched()
     nsamples = count_samples_tuple(dl)
     assert nsamples == 47, nsamples
