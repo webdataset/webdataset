@@ -377,6 +377,7 @@ class ShardWriter:
         maxsize: float = 3e9,
         post: Optional[Callable] = None,
         start_shard: int = 0,
+        verbose: int = 1,
         **kw,
     ):
         """Create a ShardWriter.
@@ -386,7 +387,7 @@ class ShardWriter:
         :param maxsize: maximum size of each shard (Default value = 3e9)
         :param kw: other options passed to TarWriter
         """
-        self.verbose = 1
+        self.verbose = verbose
         self.kw = kw
         self.maxcount = maxcount
         self.maxsize = maxsize
