@@ -88,9 +88,9 @@ def url_opener(
         assert "url" in sample
         url = sample["url"]
         try:
-            with gopen.gopen(url, **kw) as stream:
-                sample.update(stream=stream)
-                yield sample
+            stream = gopen.gopen(url, **kw)
+            sample.update(stream=stream)
+            yield sample
         except Exception as exn:
             exn.args = exn.args + (url,)
             if handler(exn):

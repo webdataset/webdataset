@@ -115,6 +115,10 @@ class Pipe:
         """Context handler."""
         self.close()
 
+    def __del__(self):
+        """Close the stream upon delete."""
+        self.close()
+
 
 def set_options(
     obj, timeout=None, ignore_errors=None, ignore_status=None, handler=None
