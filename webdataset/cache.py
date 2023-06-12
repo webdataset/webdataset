@@ -178,6 +178,7 @@ def cached_tarfile_samples(
     url_to_name=pipe_cleaner,
     always=False,
     select_files=None,
+    rename_files=None,
 ):
     verbose = verbose or int(os.environ.get("GOPEN_VERBOSE", 0))
     streams = cached_url_opener(
@@ -189,7 +190,7 @@ def cached_tarfile_samples(
         url_to_name=url_to_name,
         always=always,
     )
-    files = tar_file_expander(streams, handler=handler, select_files=select_files)
+    files = tar_file_expander(streams, handler=handler, select_files=select_files, rename_files=rename_files)
     samples = group_by_keys(files, handler=handler)
     return samples
 
