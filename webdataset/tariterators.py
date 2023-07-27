@@ -241,7 +241,7 @@ def group_by_keys(
             if suffixes is None or suffix in suffixes:
                 current_sample[suffix] = value
         except Exception as exn:
-            exn.args = exn.args + (source.get("stream"), source.get("url"))
+            exn.args = exn.args + (filesample.get("stream"), filesample.get("url"))
             if handler(exn):
                 continue
             else:
