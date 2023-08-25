@@ -414,8 +414,8 @@ class ShardWriter:
                 self.total,
             )
         self.shard += 1
-        stream = open(self.fname, "wb")
-        self.tarstream = TarWriter(stream, **self.kw)
+        self.own_stream = open(self.fname, "wb")
+        self.tarstream = TarWriter(self.own_stream, **self.kw)
         self.count = 0
         self.size = 0
 
@@ -439,6 +439,7 @@ class ShardWriter:
         """Finish all writing (use close instead)."""
         if self.tarstream is not None:
             self.tarstream.close()
+            self.own_stream.close()
             assert self.fname is not None
             if callable(self.post):
                 self.post(self.fname)
