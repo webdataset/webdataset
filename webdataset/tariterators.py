@@ -9,7 +9,7 @@
 
 from typing import Any, Callable, Dict, Iterable, Iterator, Optional, Set, Tuple
 
-import random, re, tarfile
+import random, re, tarfile, os
 
 import braceexpand
 
@@ -35,7 +35,10 @@ def base_plus_ext(path):
     match = re.match(r"^((?:.*/|)[^.]+)[.]([^/]*)$", path)
     if not match:
         return None, None
-    return match.group(1), match.group(2)
+    if path.endswith(("CLIP_score.npy", "input_ids.npy")):
+        return match.group(1), match.group(2)
+    base, ext = os.path.splitext(path)
+    return base, ext[1:]
 
 
 def valid_sample(sample: Dict[str, Any]) -> bool:
@@ -47,12 +50,13 @@ def valid_sample(sample: Dict[str, Any]) -> bool:
     Returns:
         boolean indicating whether the sample is valid.
     """
-    return (
+    is_valid = (
         sample is not None
         and isinstance(sample, dict)
         and len(list(sample.keys())) > 0
         and not sample.get("__bad__", False)
     )
+    return is_valid
 
 
 # FIXME: UNUSED
@@ -230,14 +234,14 @@ def group_by_keys(
                 continue
             if lcase:
                 suffix = suffix.lower()
-            if current_sample is None or prefix != current_sample["__key__"]:
+            if current_sample is None or prefix != current_sample["__key__"] or suffix in current_sample:
                 if valid_sample(current_sample):
                     yield current_sample
                 current_sample = dict(__key__=prefix, __url__=filesample["__url__"])
-            if suffix in current_sample:
-                raise ValueError(
-                    f"{fname}: duplicate file name in tar file {suffix} {current_sample.keys()}"
-                )
+            # if suffix in current_sample:
+            #     raise ValueError(
+            #         f"{fname}: duplicate file name in tar file {suffix} {current_sample.keys()}"
+            #     )
             if suffixes is None or suffix in suffixes:
                 current_sample[suffix] = value
         except Exception as exn:
