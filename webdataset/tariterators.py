@@ -144,7 +144,7 @@ def tar_file_iterator(
             stream.members = []
         except Exception as exn:
             if hasattr(exn, "args") and len(exn.args) > 0:
-                exn.args = (exn.args[0] + " @ " + str(fileobj),) + exn.args[1:]
+                exn.args = (str(exn.args[0]) + " @ " + str(fileobj),) + exn.args[1:]
             if handler(exn):
                 continue
             else:
