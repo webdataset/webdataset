@@ -236,6 +236,7 @@ def group_by_keys(
                 suffix = suffix.lower()
             if current_sample is None or prefix != current_sample["__key__"] or suffix in current_sample:
                 if valid_sample(current_sample):
+                    current_sample["tar_path"] = filesample["__url__"]
                     yield current_sample
                 current_sample = dict(__key__=prefix, __url__=filesample["__url__"])
             # if suffix in current_sample:
@@ -251,6 +252,7 @@ def group_by_keys(
             else:
                 break
     if valid_sample(current_sample):
+        current_sample["tar_path"] = filesample["__url__"]
         yield current_sample
 
 
