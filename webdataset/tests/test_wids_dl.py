@@ -4,7 +4,12 @@ import multiprocessing
 import time
 import glob
 
-from webdataset.wids_dl import SimpleDownloader, ConcurrentDownloader, mkresult, splitresult
+from webdataset.wids.wids_dl import (
+    SimpleDownloader,
+    ConcurrentDownloader,
+    mkresult,
+    splitresult,
+)
 
 
 class TestSimpleDownloader:
@@ -31,7 +36,9 @@ class TestConcurrentDownloader:
         assert os.path.exists(destpath)
 
         destpath2 = os.path.join(self.dldir, "google.txt")
-        value2 = self.dlr.download("pipe:cat google.html | grep google > {local}", destpath2)
+        value2 = self.dlr.download(
+            "pipe:cat google.html | grep google > {local}", destpath2
+        )
         assert os.path.exists(destpath2)
 
         self.dlr.release(value1)
@@ -56,7 +63,9 @@ class TestConcurrentDownloader:
             dlr = ConcurrentDownloader()
             step1.wait()
             print(pid, "step1")
-            resultpath = dlr.download("pipe:sleep %d; echo 'hello world' > {local}" % sleep, destpath)
+            resultpath = dlr.download(
+                "pipe:sleep %d; echo 'hello world' > {local}" % sleep, destpath
+            )
             print("files:", glob.glob(os.path.join(self.dldir, "*")))
             assert os.path.exists(resultpath)
             assert os.path.exists(destpath)
@@ -70,9 +79,13 @@ class TestConcurrentDownloader:
         proc2_step1 = multiprocessing.Event()
         proc2_step2 = multiprocessing.Event()
 
-        proc1 = multiprocessing.Process(target=background_download, args=(proc1_step1, proc1_step2, 1))
+        proc1 = multiprocessing.Process(
+            target=background_download, args=(proc1_step1, proc1_step2, 1)
+        )
         proc1.start()
-        proc2 = multiprocessing.Process(target=background_download, args=(proc2_step1, proc2_step2, 1))
+        proc2 = multiprocessing.Process(
+            target=background_download, args=(proc2_step1, proc2_step2, 1)
+        )
         proc2.start()
 
         try:

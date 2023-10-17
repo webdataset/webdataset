@@ -267,7 +267,8 @@ def getkeys(sample):
 def test_dataset_rename_keep():
     """Test the keep option of rename.
 
-    This option determines whether the original keys are kept or only the renamed keys."""
+    This option determines whether the original keys are kept or only the renamed keys.
+    """
     ds = wds.WebDataset(local_data).rename(image="png", keep=False)
     sample = next(iter(ds))
     assert getkeys(sample) == set(["image"]), getkeys(sample)

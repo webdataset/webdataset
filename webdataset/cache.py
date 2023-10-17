@@ -190,7 +190,9 @@ def cached_tarfile_samples(
         url_to_name=url_to_name,
         always=always,
     )
-    files = tar_file_expander(streams, handler=handler, select_files=select_files, rename_files=rename_files)
+    files = tar_file_expander(
+        streams, handler=handler, select_files=select_files, rename_files=rename_files
+    )
     samples = group_by_keys(files, handler=handler)
     return samples
 

@@ -1,4 +1,4 @@
-#%%
+# %%
 import copy
 import sys
 from itertools import islice

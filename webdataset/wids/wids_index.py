@@ -16,6 +16,7 @@ def urldir(url):
     directory = os.path.dirname(path)
     return parsed_url._replace(path=directory).geturl()
 
+
 def urlfile(url):
     """Return the file part of a url."""
     parsed_url = urlparse(url)
@@ -23,17 +24,20 @@ def urlfile(url):
     filename = os.path.basename(path)
     return filename
 
+
 def main():
-    parser = argparse.ArgumentParser(description='Create a shard index for a set of files')
-    parser.add_argument('files', nargs='+', help='files to index')
-    parser.add_argument('--output', '-o', help='output file name')
-    parser.add_argument('--name', '-n', help='name for dataset', default='train')
-    parser.add_argument('--info', '-i', help='description for dataset', default=None)
+    parser = argparse.ArgumentParser(
+        description="Create a shard index for a set of files"
+    )
+    parser.add_argument("files", nargs="+", help="files to index")
+    parser.add_argument("--output", "-o", help="output file name")
+    parser.add_argument("--name", "-n", help="name for dataset", default="train")
+    parser.add_argument("--info", "-i", help="description for dataset", default=None)
     args = parser.parse_args()
 
     # set default output file name
     if args.output is None:
-        args.output = 'shardindex.json'
+        args.output = "shardindex.json"
 
     # expand any brace expressions in the file names
     fnames = []
@@ -49,26 +53,27 @@ def main():
         md5sum = wids.compute_file_md5sum(downloaded)
         nsamples = wids.compute_num_samples(downloaded)
         filesize = os.stat(downloaded).st_size
-        files.append(dict(url=fname, md5sum=md5sum, nsamples=nsamples, filesize=filesize))
+        files.append(
+            dict(url=fname, md5sum=md5sum, nsamples=nsamples, filesize=filesize)
+        )
         downloader.release(downloaded)
 
     # create the result dictionary
     result = dict(
-        __kind__='wids-shard-index-v1',
-        name=args.name,        
+        __kind__="wids-shard-index-v1",
+        name=args.name,
         files=files,
     )
 
     # add info if it is given
     if args.info is not None:
         info = open(args.info).read()
-        result['info'] = info
+        result["info"] = info
 
     # write the result
-    with open(args.output, 'w') as f:
+    with open(args.output, "w") as f:
         json.dump(result, f, indent=2)
 
-if __name__ == '__main__':
-    main()
 
-        
+if __name__ == "__main__":
+    main()

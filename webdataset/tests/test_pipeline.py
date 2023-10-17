@@ -495,7 +495,6 @@ def test_dataset_rename_keys():
 
 
 def test_dataset_rsample():
-
     ds = wds.DataPipeline(
         wds.SimpleShardList(local_data), wds.tarfile_to_samples(), wds.rsample(1.0)
     )
@@ -558,7 +557,6 @@ def test_dataset_map():
 
 
 def test_dataset_map_dict_handler():
-
     ds = wds.DataPipeline(
         wds.SimpleShardList(local_data),
         wds.tarfile_to_samples(),

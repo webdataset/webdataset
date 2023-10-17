@@ -1,5 +1,5 @@
 import pytest
-from webdataset import wids
+from webdataset.wids import wids
 import os
 
 

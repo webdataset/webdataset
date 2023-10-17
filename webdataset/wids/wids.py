@@ -227,7 +227,7 @@ class LRUShards:
                 self.release_handler(k, v)
                 return
         raise ValueError("Shard not found")
-    
+
     def clear(self):
         self.lru.clear()
 
@@ -243,13 +243,90 @@ class LRUShards:
         return self.lru[url]
 
 
+def load_remote_shardlist(source):
+    """Load a remote or local dataset description in JSON format,
+    using the Python web client APIs."""
+
+    if isinstance(source, stream):
+        dsdesc = json.load(source)
+    else:
+        # FIXME: use gopen
+        import requests
+
+        jsondata = requests.get(url).text
+        dsdesc = json.loads(jsondata)
+
+    return extract_shardlist(dsdesc)
+
+
+def check_shards(l):
+    assert isinstance(l, list)
+    for shard in l:
+        assert isinstance(shard, dict)
+        assert "url" in shard
+        assert "nsamples" in shard
+    return l
+
+
+def set_all(l, k, v):
+    if v is None:
+        return
+    for x in l:
+        if k not in x:
+            x[k] = v
+
+
+def extract_shardlist(dsdesc):
+    """Extract a list of shards from a dataset description.
+    Dataset descriptions are JSON files. They must have the following format;
+
+    {
+        "wids_version": 1,
+        # optional immediate shardlist
+        "shardlist": [
+            {"url": "http://example.com/file.tar", "nsamples": 1000},
+            ...
+        ],
+        # sub-datasets
+        "datasets": [
+            {"source_url": "http://example.com/dataset.json"},
+            {"shardlist": [
+                {"url": "http://example.com/file.tar", "nsamples": 1000},
+                ...
+            ]}
+            ...
+        ]
+    }
+    """
+    assert isinstance(dsdesc, dict)
+    shardlist = dsdesc.get("shardlist", [])
+    set_all(shardlist, "weight", dsdesc.get("weight"))
+    check_shards(shardlist)
+    assert "wids_version" in dsdesc, "No wids_version in dataset description"
+    assert dsdesc["wids_version"] == 1, "Unknown wids_version"
+    for component in dsdesc.get("datasets", []):
+        for i in range(10):
+            if "source_url" not in component:
+                break
+            component = load_remote(component["source_url"])
+        assert i < 9, "Too many levels of indirection"
+        if "shardlist" in component:
+            l = check_shards(component["shardlist"])
+            set_all(l, "weight", component.get("weight"))
+            shardlist.extend(l)
+    assert len(shardlist) > 0, "No shards found"
+    return shardlist
+
+
 class ShardListDataset(Dataset):
     def __init__(self, shards, cache_size=10, localname=default_localname()):
         super(ShardListDataset, self).__init__()
         # shards is a list of (filename, length) pairs. We'll need to
         # keep track of the lengths and cumulative lengths to know how
         # to map indices to shards and indices within shards.
-        self.shards = shards
+        self.shards = (
+            load_remote_shardlist(shards) if isinstance(shards, str) else shards
+        )
         self.lengths = [shard["nsamples"] for shard in shards]
         self.cum_lengths = np.cumsum(self.lengths)
         self.total_length = self.cum_lengths[-1]
@@ -303,7 +380,7 @@ class ShardListDataset(Dataset):
             sample = transform(sample)
 
         return sample
-    
+
     def close(self):
         self.cache.clear()
 
