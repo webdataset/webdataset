@@ -260,6 +260,11 @@ def load_remote_shardlist(source):
 
 
 def check_shards(l):
+    """Check that a list of shards is well-formed.
+    
+    This checks that the list is a list of dictionaries, and that
+    each dictionary has a "url" and a "nsamples" key.
+    """
     assert isinstance(l, list)
     for shard in l:
         assert isinstance(shard, dict)
@@ -269,6 +274,7 @@ def check_shards(l):
 
 
 def set_all(l, k, v):
+    """Set a key to a value in a list of dictionaries."""
     if v is None:
         return
     for x in l:
@@ -319,7 +325,20 @@ def extract_shardlist(dsdesc):
 
 
 class ShardListDataset(Dataset):
+    """An indexable dataset based on a list of shards.
+    
+    The shards are specified as a list of (filename, length) pairs.
+    The filename can be a local file or a URL. The length is the
+    number of samples in the shard. The shards are downloaded to
+    a local directory and cached there."""
     def __init__(self, shards, cache_size=10, localname=default_localname()):
+        """Create a ShardListDataset.
+        
+        Args:
+            shards: a list of (filename, length) pairs or a URL pointing to a JSON descriptor file
+            cache_size: the number of shards to keep in the cache
+            localname: a function that maps URLs to local filenames
+        """
         super(ShardListDataset, self).__init__()
         # shards is a list of (filename, length) pairs. We'll need to
         # keep track of the lengths and cumulative lengths to know how
@@ -336,12 +355,15 @@ class ShardListDataset(Dataset):
         self.cache = LRUShards(cache_size, localname=localname)
 
     def __len__(self):
+        """Return the total number of samples in the dataset."""
         return self.total_length
 
     def get_stats(self):
+        """Return the number of cache accesses and misses."""
         return self.cache.accesses, self.cache.misses
 
     def check_cache_misses(self):
+        """Check if the cache miss rate is too high."""
         accesses, misses = self.get_stats()
         if accesses > 100 and misses / accesses > 0.3:
             # output a warning only once
@@ -353,6 +375,7 @@ class ShardListDataset(Dataset):
             )
 
     def get_shard(self, index):
+        """Get the shard and index within the shard corresponding to the given index."""
         # Find the shard corresponding to the given index.
         shard_idx = np.searchsorted(self.cum_lengths, index, side="right")
 
@@ -369,6 +392,7 @@ class ShardListDataset(Dataset):
         return shard, inner_idx
 
     def __getitem__(self, index):
+        """Return the sample corresponding to the given index."""
         shard, inner_idx = self.get_shard(index)
         sample = shard[inner_idx]
 
@@ -382,10 +406,27 @@ class ShardListDataset(Dataset):
         return sample
 
     def close(self):
+        """Close the dataset."""
         self.cache.clear()
 
 
 class ShardedSampler:
+    """A sampler that samples consistent with a ShardListDataset.
+    
+    This sampler is used to sample from a ShardListDataset in a way that
+    preserves locality.
+    
+    This returns a permutation of the indexes by shard, then a permutation of
+    indexes within each shard. This ensures that the data is accessed in a
+    way that preserves locality.
+
+    Note that how this ends up splitting data between multiple workers ends up
+    on the details of the DataLoader. Generally, it will likely load samples from the
+    same shard in each worker.
+
+    Other more sophisticated shard-aware samplers are possible and will likely
+    be added.
+    """
     def __init__(self, dataset, lengths=None, batch_size=1, shuffle=False):
         if lengths is None:
             lengths = list(dataset.lengths)
