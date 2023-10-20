@@ -16,6 +16,7 @@ from fnmatch import fnmatch
 import re
 import itertools, os, random, sys, time
 from functools import reduce
+import functools
 import pickle
 
 import numpy as np
@@ -69,6 +70,7 @@ def pipelinefilter(f):
     """Turn the decorated function into one that is partially applied for
     all arguments other than the first."""
     result = RestCurried(f)
+    functools.update_wrapper(result, f)
     return result
 
 
