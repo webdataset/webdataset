@@ -110,9 +110,10 @@ def release(c):
     "Tag the current version as a release on Github."
     if "working tree clean" not in c.run("git status").stdout:
         input()
+    newversion(c)
     version = open("VERSION").read().strip()
     # os.system(f"hub release create {version}")  # interactive
-    assert os.system("git commit -a") == 0
+    assert os.system("git commit -a -m 'new version'") == 0
     assert os.system("git push") == 0
     os.system(f"gh release create {version}")  # interactive
 
