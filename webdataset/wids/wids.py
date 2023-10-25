@@ -4,6 +4,8 @@ import os
 import re
 import tarfile
 from urllib.parse import urlparse
+from typing import Any, Dict, Optional, Union
+import pickle
 
 import numpy as np
 from torch.utils.data import Dataset
@@ -68,8 +70,76 @@ def group_by_key(names):
     return groups
 
 
+def default_decoder(sample: Dict[str, Any], format: Optional[Union[bool, str]] = True):
+    """A default decoder for webdataset.
+
+    This handles common file extensions: .txt, .cls, .cls2,
+        .jpg, .png, .json, .npy, .mp, .pt, .pth, .pickle, .pkl.
+    These are the most common extensions used in webdataset.
+    For other extensions, users can provide their own decoder.
+
+    Args:
+        sample: sample, modified in place
+    """
+    sample = dict(sample)
+    for key, stream in sample.items():
+        extension = key.split(".")[-1]
+        if key.startswith("__"):
+            continue
+        elif extension in ["txt", "text"]:
+            value = stream.read()
+            sample[key] = value.decode("utf-8")
+        elif extension in ["cls", "cls2"]:
+            value = stream.read()
+            sample[key] = int(value.decode("utf-8"))
+        elif extension in ["jpg", "png", "ppm", "pgm", "pbm", "pnm"]:
+            import PIL.Image
+            import numpy as np
+
+            if format == "PIL":
+                sample[key] = PIL.Image.open(stream)
+            else:
+                sample[key] = np.asarray(PIL.Image.open(stream))
+        elif extension == "json":
+            import json
+
+            value = stream.read()
+            sample[key] = json.loads(value)
+        elif extension == "npy":
+            import numpy as np
+
+            sample[key] = np.load(stream)
+        elif extension == "mp":
+            import msgpack
+
+            value = stream.read()
+            sample[key] = msgpack.unpackb(value, raw=False)
+        elif extension in ["pt", "pth"]:
+            import torch
+
+            sample[key] = torch.load(stream)
+        elif extension in ["pickle", "pkl"]:
+            import pickle
+
+            sample[key] = pickle.load(stream)
+    return sample
+
+
+def find_index_file(file):
+    prefix, last_ext = os.path.splitext(file)
+    if re.match("._[0-9]+_$", last_ext):
+        return prefix + ".index"
+    else:
+        return file + ".index"
+
+
 class TarFileReader:
-    def __init__(self, file):
+    def __init__(self, file, index_file=find_index_file, verbose=True):
+        self.verbose = verbose
+        if callable(index_file):
+            index_file = index_file(file)
+        self.index_file = index_file
+
         # Open the tar file and keep it open
         if isinstance(file, str):
             self.tar_file = tarfile.open(file, "r")
@@ -80,10 +150,18 @@ class TarFileReader:
         self._create_tar_index()
 
     def _create_tar_index(self):
+        if self.index_file is not None and os.path.exists(self.index_file):
+            if self.verbose:
+                print("Loading tar index from", self.index_file)
+            with open(self.index_file, "rb") as stream:
+                self.fnames, self.index = pickle.load(stream)
+            return
         # Create an empty list for the index
         self.fnames = []
         self.index = []
 
+        if self.verbose:
+            print("Creating tar index for", self.tar_file.name, "at", self.index_file)
         # Iterate over the members of the tar file
         for member in self.tar_file:
             # If the member is a file, add it to the index
@@ -92,7 +170,15 @@ class TarFileReader:
                 offset = self.tar_file.fileobj.tell()
                 self.fnames.append(member.name)
                 self.index.append([offset, member.size])
+        if self.verbose:
+            print("Done creating tar index for", self.tar_file.name, "at", self.index_file)
         self.index = np.array(self.index)
+        if self.index_file is not None:
+            if os.path.exists(self.index_file+".temp"):
+                os.unlink(self.index_file+".temp")
+            with open(self.index_file+".temp", "wb") as stream:
+                pickle.dump((self.fnames, self.index), stream)
+            os.rename(self.index_file+".temp", self.index_file)
 
     def names(self):
         return self.fnames
@@ -124,11 +210,11 @@ class IndexedTarSamples:
     "sample1" will be returned as the dictionary {"jpg": ..., "txt": ...}.
     """
 
-    def __init__(self, tar_file, md5sum=None, expected_size=None, source=None):
+    def __init__(self, tar_file, md5sum=None, expected_size=None, source=None, index_file=find_index_file):
         # Create TarFileReader object to read from tar_file
         self.source = source
         self.path = tar_file
-        self.reader = TarFileReader(tar_file)
+        self.reader = TarFileReader(tar_file, index_file=index_file)
         # Get list of all files in tar_file
         all_files = self.reader.names()
         # Group files by key into samples
@@ -331,7 +417,7 @@ class ShardListDataset(Dataset):
     The filename can be a local file or a URL. The length is the
     number of samples in the shard. The shards are downloaded to
     a local directory and cached there."""
-    def __init__(self, shards, cache_size=10, localname=default_localname()):
+    def __init__(self, shards, cache_size=10, localname=default_localname(), transformations=[default_decoder], keep=False):
         """Create a ShardListDataset.
         
         Args:
@@ -350,9 +436,13 @@ class ShardListDataset(Dataset):
         self.cum_lengths = np.cumsum(self.lengths)
         self.total_length = self.cum_lengths[-1]
 
-        self.transformations = []
+        self.transformations = transformations
 
-        self.cache = LRUShards(cache_size, localname=localname)
+        self.cache = LRUShards(cache_size, localname=localname, keep=keep)
+
+    def add_transform(self, transform):
+        """Add a transformation to the dataset."""
+        self.transformations.append(transform)
 
     def __len__(self):
         """Return the total number of samples in the dataset."""

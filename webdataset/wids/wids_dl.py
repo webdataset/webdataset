@@ -164,6 +164,8 @@ class ConcurrentDownloader:
                 if not os.path.exists(destpath):
                     self.downloader.download(url, dlpath)
                     os.rename(dlpath, destpath)
+        if os.path.exists(resultpath):
+            os.unlink(resultpath)
         os.link(destpath, resultpath)
         return resultpath
 
