@@ -145,6 +145,7 @@ class IndexedTarSamples:
         md5sum=None,
         expected_size=None,
         source=None,
+        use_mmap=True,
         index_file=find_index_file,
     ):
         # Create TarFileReader object to read from tar_file
