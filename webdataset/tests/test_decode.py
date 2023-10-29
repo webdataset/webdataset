@@ -3,7 +3,7 @@ import io
 import numpy as np
 import PIL
 import torch
-from imageio import imread
+from imageio.v3 import imread
 
 import webdataset as wds
 from webdataset import (

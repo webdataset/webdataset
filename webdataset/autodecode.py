@@ -360,7 +360,7 @@ class ImageHandler:
             if result.ndim == 3:
                 return torch.from_numpy(result.transpose(2, 0, 1))
             else:
-                return torch.from_numpy(result)
+                return torch.from_numpy(result.copy())
 
         return None
 

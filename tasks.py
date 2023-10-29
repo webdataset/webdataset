@@ -69,8 +69,6 @@ def test(c):
 @task
 def newversion(c):
     """Increment the version number."""
-    if "working tree clean" not in c.run("git status").stdout:
-        input()
     text = open("setup.py").read()
     version = re.search('version *= *"([0-9.]+)"', text).group(1)
     print("old version", version)
