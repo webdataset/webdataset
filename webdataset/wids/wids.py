@@ -13,6 +13,7 @@ from torch.utils.data import Dataset
 from .wids_dl import ConcurrentDownloader
 from .wids_lru import LRUCache
 from .wids_tar import TarFileReader, find_index_file
+from .wids_mmtar import MMIndexedTar
 
 
 def compute_file_md5sum(fname, chunksize=1000000):
@@ -149,7 +150,10 @@ class IndexedTarSamples:
         # Create TarFileReader object to read from tar_file
         self.source = source
         self.path = tar_file
-        self.reader = TarFileReader(tar_file, index_file=index_file)
+        if use_mmap:
+            self.reader = MMIndexedTar(tar_file)
+        else:
+            self.reader = TarFileReader(tar_file, index_file=index_file)
         # Get list of all files in tar_file
         all_files = self.reader.names()
         # Group files by key into samples
