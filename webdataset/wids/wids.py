@@ -6,6 +6,7 @@ import tarfile
 from urllib.parse import urlparse
 from typing import Any, Dict, Optional, Union
 import pickle
+from functools import partial
 
 import numpy as np
 from torch.utils.data import Dataset
@@ -95,13 +96,16 @@ def default_decoder(sample: Dict[str, Any], format: Optional[Union[bool, str]] =
             value = stream.read()
             sample[key] = int(value.decode("utf-8"))
         elif extension in ["jpg", "png", "ppm", "pgm", "pbm", "pnm"]:
-            import PIL.Image
-            import numpy as np
-
             if format == "PIL":
+                import PIL.Image
+
                 sample[key] = PIL.Image.open(stream)
-            else:
+            elif format == "numpy":
+                import numpy as np
+
                 sample[key] = np.asarray(PIL.Image.open(stream))
+            else:
+                raise ValueError(f"Unknown format: {format}")
         elif extension == "json":
             import json
 
@@ -363,7 +367,7 @@ class ShardListDataset(Dataset):
         shards,
         cache_size=10,
         localname=default_localname(),
-        transformations=[default_decoder],
+        transformations="PIL",
         keep=False,
     ):
         """Create a ShardListDataset.
@@ -384,7 +388,16 @@ class ShardListDataset(Dataset):
         self.cum_lengths = np.cumsum(self.lengths)
         self.total_length = self.cum_lengths[-1]
 
-        self.transformations = transformations
+        if transformations == "PIL":
+            self.transformations = [partial(default_decoder, format="PIL")]
+        elif transformations == "numpy":
+            self.transformations = [partial(default_decoder, format="numpy")]
+        else:
+            if not isinstance(transformations, list):
+                transformations = [transformations]
+            for transform in transformations:
+                assert callable(transform)
+            self.transformations = transformations
 
         self.cache = LRUShards(cache_size, localname=localname, keep=keep)
 
