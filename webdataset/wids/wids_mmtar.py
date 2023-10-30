@@ -58,7 +58,6 @@ class MMIndexedTar:
             header = parse_tar_header(self.mmapped_file[offset : offset + 500])
             name = header.name.decode("utf-8").strip("\x00")
             typeflag = header.typeflag.decode("utf-8").strip("\x00")
-            print("***", name, f"<{typeflag}>")
             if name != "" and name != "././@PaxHeader" and typeflag in ["0", ""]:
                 try:
                     size = int(header.size.decode("utf-8")[:-1], 8)
