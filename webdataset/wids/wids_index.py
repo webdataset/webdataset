@@ -31,13 +31,17 @@ def main():
     )
     parser.add_argument("files", nargs="+", help="files to index")
     parser.add_argument("--output", "-o", help="output file name")
-    parser.add_argument("--name", "-n", help="name for dataset", default="train")
+    parser.add_argument("--name", "-n", help="name for dataset", default="")
     parser.add_argument("--info", "-i", help="description for dataset", default=None)
     args = parser.parse_args()
 
     # set default output file name
     if args.output is None:
         args.output = "shardindex.json"
+
+    # read the list of files from stdin if there is only one file and it is "-"
+    if len(args.files) == 1 and files[0] == "-":
+        args.files = [line.strip() for line in sys.stdin]
 
     # expand any brace expressions in the file names
     fnames = []
@@ -61,9 +65,12 @@ def main():
     # create the result dictionary
     result = dict(
         __kind__="wids-shard-index-v1",
-        name=args.name,
-        files=files,
+        wids_version=1,
+        shardlist=files,
     )
+
+    if args.name != "":
+        result["name"] = args.name
 
     # add info if it is given
     if args.info is not None:

@@ -7,6 +7,7 @@ from urllib.parse import urlparse
 from typing import Any, Dict, Optional, Union
 import pickle
 from functools import partial
+import json
 
 import numpy as np
 from torch.utils.data import Dataset
@@ -277,7 +278,10 @@ def load_remote_shardlist(source):
     """Load a remote or local dataset description in JSON format,
     using the Python web client APIs."""
 
-    if isinstance(source, stream):
+    if isinstance(source, str):
+        with open(source) as stream:
+            dsdesc = json.load(stream)
+    elif isinstance(source, io.IOBase):
         dsdesc = json.load(source)
     else:
         # FIXME: use gopen
@@ -384,7 +388,8 @@ class ShardListDataset(Dataset):
         self.shards = (
             load_remote_shardlist(shards) if isinstance(shards, str) else shards
         )
-        self.lengths = [shard["nsamples"] for shard in shards]
+        print(self.shards)
+        self.lengths = [shard["nsamples"] for shard in self.shards]
         self.cum_lengths = np.cumsum(self.lengths)
         self.total_length = self.cum_lengths[-1]
 
@@ -404,6 +409,7 @@ class ShardListDataset(Dataset):
     def add_transform(self, transform):
         """Add a transformation to the dataset."""
         self.transformations.append(transform)
+        return self
 
     def __len__(self):
         """Return the total number of samples in the dataset."""
