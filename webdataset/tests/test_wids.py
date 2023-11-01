@@ -1,6 +1,10 @@
 import pytest
 from webdataset.wids import wids
+from webdataset.wids import wids_specs
 import os
+import textwrap
+import json
+import io
 
 
 class TestIndexedTarSamples:
@@ -133,3 +137,41 @@ class TestShardListDataset:
         ), cache
 
         assert shard_list_dataset.get_stats() == (5, 4)
+
+class TestSpecs:
+    def test_spec_parsing(self):
+        spec = textwrap.dedent("""
+        {
+            "__kind__": "wids-shard-index-v1",
+            "name": "train",
+            "wids_version": 1,
+            "shardlist": [
+                {
+                    "url": "testdata/mpdata.tar",
+                    "nsamples": 10
+                }
+            ]
+        }
+        """)
+        spec = json.loads(spec)
+        shardlist = wids_specs.extract_shardlist(spec)
+        assert len(shardlist) == 1
+
+    def test_spec_parsing(self):
+        spec = textwrap.dedent("""
+        {
+            "__kind__": "wids-shard-index-v1",
+            "name": "train",
+            "wids_version": 1,
+            "shardlist": [
+                {
+                    "url": "testdata/mpdata.tar",
+                    "nsamples": 10
+                }
+            ]
+        }
+        """)
+        stream = io.StringIO(spec)
+        dataset = wids.ShardListDataset(stream)
+        assert len(dataset) == 10
+
