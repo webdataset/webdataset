@@ -165,6 +165,12 @@ class WebDataset(DataPipeline, FluidInterface):
                 )
             )
 
+    def __enter__(self):
+        return self
+    
+    def __exit__(self, *args):
+        self.close()
+
 
 class FluidWrapper(DataPipeline, FluidInterface):
     """Small fluid-interface wrapper for DataPipeline."""

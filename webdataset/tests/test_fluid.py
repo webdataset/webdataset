@@ -200,6 +200,11 @@ def test_dataset_shuffle_extract():
     ds = wds.WebDataset(local_data).shuffle(5).to_tuple("png;jpg cls")
     assert count_samples_tuple(ds) == 47
 
+def test_dataset_context():
+    """Basic WebDataset usage: shuffle, extract, and count samples."""
+    with wds.WebDataset(local_data).shuffle(5).to_tuple("png;jpg cls") as ds:
+        assert count_samples_tuple(ds) == 47
+
 
 def test_dataset_pipe_cat():
     """Test that WebDataset can read from a pipe."""

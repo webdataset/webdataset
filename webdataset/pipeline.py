@@ -38,6 +38,13 @@ class DataPipeline(IterableDataset, PipelineStage):
             else:
                 self.pipeline.append(arg)
 
+    def close(self):
+        """Close the pipeline."""
+        for step in self.pipeline:
+            if hasattr(step, "close"):
+                step.close()
+        del self.pipeline
+
     def invoke(self, f, *args, **kwargs):
         """Apply a pipeline stage, possibly to the output of a previous stage."""
         if isinstance(f, PipelineStage):
