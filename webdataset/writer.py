@@ -13,6 +13,7 @@ import re
 import tarfile
 import time
 from typing import Any, Callable, Optional, Union
+import gzip
 
 import numpy as np
 
@@ -180,15 +181,27 @@ def encode_based_on_extension1(data: Any, tname: str, handlers: dict):
         if not isinstance(data, str):
             raise ValueError("the values of metadata must be of string type")
         return data
+    compress = False
+    if tname.endswith(".gz"):
+        compress = True
+        tname = tname[:-3]
     extension = re.sub(r".*\.", "", tname).lower()
     if isinstance(data, bytes):
+        if compress:
+            data = gzip.compress(data)
         return data
     if isinstance(data, str):
-        return data.encode("utf-8")
+        data = data.encode("utf-8")
+        if compress:
+            data = gzip.compress(data)
+        return data
     handler = handlers.get(extension)
     if handler is None:
         raise ValueError(f"no handler found for {extension}")
-    return handler(data)
+    result = handler(data)
+    if compress:
+        result = gzip.compress(result)
+    return result
 
 
 def encode_based_on_extension(sample: dict, handlers: dict):

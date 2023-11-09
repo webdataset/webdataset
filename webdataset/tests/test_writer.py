@@ -89,6 +89,22 @@ def test_writer4(tmpdir):
         assert len(sample["tb"][1]) == 2
         assert sample["tb"][0][0] == 1.0
 
+def test_writer_gz(tmpdir):
+    with writer.TarWriter(f"{tmpdir}/writer_gz.tar") as sink:
+        sink.write({"__key__": "a", "txt.gz": "x"*1000+"\n"})
+    os.system(f"tar tvf {tmpdir}/writer_gz.tar")
+    assert os.system(f"tar tvf {tmpdir}/writer_gz.tar | grep a.txt.gz | grep 30") == 0
+
+    ds = wds.DataPipeline(
+        wds.SimpleShardList(f"{tmpdir}/writer_gz.tar"),
+        wds.tarfile_samples,
+        wds.decode(),
+    )
+    for sample in ds:
+        print(sample)
+        assert getkeys(sample) == set(["txt.gz"])
+        assert isinstance(sample["txt.gz"], str)
+        assert sample["txt.gz"] == "x"*1000+"\n"
 
 def test_writer_pipe(tmpdir):
     with writer.TarWriter(f"pipe:cat > {tmpdir}/writer_pipe.tar") as sink:
