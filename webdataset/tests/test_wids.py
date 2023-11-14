@@ -42,6 +42,15 @@ class TestLRUShards:
         # lru_shards.release(shard)
         # assert not os.path.exists(path)
 
+class TestGz:
+    def test_gz(self):
+        dataset = wids.ShardListDataset([dict(url="testdata/testgz.tar", nsamples=1000)])
+        assert len(dataset) == 1000
+        sample = dataset[0]
+        assert isinstance(sample, dict)
+        assert "__key__" in sample
+        assert ".txt.gz" in sample
+        assert sample[".txt.gz"] == ", or more info on the item.", sample
 
 class TestShardListDataset:
     @pytest.fixture(scope="class")

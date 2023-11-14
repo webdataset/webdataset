@@ -9,6 +9,7 @@ import pickle
 from functools import partial
 import json
 import io
+import gzip
 
 import numpy as np
 from torch.utils.data import Dataset
@@ -89,7 +90,17 @@ def default_decoder(sample: Dict[str, Any], format: Optional[Union[bool, str]] =
     """
     sample = dict(sample)
     for key, stream in sample.items():
-        extension = key.split(".")[-1]
+        extensions = key.split(".")
+        if len(extensions) < 1:
+            continue
+        extension = extensions[-1]
+        if extension in ["gz"]:
+            decompressed = gzip.decompress(stream.read())
+            stream = io.BytesIO(decompressed)
+            if len(extensions) < 2:
+                sample[key] = stream
+                continue
+            extension = extensions[-2]
         if key.startswith("__"):
             continue
         elif extension in ["txt", "text"]:
