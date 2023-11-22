@@ -63,7 +63,7 @@ def group_by_key(names):
     for i, fname in enumerate(names):
         # Ignore files that are not in a subdirectory.
         if "." not in fname:
-            print(fname)
+            print(f"Warning: Ignoring file {fname}")
             continue
         key, ext = splitname(fname)
         if key != last_key:
@@ -280,7 +280,8 @@ class LRUShards:
         if url not in self.lru:
             local = self.localname(url)
             downloaded = self.downloader.download(url, local)
-            print(url, local, downloaded)
+            if int(os.environ.get("WIDS_VERBOSE", 0)):
+                print("WIDS downloaded", url, local, downloaded, file=sys.stderr)
             itf = IndexedTarSamples(downloaded, source=url)
             self.lru[url] = itf
             self.misses += 1
@@ -319,7 +320,8 @@ class ShardListDataset(Dataset):
         self.shards = (
             load_remote_shardlist(shards) if isinstance(shards, (str, io.IOBase)) else shards
         )
-        print(self.shards)
+        if int(os.environ.get("WIDS_VERBOSE", 0)):
+            print("WIDS shards", self.shards)
         self.lengths = [shard["nsamples"] for shard in self.shards]
         self.cum_lengths = np.cumsum(self.lengths)
         self.total_length = self.cum_lengths[-1]
