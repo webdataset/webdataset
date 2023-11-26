@@ -190,6 +190,8 @@ def tar_file_expander(
                 continue
             else:
                 break
+        # Close the stream
+        source["stream"].close()
 
 
 def group_by_keys(
