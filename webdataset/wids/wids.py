@@ -314,9 +314,11 @@ class ShardListDataset(Dataset):
         self,
         shards,
         cache_size=10,
+        cache_dir=None,
         localname=default_localname(),
         transformations="PIL",
         keep=False,
+        options={},
     ):
         """Create a ShardListDataset.
 
@@ -329,7 +331,7 @@ class ShardListDataset(Dataset):
         # shards is a list of (filename, length) pairs. We'll need to
         # keep track of the lengths and cumulative lengths to know how
         # to map indices to shards and indices within shards.
-        self.shards = load_remote_shardlist(shards) if isinstance(shards, (str, io.IOBase)) else shards
+        self.shards = load_remote_shardlist(shards, options) if isinstance(shards, (str, io.IOBase)) else shards
         if int(os.environ.get("WIDS_VERBOSE", 0)):
             print("WIDS shards", self.shards)
         self.lengths = [shard["nsamples"] for shard in self.shards]
@@ -338,6 +340,8 @@ class ShardListDataset(Dataset):
 
         self.transformations = interpret_transformations(transformations)
 
+        if cache_dir is not None:
+            localname = default_localname(cache_dir)
         self.cache = LRUShards(cache_size, localname=localname, keep=keep)
 
     def add_transform(self, transform):

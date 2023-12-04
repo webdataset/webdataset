@@ -21,10 +21,11 @@ def load_remote_spec(source):
     return dsdesc
 
 
-def load_remote_shardlist(source, base=None):
+def load_remote_shardlist(source, options={}):
     spec = load_remote_spec(source)
+    spec = dict(spec, **options)
     shardlist = extract_shardlist(spec)
-    base = base or spec.get("base")
+    base = spec.get("base")
     if base is not None:
         for shard in shardlist:
             shard["url"] = urljoin(base, shard["url"])
