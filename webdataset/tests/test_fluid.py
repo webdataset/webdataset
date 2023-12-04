@@ -12,7 +12,7 @@ import webdataset as wds
 
 local_data = "testdata/imagenet-000000.tgz"
 compressed = "testdata/compressed.tar"
-remote_loc = "http://storage.googleapis.com/nvdata-openimages/"
+remote_loc = "http://storage.googleapis.com/webdataset/openimages/"
 remote_shards = "openimages-train-0000{00..99}.tar"
 remote_shard = "openimages-train-000321.tar"
 remote_pattern = "openimages-train-{}.tar"
@@ -147,12 +147,11 @@ datasets:
 
 yaml3_data = """
 prefix: pipe:curl -s -L http://storage.googleapis.com/
-buckets: nvdata-ocropus-words
+buckets: ocropus4-data
 datasets:
-  - shards: uw3-word-0000{00..21}.tar
-  - shards: ia1-{000000..000033}.tar
-  - shards: gsub-{000000..000167}.tar
-  - shards: cdipsub-{000000..000092}.tar
+  - shards: ia1/tess/ia1-{000000..000033}.tar
+  - shards: gsub/tess/gsub-{000000..000167}.tar
+  - shards: cdipsub/tess/cdipsub-{000000..000092}.tar
 """
 
 

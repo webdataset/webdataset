@@ -181,9 +181,7 @@ class IndexedTarSamples:
             got = compute_file_md5sum(tar_file)
             assert got == md5sum, f"MD5 sum mismatch: expected {md5sum}, got {got}"
         if expected_size is not None:
-            assert (
-                len(self) == expected_size
-            ), f"Expected {expected_size} samples, got {len(self)}"
+            assert len(self) == expected_size, f"Expected {expected_size} samples, got {len(self)}"
 
     def __len__(self):
         return len(self.samples)
@@ -215,9 +213,7 @@ def default_localname(dldir="/tmp/wids"):
         no directory components."""
         if shard.startswith("pipe:"):
             # uuencode the entire URL string
-            return os.path.join(
-                dldir, base64.urlsafe_b64encode(shard.encode()).decode()
-            )
+            return os.path.join(dldir, base64.urlsafe_b64encode(shard.encode()).decode())
         else:
             # use urlparse to get the filename component of the URL
             return os.path.join(dldir, os.path.basename(urlparse(shard).path))
@@ -288,6 +284,22 @@ class LRUShards:
         return self.lru[url]
 
 
+def interpret_transformations(transformations):
+    if not isinstance(transformations, list):
+        transformations = [transformations]
+
+    result = []
+
+    for transformation in transformations:
+        if transformation == "PIL":
+            transformation = partial(default_decoder, format="PIL")
+        elif transformation == "numpy":
+            transformation = partial(default_decoder, format="numpy")
+        else:
+            assert callable(transformation)
+        result.append(transformation)
+
+    return result
 
 
 class ShardListDataset(Dataset):
@@ -317,25 +329,14 @@ class ShardListDataset(Dataset):
         # shards is a list of (filename, length) pairs. We'll need to
         # keep track of the lengths and cumulative lengths to know how
         # to map indices to shards and indices within shards.
-        self.shards = (
-            load_remote_shardlist(shards) if isinstance(shards, (str, io.IOBase)) else shards
-        )
+        self.shards = load_remote_shardlist(shards) if isinstance(shards, (str, io.IOBase)) else shards
         if int(os.environ.get("WIDS_VERBOSE", 0)):
             print("WIDS shards", self.shards)
         self.lengths = [shard["nsamples"] for shard in self.shards]
         self.cum_lengths = np.cumsum(self.lengths)
         self.total_length = self.cum_lengths[-1]
 
-        if transformations == "PIL":
-            self.transformations = [partial(default_decoder, format="PIL")]
-        elif transformations == "numpy":
-            self.transformations = [partial(default_decoder, format="numpy")]
-        else:
-            if not isinstance(transformations, list):
-                transformations = [transformations]
-            for transform in transformations:
-                assert callable(transform)
-            self.transformations = transformations
+        self.transformations = interpret_transformations(transformations)
 
         self.cache = LRUShards(cache_size, localname=localname, keep=keep)
 
@@ -359,9 +360,7 @@ class ShardListDataset(Dataset):
             # output a warning only once
             self.check_cache_misses = lambda: None
             print(
-                "Warning: ShardListDataset has a cache miss rate of {:.1%}%".format(
-                    misses * 100.0 / accesses
-                )
+                "Warning: ShardListDataset has a cache miss rate of {:.1%}%".format(misses * 100.0 / accesses)
             )
 
     def get_shard(self, index):

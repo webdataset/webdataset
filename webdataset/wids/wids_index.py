@@ -203,15 +203,29 @@ def main_info(args):
     print("      last shard:", data["shardlist"][-1]["url"])
 
 
+def maybe_read(x):
+    try:
+        return x.read()
+    except AttributeError:
+        return x
+
+
+def maybe_decode(sample):
+    sample = {k: maybe_read(v) for k, v in sample.items()}
+    return sample
+
+
 def main_sample(args):
-    ds = wids.ShardListDataset(args.filename)
-    print(len(ds))
+    raw = args.raw or args.cat is not None
+    if raw:
+        ds = wids.ShardListDataset(args.filename, transformations=[maybe_decode])
+    else:
+        ds = wids.ShardListDataset(args.filename)
+    print("dataset size:", len(ds), file=sys.stderr)
     sample = ds[args.index]
     if args.cat is not None:
-        print(sample[args.cat], end="")
+        sys.stdout.buffer.write(sample[args.cat])
         return 0
-    if not args.raw:
-        sample = ds.decode(sample)
     for k, v in sample.items():
         print(k, repr(v)[: args.width])
 
@@ -244,16 +258,18 @@ def main():
     update_parser.add_argument("-b", "--base", default="", help="set the base")
     update_parser.add_argument("-B", "--rebase", action="store_true", help="rebase the URLs")
 
-    # Create the parser for the "update" command
+    # Create the parser for the "info" command
     info_parser = subparsers.add_parser("info", help="Show info about an index file")
     info_parser.add_argument("filename", type=str, help="Name of the file to update")
 
-    # Create the parser for the "update" command
+    # Create the parser for the "sample" command
     sample_parser = subparsers.add_parser("sample", help="Show info about an index file")
     sample_parser.add_argument("filename", type=str, help="Name of the file to update")
     sample_parser.add_argument("index", type=int, default=0, help="Index of the sample to show")
+    sample_parser.add_argument("-p", "--python", action="store_true", help="Show raw sample")
     sample_parser.add_argument("-r", "--raw", action="store_true", help="Show raw sample")
     sample_parser.add_argument("-c", "--cat", type=str, default=None, help="Output the bytes for a given key")
+    sample_parser.add_argument("-w", "--width", type=int, default=250, help="Output the bytes for a given key")
 
     # Parse the arguments
     args = parser.parse_args()  # Dynamically call the appropriate function based on the subcommand
