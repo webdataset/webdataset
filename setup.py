@@ -33,6 +33,11 @@ setuptools.setup(
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
     ],
+    entry_points={
+        "console_scripts": [
+            "widsindex=webdataset.wids.wids_index:main",
+        ]
+    },
     keywords="object store, client, deep learning",
     packages=["webdataset", "webdataset.wids"],
     python_requires=">=3.6",

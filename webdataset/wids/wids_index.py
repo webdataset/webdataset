@@ -1,12 +1,52 @@
 import argparse
 import json
 import os
-from urllib.parse import urlparse
+from urllib.parse import urlparse, urlunparse, urljoin
+import tempfile
+import sys
+import re
 
 import braceexpand
 
 from . import wids_dl
 from . import wids
+
+
+def format_with_suffix(num):
+    suffixes = ["", "k", "M", "G", "T", "E"]
+    i = 0
+    while num >= 1000 and i < len(suffixes) - 1:
+        num /= 1000.0
+        i += 1
+    return f"{num:.1f}{suffixes[i]}"
+
+
+class AtomicJsonUpdate:
+    def __init__(self, filename):
+        self.filename = filename
+        self.backup_filename = filename + ".bak"
+        self.temp_filename = filename + ".temp"
+        self.data = None
+
+    def __enter__(self):
+        # Read the original file
+        with open(self.filename, "r") as file:
+            self.data = json.load(file)
+        return self.data
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        if exc_type is None:
+            # Write the modified data to the temporary file
+            with open(self.temp_filename, "w") as file:
+                json.dump(self.data, file, indent=2)
+            # Rename the original file to a backup
+            os.rename(self.filename, self.backup_filename)
+            # Rename the new file to the original file name
+            os.rename(self.temp_filename, self.filename)
+        else:
+            # If there was an exception, remove the temporary file if it exists
+            if os.path.exists(self.temp_filename):
+                os.remove(self.temp_filename)
 
 
 def urldir(url):
@@ -25,22 +65,49 @@ def urlfile(url):
     return filename
 
 
-def main():
-    parser = argparse.ArgumentParser(
-        description="Create a shard index for a set of files"
-    )
-    parser.add_argument("files", nargs="+", help="files to index")
-    parser.add_argument("--output", "-o", help="output file name")
-    parser.add_argument("--name", "-n", help="name for dataset", default="")
-    parser.add_argument("--info", "-i", help="description for dataset", default=None)
-    args = parser.parse_args()
+def urldirbase(url):
+    # Parse the URL
+    parsed_url = urlparse(url)
 
+    # Use 'file' scheme if no scheme is given
+    scheme = parsed_url.scheme if parsed_url.scheme else "file"
+
+    # Handle file URLs and relative paths
+    if scheme == "file":
+        if not parsed_url.netloc:
+            path = os.path.abspath(parsed_url.path)
+        else:
+            path = parsed_url.path
+    else:
+        path = parsed_url.path
+
+    # Get the directory without the filename
+    path_without_filename = os.path.dirname(path)
+
+    # Reconstruct URL without filename
+    url_without_filename = urlunparse((scheme, parsed_url.netloc, path_without_filename, "", "", ""))
+
+    return url_without_filename
+
+
+def main_create(args):
+    """Create a full shard index for a list of files."""
     # set default output file name
     if args.output is None:
         args.output = "shardindex.json"
 
+    if args.name is None and args.output is not None:
+        args.name = os.path.splitext(os.path.basename(args.output))[0]
+        print("setting name to", args.name)
+    else:
+        first = os.path.splitext(os.path.basename(args.files[0]))[0]
+        first = re.sub(r"[0-9]{3,}", "", first)
+        first = re.sub(r"[^a-zA-Z0-9_-]", "", first)
+        args.name = first
+        print("setting name to", args.name)
+
     # read the list of files from stdin if there is only one file and it is "-"
-    if len(args.files) == 1 and files[0] == "-":
+    if len(args.files) == 1 and args.files[0] == "-":
         args.files = [line.strip() for line in sys.stdin]
 
     # expand any brace expressions in the file names
@@ -57,10 +124,10 @@ def main():
         md5sum = wids.compute_file_md5sum(downloaded)
         nsamples = wids.compute_num_samples(downloaded)
         filesize = os.stat(downloaded).st_size
-        files.append(
-            dict(url=fname, md5sum=md5sum, nsamples=nsamples, filesize=filesize)
-        )
+        files.append(dict(url=fname, md5sum=md5sum, nsamples=nsamples, filesize=filesize))
         downloader.release(downloaded)
+
+    files = sorted(files, key=lambda x: x["url"])
 
     # create the result dictionary
     result = dict(
@@ -72,6 +139,9 @@ def main():
     if args.name != "":
         result["name"] = args.name
 
+    if args.base is not None:
+        result["base"] = args.base
+
     # add info if it is given
     if args.info is not None:
         info = open(args.info).read()
@@ -80,6 +150,120 @@ def main():
     # write the result
     with open(args.output, "w") as f:
         json.dump(result, f, indent=2)
+
+
+def main_update(args):
+    """Update an existing file."""
+    with AtomicJsonUpdate(args.filename) as data:
+        if args.name != "":
+            data["name"] = args.name
+        if args.keep:
+            data["keep"] = True
+        if args.nokeep:
+            data["keep"] = False
+        if args.info != "":
+            data["info"] = args.info
+        if args.base != "":
+            data["base"] = args.base
+        if args.rebase:
+            bases = set([urldirbase(shard["url"]) for shard in data["shardlist"]])
+            assert len(bases) == 1, "multiple/no bases found: {}".format(bases)
+            base = bases.pop()
+            print("rebasing to {}".format(base))
+            data["base"] = base
+        if args.dir != "" or args.nodir or args.rebase:
+            shardlist = data["shardlist"]
+            for shard in shardlist:
+                url = shard["url"]
+                file = urlfile(url)
+                if args.nodir:
+                    shard["url"] = file
+                else:
+                    shard["url"] = os.path.join(args.dir, file)
+            data["shardlist"] = sorted(shardlist, key=lambda x: x["url"])
+        if "name" not in data:
+            parsed = urlparse(args.filename)
+            data["name"] = os.path.splitext(os.path.basename(parsed.path))[0]
+
+
+def main_info(args):
+    """Show info about an index file."""
+    with open(args.filename) as f:
+        data = json.load(f)
+    print("            name:", data.get("name"))
+    print("            info:", data.get("info"))
+    print("            base:", data.get("base"))
+    total_size = sum(shard["filesize"] for shard in data["shardlist"])
+    total_samples = sum(shard["nsamples"] for shard in data["shardlist"])
+    print("      total size:", format_with_suffix(total_size))
+    print("   total samples:", format_with_suffix(total_samples))
+    print(" avg sample size:", format_with_suffix(int(total_size / total_samples)))
+    print("  avg shard size:", format_with_suffix(int(total_size / len(data["shardlist"]))))
+    print("     first shard:", data["shardlist"][0]["url"])
+    print("      last shard:", data["shardlist"][-1]["url"])
+
+
+def main_sample(args):
+    ds = wids.ShardListDataset(args.filename)
+    print(len(ds))
+    sample = ds[args.index]
+    if args.cat is not None:
+        print(sample[args.cat], end="")
+        return 0
+    if not args.raw:
+        sample = ds.decode(sample)
+    for k, v in sample.items():
+        print(k, repr(v)[: args.width])
+
+
+def main():
+    """Commands for manipulating the shard index."""
+    # Create the top-level parser
+    parser = argparse.ArgumentParser(description="Command line tool with subcommands for file operations.")
+    subparsers = parser.add_subparsers(dest="command", required=True, help="Subcommands")
+
+    # Create the parser for the "create" command
+    create_parser = subparsers.add_parser("create", help="Create a new file")
+    create_parser.add_argument("files", nargs="+", help="files to index")
+    create_parser.add_argument("--output", "-o", help="output file name")
+    create_parser.add_argument("--name", "-n", help="name for dataset", default="")
+    create_parser.add_argument("--info", "-i", help="description for dataset", default=None)
+    create_parser.add_argument("--base", "-b", help="base path", default=None)
+
+    # Create the parser for the "update" command
+    update_parser = subparsers.add_parser("update", help="Update an existing file")
+    update_parser.add_argument("filename", type=str, help="Name of the file to update")
+    update_parser.add_argument("-n", "--name", default="", help="set the dataset name")
+    update_parser.add_argument("-k", "--keep", default="store_true", help="set the keep flag")
+    update_parser.add_argument("-K", "--nokeep", default="store_true", help="clear the keep flag")
+    update_parser.add_argument("-i", "--info", default="", help="set the dataset info")
+    update_parser.add_argument(
+        "-D", "--nodir", action="store_true", help="remove the directory from the URLs"
+    )
+    update_parser.add_argument("-d", "--dir", default="", help="set the directory on the URLs")
+    update_parser.add_argument("-b", "--base", default="", help="set the base")
+    update_parser.add_argument("-B", "--rebase", action="store_true", help="rebase the URLs")
+
+    # Create the parser for the "update" command
+    info_parser = subparsers.add_parser("info", help="Show info about an index file")
+    info_parser.add_argument("filename", type=str, help="Name of the file to update")
+
+    # Create the parser for the "update" command
+    sample_parser = subparsers.add_parser("sample", help="Show info about an index file")
+    sample_parser.add_argument("filename", type=str, help="Name of the file to update")
+    sample_parser.add_argument("index", type=int, default=0, help="Index of the sample to show")
+    sample_parser.add_argument("-r", "--raw", action="store_true", help="Show raw sample")
+    sample_parser.add_argument("-c", "--cat", type=str, default=None, help="Output the bytes for a given key")
+
+    # Parse the arguments
+    args = parser.parse_args()  # Dynamically call the appropriate function based on the subcommand
+
+    try:
+        func = getattr(sys.modules[__name__], f"main_{args.command}")
+    except AttributeError:
+        parser.print_help()
+
+    func(args)
 
 
 if __name__ == "__main__":

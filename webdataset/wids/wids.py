@@ -3,7 +3,7 @@ import io
 import os
 import re
 import tarfile
-from urllib.parse import urlparse
+from urllib.parse import urlparse, urljoin
 from typing import Any, Dict, Optional, Union
 import pickle
 from functools import partial
@@ -63,7 +63,7 @@ def group_by_key(names):
     for i, fname in enumerate(names):
         # Ignore files that are not in a subdirectory.
         if "." not in fname:
-            print(f"Warning: Ignoring file {fname}")
+            print(f"Warning: Ignoring file {fname} (no '.')")
             continue
         key, ext = splitname(fname)
         if key != last_key:

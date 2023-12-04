@@ -51,6 +51,12 @@ def autoflake(c):
 
 
 @task
+def pipx(c):
+    c.run(f"{ACTIVATE} pipx install -f .")
+    c.run(f"{ACTIVATE} pipx inject {PACKAGE} torch")
+
+
+@task
 def minenv(c):
     "Build the virtualenv (minimal)."
     c.run("git config core.hooksPath .githooks")

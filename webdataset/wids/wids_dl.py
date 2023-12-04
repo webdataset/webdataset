@@ -1,6 +1,7 @@
 import fcntl
 import os
-import urllib
+from urllib.parse import urlparse
+import shutil
 
 
 class ULockFile:
@@ -31,6 +32,20 @@ def pipe_download(remote, local):
     assert os.system(cmd) == 0, "Command failed: %s" % cmd
 
 
+def copy_file(remote, local):
+    remote = urlparse(remote)
+    assert remote.scheme in ["file", ""]
+    # use absolute path
+    remote = os.path.abspath(remote.path)
+    local = urlparse(local)
+    assert local.scheme in ["file", ""]
+    local = os.path.abspath(local.path)
+    if remote == local:
+        return
+    # check if the local file exists
+    shutil.copyfile(remote, local)
+
+
 default_cmds = {
     "posixpath": "cp {url} {local}",
     "s3": "aws s3 cp {url} {local}",
@@ -39,7 +54,7 @@ default_cmds = {
     "https": "wget {url} -O {local}",
     "ftp": "wget {url} -O {local}",
     "ftps": "wget {url} -O {local}",
-    "file": "cp {url} {local}",
+    "file": copy_file,
     "pipe": pipe_download,
 }
 
@@ -93,7 +108,7 @@ class SimpleDownloader:
         if remote.startswith("pipe:"):
             schema = "pipe"
         else:
-            schema = urllib.parse.urlparse(remote).scheme
+            schema = urlparse(remote).scheme
         if schema is None or schema == "":
             schema = "posixpath"
         # get the handler

@@ -1,7 +1,9 @@
 import json
 import io
+from urllib.parse import urlparse, urljoin
 
-def load_remote_shardlist(source):
+
+def load_remote_spec(source):
     """Load a remote or local dataset description in JSON format,
     using the Python web client APIs."""
 
@@ -14,10 +16,19 @@ def load_remote_shardlist(source):
         # FIXME: use gopen
         import requests
 
-        jsondata = requests.get(url).text
+        jsondata = requests.get(source).text
         dsdesc = json.loads(jsondata)
+    return dsdesc
 
-    return extract_shardlist(dsdesc)
+
+def load_remote_shardlist(source, base=None):
+    spec = load_remote_spec(source)
+    shardlist = extract_shardlist(spec)
+    base = base or spec.get("base")
+    if base is not None:
+        for shard in shardlist:
+            shard["url"] = urljoin(base, shard["url"])
+    return shardlist
 
 
 def check_shards(l):
