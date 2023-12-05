@@ -196,7 +196,7 @@ def tar_file_expander(
                 break
 
 
-def group_by_keys(
+def group_by_keys_original(
     data: Iterable[Dict[str, Any]],
     keys: Callable[[str], Tuple[str, str]] = base_plus_ext,
     lcase: bool = True,
@@ -254,6 +254,71 @@ def group_by_keys(
     if valid_sample(current_sample):
         current_sample["tar_path"] = filesample["__url__"]
         yield current_sample
+
+
+def group_by_keys(
+    data: Iterable[Dict[str, Any]],
+    keys: Callable[[str], Tuple[str, str]] = base_plus_ext,
+    lcase: bool = True,
+    suffixes: Optional[Set[str]] = None,
+    handler: Callable[[Exception], bool] = reraise_exception,
+) -> Iterator[Dict[str, Any]]:
+    """Group tarfile contents by keys and yield samples.
+
+    Args:
+        data: iterator over tarfile contents
+        keys: function that takes a file name and returns a key and a suffix.
+        lcase: whether to lowercase the suffix.
+        suffixes: list of suffixes to keep.
+        handler: exception handler.
+
+    Raises:
+        ValueError: raised if there are duplicate file names in the tar file.
+
+    Yields:
+        iterator over samples.
+    """
+    remaining_samples = {}
+    counter_dict = {}
+    for filesample in data:
+        for key, counter in counter_dict.items():
+            if counter > 200:
+                del counter_dict[key]
+                del remaining_samples[key]
+
+            counter_dict[key] += 1
+
+        try:
+            assert isinstance(filesample, dict)
+            fname, value = filesample["fname"], filesample["data"]
+            prefix, suffix = keys(fname)
+            if prefix is None:
+                continue
+            if lcase:
+                suffix = suffix.lower()
+                if prefix not in remaining_samples:
+                    remaining_samples[prefix] = dict(__key__=prefix, __url__=filesample["__url__"])
+                    counter_dict[prefix] = 0
+                    if suffixes is None or suffix in suffixes:
+                        remaining_samples[prefix][suffix] = value
+                else:
+                    if suffix in remaining_samples[prefix]:
+                        raise ValueError(f"{fname}: duplicate file name in tar file {suffix} {current_sample.keys()}")
+
+                    if suffixes is None or suffix in suffixes:
+                        remaining_samples[prefix][suffix] = value
+                    if valid_sample(remaining_samples[prefix]):
+                        remaining_samples[prefix]["tar_path"] = filesample["__url__"]
+                        del counter_dict[prefix]
+
+                        yield remaining_samples.pop(prefix)
+
+        except Exception as exn:
+            exn.args = exn.args + (source.get("stream"), source.get("url"))
+            if handler(exn):
+                continue
+            else:
+                break
 
 
 def tarfile_samples(

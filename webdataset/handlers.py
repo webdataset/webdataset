@@ -31,7 +31,6 @@ def ignore_and_continue(exn):
 def warn_and_continue(exn):
     """Call in an exception handler to ignore any exception, isssue a warning, and continue."""
     warnings.warn(repr(exn))
-    time.sleep(0.5)
     return True
 
 
