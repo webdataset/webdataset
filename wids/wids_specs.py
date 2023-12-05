@@ -6,29 +6,6 @@ import tempfile
 from .wids_dl import SimpleDownloader
 
 
-def load_remote_spec(source):
-    """Load a remote or local dataset description in JSON format,
-    using the Python web client APIs."""
-
-    if isinstance(source, str):
-        with tempfile.TemporaryDirectory() as tmpdir:
-            downloader = SimpleDownloader()
-            dlname = os.path.join(tmpdir, "dataset.json")
-            local = downloader.download(source, dlname)
-            with open(local) as f:
-                dsdesc = json.load(f)
-            downloader.release(local)
-    elif isinstance(source, io.IOBase):
-        dsdesc = json.load(source)
-    else:
-        # FIXME: use gopen
-        import requests
-
-        jsondata = requests.get(source).text
-        dsdesc = json.loads(jsondata)
-    return dsdesc
-
-
 def urldir(url):
     """Return the directory part of a url."""
     parsed_url = urlparse(url)
@@ -38,8 +15,7 @@ def urldir(url):
 
 
 def urlmerge(base, url):
-    """
-    Merges a base URL and a relative URL.
+    """Merge a base URL and a relative URL.
 
     The function fills in any missing part of the url from the base,
     except for params, query, and fragment, which are taken only from the 'url'.
@@ -79,25 +55,6 @@ def urlmerge(base, url):
     return merged_url
 
 
-def load_remote_shardlist(source, *, options={}, base=None):
-    spec = load_remote_spec(source)
-    spec = dict(spec, **options)
-    shardlist = extract_shardlist(spec)
-    if base is None and isinstance(source, str):
-        base = urldir(source)
-    elif base is True:
-        base = spec.get("base")
-    if isinstance(base, str):
-        for shard in shardlist:
-            shard["url"] = urlmerge(base, shard["url"])
-    verbose = int(os.environ.get("WIDS_VERBOSE", "0"))
-    if verbose >= 1:
-        print("WIDS base", base)
-        if verbose >= 2:
-            print("WIDS shards", shardlist)
-    return shardlist
-
-
 def check_shards(l):
     """Check that a list of shards is well-formed.
 
@@ -121,8 +78,42 @@ def set_all(l, k, v):
             x[k] = v
 
 
-def extract_shardlist(dsdesc):
-    """Extract a list of shards from a dataset description.
+def load_remote_dsdesc_raw(source):
+    """Load a remote or local dataset description in JSON format."""
+    if isinstance(source, str):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            downloader = SimpleDownloader()
+            dlname = os.path.join(tmpdir, "dataset.json")
+            local = downloader.download(source, dlname)
+            with open(local) as f:
+                dsdesc = json.load(f)
+            downloader.release(local)
+    elif isinstance(source, io.IOBase):
+        dsdesc = json.load(source)
+    else:
+        # FIXME: use gopen
+        import requests
+
+        jsondata = requests.get(source).text
+        dsdesc = json.loads(jsondata)
+    return dsdesc
+
+
+def rebase_shardlist(shardlist, base):
+    """Rebase the URLs in a shardlist."""
+    if base is None:
+        return
+    for shard in shardlist:
+        shard["url"] = urlmerge(base, shard["url"])
+    return shardlist
+
+
+
+def resolve_dsdesc(dsdesc, *, options={}, base=None):
+    """Resolve a dataset description.
+
+    This rebases the shards as necessary and loads any remote references.
+
     Dataset descriptions are JSON files. They must have the following format;
 
     {
@@ -144,20 +135,39 @@ def extract_shardlist(dsdesc):
     }
     """
     assert isinstance(dsdesc, dict)
+    dsdesc = dict(dsdesc, **options)
     shardlist = dsdesc.get("shardlist", [])
     set_all(shardlist, "weight", dsdesc.get("weight"))
+    set_all(shardlist, "name", dsdesc.get("name"))
     check_shards(shardlist)
     assert "wids_version" in dsdesc, "No wids_version in dataset description"
     assert dsdesc["wids_version"] == 1, "Unknown wids_version"
     for component in dsdesc.get("datasets", []):
-        for i in range(10):
-            if "source_url" not in component:
-                break
-            component = load_remote(component["source_url"])
-        assert i < 9, "Too many levels of indirection"
-        if "shardlist" in component:
-            l = check_shards(component["shardlist"])
-            set_all(l, "weight", component.get("weight"))
-            shardlist.extend(l)
+        # we use the weight from the reference to the dataset,
+        # regardless of remote loading
+        weight = component.get("weight")
+        # follow any source_url dsdescs through remote loading
+        source_url = None
+        if "source_url" in component:
+            source_url = component["source_url"]
+            component = load_remote_dsdesc_raw(source_url)
+        assert "source_url" not in component, "double indirection in dataset description"
+        assert "shardlist" in component, "no shardlist in dataset description"
+        # if the component has a base, use it to rebase the shardlist
+        # otherwise use the base from the source_url, if any
+        subbase = component.get("base", urldir(source_url) if source_url else None)
+        if subbase is not None:
+            rebase_shardlist(component["shardlist"], subbase)
+        l = check_shards(component["shardlist"])
+        set_all(l, "weight", weight)
+        set_all(l, "source_url", source_url)
+        set_all(l, "dataset", component.get("name"))
+        shardlist.extend(l)
     assert len(shardlist) > 0, "No shards found"
-    return shardlist
+    dsdesc["shardlist"] = shardlist
+    return dsdesc
+
+
+def load_dsdesc_and_resolve(source, *, options={}, base=None):
+    dsdesc = load_remote_dsdesc_raw(source)
+    return resolve_dsdesc(dsdesc, base=base, options=options)

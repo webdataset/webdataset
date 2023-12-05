@@ -9,8 +9,9 @@ from typing import Any, Dict, Optional, Union
 import pickle
 from functools import partial
 import json
-import io
 import gzip
+import base64
+
 
 import numpy as np
 from torch.utils.data import Dataset
@@ -19,7 +20,7 @@ from .wids_dl import ConcurrentDownloader
 from .wids_lru import LRUCache
 from .wids_tar import TarFileReader, find_index_file
 from .wids_mmtar import MMIndexedTar
-from .wids_specs import load_remote_shardlist
+from .wids_specs import load_dsdesc_and_resolve, urldir
 
 
 def compute_file_md5sum(fname, chunksize=1000000):
@@ -206,7 +207,7 @@ class IndexedTarSamples:
         return sample
 
 
-def default_localname(dldir="/tmp/wids"):
+def default_localname(dldir="/tmp/_wids_cache"):
     os.makedirs(dldir, exist_ok=True)
 
     def f(shard):
@@ -303,22 +304,41 @@ def interpret_transformations(transformations):
     return result
 
 
+def hash_dataset_name(input_string):
+    # Compute SHA256 hash of the input string
+    hash_object = hashlib.sha256(input_string.encode())
+    hash_digest = hash_object.digest()
+
+    # Encode the hash in base64
+    base64_encoded_hash = base64.urlsafe_b64encode(hash_digest)
+
+    # Return the first 16 characters of the base64-encoded hash
+    return base64_encoded_hash[:16].decode("ascii")
+
+
 class ShardListDataset(Dataset):
     """An indexable dataset based on a list of shards.
 
-    The shards are specified as a list of (filename, length) pairs.
-    The filename can be a local file or a URL. The length is the
-    number of samples in the shard. The shards are downloaded to
-    a local directory and cached there."""
+    The dataset is either given as a list of shards with optional options and name,
+    or as a URL pointing to a JSON descriptor file.
+
+    Datasets can reference other datasets via `source_url`.
+
+    Shard references within a dataset are resolve relative to an explicitly
+    given `base` property, or relative to the URL from which the dataset
+    descriptor was loaded.
+    """
 
     def __init__(
         self,
         shards,
         cache_size=10,
         cache_dir=None,
-        localname=default_localname(),
+        dataset_name=None,
+        localname=None,
         transformations="PIL",
         keep=False,
+        base=None,
         options={},
     ):
         """Create a ShardListDataset.
@@ -332,17 +352,48 @@ class ShardListDataset(Dataset):
         # shards is a list of (filename, length) pairs. We'll need to
         # keep track of the lengths and cumulative lengths to know how
         # to map indices to shards and indices within shards.
-        self.shards = load_remote_shardlist(shards, options=options) if isinstance(shards, (str, io.IOBase)) else shards
-        if int(os.environ.get("WIDS_VERBOSE", 0)):
-            print("WIDS shards", self.shards)
+        if isinstance(shards, (str, io.IOBase)):
+            if base is None and isinstance(shards, str):
+                base = urldir(shards)
+            self.spec = load_dsdesc_and_resolve(shards, options=options, base=base)
+            self.shards = self.spec.get("shardlist", [])
+            self.dataset_name = self.spec.get("name") or hash_dataset_name(str(shards))
+        else:
+            self.spec = options
+            self.shards = shards
+            self.dataset_name = dataset_name or hash_dataset_name(str(shards))
+
+        self.cache_dir = cache_dir or os.environ.get("WIDS_CACHE", "/tmp/_wids_cache")
+
         self.lengths = [shard["nsamples"] for shard in self.shards]
         self.cum_lengths = np.cumsum(self.lengths)
         self.total_length = self.cum_lengths[-1]
 
+        print("***", self.cache_dir, self.dataset_name, file=sys.stderr)
+        cacheloc = os.path.join(self.cache_dir, self.dataset_name)
+        if localname is None:
+            localname = default_localname(cacheloc)
+
+        if True or int(os.environ.get("WIDS_VERBOSE", 0)):
+            nbytes = sum(shard["nsamples"] for shard in self.shards)
+            nsamples = [shard["nsamples"] for shard in self.shards]
+            print(
+                "dataset",
+                self.spec.get("name"),
+                "::",
+                "nfiles:",
+                len(self.shards),
+                "nbytes:",
+                nbytes,
+                "samples:",
+                nsamples,
+                "cache:",
+                cacheloc,
+                file=sys.stderr,
+
+            )
         self.transformations = interpret_transformations(transformations)
 
-        if cache_dir is not None:
-            localname = default_localname(cache_dir)
         self.cache = LRUShards(cache_size, localname=localname, keep=keep)
 
     def add_transform(self, transform):
@@ -381,19 +432,22 @@ class ShardListDataset(Dataset):
             inner_idx = index - self.cum_lengths[shard_idx - 1]
 
         # Get the shard and return the corresponding element.
-        url = self.shards[shard_idx]["url"]
+        desc = self.shards[shard_idx]
+        url = desc["url"]
         shard = self.cache.get_shard(url)
-        return shard, inner_idx, url
+        return shard, inner_idx, desc
 
     def __getitem__(self, index):
         """Return the sample corresponding to the given index."""
-        shard, inner_idx, shard_url = self.get_shard(index)
+        shard, inner_idx, desc = self.get_shard(index)
         sample = shard[inner_idx]
 
         # Check if we're missing the cache too often.
         self.check_cache_misses()
 
-        sample["__shard__"] = shard_url
+        sample["__shard__"] = desc["url"]
+        sample["__shardindex__"] = inner_idx
+        sample["__dataset__"] = desc.get("dataset")
 
         # Apply transformations
         for transform in self.transformations:
