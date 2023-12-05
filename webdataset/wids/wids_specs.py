@@ -2,6 +2,8 @@ import os
 import json
 import io
 from urllib.parse import urlparse, urljoin, urlunparse
+import tempfile
+from .wids_dl import SimpleDownloader
 
 
 def load_remote_spec(source):
@@ -9,8 +11,13 @@ def load_remote_spec(source):
     using the Python web client APIs."""
 
     if isinstance(source, str):
-        with open(source) as stream:
-            dsdesc = json.load(stream)
+        with tempfile.TemporaryDirectory() as tmpdir:
+            downloader = SimpleDownloader()
+            dlname = os.path.join(tmpdir, "dataset.json")
+            local = downloader.download(source, dlname)
+            with open(local) as f:
+                dsdesc = json.load(f)
+            downloader.release(local)
     elif isinstance(source, io.IOBase):
         dsdesc = json.load(source)
     else:

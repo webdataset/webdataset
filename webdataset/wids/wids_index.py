@@ -10,6 +10,7 @@ import braceexpand
 
 from . import wids_dl
 from . import wids
+from .wids_specs import load_remote_spec
 
 
 def format_with_suffix(num):
@@ -213,8 +214,7 @@ def main_info(args):
     if args.table:
         print("file\tname\tnbytes\tnsamples\tbase\tlast")
         for filename in args.filenames:
-            with open(filename) as f:
-                data = json.load(f)
+            data = load_remote_spec(filename)
             print(
                 filename,
                 data.get("name"),
@@ -226,8 +226,7 @@ def main_info(args):
             )
     else:
         for filename in args.filenames:
-            with open(filename) as f:
-                data = json.load(f)
+            data = load_remote_spec(filename)
             print("filename:", filename)
             print_long_info(data)
             print()
