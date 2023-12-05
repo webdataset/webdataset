@@ -1,6 +1,7 @@
+import os
 import json
 import io
-from urllib.parse import urlparse, urljoin
+from urllib.parse import urlparse, urljoin, urlunparse
 
 
 def load_remote_spec(source):
@@ -21,14 +22,72 @@ def load_remote_spec(source):
     return dsdesc
 
 
-def load_remote_shardlist(source, options={}):
+def urldir(url):
+    """Return the directory part of a url."""
+    parsed_url = urlparse(url)
+    path = parsed_url.path
+    directory = os.path.dirname(path)
+    return parsed_url._replace(path=directory).geturl()
+
+
+def urlmerge(base, url):
+    """
+    Merges a base URL and a relative URL.
+
+    The function fills in any missing part of the url from the base,
+    except for params, query, and fragment, which are taken only from the 'url'.
+    For the pathname component, it merges the paths like os.path.join:
+    an absolute path in 'url' overrides the base path, otherwise the paths are merged.
+
+    Parameters:
+    base (str): The base URL.
+    url (str): The URL to merge with the base.
+
+    Returns:
+    str: The merged URL.
+    """
+    # Parse the base and the relative URL
+    parsed_base = urlparse(base)
+    parsed_url = urlparse(url)
+
+    # Merge paths using os.path.join
+    # If the url path is absolute, it overrides the base path
+    if parsed_url.path.startswith("/"):
+        merged_path = parsed_url.path
+    else:
+        merged_path = os.path.normpath(os.path.join(parsed_base.path, parsed_url.path))
+
+    # Construct the merged URL
+    merged_url = urlunparse(
+        (
+            parsed_url.scheme or parsed_base.scheme,
+            parsed_url.netloc or parsed_base.netloc,
+            merged_path,
+            parsed_url.params,  # Use params from the url only
+            parsed_url.query,  # Use query from the url only
+            parsed_url.fragment,  # Use fragment from the url only
+        )
+    )
+
+    return merged_url
+
+
+def load_remote_shardlist(source, *, options={}, base=None):
     spec = load_remote_spec(source)
     spec = dict(spec, **options)
     shardlist = extract_shardlist(spec)
-    base = spec.get("base")
-    if base is not None:
+    if base is None and isinstance(source, str):
+        base = urldir(source)
+    elif base is True:
+        base = spec.get("base")
+    if isinstance(base, str):
         for shard in shardlist:
-            shard["url"] = urljoin(base, shard["url"])
+            shard["url"] = urlmerge(base, shard["url"])
+    verbose = int(os.environ.get("WIDS_VERBOSE", "0"))
+    if verbose >= 1:
+        print("WIDS base", base)
+        if verbose >= 2:
+            print("WIDS shards", shardlist)
     return shardlist
 
 

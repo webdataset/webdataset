@@ -2,6 +2,7 @@ import hashlib
 import io
 import os
 import re
+import sys
 import tarfile
 from urllib.parse import urlparse, urljoin
 from typing import Any, Dict, Optional, Union
@@ -331,7 +332,7 @@ class ShardListDataset(Dataset):
         # shards is a list of (filename, length) pairs. We'll need to
         # keep track of the lengths and cumulative lengths to know how
         # to map indices to shards and indices within shards.
-        self.shards = load_remote_shardlist(shards, options) if isinstance(shards, (str, io.IOBase)) else shards
+        self.shards = load_remote_shardlist(shards, options=options) if isinstance(shards, (str, io.IOBase)) else shards
         if int(os.environ.get("WIDS_VERBOSE", 0)):
             print("WIDS shards", self.shards)
         self.lengths = [shard["nsamples"] for shard in self.shards]
@@ -382,15 +383,17 @@ class ShardListDataset(Dataset):
         # Get the shard and return the corresponding element.
         url = self.shards[shard_idx]["url"]
         shard = self.cache.get_shard(url)
-        return shard, inner_idx
+        return shard, inner_idx, url
 
     def __getitem__(self, index):
         """Return the sample corresponding to the given index."""
-        shard, inner_idx = self.get_shard(index)
+        shard, inner_idx, shard_url = self.get_shard(index)
         sample = shard[inner_idx]
 
         # Check if we're missing the cache too often.
         self.check_cache_misses()
+
+        sample["__shard__"] = shard_url
 
         # Apply transformations
         for transform in self.transformations:

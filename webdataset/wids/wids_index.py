@@ -90,20 +90,28 @@ def urldirbase(url):
     return url_without_filename
 
 
+def shorten_name(s):
+    l = re.split(r"[^a-zA-Z0-9_]+", s)
+    found = set()
+    result = []
+    for word in l:
+        if re.match(r"^[0-9]*$", word):
+            continue
+        if word not in found:
+            result.append(word)
+            found.add(word)
+    return "-".join(result)
+
+
 def main_create(args):
     """Create a full shard index for a list of files."""
     # set default output file name
     if args.output is None:
         args.output = "shardindex.json"
 
-    if args.name is None and args.output is not None:
-        args.name = os.path.splitext(os.path.basename(args.output))[0]
-        print("setting name to", args.name)
-    else:
-        first = os.path.splitext(os.path.basename(args.files[0]))[0]
-        first = re.sub(r"[0-9]{3,}", "", first)
-        first = re.sub(r"[^a-zA-Z0-9_-]", "", first)
-        args.name = first
+    if args.name is None:
+        first = os.path.splitext(args.files[0])[0]
+        args.name = shorten_name(first)
         print("setting name to", args.name)
 
     # read the list of files from stdin if there is only one file and it is "-"
@@ -186,10 +194,7 @@ def main_update(args):
             data["name"] = os.path.splitext(os.path.basename(parsed.path))[0]
 
 
-def main_info(args):
-    """Show info about an index file."""
-    with open(args.filename) as f:
-        data = json.load(f)
+def print_long_info(data):
     print("            name:", data.get("name"))
     print("            info:", data.get("info"))
     print("            base:", data.get("base"))
@@ -201,6 +206,31 @@ def main_info(args):
     print("  avg shard size:", format_with_suffix(int(total_size / len(data["shardlist"]))))
     print("     first shard:", data["shardlist"][0]["url"])
     print("      last shard:", data["shardlist"][-1]["url"])
+
+
+def main_info(args):
+    """Show info about an index file."""
+    if args.table:
+        print("file\tname\tnbytes\tnsamples\tbase\tlast")
+        for filename in args.filenames:
+            with open(filename) as f:
+                data = json.load(f)
+            print(
+                filename,
+                data.get("name"),
+                sum(shard["filesize"] for shard in data["shardlist"]),
+                sum(shard["nsamples"] for shard in data["shardlist"]),
+                data.get("base"),
+                data["shardlist"][-1]["url"],
+                sep="\t",
+            )
+    else:
+        for filename in args.filenames:
+            with open(filename) as f:
+                data = json.load(f)
+            print("filename:", filename)
+            print_long_info(data)
+            print()
 
 
 def maybe_read(x):
@@ -226,8 +256,9 @@ def main_sample(args):
     if args.cat is not None:
         sys.stdout.buffer.write(sample[args.cat])
         return 0
-    for k, v in sample.items():
-        print(k, repr(v)[: args.width])
+    mkl = max(len(k) for k in sample.keys())
+    for k, v in sorted(sample.items()):
+        print(k.ljust(mkl), repr(v)[: args.width - mkl - 1])
 
 
 def main():
@@ -240,7 +271,7 @@ def main():
     create_parser = subparsers.add_parser("create", help="Create a new file")
     create_parser.add_argument("files", nargs="+", help="files to index")
     create_parser.add_argument("--output", "-o", help="output file name")
-    create_parser.add_argument("--name", "-n", help="name for dataset", default="")
+    create_parser.add_argument("--name", "-n", help="name for dataset", default=None)
     create_parser.add_argument("--info", "-i", help="description for dataset", default=None)
     create_parser.add_argument("--base", "-b", help="base path", default=None)
 
@@ -260,7 +291,8 @@ def main():
 
     # Create the parser for the "info" command
     info_parser = subparsers.add_parser("info", help="Show info about an index file")
-    info_parser.add_argument("filename", type=str, help="Name of the file to update")
+    info_parser.add_argument("filenames", type=str, nargs="*", help="Name of the file to display")
+    info_parser.add_argument("-t", "--table", action="store_true", help="output in table format")
 
     # Create the parser for the "sample" command
     sample_parser = subparsers.add_parser("sample", help="Show info about an index file")
