@@ -35,7 +35,7 @@ setuptools.setup(
     ],
     entry_points={
         "console_scripts": [
-            "widsindex=webdataset.wids.wids_index:main",
+            "widsindex=wids.wids_index:main",
         ]
     },
     keywords="object store, client, deep learning",

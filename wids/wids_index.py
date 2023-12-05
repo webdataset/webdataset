@@ -10,7 +10,7 @@ import braceexpand
 
 from . import wids_dl
 from . import wids
-from .wids_specs import load_remote_spec
+from .wids_specs import load_remote_dsdesc_raw
 
 
 def format_with_suffix(num):
@@ -195,10 +195,10 @@ def main_update(args):
             data["name"] = os.path.splitext(os.path.basename(parsed.path))[0]
 
 
-def print_long_info(data):
+def print_long_info(data, filename):
     print("            name:", data.get("name"))
     print("            info:", data.get("info"))
-    print("            base:", data.get("base"))
+    print("            base:", data.get("base"), "(assumed: {})".format(urldir(filename))),
     total_size = sum(shard["filesize"] for shard in data["shardlist"])
     total_samples = sum(shard["nsamples"] for shard in data["shardlist"])
     print("      total size:", format_with_suffix(total_size))
@@ -207,14 +207,19 @@ def print_long_info(data):
     print("  avg shard size:", format_with_suffix(int(total_size / len(data["shardlist"]))))
     print("     first shard:", data["shardlist"][0]["url"])
     print("      last shard:", data["shardlist"][-1]["url"])
+    if len(data.get("datasets", [])) > 0:
+        print("        datasets:")
+        for dataset in data.get("datasets", []):
+            print("    dataset name:", dataset.get("name"))
+            print("     dataset url:", dataset.get("source_url", len(data.get("shardlist", []))))
 
 
 def main_info(args):
     """Show info about an index file."""
     if args.table:
-        print("file\tname\tnbytes\tnsamples\tbase\tlast")
+        print("file\tname\tnbytes\tnsamples\tbase\tlast\tdatasets")
         for filename in args.filenames:
-            data = load_remote_spec(filename)
+            data = load_remote_dsdesc_raw(filename)
             print(
                 filename,
                 data.get("name"),
@@ -222,13 +227,14 @@ def main_info(args):
                 sum(shard["nsamples"] for shard in data["shardlist"]),
                 data.get("base"),
                 data["shardlist"][-1]["url"],
+                len(data.get("datasets", [])),
                 sep="\t",
             )
     else:
         for filename in args.filenames:
-            data = load_remote_spec(filename)
+            data = load_remote_dsdesc_raw(filename)
             print("filename:", filename)
-            print_long_info(data)
+            print_long_info(data, filename)
             print()
 
 
