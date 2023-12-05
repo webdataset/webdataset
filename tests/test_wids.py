@@ -1,6 +1,6 @@
 import pytest
-from webdataset.wids import wids
-from webdataset.wids import wids_specs
+from wids import wids
+from wids import wids_specs
 import os
 import textwrap
 import json
@@ -84,7 +84,7 @@ class TestShardListDataset:
         assert len(shard_list_dataset) == 203
 
     def test_getshard(self, shard_list_dataset):
-        shard, _ = shard_list_dataset.get_shard(0)
+        shard, _, _ = shard_list_dataset.get_shard(0)
         assert os.path.exists(shard.path)
         assert os.stat(shard.path).st_nlink == 2
 

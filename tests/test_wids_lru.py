@@ -3,7 +3,7 @@ import sys
 
 from collections import OrderedDict
 
-from webdataset.wids.wids_lru import LRUCache
+from wids.wids_lru import LRUCache
 
 
 # Test initialization

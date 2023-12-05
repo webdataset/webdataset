@@ -39,7 +39,7 @@ setuptools.setup(
         ]
     },
     keywords="object store, client, deep learning",
-    packages=["webdataset", "webdataset.wids"],
+    packages=["webdataset", "wids"],
     python_requires=">=3.6",
     scripts=scripts,
     install_requires="braceexpand numpy pyyaml".split(),

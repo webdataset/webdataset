@@ -15,7 +15,7 @@ from webdataset import (
     handlers,
     shardlists,
 )
-from webdataset.tests.testconfig import *
+from tests.testconfig import *
 
 
 def identity(x):

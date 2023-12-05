@@ -191,7 +191,7 @@ def twine_pypi_release(c):
 
 
 base_container = f"""
-FROM ubuntu:20.04
+FROM ubuntu:22.04
 ENV LC_ALL=C
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get -qqy update
@@ -203,12 +203,20 @@ RUN apt-get install -qqy curl
 WORKDIR /tmp
 RUN python3 -m venv venv
 RUN . venv/bin/activate; pip install --no-cache-dir pytest
-RUN . venv/bin/activate; pip install --no-cache-dir jupyterlab
-RUN . venv/bin/activate; pip install --no-cache-dir numpy
-RUN . venv/bin/activate; pip install --no-cache-dir nbconvert
+# RUN . venv/bin/activate; pip install --no-cache-dir jupyterlab
+# RUN . venv/bin/activate; pip install --no-cache-dir numpy
+# RUN . venv/bin/activate; pip install --no-cache-dir nbconvert
 RUN . venv/bin/activate; pip install --no-cache-dir torch==1.4.0+cpu -f https://download.pytorch.org/whl/torch_stable.html
-RUN . venv/bin/activate; pip install --no-cache-dir torchvision==0.5.0+cpu -f https://download.pytorch.org/whl/torch_stable.html
+# RUN . venv/bin/activate; pip install --no-cache-dir torchvision==0.5.0+cpu -f https://download.pytorch.org/whl/torch_stable.html
 """
+
+local_test = """
+FROM webdatasettest-base
+ENV SHELL=/bin/bash
+WORKDIR /tmp/webdataset
+RUN pip install --no-cache-dir current.whl
+"""
+
 
 github_test = """
 FROM webdatasettest-base
@@ -256,6 +264,15 @@ def dockerbase(c):
     "Build a base container."
     docker_build(c, base_container, tag="webdatasettest-base")
 
+@task
+def dockerlocal(c):
+    assert not "implemented"
+    c.run("pip install wheel")
+    c.run("rm -rf dist")
+    c.run("python setup.py sdist bdist_wheel")
+    c.run("cp dist/*.whl current.whl")
+    c.run("cp dist/*.tar current.tar")
+    docker_build(c, local_test, files=["current.whl", "current.tar"], nocache=True)
 
 @task(dockerbase)
 def githubtest(c):

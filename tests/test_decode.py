@@ -10,7 +10,7 @@ from webdataset import (
     autodecode,
 )
 
-from webdataset.tests.testconfig import *
+from tests.testconfig import *
 
 
 def test_xdecode():

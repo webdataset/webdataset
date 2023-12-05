@@ -4,7 +4,7 @@ import multiprocessing
 import time
 import glob
 
-from webdataset.wids.wids_dl import (
+from wids.wids_dl import (
     SimpleDownloader,
     ConcurrentDownloader,
     mkresult,

@@ -2,7 +2,7 @@ from torch.utils.data import DataLoader
 
 import webdataset as wds
 
-from webdataset.tests.testconfig import (
+from tests.testconfig import (
     count_samples_tuple,
     local_data,
     remote_loc,
