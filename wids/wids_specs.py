@@ -136,7 +136,7 @@ def resolve_dsdesc(dsdesc, *, options={}, base=None):
     """
     assert isinstance(dsdesc, dict)
     dsdesc = dict(dsdesc, **options)
-    shardlist = dsdesc.get("shardlist", [])
+    shardlist = rebase_shardlist(dsdesc.get("shardlist", []), base)
     set_all(shardlist, "weight", dsdesc.get("weight"))
     set_all(shardlist, "name", dsdesc.get("name"))
     check_shards(shardlist)

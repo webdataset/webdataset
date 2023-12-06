@@ -4,13 +4,14 @@ import os
 import re
 import sys
 import tarfile
-from urllib.parse import urlparse, urljoin
+from urllib.parse import urlparse, urljoin, quote
 from typing import Any, Dict, Optional, Union
 import pickle
 from functools import partial
 import json
 import gzip
 import base64
+import sqlite3
 
 
 import numpy as np
@@ -207,18 +208,43 @@ class IndexedTarSamples:
         return sample
 
 
-def default_localname(dldir="/tmp/_wids_cache"):
+def hash_localname(dldir="/tmp/_wids_cache"):
     os.makedirs(dldir, exist_ok=True)
+
+    connection = sqlite3.connect(os.path.join(dldir, "cache.db"))
+    cursor = connection.cursor()
+    cursor.execute("CREATE TABLE IF NOT EXISTS cache (url TEXT PRIMARY KEY, path TEXT, checksum TEXT)")
+    connection.commit()
 
     def f(shard):
         """Given a URL, return a local name for the shard. The local name contains
         no directory components."""
         if shard.startswith("pipe:"):
             # uuencode the entire URL string
-            return os.path.join(dldir, base64.urlsafe_b64encode(shard.encode()).decode())
+            hex32 = base64.urlsafe_b64encode(hashlib.sha256(shard.encode()).digest())[:32].decode()
+            return os.path.join(dldir, "pipe__" + hex32)
         else:
-            # use urlparse to get the filename component of the URL
-            return os.path.join(dldir, os.path.basename(urlparse(shard).path))
+            # we hash the host and directory components into a 16 character string
+            dirname = urldir(shard)
+            hex16 = base64.urlsafe_b64encode(hashlib.sha256(dirname.encode()).digest())[:16].decode()
+            # the cache name is the concatenation of the hex16 string and the file name component of the URL
+            cachename = "data__" + hex16 + "__" + os.path.basename(urlparse(shard).path)
+            checksum = None
+            cursor.execute("INSERT OR REPLACE INTO cache VALUES (?, ?, ?)", (shard, cachename, checksum))
+            connection.commit()
+            return os.path.join(dldir, cachename)
+
+    return f
+
+
+def default_localname(dldir="/tmp/_wids_cache"):
+    os.makedirs(dldir, exist_ok=True)
+
+    def f(shard):
+        """Given a URL, return a local name for the shard. The local name contains
+        no directory components."""
+        cachename = quote(shard, safe="+-")
+        return os.path.join(dldir, cachename)
 
     return f
 
@@ -355,32 +381,34 @@ class ShardListDataset(Dataset):
         if isinstance(shards, (str, io.IOBase)):
             if base is None and isinstance(shards, str):
                 base = urldir(shards)
+            self.base = base
             self.spec = load_dsdesc_and_resolve(shards, options=options, base=base)
             self.shards = self.spec.get("shardlist", [])
             self.dataset_name = self.spec.get("name") or hash_dataset_name(str(shards))
         else:
+            self.base = None
             self.spec = options
             self.shards = shards
             self.dataset_name = dataset_name or hash_dataset_name(str(shards))
-
-        self.cache_dir = cache_dir or os.environ.get("WIDS_CACHE", "/tmp/_wids_cache")
 
         self.lengths = [shard["nsamples"] for shard in self.shards]
         self.cum_lengths = np.cumsum(self.lengths)
         self.total_length = self.cum_lengths[-1]
 
-        print("***", self.cache_dir, self.dataset_name, file=sys.stderr)
-        cacheloc = os.path.join(self.cache_dir, self.dataset_name)
+        self.cache_dir = cache_dir or os.environ.get("WIDS_CACHE", "/tmp/_wids_cache")
+
         if localname is None:
-            localname = default_localname(cacheloc)
+            localname = default_localname(self.cache_dir)
 
         if True or int(os.environ.get("WIDS_VERBOSE", 0)):
-            nbytes = sum(shard["nsamples"] for shard in self.shards)
-            nsamples = [shard["nsamples"] for shard in self.shards]
+            nbytes = sum(shard["filesize"] for shard in self.shards)
+            nsamples = sum(shard["nsamples"] for shard in self.shards)
             print(
-                "dataset",
+                str(shards)[:50],
+                "base:",
+                self.base,
+                "name:",
                 self.spec.get("name"),
-                "::",
                 "nfiles:",
                 len(self.shards),
                 "nbytes:",
@@ -388,7 +416,7 @@ class ShardListDataset(Dataset):
                 "samples:",
                 nsamples,
                 "cache:",
-                cacheloc,
+                self.cache_dir,
                 file=sys.stderr,
 
             )
