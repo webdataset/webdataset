@@ -15,9 +15,7 @@ class TestIndexedTarSamples:
         self.indexed_samples = wids.IndexedTarSamples(tar_file, md5sum, expected_size)
 
     def test_length(self):
-        assert (
-            len(self.indexed_samples) == 10
-        )  # Update with the expected number of samples
+        assert len(self.indexed_samples) == 10  # Update with the expected number of samples
 
     def test_getitem(self):
         sample = self.indexed_samples[0]  # Update with the desired sample index
@@ -42,6 +40,7 @@ class TestLRUShards:
         # lru_shards.release(shard)
         # assert not os.path.exists(path)
 
+
 class TestGz:
     def test_gz(self):
         dataset = wids.ShardListDataset([dict(url="testdata/testgz.tar", nsamples=1000)])
@@ -51,6 +50,7 @@ class TestGz:
         assert "__key__" in sample
         assert ".txt.gz" in sample
         assert sample[".txt.gz"] == ", or more info on the item.", sample
+
 
 class TestShardListDataset:
     @pytest.fixture(scope="class")
@@ -66,9 +66,7 @@ class TestShardListDataset:
             dict(url="testdata/compressed.tar", nsamples=3),
         ]
 
-        dataset = wids.ShardListDataset(
-            shards, cache_size=2, localname=wids.default_localname(str(tmpdir))
-        )
+        dataset = wids.ShardListDataset(shards, cache_size=2, localname=wids.default_localname(str(tmpdir)))
         dataset.tmpdir = str(tmpdir)
 
         yield dataset
@@ -117,9 +115,7 @@ class TestShardListDataset:
         assert ".txt.gz" in sample
         assert len(shard_list_dataset.cache) == 2
         cache = set(shard_list_dataset.cache.keys())
-        assert cache == set(
-            "testdata/tendata.tar testdata/compressed.tar".split()
-        ), cache
+        assert cache == set("testdata/tendata.tar testdata/compressed.tar".split()), cache
 
         # access sample in the third shard
         sample = shard_list_dataset[201]
@@ -129,9 +125,7 @@ class TestShardListDataset:
         assert ".txt.gz" in sample
         assert len(shard_list_dataset.cache) == 2
         cache = set(shard_list_dataset.cache.keys())
-        assert cache == set(
-            "testdata/tendata.tar testdata/compressed.tar".split()
-        ), cache
+        assert cache == set("testdata/tendata.tar testdata/compressed.tar".split()), cache
 
         # access sample in the first shard
         sample = shard_list_dataset[0]
@@ -141,15 +135,15 @@ class TestShardListDataset:
         assert ".mp" in sample
         assert len(shard_list_dataset.cache) == 2
         cache = set(shard_list_dataset.cache.keys())
-        assert cache == set(
-            "testdata/mpdata.tar testdata/compressed.tar".split()
-        ), cache
+        assert cache == set("testdata/mpdata.tar testdata/compressed.tar".split()), cache
 
         assert shard_list_dataset.get_stats() == (5, 4)
 
+
 class TestSpecs:
     def test_spec_parsing(self):
-        spec = textwrap.dedent("""
+        spec = textwrap.dedent(
+            """
         {
             "__kind__": "wids-shard-index-v1",
             "name": "train",
@@ -161,13 +155,15 @@ class TestSpecs:
                 }
             ]
         }
-        """)
+        """
+        )
         spec = json.loads(spec)
         shardlist = wids_specs.extract_shardlist(spec)
         assert len(shardlist) == 1
 
     def test_spec_parsing(self):
-        spec = textwrap.dedent("""
+        spec = textwrap.dedent(
+            """
         {
             "__kind__": "wids-shard-index-v1",
             "name": "train",
@@ -179,8 +175,8 @@ class TestSpecs:
                 }
             ]
         }
-        """)
+        """
+        )
         stream = io.StringIO(spec)
         dataset = wids.ShardListDataset(stream)
         assert len(dataset) == 10
-

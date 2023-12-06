@@ -217,8 +217,7 @@ def hash_localname(dldir="/tmp/_wids_cache"):
     connection.commit()
 
     def f(shard):
-        """Given a URL, return a local name for the shard. The local name contains
-        no directory components."""
+        """Given a URL, return a local name for the shard."""
         if shard.startswith("pipe:"):
             # uuencode the entire URL string
             hex32 = base64.urlsafe_b64encode(hashlib.sha256(shard.encode()).digest())[:32].decode()
@@ -237,12 +236,23 @@ def hash_localname(dldir="/tmp/_wids_cache"):
     return f
 
 
+def cache_localname(cachedir):
+    os.makedirs(dldir, exist_ok=True)
+
+    def f(shard):
+        """Given a URL, return a local name for the shard."""
+        path = urlparse(shard).path
+        fname = os.path.basename(path)
+        return os.path.join(cachedir, fname)
+
+    return f
+
+
 def default_localname(dldir="/tmp/_wids_cache"):
     os.makedirs(dldir, exist_ok=True)
 
     def f(shard):
-        """Given a URL, return a local name for the shard. The local name contains
-        no directory components."""
+        """Given a URL, return a local name for the shard."""
         cachename = quote(shard, safe="+-")
         return os.path.join(dldir, cachename)
 
@@ -395,13 +405,22 @@ class ShardListDataset(Dataset):
         self.cum_lengths = np.cumsum(self.lengths)
         self.total_length = self.cum_lengths[-1]
 
-        self.cache_dir = cache_dir or os.environ.get("WIDS_CACHE", "/tmp/_wids_cache")
-
-        if localname is None:
-            localname = default_localname(self.cache_dir)
+        if cache_dir is not None:
+            # when a cache dir is explicitly given, we download files into
+            # that directory without any changes
+            self.cache_dir = cache_dir
+            self.localname = cache_localname(cache_dir)
+        elif localname is not None:
+            # when a localname function is given, we use that
+            self.cache_dir = None
+            self.localname = localname
+        else:
+            # when no cachd dir or localname are given, use the cache from the environment
+            self.cache_dir = os.environ.get("WIDS_CACHE", "/tmp/_wids_cache")
+            self.localname = default_localname(self.cache_dir)
 
         if True or int(os.environ.get("WIDS_VERBOSE", 0)):
-            nbytes = sum(shard["filesize"] for shard in self.shards)
+            nbytes = sum(shard.get("filesize", 0) for shard in self.shards)
             nsamples = sum(shard["nsamples"] for shard in self.shards)
             print(
                 str(shards)[:50],
@@ -422,7 +441,7 @@ class ShardListDataset(Dataset):
             )
         self.transformations = interpret_transformations(transformations)
 
-        self.cache = LRUShards(cache_size, localname=localname, keep=keep)
+        self.cache = LRUShards(cache_size, localname=self.localname, keep=keep)
 
     def add_transform(self, transform):
         """Add a transformation to the dataset."""

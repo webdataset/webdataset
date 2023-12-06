@@ -102,7 +102,7 @@ def load_remote_dsdesc_raw(source):
 def rebase_shardlist(shardlist, base):
     """Rebase the URLs in a shardlist."""
     if base is None:
-        return
+        return shardlist
     for shard in shardlist:
         shard["url"] = urlmerge(base, shard["url"])
     return shardlist
@@ -137,6 +137,7 @@ def resolve_dsdesc(dsdesc, *, options={}, base=None):
     assert isinstance(dsdesc, dict)
     dsdesc = dict(dsdesc, **options)
     shardlist = rebase_shardlist(dsdesc.get("shardlist", []), base)
+    assert shardlist is not None
     set_all(shardlist, "weight", dsdesc.get("weight"))
     set_all(shardlist, "name", dsdesc.get("name"))
     check_shards(shardlist)
