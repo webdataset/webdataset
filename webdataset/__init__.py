@@ -78,4 +78,4 @@ from .writer import ShardWriter, TarWriter, numpy_dumps, torch_dumps
 from .mix import RandomMix, RoundRobin
 from .gopen import gopen, gopen_schemes
 
-__version__ = "0.2.83"
+__version__ = "0.2.84"
