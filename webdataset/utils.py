@@ -11,7 +11,10 @@ import itertools as itt
 import os
 import re
 import sys
-from typing import Any, Callable, Iterator, Union
+from typing import Any
+from typing import Callable
+from typing import Iterator
+from typing import Union
 
 
 def make_seed(*args):
@@ -52,9 +55,8 @@ def repeatedly0(
     loader: Iterator, nepochs: int = sys.maxsize, nbatches: int = sys.maxsize
 ):
     """Repeatedly returns batches from a DataLoader."""
-    for epoch in range(nepochs):
-        for sample in itt.islice(loader, nbatches):
-            yield sample
+    for _ in range(nepochs):
+        yield from itt.islice(loader, nbatches)
 
 
 def guess_batchsize(batch: Union[tuple, list]):
@@ -88,7 +90,7 @@ def repeatedly(
             return
 
 
-def pytorch_worker_info(group=None):
+def pytorch_worker_info(group=None):  # sourcery skip: use-contextlib-suppress
     """Return node and worker info for PyTorch and some distributed environments."""
     rank = 0
     world_size = 1

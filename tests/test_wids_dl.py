@@ -1,15 +1,12 @@
-import os
-import pytest
-import multiprocessing
-import time
 import glob
+import multiprocessing
+import os
+import time
 
-from wids.wids_dl import (
-    SimpleDownloader,
-    ConcurrentDownloader,
-    mkresult,
-    splitresult,
-)
+import pytest
+
+from wids.wids_dl import ConcurrentDownloader
+from wids.wids_dl import SimpleDownloader
 
 
 class TestSimpleDownloader:

@@ -6,21 +6,25 @@
 
 """Classes and functions for writing tar files and WebDataset files."""
 
+import gzip
 import io
 import json
 import pickle
 import re
 import tarfile
 import time
-from typing import Any, Callable, Optional, Union
-import gzip
+from typing import Any
+from typing import Callable
+from typing import Optional
+from typing import Union
 
 import numpy as np
 
 from . import gopen
 
 
-def imageencoder(image: Any, format: str = "PNG"):  # skipcq: PYL-W0622
+def imageencoder(image: Any, format: str = "PNG"):    # skipcq: PYL-W0622
+    # sourcery skip: avoid-builtin-shadow, de-morgan
     """Compress an image using PIL and return it as a string.
 
     Can handle float or uint8 images.
@@ -47,9 +51,9 @@ def imageencoder(image: Any, format: str = "PNG"):  # skipcq: PYL-W0622
         image = PIL.Image.fromarray(image)
     if format.upper() == "JPG":
         format = "JPEG"
-    elif format.upper() in ["IMG", "IMAGE"]:
+    elif format.upper() in {"IMG", "IMAGE"}:
         format = "PPM"
-    if format in ["JPEG", "tiff"]:
+    if format in {"JPEG", "tiff"}:
         opts = dict(quality=100)
     else:
         opts = {}
@@ -287,7 +291,7 @@ class TarWriter:
         keep_meta: bool = False,
         mtime: Optional[float] = None,
         format: Any = None,
-    ):
+    ):  # sourcery skip: avoid-builtin-shadow
         """Create a tar writer.
 
         :param fileobj: stream to write data to
@@ -308,7 +312,7 @@ class TarWriter:
                 tarmode = "w|gz"
             else:
                 tarmode = "w|gz" if fileobj.endswith("gz") else "w|"
-            fileobj = gopen.gopen(fileobj, "wb")
+            fileobj = gopen(fileobj, "wb")
             self.own_fileobj = fileobj
         else:
             tarmode = "w|gz" if compress is True else "w|"

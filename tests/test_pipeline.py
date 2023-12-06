@@ -1,21 +1,19 @@
 import io
 import os
 import pickle
+from io import StringIO
+from itertools import islice
 
 import numpy as np
 import PIL
 import pytest
-from io import StringIO
 import yaml
-from itertools import islice
 
 import webdataset as wds
-from webdataset import (
-    autodecode,
-    handlers,
-    shardlists,
-)
 from tests.testconfig import *
+from webdataset import autodecode
+from webdataset import handlers
+from webdataset import shardlists
 
 
 def identity(x):

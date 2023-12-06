@@ -8,7 +8,8 @@
 
 
 try:
-    from torch.utils.data import DataLoader, IterableDataset
+    from torch.utils.data import DataLoader
+    from torch.utils.data import IterableDataset
 except ModuleNotFoundError:
 
     class IterableDataset:

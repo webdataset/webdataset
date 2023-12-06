@@ -4,4 +4,5 @@
 #
 # flake8: noqa
 
-from .wids import ShardListDataset, ShardedSampler
+from .wids import ShardedSampler
+from .wids import ShardListDataset

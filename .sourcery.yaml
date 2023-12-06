@@ -1,0 +1,12 @@
+rule_settings:
+  enable: [default]
+  disable:
+    - replace-interpolation-with-fstring
+    - use-fstring-for-concatenation
+    - reintroduce-else
+    - remove-unnecessary-else
+    - assign-if-exp
+    - inline-immediately-returned-variable
+    - inline-immediately-yielded-variable
+    - simplify-len-comparison
+    - simplify-empty-collection-comparison

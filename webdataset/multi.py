@@ -11,8 +11,8 @@ is not available. Subprocesses communicate with the loader through
 ZMQ, provided for high performance multithreaded queueing.
 """
 
-import os
 import multiprocessing as mp
+import os
 import pickle
 import uuid
 import weakref

@@ -1,7 +1,7 @@
 import fcntl
 import os
-from urllib.parse import urlparse
 import shutil
+from urllib.parse import urlparse
 
 
 class ULockFile:

@@ -6,11 +6,8 @@ import torch
 from imageio.v3 import imread
 
 import webdataset as wds
-from webdataset import (
-    autodecode,
-)
-
 from tests.testconfig import *
+from webdataset import autodecode
 
 
 def test_xdecode():

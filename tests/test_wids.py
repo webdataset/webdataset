@@ -1,10 +1,12 @@
-import pytest
-from wids import wids
-from wids import wids_specs
+import io
+import json
 import os
 import textwrap
-import json
-import io
+
+import pytest
+
+from wids import wids
+from wids import wids_specs
 
 
 class TestIndexedTarSamples:

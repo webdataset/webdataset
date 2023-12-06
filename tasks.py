@@ -1,10 +1,10 @@
-from invoke import task
+import glob
 import os
 import re
-import sys
-import tempfile
 import shutil
-import glob
+import tempfile
+
+from invoke import task
 
 ACTIVATE = ". ./venv/bin/activate;"
 PACKAGE = "webdataset"
@@ -47,8 +47,12 @@ def black(c):
 @task
 def autoflake(c):
     c.run(
-        f"{ACTIVATE}{PYTHON3} -m autoflake --in-place --remove-all-unused-imports webdataset/[a-z]*.py webdataset/tests/[a-z]*.py"
+        f"{ACTIVATE}{PYTHON3} -m autoflake --in-place --remove-all-unused-imports webdataset/[a-z]*.py tests/[a-z]*.py wids/[a-z]*.py tasks.py"
     )
+
+@task
+def isort(c):
+    c.run(f"{ACTIVATE}{PYTHON3} -m isort --atomic --float-to-top --force-single-line-imports webdataset wids tests tasks.py")
 
 
 @task
@@ -70,7 +74,7 @@ def minenv(c):
 def test(c):
     "Run the tests."
     # venv(c)
-    c.run(f"{ACTIVATE}{PYTHON3} -m pytest -x")
+    c.run(f"{ACTIVATE}{PYTHON3} -m pytest -x tests")
 
 
 @task

@@ -6,11 +6,15 @@
 
 """Automatically decode webdataset samples."""
 
-import io, json, os, pickle, re, tempfile
+import io
+import json
+import os
+import pickle
+import re
+import tempfile
 from functools import partial
 
 import numpy as np
-
 
 # Obtained with:
 # ```
@@ -527,11 +531,11 @@ class Decoder:
         result = {}
         assert isinstance(sample, dict), sample
         for k, v in list(sample.items()):
-            if k[0:2] == "__":
+            if k[:2] == "__":
                 if isinstance(v, bytes):
                     try:
                         v = v.decode("utf-8")
-                    except:
+                    except Exception:
                         print(f"Can't decode v of k = {k} as utf-8: v = {v}")
                 result[k] = v
                 continue

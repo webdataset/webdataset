@@ -4,9 +4,7 @@ import time
 import numpy as np
 
 import webdataset as wds
-from webdataset import (
-    autodecode,
-)
+from webdataset import autodecode
 
 
 def test_mcached():

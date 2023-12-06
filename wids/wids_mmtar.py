@@ -1,8 +1,7 @@
-import mmap
-
-import struct
 import collections
 import io
+import mmap
+import struct
 
 TarHeader = collections.namedtuple(
     "TarHeader",

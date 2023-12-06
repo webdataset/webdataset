@@ -10,15 +10,17 @@
 Code works locally or over HTTP connections.
 """
 
-import re
 import os
 import os.path
 import random
+import re
 import sys
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass
+from dataclasses import field
 from itertools import islice
 from typing import List
+
 import braceexpand
 import yaml
 
@@ -54,7 +56,7 @@ def envsubst(s):
     return re.sub(r"\$\{(\w+)\}", envlookup, s)
 
 
-def expand_urls(urls):
+def expand_urls(urls):  # sourcery skip: for-index-underscore, last-if-guard
     """Expand the urls if they are a string.
 
     If input is a string:
@@ -115,11 +117,9 @@ class SimpleShardList(IterableDataset):
 def split_by_node(src, group=None):
     rank, world_size, worker, num_workers = utils.pytorch_worker_info(group=group)
     if world_size > 1:
-        for s in islice(src, rank, None, world_size):
-            yield s
+        yield from islice(src, rank, None, world_size)
     else:
-        for s in src:
-            yield s
+        yield from src
 
 
 def single_node_only(src, group=None):
@@ -128,18 +128,15 @@ def single_node_only(src, group=None):
         raise ValueError(
             "you need to add an explicit nodesplitter to your input pipeline for multi-node training"
         )
-    for s in src:
-        yield s
+    yield from src
 
 
 def split_by_worker(src):
     rank, world_size, worker, num_workers = utils.pytorch_worker_info()
     if num_workers > 1:
-        for s in islice(src, worker, None, num_workers):
-            yield s
+        yield from islice(src, worker, None, num_workers)
     else:
-        for s in src:
-            yield s
+        yield from src
 
 
 def resampled_(src, n=sys.maxsize):
@@ -154,7 +151,7 @@ def resampled_(src, n=sys.maxsize):
     print("# resampled loading", file=sys.stderr)
     items = list(src)
     print(f"# resampled got {len(items)} samples, yielding {n}", file=sys.stderr)
-    for i in range(n):
+    for _ in range(n):
         yield rng.choice(items)
 
 

@@ -1,30 +1,64 @@
+import base64
+import gzip
 import hashlib
 import io
 import os
 import re
-import sys
-import tarfile
-from urllib.parse import urlparse, urljoin, quote
-from typing import Any, Dict, Optional, Union
-import pickle
-from functools import partial
-import json
-import gzip
-import base64
 import sqlite3
-
+import sys
+from functools import partial
+from typing import Any
+from typing import BinaryIO
+from typing import Dict
+from typing import Optional
+from typing import Union
+from urllib.parse import quote
+from urllib.parse import urlparse
 
 import numpy as np
 from torch.utils.data import Dataset
 
 from .wids_dl import ConcurrentDownloader
 from .wids_lru import LRUCache
-from .wids_tar import TarFileReader, find_index_file
 from .wids_mmtar import MMIndexedTar
-from .wids_specs import load_dsdesc_and_resolve, urldir
+from .wids_specs import load_dsdesc_and_resolve
+from .wids_specs import urldir
+from .wids_tar import TarFileReader
+from .wids_tar import find_index_file
 
 
-def compute_file_md5sum(fname, chunksize=1000000):
+def compute_file_md5sum(fname: Union[str, BinaryIO], chunksize: int = 1000000) -> str:
+    """Compute the md5sum of a file in chunks.
+    
+    Parameters
+    ----------
+    fname : Union[str, BinaryIO]
+        Filename or file object
+    chunksize : int, optional
+        Chunk size in bytes, by default 1000000
+    
+    Returns
+    -------
+    str
+        MD5 sum of the file
+    
+    Examples
+    --------
+    >>> compute_file_md5sum("test.txt")
+    'd41d8cd98f00b204e9800998ecf8427e'
+    """
+    md5 = hashlib.md5()
+    if isinstance(fname, str):
+        with open(fname, "rb") as f:
+            for chunk in iter(lambda: f.read(chunksize), b""):
+                md5.update(chunk)
+    else:
+        fname.seek(0)
+        for chunk in iter(lambda: fname.read(chunksize), b""):
+            md5.update(chunk)
+    return md5.hexdigest()
+
+def compute_file_md5sum(fname: Union[str, BinaryIO], chunksize: int = 1000000) -> str:
     """Compute the md5sum of a file in chunks."""
     md5 = hashlib.md5()
     if isinstance(fname, str):
@@ -365,18 +399,7 @@ class ShardListDataset(Dataset):
     descriptor was loaded.
     """
 
-    def __init__(
-        self,
-        shards,
-        cache_size=10,
-        cache_dir=None,
-        dataset_name=None,
-        localname=None,
-        transformations="PIL",
-        keep=False,
-        base=None,
-        options={},
-    ):
+    def __init__(self, shards, cache_size=10, cache_dir=None, dataset_name=None, localname=None, transformations="PIL", keep=False, base=None, options=None):
         """Create a ShardListDataset.
 
         Args:
@@ -384,6 +407,8 @@ class ShardListDataset(Dataset):
             cache_size: the number of shards to keep in the cache
             localname: a function that maps URLs to local filenames
         """
+        if options is None:
+            options = {}
         super(ShardListDataset, self).__init__()
         # shards is a list of (filename, length) pairs. We'll need to
         # keep track of the lengths and cumulative lengths to know how
@@ -530,7 +555,7 @@ class ShardedSampler:
             lengths = list(dataset.lengths)
         self.ranges = []
         start = 0
-        for i, l in enumerate(lengths):
+        for l in lengths:
             self.ranges.append((start, start + l))
             start += l
 

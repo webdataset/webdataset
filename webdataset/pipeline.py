@@ -3,8 +3,8 @@ import copy
 import sys
 from itertools import islice
 
-
-from .pytorch import DataLoader, IterableDataset
+from .pytorch import DataLoader
+from .pytorch import IterableDataset
 from .utils import PipelineStage
 
 
@@ -67,11 +67,10 @@ class DataPipeline(IterableDataset, PipelineStage):
 
     def iterator(self):
         """Create an iterator through the entire dataset, using the given number of repetitions."""
-        for i in range(self.repetitions):
-            for sample in self.iterator1():
-                yield sample
+        for _ in range(self.repetitions):
+            yield from self.iterator1()
 
-    def __iter__(self):
+    def __iter__(self):  # sourcery skip: merge-duplicate-blocks
         """Create an iterator through the pipeline, repeating and slicing as requested."""
         if self.repetitions != 1:
             if self.nsamples > 0:
@@ -117,6 +116,7 @@ class DataPipeline(IterableDataset, PipelineStage):
         return self
 
     def repeat(self, nepochs=-1, nbatches=-1):
+        # sourcery skip: hoist-similar-statement-from-if, hoist-statement-from-if
         """Repeat iterating through the dataset for the given #epochs up to the given #samples."""
         if nepochs > 0:
             self.repetitions = nepochs

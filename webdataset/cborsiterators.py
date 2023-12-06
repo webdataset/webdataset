@@ -3,8 +3,10 @@ from .handlers import reraise_exception
 from .tariterators import url_opener
 
 
-def cbor_iterator(data, handler=reraise_exception, info={}):
+def cbor_iterator(data, handler=reraise_exception, info=None):
     import cbor
+
+    info = info or {}
 
     for source in data:
         assert isinstance(source, dict)
@@ -27,8 +29,10 @@ def cbors_samples(src, handler=reraise_exception):
 cbors_to_samples = filters.pipelinefilter(cbors_samples)
 
 
-def cbor2_iterator(data, handler=reraise_exception, info={}):
+def cbor2_iterator(data, handler=reraise_exception, info=None):
     import cbor2
+
+    info = info or {}
 
     for source in data:
         assert isinstance(source, dict)

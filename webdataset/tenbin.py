@@ -31,7 +31,8 @@ Header chunks have the following structure:
 - ...
 """
 
-import struct, sys
+import struct
+import sys
 
 import numpy as np
 
@@ -145,9 +146,8 @@ def encode_list(l, infos=None):
     """Given a list of arrays, encode them into a list of byte arrays."""
     if infos is None:
         infos = [""]
-    else:
-        if len(l) != len(infos):
-            raise ValueError(f"length of list {l} must muatch length of infos {infos}")
+    elif len(l) != len(infos):
+        raise ValueError(f"length of list {l} must muatch length of infos {infos}")
     result = []
     for i, a in enumerate(l):
         header = encode_header(a, infos[i % len(infos)])

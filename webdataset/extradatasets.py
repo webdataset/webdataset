@@ -33,7 +33,7 @@ class MockDataset(IterableDataset):
 
     def __iter__(self):
         """Return an iterator over this mock dataset."""
-        for i in range(self.length):
+        for _ in range(self.length):
             yield self.sample
 
 
@@ -98,7 +98,7 @@ class with_epoch(IterableDataset):
         """
         if self.source is None:
             self.source = iter(dataset)
-        for i in range(self.length):
+        for _ in range(self.length):
             try:
                 sample = next(self.source)
             except StopIteration:

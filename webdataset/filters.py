@@ -11,17 +11,22 @@ in webdataset.filters, and you can find IterableDataset wrappers in
 webdataset.processing.
 """
 
-import io
-from fnmatch import fnmatch
-import re
-import itertools, os, random, sys, time
-from functools import reduce
 import functools
+import io
+import itertools
+import os
 import pickle
+import random
+import re
+import sys
+import time
+from fnmatch import fnmatch
+from functools import reduce
 
 import numpy as np
 
-from . import autodecode, utils
+from . import autodecode
+from . import utils
 from .pytorch import TorchTensor
 from .utils import PipelineStage
 
@@ -255,8 +260,7 @@ def _log_keys(data, logfile=None):
     import fcntl
 
     if logfile is None or logfile == "":
-        for sample in data:
-            yield sample
+        yield from data
     else:
         with open(logfile, "a") as stream:
             for i, sample in enumerate(data):
@@ -394,7 +398,8 @@ def _to_tuple(
     for sample in data:
         try:
             result = tuple(
-                [getfirst(sample, f, missing_is_error=missing_is_error) for f in args]
+                getfirst(sample, f, missing_is_error=missing_is_error)
+                for f in args
             )
             if none_is_error and any(x is None for x in result):
                 raise ValueError(f"to_tuple {args} got {sample.keys()}")
@@ -503,8 +508,7 @@ def _unlisted(data):
     """Turn batched data back into unbatched data."""
     for batch in data:
         assert isinstance(batch, list), sample
-        for sample in batch:
-            yield sample
+        yield from batch
 
 
 unlisted = pipelinefilter(_unlisted)
@@ -620,7 +624,7 @@ default_decoders = [
 ]
 
 
-def find_decoder(decoders, path):
+def find_decoder(decoders, path):  # sourcery skip: use-next
     fname = re.sub(r".*/", "", path)
     if fname.startswith("__"):
         return lambda x: x
@@ -676,8 +680,7 @@ class Cached(PipelineStage):
                 yield sample
             self.cached = self.temp
         else:
-            for sample in self.cached:
-                yield sample
+            yield from self.cached
 
 
 class LMDBCached(PipelineStage):

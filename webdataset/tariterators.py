@@ -7,13 +7,22 @@
 
 """Low level iteration functions for tar archives."""
 
-from typing import Any, Callable, Dict, Iterable, Iterator, Optional, Set, Tuple
-
-import random, re, tarfile
+import random
+import re
+import tarfile
+from typing import Any
+from typing import Callable
+from typing import Dict
+from typing import Iterable
+from typing import Iterator
+from typing import Optional
+from typing import Set
+from typing import Tuple
 
 import braceexpand
 
-from . import filters, gopen
+from . import filters
+from . import gopen
 from .handlers import reraise_exception
 
 trace = False

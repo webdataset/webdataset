@@ -1,14 +1,14 @@
 import os
+import pickle
+from io import StringIO
+
 import numpy as np
 import PIL
 import pytest
 import torch
-import pickle
 import yaml
-from io import StringIO
 
 import webdataset as wds
-
 
 local_data = "testdata/imagenet-000000.tgz"
 compressed = "testdata/compressed.tar"

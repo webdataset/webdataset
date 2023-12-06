@@ -2,10 +2,15 @@ import os
 
 import yaml
 
-from . import autodecode, cache, filters, shardlists, tariterators
+from . import autodecode
+from . import cache
+from . import filters
+from . import shardlists
+from . import tariterators
 from .filters import reraise_exception
 from .pipeline import DataPipeline
-from .pytorch import DataLoader, IterableDataset
+from .pytorch import DataLoader
+from .pytorch import IterableDataset
 
 
 class FluidInterface:
@@ -167,7 +172,7 @@ class WebDataset(DataPipeline, FluidInterface):
 
     def __enter__(self):
         return self
-    
+
     def __exit__(self, *args):
         self.close()
 

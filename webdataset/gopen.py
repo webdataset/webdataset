@@ -8,9 +8,10 @@
 """Open URLs by calling subcommands."""
 
 import os
-import sys
 import re
-from subprocess import PIPE, Popen
+import sys
+from subprocess import PIPE
+from subprocess import Popen
 from urllib.parse import urlparse
 
 # global used for printing additional node information during verbose output
@@ -166,15 +167,7 @@ def gopen_pipe(url, mode="rb", bufsize=8192):
     """
     assert url.startswith("pipe:")
     cmd = url[5:]
-    if mode[0] == "r":
-        return Pipe(
-            cmd,
-            mode=mode,
-            shell=True,
-            bufsize=bufsize,
-            ignore_status=[141],
-        )  # skipcq: BAN-B604
-    elif mode[0] == "w":
+    if mode[0] in ["r", "w"]:
         return Pipe(
             cmd,
             mode=mode,

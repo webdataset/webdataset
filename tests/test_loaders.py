@@ -1,13 +1,10 @@
 from torch.utils.data import DataLoader
 
 import webdataset as wds
-
-from tests.testconfig import (
-    count_samples_tuple,
-    local_data,
-    remote_loc,
-    remote_shards,
-)
+from tests.testconfig import count_samples_tuple
+from tests.testconfig import local_data
+from tests.testconfig import remote_loc
+from tests.testconfig import remote_shards
 
 
 def test_webloader():

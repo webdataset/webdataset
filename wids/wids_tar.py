@@ -1,10 +1,11 @@
 import io
-import tarfile
 import os
-import re
-import numpy as np
-import pickle
 import os.path
+import pickle
+import re
+import tarfile
+
+import numpy as np
 
 
 def find_index_file(file):

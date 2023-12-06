@@ -1,11 +1,8 @@
 import argparse
 import json
-import os
-from urllib.parse import urlparse
 
-import braceexpand
-from .compat import WebDataset
 from . import wids
+from .compat import WebDataset
 
 
 def main_wids(args):

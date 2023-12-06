@@ -1,8 +1,10 @@
-import os
-import json
 import io
-from urllib.parse import urlparse, urljoin, urlunparse
+import json
+import os
 import tempfile
+from urllib.parse import urlparse
+from urllib.parse import urlunparse
+
 from .wids_dl import SimpleDownloader
 
 
@@ -109,7 +111,7 @@ def rebase_shardlist(shardlist, base):
 
 
 
-def resolve_dsdesc(dsdesc, *, options={}, base=None):
+def resolve_dsdesc(dsdesc, *, options=None, base=None):
     """Resolve a dataset description.
 
     This rebases the shards as necessary and loads any remote references.
@@ -134,6 +136,8 @@ def resolve_dsdesc(dsdesc, *, options={}, base=None):
         ]
     }
     """
+    if options is None:
+        options = {}
     assert isinstance(dsdesc, dict)
     dsdesc = dict(dsdesc, **options)
     shardlist = rebase_shardlist(dsdesc.get("shardlist", []), base)
@@ -169,6 +173,8 @@ def resolve_dsdesc(dsdesc, *, options={}, base=None):
     return dsdesc
 
 
-def load_dsdesc_and_resolve(source, *, options={}, base=None):
+def load_dsdesc_and_resolve(source, *, options=None, base=None):
+    if options is None:
+        options = {}
     dsdesc = load_remote_dsdesc_raw(source)
     return resolve_dsdesc(dsdesc, base=base, options=options)

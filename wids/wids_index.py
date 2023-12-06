@@ -1,15 +1,15 @@
 import argparse
 import json
 import os
-from urllib.parse import urlparse, urlunparse, urljoin
-import tempfile
-import sys
 import re
+import sys
+from urllib.parse import urlparse
+from urllib.parse import urlunparse
 
 import braceexpand
 
-from . import wids_dl
 from . import wids
+from . import wids_dl
 from .wids_specs import load_remote_dsdesc_raw
 
 
@@ -44,10 +44,8 @@ class AtomicJsonUpdate:
             os.rename(self.filename, self.backup_filename)
             # Rename the new file to the original file name
             os.rename(self.temp_filename, self.filename)
-        else:
-            # If there was an exception, remove the temporary file if it exists
-            if os.path.exists(self.temp_filename):
-                os.remove(self.temp_filename)
+        elif os.path.exists(self.temp_filename):
+            os.remove(self.temp_filename)
 
 
 def urldir(url):
@@ -71,17 +69,13 @@ def urldirbase(url):
     parsed_url = urlparse(url)
 
     # Use 'file' scheme if no scheme is given
-    scheme = parsed_url.scheme if parsed_url.scheme else "file"
+    scheme = parsed_url.scheme or "file"
 
     # Handle file URLs and relative paths
-    if scheme == "file":
-        if not parsed_url.netloc:
-            path = os.path.abspath(parsed_url.path)
-        else:
-            path = parsed_url.path
+    if scheme == "file" and not parsed_url.netloc:
+        path = os.path.abspath(parsed_url.path)
     else:
         path = parsed_url.path
-
     # Get the directory without the filename
     path_without_filename = os.path.dirname(path)
 
@@ -175,10 +169,10 @@ def main_update(args):
         if args.base != "":
             data["base"] = args.base
         if args.rebase:
-            bases = set([urldirbase(shard["url"]) for shard in data["shardlist"]])
-            assert len(bases) == 1, "multiple/no bases found: {}".format(bases)
+            bases = {urldirbase(shard["url"]) for shard in data["shardlist"]}
+            assert len(bases) == 1, f"multiple/no bases found: {bases}"
             base = bases.pop()
-            print("rebasing to {}".format(base))
+            print(f"rebasing to {base}")
             data["base"] = base
         if args.dir != "" or args.nodir or args.rebase:
             shardlist = data["shardlist"]
@@ -198,7 +192,7 @@ def main_update(args):
 def print_long_info(data, filename):
     print("            name:", data.get("name"))
     print("            info:", data.get("info"))
-    print("            base:", data.get("base"), "(assumed: {})".format(urldir(filename))),
+    print("            base:", data.get("base"), f"(assumed: {urldir(filename)})")
     total_size = sum(shard["filesize"] for shard in data["shardlist"])
     total_samples = sum(shard["nsamples"] for shard in data["shardlist"])
     print("      total size:", format_with_suffix(total_size))
