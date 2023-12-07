@@ -45,17 +45,21 @@ def copy_file(remote, local):
     # check if the local file exists
     shutil.copyfile(remote, local)
 
+verbose_cmd = int(os.environ.get("WIDS_VERBOSE_CMD", "0"))
+
+def vcmd(flag, verbose_flag=""):
+    return verbose_flag if verbose_cmd else flag
 
 default_cmds = {
-    "posixpath": "cp {url} {local}",
-    "s3": "aws s3 cp {url} {local}",
-    "gs": "gsutil cp {url} {local}",
-    "http": "wget {url} -O {local}",
-    "https": "wget {url} -O {local}",
-    "ftp": "wget {url} -O {local}",
-    "ftps": "wget {url} -O {local}",
+    "posixpath": copy_file,
     "file": copy_file,
     "pipe": pipe_download,
+    "http": "curl "+vcmd("-s")+" -L {url} -o {local}",
+    "https": "curl "+vcmd("-s")+" -L {url} -o {local}",
+    "ftp": "curl "+vcmd("-s")+" -L {url} -o {local}",
+    "ftps": "curl "+vcmd("-s")+" -L {url} -o {local}",
+    "gs": "gsutil "+vcmd("-q")+" cp {url} {local}",
+    "s3": "aws s3 cp {url} {local}",
 }
 
 

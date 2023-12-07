@@ -518,9 +518,10 @@ class ShardListDataset(Dataset[T]):
         # Check if we're missing the cache too often.
         self.check_cache_misses()
 
+        sample["__dataset__"] = desc.get("dataset")
+        sample["__index__"] = index
         sample["__shard__"] = desc["url"]
         sample["__shardindex__"] = inner_idx
-        sample["__dataset__"] = desc.get("dataset")
 
         # Apply transformations
         for transform in self.transformations:
