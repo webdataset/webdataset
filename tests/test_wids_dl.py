@@ -5,8 +5,7 @@ import time
 
 import pytest
 
-from wids.wids_dl import ConcurrentDownloader
-from wids.wids_dl import SimpleDownloader
+from wids.wids_dl import ConcurrentDownloader, SimpleDownloader
 
 
 class TestSimpleDownloader:

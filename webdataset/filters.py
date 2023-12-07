@@ -25,8 +25,7 @@ from functools import reduce
 
 import numpy as np
 
-from . import autodecode
-from . import utils
+from . import autodecode, utils
 from .pytorch import TorchTensor
 from .utils import PipelineStage
 
@@ -398,8 +397,7 @@ def _to_tuple(
     for sample in data:
         try:
             result = tuple(
-                getfirst(sample, f, missing_is_error=missing_is_error)
-                for f in args
+                getfirst(sample, f, missing_is_error=missing_is_error) for f in args
             )
             if none_is_error and any(x is None for x in result):
                 raise ValueError(f"to_tuple {args} got {sample.keys()}")

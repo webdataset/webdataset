@@ -10,8 +10,7 @@ import argparse
 import time
 from collections import Counter
 
-from . import SimpleShardList
-from . import pipeline
+from . import SimpleShardList, pipeline
 
 
 class TotalSize:

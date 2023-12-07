@@ -2,8 +2,7 @@ import io
 import json
 import os
 import tempfile
-from urllib.parse import urlparse
-from urllib.parse import urlunparse
+from urllib.parse import urlparse, urlunparse
 
 from .wids_dl import SimpleDownloader
 

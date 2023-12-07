@@ -2,15 +2,10 @@ import os
 
 import yaml
 
-from . import autodecode
-from . import cache
-from . import filters
-from . import shardlists
-from . import tariterators
+from . import autodecode, cache, filters, shardlists, tariterators
 from .filters import reraise_exception
 from .pipeline import DataPipeline
-from .pytorch import DataLoader
-from .pytorch import IterableDataset
+from .pytorch import DataLoader, IterableDataset
 
 
 class FluidInterface:

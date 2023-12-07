@@ -3,13 +3,11 @@ import json
 import os
 import re
 import sys
-from urllib.parse import urlparse
-from urllib.parse import urlunparse
+from urllib.parse import urlparse, urlunparse
 
 import braceexpand
 
-from . import wids
-from . import wids_dl
+from . import wids, wids_dl
 from .wids_specs import load_remote_dsdesc_raw
 
 

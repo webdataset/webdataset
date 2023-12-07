@@ -11,9 +11,7 @@ import yaml
 
 import webdataset as wds
 from tests.testconfig import *
-from webdataset import autodecode
-from webdataset import handlers
-from webdataset import shardlists
+from webdataset import autodecode, handlers, shardlists
 
 
 def identity(x):

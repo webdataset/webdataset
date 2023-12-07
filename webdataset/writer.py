@@ -13,17 +13,14 @@ import pickle
 import re
 import tarfile
 import time
-from typing import Any
-from typing import Callable
-from typing import Optional
-from typing import Union
+from typing import Any, Callable, Optional, Union
 
 import numpy as np
 
 from . import gopen
 
 
-def imageencoder(image: Any, format: str = "PNG"):    # skipcq: PYL-W0622
+def imageencoder(image: Any, format: str = "PNG"):  # skipcq: PYL-W0622
     # sourcery skip: avoid-builtin-shadow, de-morgan
     """Compress an image using PIL and return it as a string.
 

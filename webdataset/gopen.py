@@ -10,8 +10,7 @@
 import os
 import re
 import sys
-from subprocess import PIPE
-from subprocess import Popen
+from subprocess import PIPE, Popen
 from urllib.parse import urlparse
 
 # global used for printing additional node information during verbose output

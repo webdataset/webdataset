@@ -7,13 +7,8 @@ import re
 import sqlite3
 import sys
 from functools import partial
-from typing import Any
-from typing import BinaryIO
-from typing import Dict
-from typing import Optional
-from typing import Union
-from urllib.parse import quote
-from urllib.parse import urlparse
+from typing import Any, BinaryIO, Dict, Optional, TypeVar, Union
+from urllib.parse import quote, urlparse
 
 import numpy as np
 from torch.utils.data import Dataset
@@ -21,10 +16,10 @@ from torch.utils.data import Dataset
 from .wids_dl import ConcurrentDownloader
 from .wids_lru import LRUCache
 from .wids_mmtar import MMIndexedTar
-from .wids_specs import load_dsdesc_and_resolve
-from .wids_specs import urldir
-from .wids_tar import TarFileReader
-from .wids_tar import find_index_file
+from .wids_specs import load_dsdesc_and_resolve, urldir
+from .wids_tar import TarFileReader, find_index_file
+
+T = TypeVar("T")
 
 
 def compute_file_md5sum(fname: Union[str, BinaryIO], chunksize: int = 1000000) -> str:
@@ -271,7 +266,7 @@ def hash_localname(dldir="/tmp/_wids_cache"):
 
 
 def cache_localname(cachedir):
-    os.makedirs(dldir, exist_ok=True)
+    os.makedirs(cachedir, exist_ok=True)
 
     def f(shard):
         """Given a URL, return a local name for the shard."""
@@ -357,6 +352,11 @@ class LRUShards:
 
 
 def interpret_transformations(transformations):
+    """Interpret the transformations argument.
+
+    This takes care of transformations specified as string shortcuts
+    and returns a list of callables.
+    """
     if not isinstance(transformations, list):
         transformations = [transformations]
 
@@ -375,6 +375,7 @@ def interpret_transformations(transformations):
 
 
 def hash_dataset_name(input_string):
+    """Compute a hash of the input string and return the first 16 characters of the hash."""
     # Compute SHA256 hash of the input string
     hash_object = hashlib.sha256(input_string.encode())
     hash_digest = hash_object.digest()
@@ -386,7 +387,7 @@ def hash_dataset_name(input_string):
     return base64_encoded_hash[:16].decode("ascii")
 
 
-class ShardListDataset(Dataset):
+class ShardListDataset(Dataset[T]):
     """An indexable dataset based on a list of shards.
 
     The dataset is either given as a list of shards with optional options and name,
@@ -560,6 +561,8 @@ class ShardedSampler:
             start += l
 
     def __iter__(self):
+        import torch
+        
         shardperm = torch.randperm(len(self.ranges))
         for shard in shardperm:
             start, end = self.ranges[shard]

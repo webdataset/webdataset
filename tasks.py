@@ -52,7 +52,13 @@ def autoflake(c):
 
 @task
 def isort(c):
-    c.run(f"{ACTIVATE}{PYTHON3} -m isort --atomic --float-to-top --force-single-line-imports webdataset wids tests tasks.py")
+    c.run(f"{ACTIVATE}{PYTHON3} -m isort --atomic --float-to-top webdataset wids tests tasks.py")
+
+@task
+def cleanup(c):
+    autoflake(c)
+    isort(c)
+    black(c)
 
 
 @task

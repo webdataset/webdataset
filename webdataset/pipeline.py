@@ -3,8 +3,7 @@ import copy
 import sys
 from itertools import islice
 
-from .pytorch import DataLoader
-from .pytorch import IterableDataset
+from .pytorch import DataLoader, IterableDataset
 from .utils import PipelineStage
 
 

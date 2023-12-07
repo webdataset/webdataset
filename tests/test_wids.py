@@ -5,8 +5,8 @@ import textwrap
 
 import pytest
 
-from wids import wids
-from wids import wids_specs
+from wids import wids, wids_specs
+from wids.wids import ShardedSampler, ShardListDataset
 
 
 class TestIndexedTarSamples:
@@ -28,7 +28,7 @@ class TestIndexedTarSamples:
 
 
 class TestLRUShards:
-    def test_add(self, tmpdir):
+    def test_add(self, tmpdir: str):
         lru_shards = wids.LRUShards(2, localname=wids.default_localname(tmpdir))
         assert len(lru_shards) == 0
         shard = lru_shards.get_shard("testdata/ixtest.tar")
@@ -41,6 +41,7 @@ class TestLRUShards:
         assert os.stat(path).st_nlink == 2
         # lru_shards.release(shard)
         # assert not os.path.exists(path)
+
 
 
 class TestGz:
@@ -56,11 +57,11 @@ class TestGz:
 
 class TestShardListDataset:
     @pytest.fixture(scope="class")
-    def class_tmpdir(self, tmp_path_factory):
+    def class_tmpdir(self, tmp_path_factory: pytest.TempPathFactory):
         return tmp_path_factory.mktemp("class_tmpdir")
 
     @pytest.fixture(scope="function")
-    def shard_list_dataset(self, tmpdir):
+    def shard_list_dataset(self, tmpdir: str):
         # Define example shards and other necessary variables for creating the dataset
         shards = [
             dict(url="testdata/mpdata.tar", nsamples=100),
@@ -75,20 +76,20 @@ class TestShardListDataset:
 
         # Clean up any resources used by the dataset after running the tests
 
-    def test_initialization(self, shard_list_dataset):
+    def test_initialization(self, shard_list_dataset: wids.ShardListDataset[list[dict[str, str | int]]]):
         assert len(shard_list_dataset.shards) == 3
         assert shard_list_dataset.lengths == [100, 100, 3]
         assert shard_list_dataset.total_length == 203
 
-    def test_length(self, shard_list_dataset):
+    def test_length(self, shard_list_dataset: ShardListDataset):
         assert len(shard_list_dataset) == 203
 
-    def test_getshard(self, shard_list_dataset):
+    def test_getshard(self, shard_list_dataset: ShardListDataset):
         shard, _, _ = shard_list_dataset.get_shard(0)
         assert os.path.exists(shard.path)
         assert os.stat(shard.path).st_nlink == 2
 
-    def test_getitem(self, shard_list_dataset):
+    def test_getitem(self, shard_list_dataset: ShardListDataset):
         # access sample in the first shard
         sample = shard_list_dataset[17]
         assert isinstance(sample, dict)
@@ -182,3 +183,30 @@ class TestSpecs:
         stream = io.StringIO(spec)
         dataset = wids.ShardListDataset(stream)
         assert len(dataset) == 10
+
+class TestShardedSampler:
+    @pytest.fixture(scope="function")
+    def sharded_sampler(self):
+        dataset = wids.ShardListDataset([
+            dict(url="testdata/mpdata.tar", nsamples=100),
+            dict(url="testdata/tendata.tar", nsamples=100),
+            dict(url="testdata/compressed.tar", nsamples=3),
+        ])
+        sampler = wids.ShardedSampler(dataset, batch_size=10, shuffle=True)
+        yield sampler
+
+    def test_initialization(self, sharded_sampler: wids.ShardedSampler):
+        assert len(sharded_sampler.ranges) == 3
+        assert sharded_sampler.ranges == [(0, 100), (100, 200), (200, 203)]
+
+    def test_iter(self, sharded_sampler: ShardedSampler):
+        indexes = list(sharded_sampler)
+        assert len(indexes) == 203
+        assert min(indexes) == 0
+        assert max(indexes) == 202
+        assert len(set(indexes)) == 203  # Ensure all indexes are unique
+
+    def test_iter_with_shuffle(self, sharded_sampler: ShardedSampler):
+        indexes1 = list(sharded_sampler)
+        indexes2 = list(sharded_sampler)
+        assert indexes1 != indexes2  # Ensure order changes with each iteration

@@ -10,19 +10,11 @@
 import random
 import re
 import tarfile
-from typing import Any
-from typing import Callable
-from typing import Dict
-from typing import Iterable
-from typing import Iterator
-from typing import Optional
-from typing import Set
-from typing import Tuple
+from typing import Any, Callable, Dict, Iterable, Iterator, Optional, Set, Tuple
 
 import braceexpand
 
-from . import filters
-from . import gopen
+from . import filters, gopen
 from .handlers import reraise_exception
 
 trace = False

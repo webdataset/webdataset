@@ -16,8 +16,7 @@ import random
 import re
 import sys
 import time
-from dataclasses import dataclass
-from dataclasses import field
+from dataclasses import dataclass, field
 from itertools import islice
 from typing import List
 
