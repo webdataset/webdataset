@@ -41,21 +41,25 @@ def virtualenv(c):
 
 @task
 def black(c):
-    c.run(f"{ACTIVATE}{PYTHON3} -m black webdataset")
+    """Run black on the code."""
+    c.run(f"{ACTIVATE}{PYTHON3} -m black webdataset wids tests")
 
 
 @task
 def autoflake(c):
+    """Run autoflake on the code."""
     c.run(
         f"{ACTIVATE}{PYTHON3} -m autoflake --in-place --remove-all-unused-imports webdataset/[a-z]*.py tests/[a-z]*.py wids/[a-z]*.py tasks.py"
     )
 
 @task
 def isort(c):
+    """Run isort on the code."""
     c.run(f"{ACTIVATE}{PYTHON3} -m isort --atomic --float-to-top webdataset wids tests tasks.py")
 
 @task
 def cleanup(c):
+    """Run black, autoflake, and isort on the code."""
     autoflake(c)
     isort(c)
     black(c)
@@ -63,6 +67,7 @@ def cleanup(c):
 
 @task
 def pipx(c):
+    """Install the package using pipx."""
     c.run(f"{ACTIVATE} pipx install -f .")
     c.run(f"{ACTIVATE} pipx inject {PACKAGE} torch")
 
@@ -81,6 +86,11 @@ def test(c):
     "Run the tests."
     # venv(c)
     c.run(f"{ACTIVATE}{PYTHON3} -m pytest -x tests")
+
+@task
+def testwids(c):
+    "Run the wids tests."
+    c.run(f"{ACTIVATE}{PYTHON3} -m pytest -x tests/test_wids*.py")
 
 
 @task
@@ -160,7 +170,7 @@ command_template = """
 def nbgen(c):
     "Reexecute IPython Notebooks."
     opts = "--ExecutePreprocessor.timeout=-1"
-    for nb in glob.glob("notebooks/*.ipynb"):
+    for nb in glob.glob("notebooks/*.ipynb") + glob.glob("examples/*.ipynb"):
         if "/convert-" in nb:
             continue
         c.run(f"{ACTIVATE} jupyter nbconvert {opts} --execute --to notebook {nb}")
@@ -255,6 +265,7 @@ RUN . venv/bin/activate; python3 -m pytest
 
 
 def docker_build(c, instructions, tag=None, files=[], nocache=False):
+    """Build a docker container."""
     with tempfile.TemporaryDirectory() as dir:
         with open(dir + "/Dockerfile", "w") as stream:
             stream.write(instructions)
@@ -267,16 +278,19 @@ def docker_build(c, instructions, tag=None, files=[], nocache=False):
 
 
 def here(s):
+    """Return a string suitable for a shell here document."""
     return f"<<EOF\n{s}\nEOF\n"
 
 
 @task
 def dockerbase(c):
+    """Build a base container."""
     "Build a base container."
     docker_build(c, base_container, tag="webdatasettest-base")
 
 @task
 def dockerlocal(c):
+    """Run tests locally in a docker container."""
     assert not "implemented"
     c.run("pip install wheel")
     c.run("rm -rf dist")

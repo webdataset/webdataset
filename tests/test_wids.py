@@ -14,10 +14,12 @@ class TestIndexedTarSamples:
         tar_file = "testdata/ixtest.tar"
         md5sum = "3b3c0afe31e45325b7c4e6dec5235d13"
         expected_size = 10
-        self.indexed_samples = wids.IndexedTarSamples(tar_file, md5sum, expected_size)
+        self.indexed_samples = wids.IndexedTarSamples(tar_file, md5sum=md5sum, expected_size=expected_size)
 
     def test_length(self):
-        assert len(self.indexed_samples) == 10  # Update with the expected number of samples
+        assert (
+            len(self.indexed_samples) == 10
+        )  # Update with the expected number of samples
 
     def test_getitem(self):
         sample = self.indexed_samples[0]  # Update with the desired sample index
@@ -36,17 +38,16 @@ class TestLRUShards:
         assert len(lru_shards) == 1
         path = shard.path
         assert os.path.exists(path)
-        assert os.stat(path).st_nlink == 2
         shard = lru_shards.get_shard("testdata/ixtest.tar")
-        assert os.stat(path).st_nlink == 2
         # lru_shards.release(shard)
         # assert not os.path.exists(path)
 
 
-
 class TestGz:
     def test_gz(self):
-        dataset = wids.ShardListDataset([dict(url="testdata/testgz.tar", nsamples=1000)])
+        dataset = wids.ShardListDataset(
+            [dict(url="testdata/testgz.tar", nsamples=1000)]
+        )
         assert len(dataset) == 1000
         sample = dataset[0]
         assert isinstance(sample, dict)
@@ -69,14 +70,18 @@ class TestShardListDataset:
             dict(url="testdata/compressed.tar", nsamples=3),
         ]
 
-        dataset = wids.ShardListDataset(shards, cache_size=2, localname=wids.default_localname(str(tmpdir)))
+        dataset = wids.ShardListDataset(
+            shards, cache_size=2, localname=wids.default_localname(str(tmpdir))
+        )
         dataset.tmpdir = str(tmpdir)
 
         yield dataset
 
         # Clean up any resources used by the dataset after running the tests
 
-    def test_initialization(self, shard_list_dataset: wids.ShardListDataset[list[dict[str, str | int]]]):
+    def test_initialization(
+        self, shard_list_dataset: wids.ShardListDataset[list[dict[str, str | int]]]
+    ):
         assert len(shard_list_dataset.shards) == 3
         assert shard_list_dataset.lengths == [100, 100, 3]
         assert shard_list_dataset.total_length == 203
@@ -87,7 +92,6 @@ class TestShardListDataset:
     def test_getshard(self, shard_list_dataset: ShardListDataset):
         shard, _, _ = shard_list_dataset.get_shard(0)
         assert os.path.exists(shard.path)
-        assert os.stat(shard.path).st_nlink == 2
 
     def test_getitem(self, shard_list_dataset: ShardListDataset):
         # access sample in the first shard
@@ -97,7 +101,7 @@ class TestShardListDataset:
         assert sample["__key__"] == "000017"
         assert ".mp" in sample
         assert len(shard_list_dataset.cache) == 1
-        cache = set(shard_list_dataset.cache.keys())
+        cache = set(shard_list_dataset.cache.lru.keys())
         assert cache == set("testdata/mpdata.tar".split()), cache
 
         # access sample in the second shard
@@ -107,7 +111,7 @@ class TestShardListDataset:
         assert sample["__key__"] == "000090"
         assert ".ten" in sample
         assert len(shard_list_dataset.cache) == 2
-        cache = set(shard_list_dataset.cache.keys())
+        cache = set(shard_list_dataset.cache.lru.keys())
         assert cache == set("testdata/tendata.tar testdata/mpdata.tar".split()), cache
 
         # access sample in the third shard
@@ -117,8 +121,10 @@ class TestShardListDataset:
         assert sample["__key__"] == "compressed/0001"
         assert ".txt.gz" in sample
         assert len(shard_list_dataset.cache) == 2
-        cache = set(shard_list_dataset.cache.keys())
-        assert cache == set("testdata/tendata.tar testdata/compressed.tar".split()), cache
+        cache = set(shard_list_dataset.cache.lru.keys())
+        assert cache == set(
+            "testdata/tendata.tar testdata/compressed.tar".split()
+        ), cache
 
         # access sample in the third shard
         sample = shard_list_dataset[201]
@@ -127,8 +133,10 @@ class TestShardListDataset:
         assert sample["__key__"] == "compressed/0002"
         assert ".txt.gz" in sample
         assert len(shard_list_dataset.cache) == 2
-        cache = set(shard_list_dataset.cache.keys())
-        assert cache == set("testdata/tendata.tar testdata/compressed.tar".split()), cache
+        cache = set(shard_list_dataset.cache.lru.keys())
+        assert cache == set(
+            "testdata/tendata.tar testdata/compressed.tar".split()
+        ), cache
 
         # access sample in the first shard
         sample = shard_list_dataset[0]
@@ -137,8 +145,10 @@ class TestShardListDataset:
         assert sample["__key__"] == "000000"
         assert ".mp" in sample
         assert len(shard_list_dataset.cache) == 2
-        cache = set(shard_list_dataset.cache.keys())
-        assert cache == set("testdata/mpdata.tar testdata/compressed.tar".split()), cache
+        cache = set(shard_list_dataset.cache.lru.keys())
+        assert cache == set(
+            "testdata/mpdata.tar testdata/compressed.tar".split()
+        ), cache
 
         assert shard_list_dataset.get_stats() == (5, 4)
 
@@ -184,15 +194,18 @@ class TestSpecs:
         dataset = wids.ShardListDataset(stream)
         assert len(dataset) == 10
 
+
 class TestShardedSampler:
     @pytest.fixture(scope="function")
     def sharded_sampler(self):
-        dataset = wids.ShardListDataset([
-            dict(url="testdata/mpdata.tar", nsamples=100),
-            dict(url="testdata/tendata.tar", nsamples=100),
-            dict(url="testdata/compressed.tar", nsamples=3),
-        ])
-        sampler = wids.ShardedSampler(dataset, batch_size=10, shuffle=True)
+        dataset = wids.ShardListDataset(
+            [
+                dict(url="testdata/mpdata.tar", nsamples=100),
+                dict(url="testdata/tendata.tar", nsamples=100),
+                dict(url="testdata/compressed.tar", nsamples=3),
+            ]
+        )
+        sampler = wids.ShardedSampler(dataset)
         yield sampler
 
     def test_initialization(self, sharded_sampler: wids.ShardedSampler):

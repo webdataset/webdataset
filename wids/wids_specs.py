@@ -4,8 +4,7 @@ import os
 import tempfile
 from urllib.parse import urlparse, urlunparse
 
-from .wids_dl import SimpleDownloader
-
+from wids.wids_dl import download_and_open
 
 def urldir(url):
     """Return the directory part of a url."""
@@ -83,12 +82,9 @@ def load_remote_dsdesc_raw(source):
     """Load a remote or local dataset description in JSON format."""
     if isinstance(source, str):
         with tempfile.TemporaryDirectory() as tmpdir:
-            downloader = SimpleDownloader()
             dlname = os.path.join(tmpdir, "dataset.json")
-            local = downloader.download(source, dlname)
-            with open(local) as f:
+            with download_and_open(source, dlname) as f:
                 dsdesc = json.load(f)
-            downloader.release(local)
     elif isinstance(source, io.IOBase):
         dsdesc = json.load(source)
     else:
@@ -107,7 +103,6 @@ def rebase_shardlist(shardlist, base):
     for shard in shardlist:
         shard["url"] = urlmerge(base, shard["url"])
     return shardlist
-
 
 
 def resolve_dsdesc(dsdesc, *, options=None, base=None):
@@ -155,7 +150,9 @@ def resolve_dsdesc(dsdesc, *, options=None, base=None):
         if "source_url" in component:
             source_url = component["source_url"]
             component = load_remote_dsdesc_raw(source_url)
-        assert "source_url" not in component, "double indirection in dataset description"
+        assert (
+            "source_url" not in component
+        ), "double indirection in dataset description"
         assert "shardlist" in component, "no shardlist in dataset description"
         # if the component has a base, use it to rebase the shardlist
         # otherwise use the base from the source_url, if any

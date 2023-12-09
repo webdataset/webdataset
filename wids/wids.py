@@ -6,14 +6,20 @@ import os
 import re
 import sqlite3
 import sys
+import random
 from functools import partial
 from typing import Any, BinaryIO, Dict, Optional, TypeVar, Union
 from urllib.parse import quote, urlparse
 
 import numpy as np
-from torch.utils.data import Dataset
 
-from .wids_dl import ConcurrentDownloader
+try:
+    from torch.utils.data import Dataset, Sampler
+except ImportError:
+    class Dataset: pass
+    class Sampler: pass
+
+from .wids_dl import download_and_open, keep_most_recent_files, DirectoryCleanup
 from .wids_lru import LRUCache
 from .wids_mmtar import MMIndexedTar
 from .wids_specs import load_dsdesc_and_resolve, urldir
@@ -192,6 +198,8 @@ class IndexedTarSamples:
     def __init__(
         self,
         tar_file,
+        *,
+        path=None,
         md5sum=None,
         expected_size=None,
         source=None,
@@ -200,7 +208,8 @@ class IndexedTarSamples:
     ):
         # Create TarFileReader object to read from tar_file
         self.source = source
-        self.path = tar_file
+        self.path = path or tar_file
+        assert isinstance(self.path, str), f"specify path= if the tar_file is a stream, got {path}, {tar_file}"
         if use_mmap:
             self.reader = MMIndexedTar(tar_file)
         else:
@@ -217,6 +226,9 @@ class IndexedTarSamples:
 
     def __len__(self):
         return len(self.samples)
+
+    def close(self):
+        self.reader.close()
 
     def __getitem__(self, idx):
         # Get indexes of files for the sample at index idx
@@ -301,9 +313,6 @@ class LRUShards:
         self.localname = localname
         # the cache contains the local name as the key and the downloaded path as the value
         self.lru = LRUCache(num_shards, release_handler=self.release_handler)
-        # the downloader ensures that if multiple processes download the same file on this
-        # machine, only a single download takes place
-        self.downloader = ConcurrentDownloader(keep=False)
         # keep statistics
         self.reset_stats()
 
@@ -314,38 +323,19 @@ class LRUShards:
     def __len__(self):
         return len(self.lru)
 
-    def items(self):
-        return self.lru.items()
-
-    def keys(self):
-        return self.lru.keys()
-
-    def values(self):
-        return self.lru.values()
-
     def release_handler(self, key, value):
-        # called back from the LRUCache when an object is released;
-        # this tells the downloader that the file is no longer needed
-        self.downloader.release(value.path)
-
-    def release(self, itf):
-        for k, v in self.lru.items():
-            if v is itf:
-                self.release_handler(k, v)
-                return
-        raise ValueError("Shard not found")
+        value.close()
 
     def clear(self):
         self.lru.clear()
 
     def get_shard(self, url):
+        assert isinstance(url, str)
         self.accesses += 1
         if url not in self.lru:
             local = self.localname(url)
-            downloaded = self.downloader.download(url, local)
-            if int(os.environ.get("WIDS_VERBOSE", 0)):
-                print("WIDS downloaded", url, local, downloaded, file=sys.stderr)
-            itf = IndexedTarSamples(downloaded, source=url)
+            with download_and_open(url, local) as stream:
+                itf = IndexedTarSamples(stream, source=url, path=local)
             self.lru[url] = itf
             self.misses += 1
         return self.lru[url]
@@ -534,7 +524,7 @@ class ShardListDataset(Dataset[T]):
         self.cache.clear()
 
 
-class ShardedSampler:
+class ShardListSampler(Sampler):
     """A sampler that samples consistent with a ShardListDataset.
 
     This sampler is used to sample from a ShardListDataset in a way that
@@ -552,7 +542,7 @@ class ShardedSampler:
     be added.
     """
 
-    def __init__(self, dataset, lengths=None, batch_size=1, shuffle=False):
+    def __init__(self, dataset, *, lengths=None, seed=0, shufflefirst=False):
         if lengths is None:
             lengths = list(dataset.lengths)
         self.ranges = []
@@ -560,11 +550,24 @@ class ShardedSampler:
         for l in lengths:
             self.ranges.append((start, start + l))
             start += l
+        self.seed = seed
+        self.shufflefirst = shufflefirst
+        self.epoch = 0
 
     def __iter__(self):
         import torch
         
-        shardperm = torch.randperm(len(self.ranges))
+        self.rng = random.Random(self.seed + 1289738273 * self.epoch)
+        shardperm = list(range(len(self.ranges)))
+        if self.epoch > 0 or self.shufflefirst:
+            # usually, we don't shuffle shards in epoch 0 to achieve
+            # fast startup during testing
+            self.rng.shuffle(shardperm)
         for shard in shardperm:
             start, end = self.ranges[shard]
-            yield from (int(x) for x in torch.randperm(end - start) + start)
+            indexes = list(range(start, end))
+            self.rng.shuffle(indexes)
+            yield from indexes
+        self.epoch += 1
+
+ShardedSampler = ShardListSampler

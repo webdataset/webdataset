@@ -10,7 +10,8 @@
 import random
 import re
 import tarfile
-from typing import Any, Callable, Dict, Iterable, Iterator, Optional, Set, Tuple
+from typing import (Any, Callable, Dict, Iterable, Iterator, Optional, Set,
+                    Tuple)
 
 import braceexpand
 

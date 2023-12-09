@@ -45,8 +45,17 @@ def next_header(offset, header):
 class MMIndexedTar:
     def __init__(self, fname, index_file=None, verbose=True):
         self.fname = fname
-        with open(fname, "rb") as file:
-            self.mmapped_file = mmap.mmap(file.fileno(), 0, access=mmap.ACCESS_READ)
+        if isinstance(fname, str):
+            with open(fname, "rb") as file:
+                self.mmapped_file = mmap.mmap(file.fileno(), 0, access=mmap.ACCESS_READ)
+        elif isinstance(fname, io.IOBase):
+            self.mmapped_file = mmap.mmap(fname.fileno(), 0, access=mmap.ACCESS_READ)
+        elif isinstance(fname, int):
+            self.mmapped_file = mmap.mmap(fname, 0, access=mmap.ACCESS_READ)
+        elif isinstance(fname, mmap.mmap):
+            self.mmapped_file = fname
+        else:
+            raise ValueError(f"{fname} must be one of str, IOBase, int, mmap.mmap")
         self._build_index()
 
     def _build_index(self):
