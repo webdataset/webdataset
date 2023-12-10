@@ -11,6 +11,8 @@ import os
 import random
 import string
 
+import multiprocessing
+
 @pytest.fixture
 def temp_file():
     with tempfile.TemporaryDirectory() as temp_dir:
@@ -54,6 +56,7 @@ import time
 import random
 import json
 from wids.wids_fqueue import queue_processor, enqueue_task, enqueue_eof
+from wids.wids_fqueue import spawn_file_deletion_job, notify_open_file, notify_close_file
 
 def worker_enqueue(fname, task):
     time.sleep(random.uniform(0.01, 0.1))  # Simulate random short delay before starting the job
@@ -98,3 +101,76 @@ def test_queue_processor_and_enqueue_task(temp_file):
     assert len(processed_tasks) == len(tasks)
     for task in tasks:
         assert task in processed_tasks
+
+
+def test_file_deletion_job(tmpdir):
+    queue_file = os.path.join(tmpdir, "__deletion_queue__")
+
+    # Spawn the file deletion job
+    p = spawn_file_deletion_job(queue_file)
+    assert p is not None
+
+    # Create a temporary file
+    temp_file = os.path.join(tmpdir, "temp_file")
+    with open(temp_file, "w") as f:
+        f.write("test")
+
+    # Notify the file deletion job that the file is open
+    notify_open_file(queue_file, temp_file)
+
+    # Notify the file deletion job that the file is closed
+    notify_close_file(queue_file, temp_file)
+
+    # Wait for the file deletion job to delete the file
+    time.sleep(1.0)
+
+    # Check that the file has been deleted
+    assert not os.path.exists(temp_file)
+
+    # Terminate the file deletion job
+    p.terminate()
+    p.join()
+
+def worker_open_close_file(queue_file, file, delay):
+    notify_open_file(queue_file, file)
+    time.sleep(delay)
+    notify_close_file(queue_file, file)
+
+def test_multiple_file_deletion_job(tmpdir):
+    queue_file = os.path.join(tmpdir, "__deletion_queue__")
+
+    # Spawn the file deletion job
+    p = spawn_file_deletion_job(queue_file)
+    assert p is not None
+
+    # Create multiple temporary files
+    temp_files = [os.path.join(tmpdir, f"tempfile{i}") for i in range(1, 6)]
+    for temp_file in temp_files:
+        with open(temp_file, "w") as f:
+            f.write("test")
+
+    # Create multiple subprocesses that open and close the files
+    processes = []
+    for _ in range(20):
+        temp_file = random.choice(temp_files)
+        delay = random.uniform(0.01, 0.1)
+        p = multiprocessing.Process(target=worker_open_close_file, args=(queue_file, temp_file, delay))
+        p.start()
+        processes.append(p)
+
+    # Wait for all subprocesses to finish
+    for p in processes:
+        p.join()
+
+    # Wait for the file deletion job to delete the files
+    time.sleep(1.0)
+
+    # Check that all files have been deleted
+    for temp_file in temp_files:
+        assert not os.path.exists(temp_file)
+
+    # Terminate the file deletion job
+    p.terminate()
+    p.join()
+
+

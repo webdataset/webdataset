@@ -2,6 +2,9 @@ import collections
 import io
 import mmap
 import struct
+import fcntl
+import sys
+import os
 
 TarHeader = collections.namedtuple(
     "TarHeader",
@@ -43,20 +46,26 @@ def next_header(offset, header):
 
 
 class MMIndexedTar:
-    def __init__(self, fname, index_file=None, verbose=True):
-        self.fname = fname
+    def __init__(self, fname, index_file=None, verbose=True, cleanup_callback=None):
+        self.verbose = verbose
+        self.cleanup_callback = cleanup_callback
         if isinstance(fname, str):
-            with open(fname, "rb") as file:
-                self.mmapped_file = mmap.mmap(file.fileno(), 0, access=mmap.ACCESS_READ)
+            self.stream = open(fname, "rb")
+            self.fname = fname
         elif isinstance(fname, io.IOBase):
-            self.mmapped_file = mmap.mmap(fname.fileno(), 0, access=mmap.ACCESS_READ)
-        elif isinstance(fname, int):
-            self.mmapped_file = mmap.mmap(fname, 0, access=mmap.ACCESS_READ)
-        elif isinstance(fname, mmap.mmap):
-            self.mmapped_file = fname
-        else:
-            raise ValueError(f"{fname} must be one of str, IOBase, int, mmap.mmap")
+            self.stream = fname
+            self.fname = None
+        self.mmapped_file = mmap.mmap(self.stream.fileno(), 0, access=mmap.ACCESS_READ)
+        if cleanup_callback:
+            cleanup_callback(fname, self.stream.fileno(), "start")
         self._build_index()
+
+    def close(self, dispose=False):
+        if self.cleanup_callback:
+            self.cleanup_callback(self.fname, self.stream.fileno(), "end")
+        fcntl.flock(self.stream.fileno(), fcntl.LOCK_UN)
+        self.mmapped_file.close()
+        self.stream.close()
 
     def _build_index(self):
         self.by_name = {}
@@ -110,6 +119,53 @@ class MMIndexedTar:
     def get_file(self, i):
         fname, data = self.get_at_index(i)
         return fname, io.BytesIO(data)
+    
 
-    def close(self):
-        self.mmapped_file.close()
+# This is a set of helper functions that can be used as an argument to the cleanup_callback.
+# They will unlink the file after a delay if there are no more read locks on it.
+
+from concurrent.futures import ThreadPoolExecutor, Future
+
+# Create a global ThreadPoolExecutor; just set this variable to something different
+# if you want to use a larger/smaller pool.
+unlinking_worker_pool = ThreadPoolExecutor(max_workers=100)
+
+def maybe_unlink_after_delay(fname, fd, delay=0.0):
+    """Unlinks a file after a delay if there are no more read locks on it."""
+    print("maybe unlink", locals())
+    try:
+        if delay > 0.0:
+            assert delay == 0.0, "positive delay not implemented yet"
+        # check whether there are still read locks on the file
+        fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        print("got write lock, unlinking", fname); sys.stdout.flush()
+        os.unlink(fname)
+    except BlockingIOError:
+        print("still locked", fname); sys.stdout.flush()
+        # the file is still in use by other readers
+        pass
+
+def keep_while_reading(fname, fd, phase, delay=0.0):
+    """This is a possible cleanup callback for cleanup_callback of MIndexedTar.
+    
+    It assumes that as long as there are some readers for a file,
+    more readers may be trying to open it.
+
+    Note that on Linux, unlinking the file doesn't matter after
+    it has been mmapped. The contents will only be deleted when
+    all readers close the file. The unlinking merely makes the file
+    unavailable to new readers, since the downloader checks first
+    whether the file exists.
+    """
+    if fd < 0 or fname is None:
+        return
+    if phase == "start":
+        fcntl.flock(fd, fcntl.LOCK_SH)
+    elif phase == "end":
+        if delay > 0.0:
+            unlinking_worker_pool.submit(maybe_unlink_after_delay, fname, fd, delay)
+        else:
+            maybe_unlink_after_delay(fname, fd, 0.0)
+        fcntl.flock(fd, fcntl.LOCK_UN)
+    else:
+        raise ValueError(f"Unknown phase {phase}")

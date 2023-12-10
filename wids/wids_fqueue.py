@@ -5,6 +5,7 @@ import fcntl
 import json
 from typing import Dict, List
 import errno
+import multiprocessing
 
 
 class ExclusiveLock:
@@ -70,6 +71,7 @@ def queue_processor(queue_file):
         lines = read_lines_and_clear_locked(queue_file)
         for line in lines:
             line = line.strip()
+            print("line", line, file=sys.stderr)
             if line == "<<EOF>>":
                 return
             yield json.loads(line)
@@ -128,3 +130,11 @@ def spawn_file_deletion_job(queue):
         return None
     else:
         return p
+    
+def notify_open_file(queue, fname):
+    """Notify the file deletion job that a file is open."""
+    enqueue_task(queue, action="open", fname=fname, pid=os.getpid())
+
+def notify_close_file(queue, fname):
+    """Notify the file deletion job that a file is closed."""
+    enqueue_task(queue, action="close", fname=fname, pid=os.getpid())
