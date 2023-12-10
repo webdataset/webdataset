@@ -13,7 +13,7 @@ from urllib.parse import quote, urlparse
 
 import numpy as np
 
-from .wids_dl import download_and_open, DirectoryCleanup
+from .wids_dl import DirectoryCleanup, download_and_open
 from .wids_lru import LRUCache
 from .wids_mmtar import MMIndexedTar
 from .wids_specs import load_dsdesc_and_resolve, urldir
@@ -494,7 +494,9 @@ class ShardListDataset(Dataset[T]):
 
         self.cleanup = None
         if cache_cleanup is not None and self.cache_dir is not None:
-            self.cleanup = DirectoryCleanup(self.cache_dir, every=cache_cleanup, maxsize=cache_size)
+            self.cleanup = DirectoryCleanup(
+                self.cache_dir, every=cache_cleanup, maxsize=cache_size
+            )
 
     def add_transform(self, transform):
         """Add a transformation to the dataset."""

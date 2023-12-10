@@ -1,20 +1,15 @@
-import pytest
-import os
-import random
-import time
-import fcntl
-from concurrent.futures import ThreadPoolExecutor
-from wids.wids_mmtar import keep_while_reading, maybe_unlink_after_delay, unlinking_worker_pool
-
-
-import pytest
+import io
 import os
 import tarfile
-import io
-from wids.wids_mmtar import MMIndexedTar
+import time
+
+import pytest
+
+from wids.wids_mmtar import MMIndexedTar, keep_while_reading
 
 # Define the different tarfile types
 tarfile_types = [tarfile.USTAR_FORMAT, tarfile.PAX_FORMAT, tarfile.GNU_FORMAT]
+
 
 # Create a fixture that creates a tarfile in each type
 @pytest.fixture(params=tarfile_types)
@@ -28,6 +23,7 @@ def create_tarfile(tmpdir, request):
             tarinfo.size = len(file.getvalue())
             tar.addfile(tarinfo, fileobj=file)
     return tarfile_name
+
 
 def test_MMIndexedTar(create_tarfile):
     # Test the MMIndexedTar class

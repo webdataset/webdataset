@@ -1,15 +1,16 @@
-import os
-import time
-import sys
+import errno
 import fcntl
 import json
-from typing import Dict, List
-import errno
 import multiprocessing
+import os
+import sys
+import time
+from typing import Dict, List
 
 
 class ExclusiveLock:
     """A simple non-blocking exclusive lock using fcntl."""
+
     def __init__(self, lockfile):
         self.lockfile = lockfile
 
@@ -28,6 +29,7 @@ class ExclusiveLock:
         self.lock.close()
         os.unlink(self.lockfile)
 
+
 def write_line_locked(fname, line):
     """Write a line to a file, locking it with fcntl."""
     stream = open(fname, "a")
@@ -38,6 +40,7 @@ def write_line_locked(fname, line):
     finally:
         fcntl.flock(stream.fileno(), fcntl.LOCK_UN)
         stream.close()
+
 
 def read_lines_and_clear_locked(fname):
     """Read lines from a file, locking it with fcntl."""
@@ -53,12 +56,14 @@ def read_lines_and_clear_locked(fname):
         stream.close()
     return lines
 
+
 def wait_for_file_contents(fname):
     """Wait for a file to change."""
     while True:
         if os.path.exists(fname) and os.stat(fname).st_size > 0:
             return True
         time.sleep(1.0)
+
 
 def queue_processor(queue_file):
     """Infinitely process a queue file."""
@@ -76,9 +81,11 @@ def queue_processor(queue_file):
                 return
             yield json.loads(line)
 
+
 def enqueue_eof(queue_file):
     """Enqueue an EOF."""
     write_line_locked(queue_file, "<<EOF>>\n")
+
 
 def enqueue_task(queue_file, **kw):
     """Enqueue a task."""
@@ -87,11 +94,14 @@ def enqueue_task(queue_file, **kw):
     assert "\n" not in line
     write_line_locked(queue_file, line)
 
+
 # Code for a file deletion agent.
+
 
 def remove_dead_processes(pids: List[int]):
     """Remove dead processes from a list of pids."""
     return [pid for pid in pids if os.path.exists(f"/proc/{pid}")]
+
 
 def file_deletion_job(queue):
     """Keep track of usage and deletion requests.
@@ -101,7 +111,7 @@ def file_deletion_job(queue):
     When the last process closes the file, the file is deleted.
     Processes that are not running anymore are also considered closed.
     """
-    pids : Dict[str, List[int]] = {}
+    pids: Dict[str, List[int]] = {}
     for task in queue_processor(queue):
         if task["action"] == "open":
             pids.setdefault(task["fname"], []).append(task["pid"])
@@ -114,9 +124,10 @@ def file_deletion_job(queue):
                 os.unlink(task["fname"])
                 del pids[task["fname"]]
 
+
 def spawn_file_deletion_job(queue):
     """Spawn a file deletion job.
-    
+
     This spawns a file deletion job and returns the process.
     This can be called from different processes; it uses a lock
     to ensure that only a single file deletion process runs.
@@ -130,10 +141,12 @@ def spawn_file_deletion_job(queue):
         return None
     else:
         return p
-    
+
+
 def notify_open_file(queue, fname):
     """Notify the file deletion job that a file is open."""
     enqueue_task(queue, action="open", fname=fname, pid=os.getpid())
+
 
 def notify_close_file(queue, fname):
     """Notify the file deletion job that a file is closed."""

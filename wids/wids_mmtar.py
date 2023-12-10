@@ -1,10 +1,11 @@
 import collections
+import fcntl
 import io
 import mmap
-import struct
-import fcntl
-import sys
 import os
+import struct
+import sys
+from concurrent.futures import ThreadPoolExecutor
 
 TarHeader = collections.namedtuple(
     "TarHeader",
@@ -119,16 +120,16 @@ class MMIndexedTar:
     def get_file(self, i):
         fname, data = self.get_at_index(i)
         return fname, io.BytesIO(data)
-    
+
 
 # This is a set of helper functions that can be used as an argument to the cleanup_callback.
 # They will unlink the file after a delay if there are no more read locks on it.
 
-from concurrent.futures import ThreadPoolExecutor, Future
 
 # Create a global ThreadPoolExecutor; just set this variable to something different
 # if you want to use a larger/smaller pool.
 unlinking_worker_pool = ThreadPoolExecutor(max_workers=100)
+
 
 def maybe_unlink_after_delay(fname, fd, delay=0.0):
     """Unlinks a file after a delay if there are no more read locks on it."""
@@ -138,16 +139,18 @@ def maybe_unlink_after_delay(fname, fd, delay=0.0):
             assert delay == 0.0, "positive delay not implemented yet"
         # check whether there are still read locks on the file
         fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        print("got write lock, unlinking", fname); sys.stdout.flush()
+        print("got write lock, unlinking", fname)
+        sys.stdout.flush()
         os.unlink(fname)
     except BlockingIOError:
-        print("still locked", fname); sys.stdout.flush()
+        print("still locked", fname)
+        sys.stdout.flush()
         # the file is still in use by other readers
-        pass
+
 
 def keep_while_reading(fname, fd, phase, delay=0.0):
     """This is a possible cleanup callback for cleanup_callback of MIndexedTar.
-    
+
     It assumes that as long as there are some readers for a file,
     more readers may be trying to open it.
 
