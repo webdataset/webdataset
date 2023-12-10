@@ -13,7 +13,7 @@ from urllib.parse import quote, urlparse
 
 import numpy as np
 
-from .wids_dl import DirectoryCleanup, download_and_open
+from .wids_dl import download_and_open
 from .wids_lru import LRUCache
 from .wids_mmtar import MMIndexedTar
 from .wids_specs import load_dsdesc_and_resolve, urldir
@@ -417,7 +417,6 @@ class ShardListDataset(Dataset[T]):
         shards,
         cache_size=int(1e12),
         cache_dir=None,
-        cache_cleanup=10,
         dataset_name=None,
         localname=None,
         transformations="PIL",
@@ -492,12 +491,6 @@ class ShardListDataset(Dataset[T]):
 
         self.cache = LRUShards(cache_size, localname=self.localname, keep=keep)
 
-        self.cleanup = None
-        if cache_cleanup is not None and self.cache_dir is not None:
-            self.cleanup = DirectoryCleanup(
-                self.cache_dir, every=cache_cleanup, maxsize=cache_size
-            )
-
     def add_transform(self, transform):
         """Add a transformation to the dataset."""
         self.transformations.append(transform)
@@ -539,8 +532,6 @@ class ShardListDataset(Dataset[T]):
         desc = self.shards[shard_idx]
         url = desc["url"]
         shard = self.cache.get_shard(url)
-        if self.cache.last_missed and self.cleanup is not None:
-            self.cleanup.run_cleanup()
         return shard, inner_idx, desc
 
     def __getitem__(self, index):

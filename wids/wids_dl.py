@@ -1,13 +1,10 @@
 import fcntl
-import glob
 import os
 import shutil
 import sys
 import time
 from collections import deque
 from urllib.parse import urlparse
-
-import numpy as np
 
 recent_downloads = deque(maxlen=1000)
 
@@ -133,63 +130,3 @@ def download_and_open(remote, local, mode="rb", handlers=default_cmds, verbose=F
             if verbose:
                 print("using cached", local, file=sys.stderr)
         return open(local, mode)
-
-
-def keep_most_recent_files(pattern, maxsize=int(1e12), maxfiles=1000, debug=False):
-    """Keep the most recent files in a directory, deleting the rest.
-
-    The maxsize is the maximum size of the directory in bytes. The maxfiles is
-    the maximum number of files to keep. The files are sorted by modification
-    time, and the most recent files are kept. If the directory is already
-    smaller than maxsize, then no files are deleted. If there are fewer than
-    maxfiles, then no files are deleted."""
-
-    # get the list of files in the directory
-    fnames = glob.glob(pattern)
-    # compute a list of (mtime, fname, size) triples
-    files = []
-    for fname in fnames:
-        try:
-            s = os.stat(fname)
-        except FileNotFoundError:
-            continue
-        files.append((s.st_mtime, fname, s.st_size))
-    # sort the list by mtime, most recent first
-    files.sort(reverse=True)
-    # compute an accumulated total of the file sizes in order using np.cumsum
-    sizes = np.cumsum([size for mtime, fname, size in files])
-    # compute a cutoff index based on maxsize
-    cutoff = np.searchsorted(sizes, maxsize)
-    # compute a cutoff index based on maxfiles
-    cutoff = min(cutoff, maxfiles)
-    # delete the files above the cutoff in reverse order
-    for mtime, fname, size in files[cutoff:][::-1]:
-        try:
-            os.unlink(fname)
-        except FileNotFoundError:
-            pass
-
-
-class DirectoryCleanup:
-    def __init__(self, directory, every=10, maxsize=int(1e12), maxfiles=100000):
-        assert isinstance(directory, str)
-        assert os.path.exists(directory)
-        self.directory = directory
-        self.maxsize = maxsize
-        self.maxfiles = maxfiles
-        self.every = every
-        # create a .last_cleanup file whose mtime reflects the last
-        # time we ran a cleanup
-        self.last_cleanup = os.path.join(directory, ".last_cleanup")
-        if not os.path.exists(self.last_cleanup):
-            with open(self.last_cleanup, "w"):
-                pass
-
-    def run_cleanup(self):
-        """Run a cleanup if the .last_cleanup file is old enough."""
-        if time.time() - os.stat(self.last_cleanup).st_mtime > self.every:
-            keep_most_recent_files(
-                self.directory, maxsize=self.maxsize, maxfiles=self.maxfiles
-            )
-            with open(self.last_cleanup, "w"):
-                pass
