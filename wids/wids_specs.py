@@ -6,6 +6,7 @@ from urllib.parse import urlparse, urlunparse
 
 from wids.wids_dl import download_and_open
 
+
 def urldir(url):
     """Return the directory part of a url."""
     parsed_url = urlparse(url)

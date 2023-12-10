@@ -3,46 +3,51 @@ import gzip
 import hashlib
 import io
 import os
+import random
 import re
 import sqlite3
 import sys
-import random
 from functools import partial
 from typing import Any, BinaryIO, Dict, Optional, TypeVar, Union
 from urllib.parse import quote, urlparse
 
 import numpy as np
 
-try:
-    from torch.utils.data import Dataset, Sampler
-except ImportError:
-    class Dataset: pass
-    class Sampler: pass
-
-from .wids_dl import download_and_open, keep_most_recent_files, DirectoryCleanup
+from .wids_dl import download_and_open, DirectoryCleanup
 from .wids_lru import LRUCache
 from .wids_mmtar import MMIndexedTar
 from .wids_specs import load_dsdesc_and_resolve, urldir
 from .wids_tar import TarFileReader, find_index_file
+
+try:
+    from torch.utils.data import Dataset, Sampler
+except ImportError:
+
+    class Dataset:
+        pass
+
+    class Sampler:
+        pass
+
 
 T = TypeVar("T")
 
 
 def compute_file_md5sum(fname: Union[str, BinaryIO], chunksize: int = 1000000) -> str:
     """Compute the md5sum of a file in chunks.
-    
+
     Parameters
     ----------
     fname : Union[str, BinaryIO]
         Filename or file object
     chunksize : int, optional
         Chunk size in bytes, by default 1000000
-    
+
     Returns
     -------
     str
         MD5 sum of the file
-    
+
     Examples
     --------
     >>> compute_file_md5sum("test.txt")
@@ -58,6 +63,7 @@ def compute_file_md5sum(fname: Union[str, BinaryIO], chunksize: int = 1000000) -
         for chunk in iter(lambda: fname.read(chunksize), b""):
             md5.update(chunk)
     return md5.hexdigest()
+
 
 def compute_file_md5sum(fname: Union[str, BinaryIO], chunksize: int = 1000000) -> str:
     """Compute the md5sum of a file in chunks."""
@@ -209,7 +215,9 @@ class IndexedTarSamples:
         # Create TarFileReader object to read from tar_file
         self.source = source
         self.path = path or tar_file
-        assert isinstance(self.path, str), f"specify path= if the tar_file is a stream, got {path}, {tar_file}"
+        assert isinstance(
+            self.path, str
+        ), f"specify path= if the tar_file is a stream, got {path}, {tar_file}"
         if use_mmap:
             self.reader = MMIndexedTar(tar_file)
         else:
@@ -222,7 +230,9 @@ class IndexedTarSamples:
             got = compute_file_md5sum(tar_file)
             assert got == md5sum, f"MD5 sum mismatch: expected {md5sum}, got {got}"
         if expected_size is not None:
-            assert len(self) == expected_size, f"Expected {expected_size} samples, got {len(self)}"
+            assert (
+                len(self) == expected_size
+            ), f"Expected {expected_size} samples, got {len(self)}"
 
     def __len__(self):
         return len(self.samples)
@@ -254,23 +264,32 @@ def hash_localname(dldir="/tmp/_wids_cache"):
 
     connection = sqlite3.connect(os.path.join(dldir, "cache.db"))
     cursor = connection.cursor()
-    cursor.execute("CREATE TABLE IF NOT EXISTS cache (url TEXT PRIMARY KEY, path TEXT, checksum TEXT)")
+    cursor.execute(
+        "CREATE TABLE IF NOT EXISTS cache (url TEXT PRIMARY KEY, path TEXT, checksum TEXT)"
+    )
     connection.commit()
 
     def f(shard):
         """Given a URL, return a local name for the shard."""
         if shard.startswith("pipe:"):
             # uuencode the entire URL string
-            hex32 = base64.urlsafe_b64encode(hashlib.sha256(shard.encode()).digest())[:32].decode()
+            hex32 = base64.urlsafe_b64encode(hashlib.sha256(shard.encode()).digest())[
+                :32
+            ].decode()
             return os.path.join(dldir, "pipe__" + hex32)
         else:
             # we hash the host and directory components into a 16 character string
             dirname = urldir(shard)
-            hex16 = base64.urlsafe_b64encode(hashlib.sha256(dirname.encode()).digest())[:16].decode()
+            hex16 = base64.urlsafe_b64encode(hashlib.sha256(dirname.encode()).digest())[
+                :16
+            ].decode()
             # the cache name is the concatenation of the hex16 string and the file name component of the URL
             cachename = "data__" + hex16 + "__" + os.path.basename(urlparse(shard).path)
             checksum = None
-            cursor.execute("INSERT OR REPLACE INTO cache VALUES (?, ?, ?)", (shard, cachename, checksum))
+            cursor.execute(
+                "INSERT OR REPLACE INTO cache VALUES (?, ?, ?)",
+                (shard, cachename, checksum),
+            )
             connection.commit()
             return os.path.join(dldir, cachename)
 
@@ -338,6 +357,9 @@ class LRUShards:
                 itf = IndexedTarSamples(stream, source=url, path=local)
             self.lru[url] = itf
             self.misses += 1
+            self.last_missed = True
+        else:
+            self.last_missed = False
         return self.lru[url]
 
 
@@ -390,7 +412,19 @@ class ShardListDataset(Dataset[T]):
     descriptor was loaded.
     """
 
-    def __init__(self, shards, cache_size=10, cache_dir=None, dataset_name=None, localname=None, transformations="PIL", keep=False, base=None, options=None):
+    def __init__(
+        self,
+        shards,
+        cache_size=int(1e12),
+        cache_dir=None,
+        cache_cleanup=10,
+        dataset_name=None,
+        localname=None,
+        transformations="PIL",
+        keep=False,
+        base=None,
+        options=None,
+    ):
         """Create a ShardListDataset.
 
         Args:
@@ -431,7 +465,7 @@ class ShardListDataset(Dataset[T]):
             self.cache_dir = None
             self.localname = localname
         else:
-            # when no cachd dir or localname are given, use the cache from the environment
+            # when no cache dir or localname are given, use the cache from the environment
             self.cache_dir = os.environ.get("WIDS_CACHE", "/tmp/_wids_cache")
             self.localname = default_localname(self.cache_dir)
 
@@ -453,11 +487,14 @@ class ShardListDataset(Dataset[T]):
                 "cache:",
                 self.cache_dir,
                 file=sys.stderr,
-
             )
         self.transformations = interpret_transformations(transformations)
 
         self.cache = LRUShards(cache_size, localname=self.localname, keep=keep)
+
+        self.cleanup = None
+        if cache_cleanup is not None and self.cache_dir is not None:
+            self.cleanup = DirectoryCleanup(self.cache_dir, every=cache_cleanup, maxsize=cache_size)
 
     def add_transform(self, transform):
         """Add a transformation to the dataset."""
@@ -479,7 +516,9 @@ class ShardListDataset(Dataset[T]):
             # output a warning only once
             self.check_cache_misses = lambda: None
             print(
-                "Warning: ShardListDataset has a cache miss rate of {:.1%}%".format(misses * 100.0 / accesses)
+                "Warning: ShardListDataset has a cache miss rate of {:.1%}%".format(
+                    misses * 100.0 / accesses
+                )
             )
 
     def get_shard(self, index):
@@ -498,6 +537,8 @@ class ShardListDataset(Dataset[T]):
         desc = self.shards[shard_idx]
         url = desc["url"]
         shard = self.cache.get_shard(url)
+        if self.cache.last_missed and self.cleanup is not None:
+            self.cleanup.run_cleanup()
         return shard, inner_idx, desc
 
     def __getitem__(self, index):
@@ -555,8 +596,8 @@ class ShardListSampler(Sampler):
         self.epoch = 0
 
     def __iter__(self):
-        import torch
-        
+        pass
+
         self.rng = random.Random(self.seed + 1289738273 * self.epoch)
         shardperm = list(range(len(self.ranges)))
         if self.epoch > 0 or self.shufflefirst:
@@ -569,5 +610,6 @@ class ShardListSampler(Sampler):
             self.rng.shuffle(indexes)
             yield from indexes
         self.epoch += 1
+
 
 ShardedSampler = ShardListSampler

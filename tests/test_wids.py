@@ -14,7 +14,9 @@ class TestIndexedTarSamples:
         tar_file = "testdata/ixtest.tar"
         md5sum = "3b3c0afe31e45325b7c4e6dec5235d13"
         expected_size = 10
-        self.indexed_samples = wids.IndexedTarSamples(tar_file, md5sum=md5sum, expected_size=expected_size)
+        self.indexed_samples = wids.IndexedTarSamples(
+            tar_file, md5sum=md5sum, expected_size=expected_size
+        )
 
     def test_length(self):
         assert (

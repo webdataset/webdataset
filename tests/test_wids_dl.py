@@ -4,9 +4,12 @@ import time
 from functools import partial
 from multiprocessing import Pool
 
-
-from wids.wids_dl import (download_and_open, download_file,
-                          keep_most_recent_files, recent_downloads)
+from wids.wids_dl import (
+    download_and_open,
+    download_file,
+    keep_most_recent_files,
+    recent_downloads,
+)
 
 test_download_url = "gs://webdataset/d-tokens/d-tokens-000000.tar"
 
@@ -64,8 +67,6 @@ def test_concurrent_download_and_open():
                 assert result == b"././@PaxHe", result
 
     assert len(recent_downloads) == 0, recent_downloads
-
-
 
 
 def test_keep_most_recent_files():

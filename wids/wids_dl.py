@@ -146,14 +146,13 @@ def keep_most_recent_files(directory, maxsize=int(1e12), maxfiles=1000):
     # get the list of files in the directory
     files = os.listdir(directory)
     # compute a list of (mtime, fname, size) triples
-    files = [
-        (
-            os.stat(os.path.join(directory, fname)).st_mtime,
-            fname,
-            os.stat(os.path.join(directory, fname)).st_size,
-        )
-        for fname in files
-    ]
+    files = []
+    for fname in files:
+        try:
+            size = os.stat(os.path.join(directory, fname)).st_size
+        except FileNotFoundError:
+            continue
+        files.append((os.stat(os.path.join(directory, fname)).st_mtime, fname, size))
     # sort the list by mtime, most recent first
     files.sort(reverse=True)
     # compute an accumulated total of the file sizes in order using np.cumsum
@@ -172,6 +171,8 @@ def keep_most_recent_files(directory, maxsize=int(1e12), maxfiles=1000):
 
 class DirectoryCleanup:
     def __init__(self, directory, every=10, maxsize=int(1e12), maxfiles=100000):
+        assert isinstance(directory, str)
+        assert os.path.exists(directory)
         self.directory = directory
         self.maxsize = maxsize
         self.maxfiles = maxfiles
@@ -182,6 +183,7 @@ class DirectoryCleanup:
         if not os.path.exists(self.last_cleanup):
             with open(self.last_cleanup, "w"):
                 pass
+
     def run_cleanup(self):
         """Run a cleanup if the .last_cleanup file is old enough."""
         if time.time() - os.stat(self.last_cleanup).st_mtime > self.every:
@@ -190,4 +192,3 @@ class DirectoryCleanup:
             )
             with open(self.last_cleanup, "w"):
                 pass
-        
