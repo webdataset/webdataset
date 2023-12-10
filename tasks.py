@@ -88,6 +88,11 @@ def test(c):
     c.run(f"{ACTIVATE}{PYTHON3} -m pytest -x tests")
 
 @task
+def tests(c):
+    "Run the tests."
+    test(c)
+
+@task
 def testwids(c):
     "Run the wids tests."
     c.run(f"{ACTIVATE}{PYTHON3} -m pytest -x tests/test_wids*.py")

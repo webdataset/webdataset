@@ -1,4 +1,5 @@
 import fcntl
+import glob
 import os
 import shutil
 import sys
@@ -134,7 +135,7 @@ def download_and_open(remote, local, mode="rb", handlers=default_cmds, verbose=F
         return open(local, mode)
 
 
-def keep_most_recent_files(directory, maxsize=int(1e12), maxfiles=1000):
+def keep_most_recent_files(pattern, maxsize=int(1e12), maxfiles=1000, debug=False):
     """Keep the most recent files in a directory, deleting the rest.
 
     The maxsize is the maximum size of the directory in bytes. The maxfiles is
@@ -144,15 +145,15 @@ def keep_most_recent_files(directory, maxsize=int(1e12), maxfiles=1000):
     maxfiles, then no files are deleted."""
 
     # get the list of files in the directory
-    files = os.listdir(directory)
+    fnames = glob.glob(pattern)
     # compute a list of (mtime, fname, size) triples
     files = []
-    for fname in files:
+    for fname in fnames:
         try:
-            size = os.stat(os.path.join(directory, fname)).st_size
+            s = os.stat(fname)
         except FileNotFoundError:
             continue
-        files.append((os.stat(os.path.join(directory, fname)).st_mtime, fname, size))
+        files.append((s.st_mtime, fname, s.st_size))
     # sort the list by mtime, most recent first
     files.sort(reverse=True)
     # compute an accumulated total of the file sizes in order using np.cumsum
@@ -164,7 +165,7 @@ def keep_most_recent_files(directory, maxsize=int(1e12), maxfiles=1000):
     # delete the files above the cutoff in reverse order
     for mtime, fname, size in files[cutoff:][::-1]:
         try:
-            os.unlink(os.path.join(directory, fname))
+            os.unlink(fname)
         except FileNotFoundError:
             pass
 

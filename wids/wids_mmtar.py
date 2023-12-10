@@ -4,8 +4,6 @@ import io
 import mmap
 import os
 import struct
-import sys
-from concurrent.futures import ThreadPoolExecutor
 
 TarHeader = collections.namedtuple(
     "TarHeader",
@@ -64,7 +62,6 @@ class MMIndexedTar:
     def close(self, dispose=False):
         if self.cleanup_callback:
             self.cleanup_callback(self.fname, self.stream.fileno(), "end")
-        fcntl.flock(self.stream.fileno(), fcntl.LOCK_UN)
         self.mmapped_file.close()
         self.stream.close()
 
@@ -122,32 +119,6 @@ class MMIndexedTar:
         return fname, io.BytesIO(data)
 
 
-# This is a set of helper functions that can be used as an argument to the cleanup_callback.
-# They will unlink the file after a delay if there are no more read locks on it.
-
-
-# Create a global ThreadPoolExecutor; just set this variable to something different
-# if you want to use a larger/smaller pool.
-unlinking_worker_pool = ThreadPoolExecutor(max_workers=100)
-
-
-def maybe_unlink_after_delay(fname, fd, delay=0.0):
-    """Unlinks a file after a delay if there are no more read locks on it."""
-    print("maybe unlink", locals())
-    try:
-        if delay > 0.0:
-            assert delay == 0.0, "positive delay not implemented yet"
-        # check whether there are still read locks on the file
-        fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        print("got write lock, unlinking", fname)
-        sys.stdout.flush()
-        os.unlink(fname)
-    except BlockingIOError:
-        print("still locked", fname)
-        sys.stdout.flush()
-        # the file is still in use by other readers
-
-
 def keep_while_reading(fname, fd, phase, delay=0.0):
     """This is a possible cleanup callback for cleanup_callback of MIndexedTar.
 
@@ -160,15 +131,20 @@ def keep_while_reading(fname, fd, phase, delay=0.0):
     unavailable to new readers, since the downloader checks first
     whether the file exists.
     """
+    assert delay == 0.0, "delay not implemented"
     if fd < 0 or fname is None:
         return
     if phase == "start":
         fcntl.flock(fd, fcntl.LOCK_SH)
     elif phase == "end":
-        if delay > 0.0:
-            unlinking_worker_pool.submit(maybe_unlink_after_delay, fname, fd, delay)
-        else:
-            maybe_unlink_after_delay(fname, fd, 0.0)
-        fcntl.flock(fd, fcntl.LOCK_UN)
+        try:
+            fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            os.unlink(fname)
+        except FileNotFoundError:
+            # someone else deleted it already
+            pass
+        except BlockingIOError:
+            # we couldn't get an exclusive lock, so someone else is still reading
+            pass
     else:
         raise ValueError(f"Unknown phase {phase}")

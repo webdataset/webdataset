@@ -82,9 +82,9 @@ def test_keep_most_recent_files():
                 time.sleep(0.01)
 
         # Trim to a maxsize of 5000 bytes
-        keep_most_recent_files(tmpdir, maxsize=cutoff)
+        keep_most_recent_files(tmpdir + "/*", maxsize=cutoff, debug=True)
 
-        # Verify that only 50 files remain
+        # Verify that only nremain files remain
         remaining_files = sorted(os.listdir(tmpdir))
         assert len(remaining_files) == nremain
 
