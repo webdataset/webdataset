@@ -796,3 +796,39 @@ def test_multimode():
     dl = torch.utils.data.DataLoader(ds, num_workers=4)
     count = count_samples_tuple(dl)
     assert count == 170 * 4, count
+
+
+def test_mcached():
+    shardname = "testdata/imagenet-000000.tgz"
+    dataset = wds.DataPipeline(
+        wds.SimpleShardList([shardname]),
+        wds.tarfile_to_samples(),
+        wds.Cached(),
+    )
+    result1 = list(iter(dataset))
+    result2 = list(iter(dataset))
+    assert len(result1) == len(result2)
+
+
+def test_lmdb_cached(tmp_path):
+    shardname = "testdata/imagenet-000000.tgz"
+    dest = os.path.join(tmp_path, "test.lmdb")
+    assert not os.path.exists(dest)
+    dataset = wds.DataPipeline(
+        wds.SimpleShardList([shardname]),
+        wds.tarfile_to_samples(),
+        wds.LMDBCached(dest),
+    )
+    result1 = list(iter(dataset))
+    assert os.path.exists(dest)
+    result2 = list(iter(dataset))
+    assert os.path.exists(dest)
+    assert len(result1) == len(result2)
+    del dataset
+    dataset = wds.DataPipeline(
+        wds.SimpleShardList([shardname]),
+        wds.tarfile_to_samples(),
+        wds.LMDBCached(dest),
+    )
+    result3 = list(iter(dataset))
+    assert len(result1) == len(result3)

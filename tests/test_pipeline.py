@@ -200,19 +200,6 @@ def test_reader3():
     assert len(result) == 470
 
 
-def test_pipe_cleaner():
-    assert wds.pipe_cleaner("foobar") == "foobar"
-    assert wds.pipe_cleaner("pipe:foobar") == "foobar"
-    assert wds.pipe_cleaner("pipe:curl http://foo a b c") == "http://foo"
-    assert wds.pipe_cleaner("pipe:curl https://foo a b c") == "https://foo"
-    assert wds.pipe_cleaner("pipe:curl ais://foo a b c") == "ais://foo"
-    assert wds.pipe_cleaner("pipe:curl gs://foo a b c") == "gs://foo"
-    assert wds.pipe_cleaner("pipe:curl s3://foo a b c") == "s3://foo"
-    assert wds.pipe_cleaner("pipe:curl xxx://foo a b c") == "curl xxx://foo a b c"
-    s = "pipe:curl -s -L http://storage.googleapis.com/nvdata-openimages/"
-    assert wds.pipe_cleaner(s) == "http://storage.googleapis.com/nvdata-openimages/"
-
-
 def test_splitting():
     dataset = wds.DataPipeline(
         wds.SimpleShardList(list(map(str, range(10)))),

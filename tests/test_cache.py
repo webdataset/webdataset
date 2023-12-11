@@ -1,45 +1,46 @@
+import webdataset.typecheck  # isort:skip
+
 import os
+import tempfile
 import time
-from pathlib import Path
+from urllib.parse import urlparse
 
-import webdataset as wds
-from webdataset.cache import FileCache, LRUCleanup, StreamingOpen
+import pytest
+
+from webdataset.cache import FileCache, LRUCleanup, StreamingOpen, url_to_cache_name
 
 
-def test_mcached():
-    shardname = "testdata/imagenet-000000.tgz"
-    dataset = wds.DataPipeline(
-        wds.SimpleShardList([shardname]),
-        wds.tarfile_to_samples(),
-        wds.Cached(),
+def test_url_to_cache_name():
+    assert url_to_cache_name("http://example.com/path/to/file.txt") == "file.txt"
+    assert (
+        url_to_cache_name("http://example.com/path/to/file.txt", ndir=1)
+        == "to/file.txt"
     )
-    result1 = list(iter(dataset))
-    result2 = list(iter(dataset))
-    assert len(result1) == len(result2)
+    assert (
+        url_to_cache_name("http://example.com/path/to/file.txt", ndir=2)
+        == "path/to/file.txt"
+    )
+    assert (
+        url_to_cache_name("http://example.com/path/to/file.txt", ndir=3)
+        == "path/to/file.txt"
+    )
+    assert url_to_cache_name("http://example.com/") == ""
+    assert url_to_cache_name("http://example.com", ndir=1) == ""
+    assert url_to_cache_name("file:///path/to/file.txt") == "file.txt"
+    assert url_to_cache_name("file:///path/to/file.txt", ndir=1) == "to/file.txt"
+    assert url_to_cache_name("ftp://example.com/path/to/file.txt") == "file.txt"
+    assert url_to_cache_name("gs://example.com/path/to/file.txt") == "file.txt"
+    assert url_to_cache_name("s3://example.com/path/to/file.txt") == "file.txt"
+    assert url_to_cache_name("ais://example.com/path/to/file.txt") == "file.txt"
+    assert (
+        url_to_cache_name("unknown://example.com/path/to/file.txt")
+        == "unknown%3A%2F%2Fexample.com%2Fpath%2Fto%2Ffile.txt"
+    )
 
 
-def test_lmdb_cached(tmp_path):
-    shardname = "testdata/imagenet-000000.tgz"
-    dest = os.path.join(tmp_path, "test.lmdb")
-    assert not os.path.exists(dest)
-    dataset = wds.DataPipeline(
-        wds.SimpleShardList([shardname]),
-        wds.tarfile_to_samples(),
-        wds.LMDBCached(dest),
-    )
-    result1 = list(iter(dataset))
-    assert os.path.exists(dest)
-    result2 = list(iter(dataset))
-    assert os.path.exists(dest)
-    assert len(result1) == len(result2)
-    del dataset
-    dataset = wds.DataPipeline(
-        wds.SimpleShardList([shardname]),
-        wds.tarfile_to_samples(),
-        wds.LMDBCached(dest),
-    )
-    result3 = list(iter(dataset))
-    assert len(result1) == len(result3)
+def test_url_to_cache_name_non_string_input():
+    with pytest.raises(AssertionError):
+        url_to_cache_name(123)
 
 
 class TestStreamingOpen:
@@ -70,20 +71,24 @@ class TestStreamingOpen:
 
 
 class TestFileCache:
-    def setup_method(self, tmp_path):
-        self.file_cache = FileCache(cache_dir=str(tmp_path), validator=None)
+    @pytest.fixture(autouse=True)
+    def setup(self):
+        self.temp_dir = tempfile.TemporaryDirectory()
+        self.file_cache = FileCache(cache_dir=self.temp_dir.name, validator=None)
+        yield
+        self.temp_dir.cleanup()
 
-    def test_local_file(self, tmp_path):
+    def test_local_file(self):
         # Create a temporary file
-        file_path = tmp_path / "test.txt"
-        file_path.write_text("Hello, World!")
+        file_path = tempfile.mktemp(dir=self.temp_dir.name)
+        with open(file_path, "w") as f:
+            f.write("Hello, World!")
 
         # Test opening the local file
-        result = next(self.file_cache([{"url": str(file_path)}]))
-        print(result)
-        assert result["url"] == str(file_path)
+        result = next(self.file_cache([{"url": file_path}]))
+        assert result["url"] == file_path
         assert "local_path" in result
-        assert result["local_path"] == str(file_path)
+        assert result["local_path"] == file_path
         with result["stream"] as file:
             assert file.read().decode() == "Hello, World!"
 
@@ -94,6 +99,10 @@ class TestFileCache:
         assert result["url"] == url
         assert "local_path" in result
         assert os.path.exists(result["local_path"])
+        assert os.path.dirname(result["local_path"]) == self.temp_dir.name
+        assert os.path.basename(result["local_path"]) == os.path.basename(
+            urlparse(url).path
+        )
         with result["stream"] as file:
             assert (
                 file.read(1) == b"\x1f"

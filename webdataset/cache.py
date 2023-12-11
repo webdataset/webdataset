@@ -4,6 +4,7 @@ import random
 import re
 import sys
 import time
+import urllib.parse
 from typing import Callable, Iterable, Optional
 from urllib.parse import urlparse
 
@@ -12,11 +13,17 @@ import webdataset.gopen as gopen
 from . import filters, gopen
 from .handlers import reraise_exception
 from .tariterators import group_by_keys, tar_file_expander
+from .utils import obsolete
 
 default_cache_dir = os.environ.get("WDS_CACHE", "./_cache")
 default_cache_size = float(os.environ.get("WDS_CACHE_SIZE", "1e18"))
 
 verbose_cache = int(os.environ.get("WDS_VERBOSE_CACHE", "0"))
+
+
+def islocal(url):
+    parsed = urlparse(url)
+    return parsed.scheme in ["", "file"]
 
 
 def get_filetype(fname: str):
@@ -32,6 +39,46 @@ def check_tar_format(fname: str):
     assert os.path.exists(fname), fname
     ftype = get_filetype(fname)
     return "tar archive" in ftype or "gzip compressed" in ftype
+
+
+@obsolete
+def pipe_cleaner(spec):
+    """Guess the actual URL from a "pipe:" specification."""
+    if spec.startswith("pipe:"):
+        spec = spec[5:]
+        words = spec.split(" ")
+        for word in words:
+            if re.match(r"^(https?|hdfs|gs|ais|s3):", word):
+                return word
+    return spec
+
+
+def url_to_cache_name(url, ndir=0):
+    """Guess the cache name from a URL."""
+    assert isinstance(url, str)
+    parsed = urlparse(url)
+    if parsed.scheme in [
+        None,
+        "",
+        "file",
+        "http",
+        "https",
+        "ftp",
+        "ftps",
+        "gs",
+        "s3",
+        "ais",
+    ]:
+        path = parsed.path
+        path = path.lstrip("/")  # always relative
+        list_of_directories = path.split("/")
+        return "/".join(list_of_directories[-1 - ndir :])
+    else:
+        # don't try to guess, just urlencode the whole thing with "/" and ":"
+        # quoted using the urllib.quote function
+        quoted = urllib.parse.quote(url, safe="_+{}*,-")
+        quoted = quoted[-128:]
+        return quoted
 
 
 class LRUCleanup:
@@ -99,43 +146,6 @@ def download(url, dest, chunk_size=1024**2, verbose=False):
     os.rename(temp, dest)
 
 
-def pipe_cleaner(spec):
-    """Guess the actual URL from a "pipe:" specification."""
-    if spec.startswith("pipe:"):
-        spec = spec[5:]
-        words = spec.split(" ")
-        for word in words:
-            if re.match(r"^(https?|hdfs|gs|ais|s3):", word):
-                return word
-    return spec
-
-
-def url_to_cache_name(url, ndir=0):
-    """Guess the cache name from a URL."""
-    parsed = urlparse(url)
-    if parsed.scheme in [
-        None,
-        "",
-        "file",
-        "http",
-        "https",
-        "ftp",
-        "ftps",
-        "gs",
-        "s3",
-        "ais",
-    ]:
-        path = parsed.path
-        list_of_directories = path.split("/")
-        return "/".join(list_of_directories[-1 - ndir])
-    else:
-        # don't try to guess, just urlencode the whole thing with "/" and ":"
-        # quoted using the urllib.quote function
-        quoted = urllib.parse.quote(url, safe="_+{}*,-")
-        quoted = quoted[-128:]
-        return quoted
-
-
 class StreamingOpen:
     def __init__(self, verbose=False, handler=reraise_exception):
         self.verbose = verbose
@@ -159,15 +169,13 @@ class StreamingOpen:
                 else:
                     break
 
-def islocal(url):
-    parsed = urlparse(url)
-    return parsed.scheme in ["", "file"]
 
 class FileCache:
     def __init__(
         self,
-        url_to_name: Callable[[str], str] = url_to_cache_name,
         cache_dir: Optional[str] = None,
+        *,
+        url_to_name: Callable[[str], str] = url_to_cache_name,
         verbose: bool = False,
         validator: Callable[[str], bool] = check_tar_format,
         handler: Callable[[Exception], bool] = reraise_exception,
@@ -193,9 +201,11 @@ class FileCache:
             self.cleaner = None
 
     def get_file(self, url: str) -> str:
+        assert isinstance(url, str)
         if islocal(url):
             return urlparse(url).path
-        cache_name = self.url_to_name(url)
+        cache_name = self.url_to_name(str(url))
+        assert "/" not in cache_name, f"bad cache name {cache_name} for {url}"
         destdir = os.path.join(self.cache_dir, os.path.dirname(cache_name))
         os.makedirs(destdir, exist_ok=True)
         dest = os.path.join(self.cache_dir, cache_name)
@@ -233,6 +243,7 @@ class FileCache:
                         break
 
 
+@obsolete
 def cached_url_opener(
     data,
     handler=reraise_exception,
@@ -244,7 +255,6 @@ def cached_url_opener(
     always=False,
 ):
     """Given a stream of url names (packaged in `dict(url=url)`), yield opened streams."""
-    raise Exception("obsolete")
     verbose = verbose or verbose_cache
     for sample in data:
         assert isinstance(sample, dict), sample
@@ -293,6 +303,7 @@ def cached_url_opener(
                 break
 
 
+@obsolete
 def cached_tarfile_samples(
     src,
     handler=reraise_exception,
@@ -304,7 +315,6 @@ def cached_tarfile_samples(
     select_files=None,
     rename_files=None,
 ):
-    raise Exception("obsolete")
     verbose = verbose or int(os.environ.get("GOPEN_VERBOSE", 0))
     streams = cached_url_opener(
         src,

@@ -87,6 +87,11 @@ def test(c):
     # venv(c)
     c.run(f"{ACTIVATE}{PYTHON3} -m pytest -x tests")
 
+@task 
+def debugtest(c):
+    "Run the tests with --pdb."
+    c.run(f"{ACTIVATE}{PYTHON3} -m pytest -x --pdb tests")
+
 @task
 def tests(c):
     "Run the tests."

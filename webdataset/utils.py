@@ -6,11 +6,13 @@
 
 """Miscellaneous utility functions."""
 
+import functools
 import importlib
 import itertools as itt
 import os
 import re
 import sys
+import warnings
 from typing import Any, Callable, Iterator, Union
 
 
@@ -127,3 +129,24 @@ def pytorch_worker_seed(group=None):
     """Compute a distinct, deterministic RNG seed for each worker and node."""
     rank, world_size, worker, num_workers = pytorch_worker_info(group=group)
     return rank * 1000 + worker
+
+
+def deprecated(func):
+    @functools.wraps(func)
+    def new_func(*args, **kwargs):
+        warnings.warn(
+            f"Call to deprecated function {func.__name__}.",
+            category=DeprecationWarning,
+            stacklevel=2,
+        )
+        return func(*args, **kwargs)
+
+    return new_func
+
+
+def obsolete(func):
+    @functools.wraps(func)
+    def new_func(*args, **kwargs):
+        raise Exception("obsolete function called: " + func.__name__)
+
+    return new_func
