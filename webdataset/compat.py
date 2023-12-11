@@ -151,7 +151,7 @@ class WebDataset(DataPipeline, FluidInterface):
         if cache_dir is None or cache_size == 0:
             self.append(cache.StreamingOpen(handler=handler))
         else:
-            self.append(cache.FileCache(cache_dir, cache_size, handler=handler))
+            self.append(cache.FileCache(cache_dir=cache_dir, cache_size=cache_size, handler=handler))
         # self.append(filters.info(name="opened"))
         self.append(
             pipelinefilter(tar_file_expander)(

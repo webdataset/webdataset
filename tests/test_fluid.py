@@ -12,6 +12,7 @@ import webdataset as wds
 
 local_data = "testdata/imagenet-000000.tgz"
 compressed = "testdata/compressed.tar"
+remote_sample = "http://storage.googleapis.com/webdataset/testdata/sample.tgz"
 remote_loc = "http://storage.googleapis.com/webdataset/openimages/"
 remote_shards = "openimages-train-0000{00..99}.tar"
 remote_shard = "openimages-train-000321.tar"
@@ -539,6 +540,22 @@ def test_decoder():
     for sample in ds:
         assert isinstance(sample[0], int)
         break
+
+
+def test_cache_dir(tmp_path):
+    """Test a custom decoder function."""
+
+    ds = wds.WebDataset(remote_sample, cache_dir=tmp_path)
+    
+    count = 0
+    for epoch in range(3):
+        for sample in ds:
+            assert set(sample.keys()) == set("__key__ __url__ cls __local_path__ png".split())
+            assert sample["__key__"] == "10"
+            assert sample["cls"] == b'0'
+            assert sample["png"].startswith(b"\x89PNG\r\n\x1a\n\x00\x00\x00")
+            assert sample["__local_path__"].startswith(str(tmp_path))
+            break
 
 
 def test_shard_syntax():
