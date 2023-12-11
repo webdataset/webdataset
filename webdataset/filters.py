@@ -194,7 +194,7 @@ def pick(buf, rng):
     return sample
 
 
-def _shuffle(data, bufsize=1000, initial=100, rng=None, handler=None):
+def _shuffle(data, bufsize=1000, initial=100, rng=None, seed=None, handler=None):
     """Shuffle the data in the stream.
 
     This uses a buffer of size `bufsize`. Shuffling at
@@ -207,7 +207,10 @@ def _shuffle(data, bufsize=1000, initial=100, rng=None, handler=None):
     rng: either random module or random.Random instance
 
     """
-    if rng is None:
+    if seed is not None:
+        assert rng is None
+        rng = random.Random(rng)
+    elif rng is None:
         rng = random.Random(int((os.getpid() + time.time()) * 1e9))
     initial = min(initial, bufsize)
     buf = []

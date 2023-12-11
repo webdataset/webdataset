@@ -281,6 +281,7 @@ class ResampledShards(IterableDataset):
         self,
         urls,
         nshards=sys.maxsize,
+        seed=0,
         worker_seed=None,
         deterministic=False,
     ):
@@ -297,17 +298,19 @@ class ResampledShards(IterableDataset):
             utils.pytorch_worker_seed if worker_seed is None else worker_seed
         )
         self.deterministic = deterministic
+        self.seed = seed
         self.epoch = -1
 
     def __iter__(self):
         """Return an iterator over the shards."""
         self.epoch += 1
         if self.deterministic:
-            seed = utils.make_seed(self.worker_seed(), self.epoch)
+            seed = utils.make_seed(self.worker_seed(), self.epoch, self.seed)
         else:
             seed = utils.make_seed(
                 self.worker_seed(),
                 self.epoch,
+                self.seed,
                 os.getpid(),
                 time.time_ns(),
                 os.urandom(4),

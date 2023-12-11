@@ -13,35 +13,57 @@ default_cache_dir = os.environ.get("WDS_CACHE", "./_cache")
 default_cache_size = float(os.environ.get("WDS_CACHE_SIZE", "1e18"))
 
 
-def lru_cleanup(cache_dir, cache_size, keyfn=os.path.getctime, verbose=False):
-    """Performs cleanup of the file cache in cache_dir using an LRU strategy,
-    keeping the total size of all remaining files below cache_size."""
-    if not os.path.exists(cache_dir):
-        return
-    try:
-        total_size = 0
-        for dirpath, dirnames, filenames in os.walk(cache_dir):
-            for filename in filenames:
-                total_size += os.path.getsize(os.path.join(dirpath, filename))
-        if total_size <= cache_size:
-            return
-        # sort files by last access time
-        files = []
-        for dirpath, dirnames, filenames in os.walk(cache_dir):
-            for filename in filenames:
-                files.append(os.path.join(dirpath, filename))
-        files.sort(key=keyfn, reverse=True)
-        # delete files until we're under the cache size
-        while len(files) > 0 and total_size > cache_size:
-            fname = files.pop()
-            total_size -= os.path.getsize(fname)
-            if verbose:
-                print("# deleting %s" % fname, file=sys.stderr)
-            os.remove(fname)
-    except (OSError, FileNotFoundError):
-        # files may be deleted by other processes between walking the directory and getting their size/deleting them
-        pass
+import os
+import sys
 
+
+import os
+import time
+import fcntl
+
+import os
+import sys
+
+class LRUCleanup:
+    def __init__(self, cache_dir, cache_size=int(1e12), keyfn=os.path.getctime, verbose=False, interval=30):
+        self.cache_dir = cache_dir
+        self.cache_size = cache_size
+        self.keyfn = keyfn
+        self.verbose = verbose
+        self.interval = interval
+        self.last_run = 0
+
+    def cleanup(self):
+        """Performs cleanup of the file cache in cache_dir using an LRU strategy,
+        keeping the total size of all remaining files below cache_size."""
+        if not os.path.exists(self.cache_dir):
+            return
+        if self.interval is not None and time.time() - self.last_run < self.interval:
+            return
+        try:
+            total_size = 0
+            for dirpath, dirnames, filenames in os.walk(self.cache_dir):
+                for filename in filenames:
+                    total_size += os.path.getsize(os.path.join(dirpath, filename))
+            if total_size <= self.cache_size:
+                return
+            # sort files by last access time
+            files = []
+            for dirpath, dirnames, filenames in os.walk(self.cache_dir):
+                for filename in filenames:
+                    files.append(os.path.join(dirpath, filename))
+            files.sort(key=self.keyfn, reverse=True)
+            # delete files until we're under the cache size
+            while len(files) > 0 and total_size > self.cache_size:
+                fname = files.pop()
+                total_size -= os.path.getsize(fname)
+                if self.verbose:
+                    print("# deleting %s" % fname, file=sys.stderr)
+                os.remove(fname)
+        except (OSError, FileNotFoundError):
+            # files may be deleted by other processes between walking the directory and getting their size/deleting them
+            pass
+        self.last_run = time.time()
 
 def download(url, dest, chunk_size=1024**2, verbose=False):
     """Download a file from `url` to `dest`."""
@@ -66,30 +88,42 @@ def pipe_cleaner(spec):
                 return word
     return spec
 
+def url_to_cache_name(url, ndir=0):
+    """Guess the cache name from a URL."""
+    parsed = urlparse(url)
+    if parsed.scheme in [None, "", "file", "http", "https", "ftp", "ftps", "gs", "s3", "ais"]:
+        path = parsed.path
+        list_of_directories = path.split("/")
+        return "/".join(list_of_directories[-1-ndir])
+    else:
+        # don't try to guess, just urlencode the whole thing with "/" and ":"
+        # quoted using the urllib.quote function
+        quoted = urllib.parse.quote(url, safe="_+{}*,-")
+        quoted = quoted[-128:]
+        return quoted
+
 
 def get_file_cached(
     spec,
+    url_to_name=url_to_cache_name,
     cache_size=-1,
     cache_dir=None,
-    url_to_name=pipe_cleaner,
+    cache_cleanup_interval=60,
     verbose=False,
 ):
     if cache_size == -1:
         cache_size = default_cache_size
     if cache_dir is None:
         cache_dir = default_cache_dir
-    url = url_to_name(spec)
-    parsed = urlparse(url)
-    dirname, filename = os.path.split(parsed.path)
-    dirname = dirname.lstrip("/")
-    dirname = re.sub(r"[:/|;]", "_", dirname)
-    destdir = os.path.join(cache_dir, dirname)
+    cache_name = url_to_name(spec)
+    destdir = os.path.join(cache_dir, os.path.dirname(cache_name))
     os.makedirs(destdir, exist_ok=True)
-    dest = os.path.join(cache_dir, dirname, filename)
+    dest = os.path.join(cache_dir, cache_name)
     if not os.path.exists(dest):
         if verbose:
-            print("# downloading %s to %s" % (url, dest), file=sys.stderr)
-        lru_cleanup(cache_dir, cache_size, verbose=verbose)
+            print("# downloading %s to %s" % (spec, dest), file=sys.stderr)
+        cleaner = LRUCleanup(cache_dir, cache_size, verbose=verbose, interval=cache_cleanup_interval)
+        cleaner.cleanup()
         download(spec, dest, verbose=verbose)
     return dest
 

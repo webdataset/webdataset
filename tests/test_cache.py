@@ -6,6 +6,9 @@ import numpy as np
 import webdataset as wds
 from webdataset import autodecode
 
+import pytest
+import time
+from webdataset.cache import LRUCleanup
 
 def test_mcached():
     shardname = "testdata/imagenet-000000.tgz"
@@ -70,21 +73,30 @@ def test_cached(tmp_path):
 
 
 def test_lru_cleanup(tmp_path):
+    lru_cleanup = LRUCleanup(tmp_path, interval=None)  # create an instance of the LRUCleanup class
+
     for i in range(20):
         fname = os.path.join(tmp_path, "%06d" % i)
         with open(fname, "wb") as f:
             f.write(b"x" * 4096)
         print(fname, os.path.getctime(fname))
         time.sleep(0.1)
+
     assert "000000" in os.listdir(tmp_path)
     assert "000019" in os.listdir(tmp_path)
+
     total_before = sum(
         os.path.getsize(os.path.join(tmp_path, fname)) for fname in os.listdir(tmp_path)
     )
-    wds.lru_cleanup(tmp_path, total_before / 2, verbose=True)
+
+    lru_cleanup.cache_size = total_before * 0.5  # set the cache size to 50% of the total size
+
+    lru_cleanup.cleanup()  # use the cleanup method of the LRUCleanup class
+
     total_after = sum(
         os.path.getsize(os.path.join(tmp_path, fname)) for fname in os.listdir(tmp_path)
     )
+
     assert total_after <= total_before * 0.5
     assert "000000" not in os.listdir(tmp_path)
     assert "000019" in os.listdir(tmp_path)

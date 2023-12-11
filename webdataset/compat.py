@@ -1,4 +1,5 @@
 import os
+import random
 
 import yaml
 
@@ -109,8 +110,10 @@ class WebDataset(DataPipeline, FluidInterface):
         select_files=None,
         rename_files=None,
         verbose=False,
+        seed = None
     ):
         super().__init__()
+        self.seed = seed or os.environ.get("WDS_SEED", random.randint(0, 1000000))
         cache_size = int(os.environ.get("WDS_CACHE_SIZE", cache_size))
         cache_dir = os.environ.get("WDS_CACHE", cache_dir)
         if cache_dir is not None:
@@ -131,7 +134,7 @@ class WebDataset(DataPipeline, FluidInterface):
             assert "datasets" in urls
             self.append(shardlists.MultiShardSample(urls))
         elif resampled:
-            self.append(shardlists.ResampledShards(urls))
+            self.append(shardlists.ResampledShards(urls, seed=self.seed))
         else:
             self.append(shardlists.SimpleShardList(urls))
             self.append(nodesplitter)
@@ -140,9 +143,9 @@ class WebDataset(DataPipeline, FluidInterface):
                 shardshuffle = 100
             if shardshuffle is not None:
                 if detshuffle:
-                    self.append(filters.detshuffle(shardshuffle))
+                    self.append(filters.detshuffle(shardshuffle, seed=self.seed))
                 else:
-                    self.append(filters.shuffle(shardshuffle))
+                    self.append(filters.shuffle(shardshuffle, seed=self.seed))
         if cache_dir is None or cache_size == 0:
             self.append(
                 tariterators.tarfile_to_samples(
