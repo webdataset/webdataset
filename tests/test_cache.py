@@ -2,7 +2,7 @@ import os
 import time
 
 import webdataset as wds
-from webdataset.cache import LRUCleanup, StreamingOpen
+from webdataset.cache import FileCache, LRUCleanup, StreamingOpen
 
 
 def test_mcached():
@@ -58,6 +58,28 @@ class TestStreamingOpen:
         # Test opening a remote file
         url = "https://storage.googleapis.com/webdataset/testdata/imagenet-000000.tgz"
         for file in self.stream_open([url]):
+            assert (
+                file.read(1) == b"\x1f"
+            )  # Check that the file starts with the expected gzip magic number
+
+
+class TestFileCache:
+    def setup_method(self):
+        self.file_cache = FileCache()
+
+    def test_local_file(self, tmp_path):
+        # Create a temporary file
+        file_path = tmp_path / "test.txt"
+        file_path.write_text("Hello, World!")
+
+        # Test opening the local file
+        with self.file_cache.open_file(str(file_path)) as file:
+            assert file.read().decode() == "Hello, World!"
+
+    def test_remote_file(self):
+        # Test opening a remote file
+        url = "https://storage.googleapis.com/webdataset/testdata/imagenet-000000.tgz"
+        with self.file_cache.open_file(url) as file:
             assert (
                 file.read(1) == b"\x1f"
             )  # Check that the file starts with the expected gzip magic number

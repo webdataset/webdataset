@@ -1,11 +1,11 @@
+import io
 import os
 import random
 import re
 import sys
 import time
+from typing import Callable, Iterable, Optional
 from urllib.parse import urlparse
-from typing import Iterable
-import io
 
 import webdataset.gopen as gopen
 
@@ -15,6 +15,21 @@ from .tariterators import group_by_keys, tar_file_expander
 
 default_cache_dir = os.environ.get("WDS_CACHE", "./_cache")
 default_cache_size = float(os.environ.get("WDS_CACHE_SIZE", "1e18"))
+
+verbose_cache = int(os.environ.get("WDS_VERBOSE_CACHE", "0"))
+
+
+def get_filetype(fname):
+    assert os.system("file . > /dev/null") == 0, "UNIX/Linux file command not available"
+    with os.popen("file '%s'" % fname) as f:
+        ftype = f.read()
+    return ftype
+
+
+def check_tar_format(fname):
+    """Check whether a file is a tar archive."""
+    ftype = get_filetype(fname)
+    return "tar archive" in ftype or "gzip compressed" in ftype
 
 
 class LRUCleanup:
@@ -120,8 +135,9 @@ def url_to_cache_name(url, ndir=0):
 
 
 class StreamingOpen:
-    def __init__(self, verbose=False):
+    def __init__(self, verbose=False, handler=reraise_exception):
         self.verbose = verbose
+        self.handler = handler
 
     def get_file(self, url):
         return url
@@ -135,29 +151,48 @@ class StreamingOpen:
 
     def __call__(self, urls):
         for url in urls:
-            yield self.open_file(url)
+            if isinstance(url, dict):
+                url = url["url"]
+            try:
+                stream = self.open_file(self.get_file(url))
+                yield dict(url=url, stream=stream)
+            except Exception as exn:
+                if self.handler(exn):
+                    continue
+                else:
+                    break
 
 
 class FileCache:
     def __init__(
         self,
-        url_to_name=url_to_cache_name,
-        cache_dir=None,
-        cache_size=-1,
-        verbose=False,
+        url_to_name: Callable[[str], str] = url_to_cache_name,
+        cache_dir: Optional[str] = None,
+        verbose: bool = False,
+        validator: Callable[[str], bool] = check_tar_format,
+        handler: Callable[[Exception], bool] = reraise_exception,
+        cache_size: int = -1,
+        cache_cleanup_interval: int = 30,
     ):
         self.url_to_name = url_to_name
+        self.validator = validator
+        self.handler = handler
         if cache_dir is None:
             self.cache_dir = default_cache_dir
         else:
             self.cache_dir = cache_dir
-        if cache_size == -1:
-            self.cache_size = default_cache_size
-        else:
-            self.cache_size = cache_size
         self.verbose = verbose
+        if cache_size > 0:
+            self.cleaner = LRUCleanup(
+                self.cache_dir,
+                self.cache_size,
+                verbose=self.verbose,
+                interval=cache_cleanup_interval,
+            )
+        else:
+            self.cleaner = None
 
-    def get_file(self, url):
+    def get_file(self, url: str) -> str:
         cache_name = self.url_to_name(url)
         destdir = os.path.join(self.cache_dir, os.path.dirname(cache_name))
         os.makedirs(destdir, exist_ok=True)
@@ -165,17 +200,22 @@ class FileCache:
         if not os.path.exists(dest):
             if self.verbose:
                 print("# downloading %s to %s" % (url, dest), file=sys.stderr)
-            cleaner = LRUCleanup(
-                self.cache_dir,
-                self.cache_size,
-                verbose=self.verbose,
-                interval=cache_cleanup_interval,
-            )
-            cleaner.cleanup()
+            if self.cleaner is not None:
+                self.cleaner.cleanup()
             download(url, dest, verbose=self.verbose)
+            if self.validator:
+                if not self.validator(dest):
+                    ftype = get_filetype(dest)
+                    with open(dest, "rb") as f:
+                        data = f.read(200)
+                    os.remove(dest)
+                    raise ValueError(
+                        "%s (%s) is not a tar archive, but a %s, contains %s"
+                        % (dest, url, ftype, repr(data))
+                    )
         return dest
 
-    def open_file(self, url):
+    def open_file(self, url: str) -> io.IOBase:
         """Open a file, downloading it if necessary.
 
         If the url refers to a local file, just open it and return the stream
@@ -183,37 +223,25 @@ class FileCache:
         """
         parsed = urlparse(url)
         if parsed.scheme in ["", "file"]:
+            self.last_path = parsed.path
             return open(parsed.path, "rb")
         else:
-            return open(self.get_file(url), "rb")
+            self.last_path = self.get_file(url)
+            return open(self.last_path, "rb")
 
     def __call__(self, urls: Iterable[str]) -> Iterable[io.IOBase]:
         for url in urls:
+            if isinstance(url, dict):
+                url = url["url"]
             for _ in range(10):
                 try:
-                    yield self.open_file(self.get_file(url), "rb")
-                    break
+                    stream = self.open_file(self.get_file(url), "rb")
+                    yield dict(url=url, stream=stream, local_path=self.last_path)
                 except Exception as e:
-                    last_exception = e
-                    time.sleep(1)
-            else:
-                raise last_exception
-
-
-def get_filetype(fname):
-    assert os.system("file . > /dev/null") == 0, "UNIX/Linux file command not available"
-    with os.popen("file '%s'" % fname) as f:
-        ftype = f.read()
-    return ftype
-
-
-def check_tar_format(fname):
-    """Check whether a file is a tar archive."""
-    ftype = get_filetype(fname)
-    return "tar archive" in ftype or "gzip compressed" in ftype
-
-
-verbose_cache = int(os.environ.get("WDS_VERBOSE_CACHE", "0"))
+                    if self.handler(e):
+                        continue
+                    else:
+                        break
 
 
 def cached_url_opener(
@@ -227,6 +255,7 @@ def cached_url_opener(
     always=False,
 ):
     """Given a stream of url names (packaged in `dict(url=url)`), yield opened streams."""
+    raise Exception("obsolete")
     verbose = verbose or verbose_cache
     for sample in data:
         assert isinstance(sample, dict), sample
@@ -286,6 +315,7 @@ def cached_tarfile_samples(
     select_files=None,
     rename_files=None,
 ):
+    raise Exception("obsolete")
     verbose = verbose or int(os.environ.get("GOPEN_VERBOSE", 0))
     streams = cached_url_opener(
         src,

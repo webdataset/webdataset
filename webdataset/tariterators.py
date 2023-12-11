@@ -171,6 +171,7 @@ def tar_file_expander(
     """
     for source in data:
         url = source["url"]
+        local_path = source.get("local_path")
         try:
             assert isinstance(source, dict)
             assert "stream" in source
@@ -184,6 +185,8 @@ def tar_file_expander(
                     isinstance(sample, dict) and "data" in sample and "fname" in sample
                 )
                 sample["__url__"] = url
+                if local_path is not None:
+                    sample["__local_path__"] = local_path
                 yield sample
         except Exception as exn:
             exn.args = exn.args + (source.get("stream"), source.get("url"))
@@ -241,6 +244,9 @@ def group_by_keys(
                 )
             if suffixes is None or suffix in suffixes:
                 current_sample[suffix] = value
+            local_path = filesample.get("__local_path__")
+            if local_path is not None:
+                current_sample["__local_path__"] = local_path
         except Exception as exn:
             exn.args = exn.args + (filesample.get("stream"), filesample.get("url"))
             if handler(exn):

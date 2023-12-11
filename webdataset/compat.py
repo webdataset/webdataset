@@ -3,10 +3,11 @@ import random
 
 import yaml
 
-from . import autodecode, cache, filters, shardlists, tariterators
-from .filters import reraise_exception
+from . import autodecode, cache, filters, shardlists
+from .filters import pipelinefilter, reraise_exception
 from .pipeline import DataPipeline
 from .pytorch import DataLoader, IterableDataset
+from .tariterators import group_by_keys, tar_file_expander
 
 
 class FluidInterface:
@@ -146,27 +147,19 @@ class WebDataset(DataPipeline, FluidInterface):
                     self.append(filters.detshuffle(shardshuffle, seed=self.seed))
                 else:
                     self.append(filters.shuffle(shardshuffle, seed=self.seed))
+        # self.append(filters.info(name="shard"))
         if cache_dir is None or cache_size == 0:
-            self.append(
-                tariterators.tarfile_to_samples(
-                    handler=handler,
-                    select_files=select_files,
-                    rename_files=rename_files,
-                )
-            )
+            self.append(cache.StreamingOpen(handler=handler))
         else:
-            assert cache_size == -1 or cache_size > 0
-            self.append(
-                cache.cached_tarfile_to_samples(
-                    handler=handler,
-                    verbose=verbose,
-                    url_to_name=url_to_name,
-                    cache_size=cache_size,
-                    cache_dir=cache_dir,
-                    select_files=select_files,
-                    rename_files=rename_files,
-                )
+            self.append(cache.FileCache(cache_dir, cache_size, handler=handler))
+        # self.append(filters.info(name="opened"))
+        self.append(
+            pipelinefilter(tar_file_expander)(
+                handler=handler, select_files=select_files, rename_files=rename_files
             )
+        )
+        # self.append(filters.info(name="expanded"))
+        self.append(pipelinefilter(group_by_keys)(handler=handler))
 
     def __enter__(self):
         return self
