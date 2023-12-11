@@ -1,5 +1,6 @@
 import os
 import time
+from pathlib import Path
 
 import webdataset as wds
 from webdataset.cache import FileCache, LRUCleanup, StreamingOpen
@@ -51,21 +52,26 @@ class TestStreamingOpen:
         file_path.write_text("Hello, World!")
 
         # Test opening the local file
-        for file in self.stream_open([str(file_path)]):
-            assert file.read().decode() == "Hello, World!"
+        for result in self.stream_open([str(file_path)]):
+            assert result["url"] == str(file_path)
+            assert "local_path" in result
+            assert result["local_path"] == str(file_path)
+            assert result["stream"].read().decode() == "Hello, World!"
 
     def test_remote_file(self):
         # Test opening a remote file
         url = "https://storage.googleapis.com/webdataset/testdata/imagenet-000000.tgz"
-        for file in self.stream_open([url]):
+        for result in self.stream_open([url]):
+            assert result["url"] == url
+            assert "local_path" not in result
             assert (
-                file.read(1) == b"\x1f"
+                result["stream"].read(1) == b"\x1f"
             )  # Check that the file starts with the expected gzip magic number
 
 
 class TestFileCache:
-    def setup_method(self):
-        self.file_cache = FileCache()
+    def setup_method(self, tmp_path):
+        self.file_cache = FileCache(cache_dir=str(tmp_path), validator=None)
 
     def test_local_file(self, tmp_path):
         # Create a temporary file
@@ -73,13 +79,22 @@ class TestFileCache:
         file_path.write_text("Hello, World!")
 
         # Test opening the local file
-        with self.file_cache.open_file(str(file_path)) as file:
+        result = next(self.file_cache([{"url": str(file_path)}]))
+        print(result)
+        assert result["url"] == str(file_path)
+        assert "local_path" in result
+        assert result["local_path"] == str(file_path)
+        with result["stream"] as file:
             assert file.read().decode() == "Hello, World!"
 
     def test_remote_file(self):
         # Test opening a remote file
         url = "https://storage.googleapis.com/webdataset/testdata/imagenet-000000.tgz"
-        with self.file_cache.open_file(url) as file:
+        result = next(self.file_cache([{"url": url}]))
+        assert result["url"] == url
+        assert "local_path" in result
+        assert os.path.exists(result["local_path"])
+        with result["stream"] as file:
             assert (
                 file.read(1) == b"\x1f"
             )  # Check that the file starts with the expected gzip magic number

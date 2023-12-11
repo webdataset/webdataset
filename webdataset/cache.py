@@ -19,15 +19,17 @@ default_cache_size = float(os.environ.get("WDS_CACHE_SIZE", "1e18"))
 verbose_cache = int(os.environ.get("WDS_VERBOSE_CACHE", "0"))
 
 
-def get_filetype(fname):
+def get_filetype(fname: str):
+    assert os.path.exists(fname), fname
     assert os.system("file . > /dev/null") == 0, "UNIX/Linux file command not available"
     with os.popen("file '%s'" % fname) as f:
         ftype = f.read()
     return ftype
 
 
-def check_tar_format(fname):
+def check_tar_format(fname: str):
     """Check whether a file is a tar archive."""
+    assert os.path.exists(fname), fname
     ftype = get_filetype(fname)
     return "tar archive" in ftype or "gzip compressed" in ftype
 
@@ -139,29 +141,27 @@ class StreamingOpen:
         self.verbose = verbose
         self.handler = handler
 
-    def get_file(self, url):
-        return url
-
-    def open_file(self, url):
-        parsed = urlparse(url)
-        if parsed.scheme in ["", "file"]:
-            return open(parsed.path, "rb")
-        else:
-            return gopen.gopen(url)
-
     def __call__(self, urls):
         for url in urls:
             if isinstance(url, dict):
                 url = url["url"]
+            parsed = urlparse(url)
             try:
-                stream = self.open_file(self.get_file(url))
-                yield dict(url=url, stream=stream)
+                if parsed.scheme in ["", "file"]:
+                    stream = open(parsed.path, "rb")
+                    yield dict(url=url, stream=stream, local_path=parsed.path)
+                else:
+                    stream = gopen.gopen(url)
+                    yield dict(url=url, stream=stream)
             except Exception as exn:
                 if self.handler(exn):
                     continue
                 else:
                     break
 
+def islocal(url):
+    parsed = urlparse(url)
+    return parsed.scheme in ["", "file"]
 
 class FileCache:
     def __init__(
@@ -193,6 +193,8 @@ class FileCache:
             self.cleaner = None
 
     def get_file(self, url: str) -> str:
+        if islocal(url):
+            return urlparse(url).path
         cache_name = self.url_to_name(url)
         destdir = os.path.join(self.cache_dir, os.path.dirname(cache_name))
         os.makedirs(destdir, exist_ok=True)
@@ -215,28 +217,15 @@ class FileCache:
                     )
         return dest
 
-    def open_file(self, url: str) -> io.IOBase:
-        """Open a file, downloading it if necessary.
-
-        If the url refers to a local file, just open it and return the stream
-        otherwise, use get_file to download it to the cache and return the stream.
-        """
-        parsed = urlparse(url)
-        if parsed.scheme in ["", "file"]:
-            self.last_path = parsed.path
-            return open(parsed.path, "rb")
-        else:
-            self.last_path = self.get_file(url)
-            return open(self.last_path, "rb")
-
     def __call__(self, urls: Iterable[str]) -> Iterable[io.IOBase]:
         for url in urls:
             if isinstance(url, dict):
                 url = url["url"]
             for _ in range(10):
                 try:
-                    stream = self.open_file(self.get_file(url), "rb")
-                    yield dict(url=url, stream=stream, local_path=self.last_path)
+                    dest = self.get_file(url)
+                    stream = open(dest, "rb")
+                    yield dict(url=url, stream=stream, local_path=dest)
                 except Exception as e:
                     if self.handler(e):
                         continue
