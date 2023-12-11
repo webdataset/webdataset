@@ -4,34 +4,37 @@ import re
 import sys
 import time
 from urllib.parse import urlparse
+from typing import Iterable
+import io
+
+import webdataset.gopen as gopen
 
 from . import filters, gopen
 from .handlers import reraise_exception
-from .tariterators import group_by_keys, tar_file_expander, tarfile_to_samples
+from .tariterators import group_by_keys, tar_file_expander
 
 default_cache_dir = os.environ.get("WDS_CACHE", "./_cache")
 default_cache_size = float(os.environ.get("WDS_CACHE_SIZE", "1e18"))
 
 
-import os
-import sys
-
-
-import os
-import time
-import fcntl
-
-import os
-import sys
-
 class LRUCleanup:
-    def __init__(self, cache_dir, cache_size=int(1e12), keyfn=os.path.getctime, verbose=False, interval=30):
+    def __init__(
+        self,
+        cache_dir=None,
+        cache_size=int(1e12),
+        keyfn=os.path.getctime,
+        verbose=False,
+        interval=30,
+    ):
         self.cache_dir = cache_dir
         self.cache_size = cache_size
         self.keyfn = keyfn
         self.verbose = verbose
         self.interval = interval
         self.last_run = 0
+
+    def set_cache_dir(self, cache_dir):
+        self.cache_dir = cache_dir
 
     def cleanup(self):
         """Performs cleanup of the file cache in cache_dir using an LRU strategy,
@@ -65,6 +68,7 @@ class LRUCleanup:
             pass
         self.last_run = time.time()
 
+
 def download(url, dest, chunk_size=1024**2, verbose=False):
     """Download a file from `url` to `dest`."""
     temp = dest + f".temp{os.getpid()}"
@@ -88,13 +92,25 @@ def pipe_cleaner(spec):
                 return word
     return spec
 
+
 def url_to_cache_name(url, ndir=0):
     """Guess the cache name from a URL."""
     parsed = urlparse(url)
-    if parsed.scheme in [None, "", "file", "http", "https", "ftp", "ftps", "gs", "s3", "ais"]:
+    if parsed.scheme in [
+        None,
+        "",
+        "file",
+        "http",
+        "https",
+        "ftp",
+        "ftps",
+        "gs",
+        "s3",
+        "ais",
+    ]:
         path = parsed.path
         list_of_directories = path.split("/")
-        return "/".join(list_of_directories[-1-ndir])
+        return "/".join(list_of_directories[-1 - ndir])
     else:
         # don't try to guess, just urlencode the whole thing with "/" and ":"
         # quoted using the urllib.quote function
@@ -103,29 +119,85 @@ def url_to_cache_name(url, ndir=0):
         return quoted
 
 
-def get_file_cached(
-    spec,
-    url_to_name=url_to_cache_name,
-    cache_size=-1,
-    cache_dir=None,
-    cache_cleanup_interval=60,
-    verbose=False,
-):
-    if cache_size == -1:
-        cache_size = default_cache_size
-    if cache_dir is None:
-        cache_dir = default_cache_dir
-    cache_name = url_to_name(spec)
-    destdir = os.path.join(cache_dir, os.path.dirname(cache_name))
-    os.makedirs(destdir, exist_ok=True)
-    dest = os.path.join(cache_dir, cache_name)
-    if not os.path.exists(dest):
-        if verbose:
-            print("# downloading %s to %s" % (spec, dest), file=sys.stderr)
-        cleaner = LRUCleanup(cache_dir, cache_size, verbose=verbose, interval=cache_cleanup_interval)
-        cleaner.cleanup()
-        download(spec, dest, verbose=verbose)
-    return dest
+class StreamingOpen:
+    def __init__(self, verbose=False):
+        self.verbose = verbose
+
+    def get_file(self, url):
+        return url
+
+    def open_file(self, url):
+        parsed = urlparse(url)
+        if parsed.scheme in ["", "file"]:
+            return open(parsed.path, "rb")
+        else:
+            return gopen.gopen(url)
+
+    def __call__(self, urls):
+        for url in urls:
+            yield self.open_file(url)
+
+
+class FileCache:
+    def __init__(
+        self,
+        url_to_name=url_to_cache_name,
+        cache_dir=None,
+        cache_size=-1,
+        verbose=False,
+    ):
+        self.url_to_name = url_to_name
+        if cache_dir is None:
+            self.cache_dir = default_cache_dir
+        else:
+            self.cache_dir = cache_dir
+        if cache_size == -1:
+            self.cache_size = default_cache_size
+        else:
+            self.cache_size = cache_size
+        self.verbose = verbose
+
+    def get_file(self, url):
+        cache_name = self.url_to_name(url)
+        destdir = os.path.join(self.cache_dir, os.path.dirname(cache_name))
+        os.makedirs(destdir, exist_ok=True)
+        dest = os.path.join(self.cache_dir, cache_name)
+        if not os.path.exists(dest):
+            if self.verbose:
+                print("# downloading %s to %s" % (url, dest), file=sys.stderr)
+            cleaner = LRUCleanup(
+                self.cache_dir,
+                self.cache_size,
+                verbose=self.verbose,
+                interval=cache_cleanup_interval,
+            )
+            cleaner.cleanup()
+            download(url, dest, verbose=self.verbose)
+        return dest
+
+    def open_file(self, url):
+        """Open a file, downloading it if necessary.
+
+        If the url refers to a local file, just open it and return the stream
+        otherwise, use get_file to download it to the cache and return the stream.
+        """
+        parsed = urlparse(url)
+        if parsed.scheme in ["", "file"]:
+            return open(parsed.path, "rb")
+        else:
+            return open(self.get_file(url), "rb")
+
+    def __call__(self, urls: Iterable[str]) -> Iterable[io.IOBase]:
+        for url in urls:
+            for _ in range(10):
+                try:
+                    yield self.open_file(self.get_file(url), "rb")
+                    break
+                except Exception as e:
+                    last_exception = e
+                    time.sleep(1)
+            else:
+                raise last_exception
 
 
 def get_filetype(fname):
@@ -232,26 +304,3 @@ def cached_tarfile_samples(
 
 
 cached_tarfile_to_samples = filters.pipelinefilter(cached_tarfile_samples)
-
-
-def maybe_cached_tarfile_to_samples(
-    src,
-    handler=reraise_exception,
-    cache_size=-1,
-    cache_dir=None,
-    verbose=False,
-    url_to_name=pipe_cleaner,
-    always=False,
-):
-    """Either read from a tarfile or from a cache of tarfiles."""
-    if cache_dir is None or cache_size == 1:
-        return tarfile_to_samples(handler=handler)
-    else:
-        return cached_tarfile_to_samples(
-            handler=handler,
-            cache_size=cache_size,
-            cache_dir=cache_dir,
-            verbose=verbose,
-            url_to_name=url_to_name,
-            always=always,
-        )

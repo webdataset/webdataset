@@ -110,7 +110,7 @@ class WebDataset(DataPipeline, FluidInterface):
         select_files=None,
         rename_files=None,
         verbose=False,
-        seed = None
+        seed=None,
     ):
         super().__init__()
         self.seed = seed or os.environ.get("WDS_SEED", random.randint(0, 1000000))

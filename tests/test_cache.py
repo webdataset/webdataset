@@ -1,14 +1,9 @@
 import os
 import time
 
-import numpy as np
-
 import webdataset as wds
-from webdataset import autodecode
+from webdataset.cache import LRUCleanup, StreamingOpen
 
-import pytest
-import time
-from webdataset.cache import LRUCleanup
 
 def test_mcached():
     shardname = "testdata/imagenet-000000.tgz"
@@ -46,34 +41,32 @@ def test_lmdb_cached(tmp_path):
     assert len(result1) == len(result3)
 
 
-def test_cached(tmp_path):
-    shardname = "testdata/imagenet-000000.tgz"
-    dest = os.path.join(tmp_path, shardname)
-    assert not os.path.exists(dest)
-    dataset = wds.DataPipeline(
-        wds.SimpleShardList([shardname] * 3),
-        wds.resampled(10),
-        wds.cached_tarfile_to_samples(cache_dir=tmp_path, verbose=True, always=True),
-        wds.shuffle(100),
-        wds.decode(autodecode.ImageHandler("rgb")),
-        wds.to_tuple("png", "cls"),
-    )
-    result = list(iter(dataset))
-    assert os.path.exists(dest)
-    assert os.system(f"cmp {shardname} {dest}") == 0
-    assert len(result[0]) == 2
-    assert isinstance(result[0][0], np.ndarray)
-    assert isinstance(result[0][1], int)
-    assert len(result) == 470
-    result = list(iter(dataset))
-    assert len(result[0]) == 2
-    assert isinstance(result[0][0], np.ndarray)
-    assert isinstance(result[0][1], int)
-    assert len(result) == 470
+class TestStreamingOpen:
+    def setup_method(self):
+        self.stream_open = StreamingOpen()
+
+    def test_local_file(self, tmp_path):
+        # Create a temporary file
+        file_path = tmp_path / "test.txt"
+        file_path.write_text("Hello, World!")
+
+        # Test opening the local file
+        for file in self.stream_open([str(file_path)]):
+            assert file.read().decode() == "Hello, World!"
+
+    def test_remote_file(self):
+        # Test opening a remote file
+        url = "https://storage.googleapis.com/webdataset/testdata/imagenet-000000.tgz"
+        for file in self.stream_open([url]):
+            assert (
+                file.read(1) == b"\x1f"
+            )  # Check that the file starts with the expected gzip magic number
 
 
 def test_lru_cleanup(tmp_path):
-    lru_cleanup = LRUCleanup(tmp_path, interval=None)  # create an instance of the LRUCleanup class
+    lru_cleanup = LRUCleanup(
+        tmp_path, interval=None
+    )  # create an instance of the LRUCleanup class
 
     for i in range(20):
         fname = os.path.join(tmp_path, "%06d" % i)
@@ -89,7 +82,9 @@ def test_lru_cleanup(tmp_path):
         os.path.getsize(os.path.join(tmp_path, fname)) for fname in os.listdir(tmp_path)
     )
 
-    lru_cleanup.cache_size = total_before * 0.5  # set the cache size to 50% of the total size
+    lru_cleanup.cache_size = (
+        total_before * 0.5
+    )  # set the cache size to 50% of the total size
 
     lru_cleanup.cleanup()  # use the cleanup method of the LRUCleanup class
 

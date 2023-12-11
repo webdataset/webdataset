@@ -19,10 +19,9 @@ from .autodecode import (
     torch_video,
 )
 from .cache import (
+    LRUCleanup,
     cached_tarfile_samples,
     cached_tarfile_to_samples,
-    LRUCleanup,
-    maybe_cached_tarfile_to_samples,
     pipe_cleaner,
 )
 from .cborsiterators import cbors2_to_samples, cbors_to_samples
