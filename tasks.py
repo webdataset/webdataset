@@ -102,6 +102,17 @@ def testwids(c):
     "Run the wids tests."
     c.run(f"{ACTIVATE}{PYTHON3} -m pytest -x tests/test_wids*.py")
 
+@task
+def nbstrip(c):
+    "Strip outputs from notebooks."
+    for nb in glob.glob("examples/*.ipynb"):
+        c.run(f"{ACTIVATE}jupyter nbconvert --ClearOutputPreprocessor.enabled=True --inplace {nb}")
+
+@task
+def nbexecute(c):
+    print("executing notebooks, this will take a while")
+    for nb in glob.glob("examples/*.ipynb"):
+        c.run(f"{ACTIVATE}jupyter nbconvert --execute --inplace {nb}")
 
 @task
 def newversion(c):
