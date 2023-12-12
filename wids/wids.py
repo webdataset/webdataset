@@ -7,11 +7,13 @@ import random
 import re
 import sqlite3
 import sys
+import warnings
 from functools import partial
 from typing import Any, BinaryIO, Dict, Optional, TypeVar, Union
 from urllib.parse import quote, urlparse
 
 import numpy as np
+import torch.distributed as dist
 
 from .wids_dl import download_and_open
 from .wids_lru import LRUCache
@@ -31,6 +33,8 @@ except ImportError:
 
 
 T = TypeVar("T")
+
+T_co = TypeVar("T_co", covariant=True)
 
 
 def compute_file_md5sum(fname: Union[str, BinaryIO], chunksize: int = 1000000) -> str:
@@ -558,6 +562,47 @@ class ShardListDataset(Dataset[T]):
         self.cache.clear()
 
 
+def lengths_to_ranges(lengths):
+    """Convert a list of lengths to a list of ranges."""
+    ranges = []
+    start = 0
+    for length in lengths:
+        ranges.append((start, start + length))
+        start += length
+    return ranges
+
+
+def intersect_range(a, b):
+    """Return the intersection of the two half-open integer intervals."""
+    result = max(a[0], b[0]), min(a[1], b[1])
+    if result[0] >= result[1]:
+        return None
+    return result
+
+
+def intersect_ranges(rangelist, r):
+    """Return the intersection of the half-open integer interval r with the list of half-open integer intervals."""
+    result = []
+    for a in rangelist:
+        x = intersect_range(a, r)
+        if x is not None:
+            result.append(x)
+    return result
+
+
+def iterate_ranges(ranges, rng, indexshuffle=True, shardshuffle=True):
+    """Iterate over the ranges in a random order."""
+    shard_indexes = list(range(len(ranges)))
+    if shardshuffle:
+        rng.shuffle(shard_indexes)
+    for i in shard_indexes:
+        lo, hi = ranges[i]
+        sample_indexes = list(range(lo, hi))
+        if indexshuffle:
+            rng.shuffle(sample_indexes)
+        yield from sample_indexes
+
+
 class ShardListSampler(Sampler):
     """A sampler that samples consistent with a ShardListDataset.
 
@@ -579,30 +624,108 @@ class ShardListSampler(Sampler):
     def __init__(self, dataset, *, lengths=None, seed=0, shufflefirst=False):
         if lengths is None:
             lengths = list(dataset.lengths)
-        self.ranges = []
-        start = 0
-        for l in lengths:
-            self.ranges.append((start, start + l))
-            start += l
+        self.ranges = lengths_to_ranges(lengths)
         self.seed = seed
         self.shufflefirst = shufflefirst
         self.epoch = 0
 
     def __iter__(self):
-        pass
-
         self.rng = random.Random(self.seed + 1289738273 * self.epoch)
-        shardperm = list(range(len(self.ranges)))
-        if self.epoch > 0 or self.shufflefirst:
-            # usually, we don't shuffle shards in epoch 0 to achieve
-            # fast startup during testing
-            self.rng.shuffle(shardperm)
-        for shard in shardperm:
-            start, end = self.ranges[shard]
-            indexes = list(range(start, end))
-            self.rng.shuffle(indexes)
-            yield from indexes
+        shardshuffle = self.shufflefirst or self.epoch > 0
+        yield from iterate_ranges(self.ranges, self.rng, shardshuffle=shardshuffle)
         self.epoch += 1
 
 
 ShardedSampler = ShardListSampler
+
+
+class ChunkedSampler(Sampler):
+    """A sampler that samples in chunks and then shuffles the samples within each chunk.
+
+    This preserves locality of reference while still shuffling the data.
+    """
+
+    def __init__(
+        self,
+        dataset,
+        *,
+        num_samples=None,
+        chunksize=2000,
+        seed=0,
+        shuffle=True,
+        shufflefirst=False,
+    ):
+        if isinstance(num_samples, int):
+            lo, hi = 0, num_samples
+        elif num_samples is None:
+            lo, hi = 0, len(dataset)
+        else:
+            lo, hi = num_samples
+        self.ranges = [(i, min(i + chunksize, hi)) for i in range(lo, hi, chunksize)]
+        self.seed = seed
+        self.shuffle = shuffle
+        self.shufflefirst = shufflefirst
+        self.epoch = 0
+
+    def set_epoch(self, epoch):
+        self.epoch = epoch
+
+    def __iter__(self):
+        self.rng = random.Random(self.seed + 1289738273 * self.epoch)
+        shardshuffle = self.shufflefirst or self.epoch > 0
+        yield from iterate_ranges(
+            self.ranges,
+            self.rng,
+            indexshuffle=self.shuffle,
+            shardshuffle=(self.shuffle and shardshuffle),
+        )
+        self.epoch += 1
+
+
+def DistributedChunkedSampler(
+    dataset: Dataset,
+    *,
+    num_replicas: Optional[int] = None,
+    num_samples: Optional[int] = None,
+    rank: Optional[int] = None,
+    shuffle: bool = True,
+    shufflefirst: bool = False,
+    seed: int = 0,
+    drop_last: bool = None,
+    chunksize: int = 1000000,
+) -> ChunkedSampler:
+    """Return a ChunkedSampler for the current worker in distributed training.
+
+    Reverts to a simple ChunkedSampler if no running in distributed mode.
+
+    Since the split among workers takes place before the chunk shuffle,
+    workers end up with a fixed set of shards they need to download. The
+    more workers, the fewer shards are used by each worker.
+    """
+    if drop_last is not None:
+        warnings.warn(
+            "DistributedChunkedSampler does not support drop_last, thus it will be ignored"
+        )
+    if not dist.is_initialized():
+        warnings.warn(
+            "DistributedChunkedSampler is called without distributed initialized; assuming single process"
+        )
+        num_replicas = 1
+        rank = 0
+    else:
+        num_replicas = num_replicas or dist.get_world_size()
+        rank = rank or dist.get_rank()
+    assert rank >= 0 and rank < num_replicas
+
+    num_samples = num_samples or len(dataset)
+    worker_chunk = (num_samples + num_replicas - 1) // num_replicas
+    worker_start = rank * worker_chunk
+    worker_end = min(worker_start + worker_chunk, num_samples)
+    return ChunkedSampler(
+        dataset,
+        num_samples=(worker_start, worker_end),
+        chunksize=chunksize,
+        seed=seed,
+        shuffle=shuffle,
+        shufflefirst=shufflefirst,
+    )
