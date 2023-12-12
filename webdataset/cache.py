@@ -193,7 +193,7 @@ class FileCache:
         if cache_size > 0:
             self.cleaner = LRUCleanup(
                 self.cache_dir,
-                self.cache_size,
+                cache_size,
                 verbose=self.verbose,
                 interval=cache_cleanup_interval,
             )
