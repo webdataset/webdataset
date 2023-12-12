@@ -3,10 +3,12 @@ import json
 import os
 import random
 import textwrap
+from contextlib import contextmanager
+from unittest.mock import patch
 
 import pytest
 
-from wids import wids, wids_specs
+from wids import DistributedChunkedSampler, wids, wids_specs
 from wids.wids import ChunkedSampler, ShardedSampler, ShardListDataset
 
 
@@ -311,36 +313,42 @@ class TestChunkedSampler:
             range(1111, 2222)
         )  # The samples should cover the range from 1111 to 2222
 
-import pytest
-from unittest.mock import patch
-from wids import DistributedChunkedSampler
 
 # Fixture for mocking the distributed environment
 @pytest.fixture
 def mock_distributed_env():
     def _mock_distributed_env(rank, world_size):
-        with patch('torch.distributed.init_process_group'):
-            with patch('torch.distributed.get_rank', return_value=rank):
-                with patch('torch.distributed.get_world_size', return_value=world_size):
+        with patch("torch.distributed.init_process_group"):
+            with patch("torch.distributed.get_rank", return_value=rank):
+                with patch("torch.distributed.get_world_size", return_value=world_size):
                     yield
+
     return _mock_distributed_env
 
-from contextlib import contextmanager
 
 # Context manager for mocking the distributed environment
 @contextmanager
 def mock_distributed_env(rank, world_size):
-    with patch('torch.distributed.init_process_group'), \
-         patch('torch.distributed.get_rank', return_value=rank), \
-         patch('torch.distributed.get_world_size', return_value=world_size), \
-         patch('torch.distributed.is_initialized', return_value=True):
+    with patch("torch.distributed.init_process_group"), patch(
+        "torch.distributed.get_rank", return_value=rank
+    ), patch("torch.distributed.get_world_size", return_value=world_size), patch(
+        "torch.distributed.is_initialized", return_value=True
+    ):
         yield
+
 
 class TestDistributedChunkedSampler:
     def setup_method(self, method):
         self.dataset = list(range(10000))
         with mock_distributed_env(0, 2):
-            self.sampler = DistributedChunkedSampler(self.dataset, num_samples=5000, chunksize=1000, seed=0, shuffle=True, shufflefirst=False)
+            self.sampler = DistributedChunkedSampler(
+                self.dataset,
+                num_samples=5000,
+                chunksize=1000,
+                seed=0,
+                shuffle=True,
+                shufflefirst=False,
+            )
 
     def test_init(self):
         assert self.sampler.ranges == [(0, 1000), (1000, 2000), (2000, 2500)]
@@ -355,34 +363,75 @@ class TestDistributedChunkedSampler:
 
     def test_iter(self):
         with mock_distributed_env(0, 2):
-            sampler = DistributedChunkedSampler(self.dataset, num_samples=5000, chunksize=1000, seed=0, shuffle=True, shufflefirst=False)
+            sampler = DistributedChunkedSampler(
+                self.dataset,
+                num_samples=5000,
+                chunksize=1000,
+                seed=0,
+                shuffle=True,
+                shufflefirst=False,
+            )
             samples = list(iter(sampler))
             assert len(samples) == 2500
             assert samples != list(range(2500))  # The samples should be shuffled
-            assert set(samples) == set(range(2500))  # The samples should cover the full range
+            assert set(samples) == set(
+                range(2500)
+            )  # The samples should cover the full range
         with mock_distributed_env(1, 2):
-            sampler = DistributedChunkedSampler(self.dataset, num_samples=5000, chunksize=1000, seed=0, shuffle=True, shufflefirst=False)
+            sampler = DistributedChunkedSampler(
+                self.dataset,
+                num_samples=5000,
+                chunksize=1000,
+                seed=0,
+                shuffle=True,
+                shufflefirst=False,
+            )
             samples = list(iter(sampler))
             assert len(samples) == 2500
             assert samples != list(range(2500, 5000))  # The samples should be shuffled
-            assert set(samples) == set(range(2500, 5000))  # The samples should cover the full range
+            assert set(samples) == set(
+                range(2500, 5000)
+            )  # The samples should cover the full range
 
     def test_iter_no_shuffle(self):
         with mock_distributed_env(0, 2):
-            sampler = DistributedChunkedSampler(self.dataset, num_samples=5000, chunksize=1000, seed=0, shuffle=False, shufflefirst=False)
+            sampler = DistributedChunkedSampler(
+                self.dataset,
+                num_samples=5000,
+                chunksize=1000,
+                seed=0,
+                shuffle=False,
+                shufflefirst=False,
+            )
             samples = list(iter(sampler))
             assert len(samples) == 2500
             assert samples == list(range(2500))  # The samples should not be shuffled
 
     def test_disjoint_samples(self):
         with mock_distributed_env(0, 2):
-            sampler1 = DistributedChunkedSampler(self.dataset, num_samples=5000, chunksize=1000, seed=0, shuffle=True, shufflefirst=False)
+            sampler1 = DistributedChunkedSampler(
+                self.dataset,
+                num_samples=5000,
+                chunksize=1000,
+                seed=0,
+                shuffle=True,
+                shufflefirst=False,
+            )
             samples1 = set(iter(sampler1))
 
         with mock_distributed_env(1, 2):
-            sampler2 = DistributedChunkedSampler(self.dataset, num_samples=5000, chunksize=1000, seed=0, shuffle=True, shufflefirst=False)
+            sampler2 = DistributedChunkedSampler(
+                self.dataset,
+                num_samples=5000,
+                chunksize=1000,
+                seed=0,
+                shuffle=True,
+                shufflefirst=False,
+            )
             samples2 = set(iter(sampler2))
 
         assert set(samples1) == set(range(2500))
         assert set(samples2) == set(range(2500, 5000))
-        assert samples1.intersection(samples2) == set()  # The samples should be disjoint
+        assert (
+            samples1.intersection(samples2) == set()
+        )  # The samples should be disjoint
