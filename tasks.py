@@ -27,8 +27,8 @@ def venv(c):
     # c.run(f"{ACTIVATE}{PIP} install torch torchvision")
     # c.run(f"{ACTIVATE}{PIP} install torch==1.10.0+cu113 torchvision==0.11.1+cu113 -f https://download.pytorch.org/whl/cu113/torch_stable.html")
     # c.run(f"{ACTIVATE}{PIP} install torch==1.8.2+cu102 torchvision==0.9.2+cu102 -f https://download.pytorch.org/whl/lts/1.8/torch_lts.html")
-    c.run(f"{ACTIVATE}{PIP} install -r requirements.dev.txt")
     c.run(f"{ACTIVATE}{PIP} install -r requirements.txt")
+    c.run(f"{ACTIVATE}{PIP} install -r requirements.dev.txt")
     c.run(f"{ACTIVATE}{PIP} install -e .")
     print("done")
 

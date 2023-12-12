@@ -2,25 +2,18 @@ mkdocs
 setuptools
 wheel
 invoke
-
 msgpack
 cbor
-
 lmdb
-
-# torch
-# torchvision
-# torchaudio
 jupyterlab
+tqdm
 pytest
-
 isort
 black
 mypy
 flake8
 pydocstyle
 bandit
-
 Pillow
 numpy
 scipy
@@ -28,15 +21,17 @@ matplotlib
 twine
 wheel
 imageio
-
 nbconvert
 jupyter-contrib-nbextensions
-
 mkdocs
 pdoc
-pygments>=2.7.4 # not directly required, pinned by Snyk to avoid a vulnerability
 pytorch_lightning
-torchmore
-
 torch
 torchvision
+adapter-transformers
+sentencepiece
+pyphen
+ray
+ray[tune]
+ray[default]
+ray[sgd]
