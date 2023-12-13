@@ -8,7 +8,7 @@ import yaml
 from . import autodecode, cache, filters, shardlists, utils
 from .filters import pipelinefilter, reraise_exception
 from .pipeline import DataPipeline
-from .pytorch import DataLoader, IterableDataset
+from .pytorch import DataLoader
 from .tariterators import group_by_keys, tar_file_expander
 
 
@@ -133,7 +133,7 @@ class WebDataset(DataPipeline, FluidInterface):
         # split by node (for distributed processing)
         if nodesplitter is not None:
             self.append(nodesplitter)
-        
+
         # split by worker (for DataLoader)
         if workersplitter:
             self.append(shardlists.split_by_worker)
@@ -150,13 +150,19 @@ class WebDataset(DataPipeline, FluidInterface):
         if cache_dir is None or cache_size == 0:
             opener = cache.StreamingOpen(handler=handler)
         else:
-            opener = cache.FileCache(cache_dir=cache_dir, cache_size=cache_size, handler=handler)
+            opener = cache.FileCache(
+                cache_dir=cache_dir, cache_size=cache_size, handler=handler
+            )
         self.append(opener)
 
         # now we need to open each stream and read the tar files contained in it
         # this generates a stream of dict(fname=..., data=...) objects
         expander = pipelinefilter(tar_file_expander)
-        self.append(expander(handler=handler, select_files=select_files, rename_files=rename_files))
+        self.append(
+            expander(
+                handler=handler, select_files=select_files, rename_files=rename_files
+            )
+        )
 
         # finally, the files need to be groups into samples
         # this generates a stream of dict(__key__=..., ...=...) objects
@@ -171,9 +177,8 @@ class WebDataset(DataPipeline, FluidInterface):
             args.cache_dir = os.path.expanduser(args.cache_dir)
             if not os.path.exists(args.cache_dir):
                 raise ValueError(f"cache directory {args.cache_dir} does not exist")
-            
-    def create_url_iterator(self, args):
 
+    def create_url_iterator(self, args):
         urls = args.urls
 
         # .yaml specification files

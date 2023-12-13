@@ -1,5 +1,3 @@
-import fnmatch
-import glob
 import multiprocessing
 import os
 import random
@@ -11,6 +9,7 @@ import braceexpand
 import typer
 
 from . import gopen
+from .utils import fnmatch_with_braces, glob_with_braces
 
 app = typer.Typer()
 
@@ -18,21 +17,6 @@ app = typer.Typer()
 def download_file(url, filename):
     """Download a file from a URL."""
     return wids_dl.download_file(url, filename)
-
-
-def glob_with_braces(pattern):
-    """Apply glob to patterns with braces by pre-expanding the braces."""
-    expanded = braceexpand.braceexpand(pattern)
-    return [f for pat in expanded for f in glob.glob(pat)]
-
-
-def fnmatch_with_braces(filename, pattern):
-    """Apply fnmatch to patterns with braces by pre-expanding the braces."""
-    expanded = braceexpand.braceexpand(pattern)
-    for pat in expanded:
-        if fnmatch.fnmatch(filename, pat):
-            return True
-    return any(fnmatch.fnmatch(filename, pat) for pat in expanded)
 
 
 def download_file(url, filename):

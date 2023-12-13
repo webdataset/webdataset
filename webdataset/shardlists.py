@@ -19,7 +19,7 @@ import time
 from dataclasses import dataclass, field
 from itertools import islice
 from typing import List
-from itertools import islice
+import glob
 
 import braceexpand
 import yaml
@@ -112,6 +112,7 @@ def expand_urls(urls):  # sourcery skip: for-index-underscore, last-if-guard
         result.extend(braceexpand.braceexpand(url))
     return result
 
+
 def expand_source(source, max_urls=int(1e9)):
     if isinstance(source, str):
         return expand_urls(source)
@@ -121,7 +122,8 @@ def expand_source(source, max_urls=int(1e9)):
         return list(islice(source, max_urls))
     else:
         raise ValueError(f"cannot handle {type(source)}")
-    
+
+
 class SimpleShardList(IterableDataset):
     """An iterable dataset yielding a list of urls."""
 
@@ -129,6 +131,7 @@ class SimpleShardList(IterableDataset):
         """Iterate through the list of shards.
 
         :param urls: a list of URLs as a Python list or brace notation string
+        :param seed: random seed for shuffling; if None, no shuffling is done, if True, a random seed is generated
         """
         super().__init__()
         if isinstance(urls, str):
@@ -137,6 +140,8 @@ class SimpleShardList(IterableDataset):
             urls = list(urls)
         self.urls = urls
         assert isinstance(self.urls[0], str)
+        if seed is True:
+            seed = time.time()
         self.seed = seed
 
     def __len__(self):
@@ -304,7 +309,7 @@ class ResampledShards(IterableDataset):
         :param urls: a list of URLs as a Python list or brace notation string
         """
         super().__init__()
-        urls = expand_source(urls, max_urls)
+        self.urls = expand_source(urls, max_urls)
         assert isinstance(self.urls[0], str)
         self.nshards = nshards
         self.worker_seed = (
@@ -334,3 +339,92 @@ class ResampledShards(IterableDataset):
         for _ in range(self.nshards):
             index = self.rng.randint(0, len(self.urls) - 1)
             yield dict(url=self.urls[index])
+
+
+def check_pid_is_running(pid):
+    """Check For the existence of a unix pid."""
+    try:
+        os.kill(pid, 0)
+    except OSError:
+        return False
+    else:
+        return True
+
+
+def without_last_extension(fname):
+    return re.sub(r"\.[^.]*$", "", fname)
+
+
+def get_pid_from_filename(fname):
+    """Get the pid from a filename."""
+    match = re.match(r"^(.*)\._(\d+)_$", fname)
+    if not match:
+        return None
+    return int(match.group(2))
+
+
+class DirectoryShardList(IterableDataset):
+    def __init__(
+        self,
+        path,
+        pattern="*.{tar,tgz,tar.tgz}",
+        poll=1,
+        timeout=1e12,
+        mode="resample",
+        select="random",
+        fate=None,
+    ):
+        assert path.endswith("/")
+        assert os.path.isdir(path)
+        self.path = path
+        self.poll = poll
+        self.pattern = pattern
+        self.mode = mode
+        self.select = select
+        self.fate = fate
+        self.timeout = timeout
+
+    def recycle(self, activename):
+        if self.mode == "unlink":
+            os.unlink(activename)
+        elif self.mode == "keep":
+            os.rename(activename, without_last_extension(activename) + "._done_")
+        elif self.mode == "resample":
+            os.rename(activename, without_last_extension(activename))
+
+    def cleanup_files_without_processes(self):
+        for fname in glob.glob(os.path.join(self.path, "*._*_")):
+            pid = get_pid_from_filename(fname)
+            if pid is None:
+                continue
+            if not check_pid_is_running(pid):
+                self.recycle(fname)
+
+    def __iter__(self):
+        last = time.time()
+        while time.time() - last < self.timeout:
+            candidates = sorted(glob.glob(self.path + self.pattern))
+            if len(candidates) == 0:
+                if self.poll is None:
+                    return
+                time.sleep(self.poll)
+                continue
+
+            if self.select == "oldest":
+                candidate = min(candidates, key=lambda fn: os.stat(fn).st_mtime)
+            elif self.select == "random":
+                candidate = random.choice(candidates)
+            else:
+                raise ValueError(f"unknown selection strategy {self.select}")
+
+            activename = candidate + f"._{os.getpid()}_"
+            try:
+                os.rename(candidate, activename)
+            except FileNotFoundError as exn:
+                time.sleep(self.poll)
+                continue
+
+            yield dict(url=activename)
+
+            self.recycle(activename)
+            self.cleanup_files_without_processes()

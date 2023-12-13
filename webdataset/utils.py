@@ -6,7 +6,9 @@
 
 """Miscellaneous utility functions."""
 
+import fnmatch
 import functools
+import glob
 import importlib
 import itertools as itt
 import os
@@ -14,7 +16,23 @@ import re
 import sys
 import warnings
 from typing import Any, Callable, Iterator, Union
+
 import numpy as np
+
+
+def glob_with_braces(pattern):
+    """Apply glob to patterns with braces by pre-expanding the braces."""
+    expanded = braceexpand.braceexpand(pattern)
+    return [f for pat in expanded for f in glob.glob(pat)]
+
+
+def fnmatch_with_braces(filename, pattern):
+    """Apply fnmatch to patterns with braces by pre-expanding the braces."""
+    expanded = braceexpand.braceexpand(pattern)
+    for pat in expanded:
+        if fnmatch.fnmatch(filename, pat):
+            return True
+    return any(fnmatch.fnmatch(filename, pat) for pat in expanded)
 
 
 def make_seed(*args):
