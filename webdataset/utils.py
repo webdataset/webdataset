@@ -14,6 +14,7 @@ import re
 import sys
 import warnings
 from typing import Any, Callable, Iterator, Union
+import numpy as np
 
 
 def make_seed(*args):
@@ -21,6 +22,20 @@ def make_seed(*args):
     for arg in args:
         seed = (seed * 31 + hash(arg)) & 0x7FFFFFFF
     return seed
+
+
+def is_iterable(obj):
+    if isinstance(obj, str):
+        return False
+    if isinstance(obj, bytes):
+        return False
+    if isinstance(obj, list):
+        return True
+    if isinstance(obj, Iterator):
+        return True
+    if isinstance(obj, Iterable):
+        return True
+    return False
 
 
 class PipelineStage:
@@ -150,3 +165,11 @@ def obsolete(func):
         raise Exception("obsolete function called: " + func.__name__)
 
     return new_func
+
+
+def compute_sample_weights(n_w_pairs):
+    ns = np.array([p[0] for p in n_w_pairs])
+    ws = np.array([p[1] for p in n_w_pairs])
+    weighted = ns * ws
+    ps = weighted / np.amax(weighted)
+    return ps

@@ -1,16 +1,16 @@
 import fnmatch
-import multiprocessing
-from typing import List, Optional
-import os
-import braceexpand
-import sys
 import glob
+import multiprocessing
+import os
 import random
+import sys
 import time
+from typing import List, Optional
 
-from . import wids_dl
-
+import braceexpand
 import typer
+
+from . import gopen
 
 app = typer.Typer()
 
@@ -19,10 +19,12 @@ def download_file(url, filename):
     """Download a file from a URL."""
     return wids_dl.download_file(url, filename)
 
+
 def glob_with_braces(pattern):
     """Apply glob to patterns with braces by pre-expanding the braces."""
     expanded = braceexpand.braceexpand(pattern)
     return [f for pat in expanded for f in glob.glob(pat)]
+
 
 def fnmatch_with_braces(filename, pattern):
     """Apply fnmatch to patterns with braces by pre-expanding the braces."""
@@ -31,6 +33,17 @@ def fnmatch_with_braces(filename, pattern):
         if fnmatch.fnmatch(filename, pat):
             return True
     return any(fnmatch.fnmatch(filename, pat) for pat in expanded)
+
+
+def download_file(url, filename):
+    """Download a file from a URL."""
+    with gopen.gopen(url, "rb") as stream:
+        with open(filename, "wb") as out:
+            while True:
+                chunk = stream.read(1024 * 1024)
+                if len(chunk) == 0:
+                    break
+                out.write(chunk)
 
 
 def download_with(command):
@@ -65,13 +78,13 @@ def get_oldest_file(files):
 
 class RandomShardDownloader:
     """Download shards randomly from a source to directory.
-    
+
     This can be run in one of two modes:
 
     - update_every: keep filling the directory with shards until it contains nshards shards;
                     does not remove shards (gpu job removes shards)
     - replace_every: keep filling the directory with shards until it contains nshards shards;
-                    removes a shard every polling period (gpu job samples with replacement)    
+                    removes a shard every polling period (gpu job samples with replacement)
     """
 
     def __init__(
@@ -85,7 +98,7 @@ class RandomShardDownloader:
         maxsize=999999999999,
         verbose=False,
         download=None,
-        errors="ignore", # ignore, warn, fail
+        errors="ignore",  # ignore, warn, fail
     ):
         """Initialize the downloader with the given parameters."""
         self.shards = shards
@@ -259,6 +272,7 @@ def random_downloader(
             errors=errors,
             verbose=verbose,
         ).run_job(poll=poll, mode=mode)
+
 
 if __name__ == "__main__":
     app()

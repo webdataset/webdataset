@@ -19,6 +19,7 @@ import time
 from dataclasses import dataclass, field
 from itertools import islice
 from typing import List
+from itertools import islice
 
 import braceexpand
 import yaml
@@ -55,6 +56,34 @@ def envsubst(s):
     return re.sub(r"\$\{(\w+)\}", envlookup, s)
 
 
+def split_by_node(src, group=None):
+    """Split the input sequence by PyTorch distributed rank."""
+    rank, world_size, worker, num_workers = utils.pytorch_worker_info(group=group)
+    if world_size > 1:
+        yield from islice(src, rank, None, world_size)
+    else:
+        yield from src
+
+
+def single_node_only(src, group=None):
+    """Don't split the input sequence, but detect multi-node training."""
+    rank, world_size, worker, num_workers = utils.pytorch_worker_info(group=group)
+    if world_size > 1:
+        raise ValueError(
+            "you need to add an explicit nodesplitter to your input pipeline for multi-node training"
+        )
+    yield from src
+
+
+def split_by_worker(src):
+    """Split the input sequence by PyTorch DataLoader worker."""
+    rank, world_size, worker, num_workers = utils.pytorch_worker_info()
+    if num_workers > 1:
+        yield from islice(src, worker, None, num_workers)
+    else:
+        yield from src
+
+
 def expand_urls(urls):  # sourcery skip: for-index-underscore, last-if-guard
     """Expand the urls if they are a string.
 
@@ -72,21 +101,27 @@ def expand_urls(urls):  # sourcery skip: for-index-underscore, last-if-guard
     Returns:
         List[str]: list of  urls
     """
-    if isinstance(urls, str):
-        urllist = urls.split("::")
-        result = []
-        for url in urllist:
-            for i in range(10):
-                last = url
-                url = envsubst(url)
-                if url == last:
-                    break
-            result.extend(braceexpand.braceexpand(url))
-        return result
+    urllist = urls.split("::")
+    result = []
+    for url in urllist:
+        for i in range(10):
+            last = url
+            url = envsubst(url)
+            if url == last:
+                break
+        result.extend(braceexpand.braceexpand(url))
+    return result
+
+def expand_source(source, max_urls=int(1e9)):
+    if isinstance(source, str):
+        return expand_urls(source)
+    elif isinstance(source, list):
+        return source
+    elif is_iterable(source):
+        return list(islice(source, max_urls))
     else:
-        return list(urls)
-
-
+        raise ValueError(f"cannot handle {type(source)}")
+    
 class SimpleShardList(IterableDataset):
     """An iterable dataset yielding a list of urls."""
 
@@ -96,7 +131,10 @@ class SimpleShardList(IterableDataset):
         :param urls: a list of URLs as a Python list or brace notation string
         """
         super().__init__()
-        urls = expand_urls(urls)
+        if isinstance(urls, str):
+            urls = expand_urls(urls)
+        else:
+            urls = list(urls)
         self.urls = urls
         assert isinstance(self.urls[0], str)
         self.seed = seed
@@ -111,31 +149,6 @@ class SimpleShardList(IterableDataset):
             random.Random(self.seed).shuffle(urls)
         for url in urls:
             yield dict(url=url)
-
-
-def split_by_node(src, group=None):
-    rank, world_size, worker, num_workers = utils.pytorch_worker_info(group=group)
-    if world_size > 1:
-        yield from islice(src, rank, None, world_size)
-    else:
-        yield from src
-
-
-def single_node_only(src, group=None):
-    rank, world_size, worker, num_workers = utils.pytorch_worker_info(group=group)
-    if world_size > 1:
-        raise ValueError(
-            "you need to add an explicit nodesplitter to your input pipeline for multi-node training"
-        )
-    yield from src
-
-
-def split_by_worker(src):
-    rank, world_size, worker, num_workers = utils.pytorch_worker_info()
-    if num_workers > 1:
-        yield from islice(src, worker, None, num_workers)
-    else:
-        yield from src
 
 
 def resampled_(src, n=sys.maxsize):
@@ -284,14 +297,14 @@ class ResampledShards(IterableDataset):
         seed=0,
         worker_seed=None,
         deterministic=False,
+        max_urls=int(1e6),
     ):
         """Sample shards from the shard list with replacement.
 
         :param urls: a list of URLs as a Python list or brace notation string
         """
         super().__init__()
-        urls = expand_urls(urls)
-        self.urls = urls
+        urls = expand_source(urls, max_urls)
         assert isinstance(self.urls[0], str)
         self.nshards = nshards
         self.worker_seed = (
