@@ -19,12 +19,11 @@ pdoc
 
 
 jupyter
-jupyter[notebook]
 nbconvert
 notebook
 ipywidgets
 jupyterlab
-jupyter-contrib-nbextensions
+jupyter_contrib_nbextensions
 
 msgpack
 cbor
