@@ -1,9 +1,8 @@
+import glob
 import os
 import tempfile
-from pathlib import Path
-import random
 from itertools import islice
-import glob
+from pathlib import Path
 
 import pytest
 
@@ -95,7 +94,7 @@ class TestDirectoryShardList:
         self.test_dir.cleanup()
 
     def create_test_files(self, num_files, start=0):
-        for i in range(start, start+num_files):
+        for i in range(start, start + num_files):
             Path(self.test_path + f"file{i}.tar").touch()
 
     def test_random_selection(self):
@@ -123,7 +122,11 @@ class TestDirectoryShardList:
     def test_adding_files(self):
         self.create_test_files(5)
         ds = DirectoryShardList(
-            self.test_path, pattern="*.tar", select="random", mode="unlink", poll=None,
+            self.test_path,
+            pattern="*.tar",
+            select="random",
+            mode="unlink",
+            poll=None,
         )
         files = set()
         src = iter(ds)
@@ -191,6 +194,6 @@ class TestDirectoryShardList:
             self.test_path, pattern="*.tar", select="random", poll=None
         )
         file = next(iter(ds))["url"]
-        os.rename(file, file+"._99999999_")
+        os.rename(file, file + "._99999999_")
         ds.cleanup_files_without_processes()
-        assert not Path(file+"._99999999_").exists()
+        assert not Path(file + "._99999999_").exists()

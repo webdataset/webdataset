@@ -10,6 +10,7 @@
 Code works locally or over HTTP connections.
 """
 
+import glob
 import os
 import os.path
 import random
@@ -19,7 +20,6 @@ import time
 from dataclasses import dataclass, field
 from itertools import islice
 from typing import List
-import glob
 
 import braceexpand
 import yaml
@@ -27,6 +27,7 @@ import yaml
 from . import utils
 from .filters import pipelinefilter
 from .pytorch import IterableDataset
+from .utils import obsolete
 
 
 def envlookup(m):
@@ -203,95 +204,6 @@ def expand(s):
     return os.path.expanduser(os.path.expandvars(s))
 
 
-class MultiShardSample(IterableDataset):
-    def __init__(self, fname):
-        """Construct a shardlist from multiple sources using a YAML spec."""
-        self.epoch = -1
-        self.parse_spec(fname)
-
-    def parse_spec(self, fname):
-        self.rng = default_rng  # capture default_rng if we fork
-        if isinstance(fname, dict):
-            spec = fname
-            fname = "{dict}"
-        else:
-            with open(fname) as stream:
-                spec = yaml.safe_load(stream)
-        assert set(spec.keys()).issubset(set("prefix datasets buckets".split())), list(
-            spec.keys()
-        )
-        prefix = expand(spec.get("prefix", ""))
-        self.sources = []
-        for ds in spec["datasets"]:
-            assert set(ds.keys()).issubset(
-                set("buckets name shards resample choose".split())
-            ), list(ds.keys())
-            buckets = ds.get("buckets", spec.get("buckets", []))
-            if isinstance(buckets, str):
-                buckets = [buckets]
-            buckets = [expand(s) for s in buckets]
-            if buckets == []:
-                buckets = [""]
-            assert (
-                len(buckets) == 1
-            ), f"{buckets}: FIXME support for multiple buckets unimplemented"
-            bucket = buckets[0]
-            name = ds.get("name", "@" + bucket)
-            urls = ds["shards"]
-            if isinstance(urls, str):
-                urls = [urls]
-            # urls = [u for url in urls for u in braceexpand.braceexpand(url)]
-            urls = [
-                prefix + os.path.join(bucket, u)
-                for url in urls
-                for u in braceexpand.braceexpand(expand(url))
-            ]
-            resample = ds.get("resample", -1)
-            nsample = ds.get("choose", -1)
-            if nsample > len(urls):
-                raise ValueError(
-                    f"perepoch {nsample} must be no greater than the number of shards"
-                )
-            if (nsample > 0) and (resample > 0):
-                raise ValueError("specify only one of perepoch or choose")
-            entry = MSSource(name=name, urls=urls, perepoch=nsample, resample=resample)
-            self.sources.append(entry)
-            print(f"# {name} {len(urls)} {nsample}", file=sys.stderr)
-
-    def set_epoch(self, seed):
-        """Set the current epoch (for consistent shard selection among nodes)."""
-        self.rng = random.Random(seed)
-
-    def get_shards_for_epoch(self):
-        result = []
-        for source in self.sources:
-            if source.resample > 0:
-                # sample with replacement
-                l = self.rng.choices(source.urls, k=source.resample)
-            elif source.perepoch > 0:
-                # sample without replacement
-                l = list(source.urls)
-                self.rng.shuffle(l)
-                l = l[: source.perepoch]
-            else:
-                l = list(source.urls)
-            result += l
-        self.rng.shuffle(result)
-        return result
-
-    def __iter__(self):
-        shards = self.get_shards_for_epoch()
-        for shard in shards:
-            yield dict(url=shard)
-
-
-def shardspec(spec):
-    if spec.endswith(".yaml"):
-        return MultiShardSample(spec)
-    else:
-        return SimpleShardList(spec)
-
-
 class ResampledShards(IterableDataset):
     """An iterable dataset yielding a list of urls."""
 
@@ -339,6 +251,9 @@ class ResampledShards(IterableDataset):
         for _ in range(self.nshards):
             index = self.rng.randint(0, len(self.urls) - 1)
             yield dict(url=self.urls[index])
+
+
+ResampledShardList = ResampledShards
 
 
 def check_pid_is_running(pid):
@@ -428,3 +343,93 @@ class DirectoryShardList(IterableDataset):
 
             self.recycle(activename)
             self.cleanup_files_without_processes()
+
+
+class MultiShardSample(IterableDataset):
+    @obsolete(reason="this is going to be replaced with the WIDS JSON format")
+    def __init__(self, fname):
+        """Construct a shardlist from multiple sources using a YAML spec."""
+        self.epoch = -1
+        self.parse_spec(fname)
+
+    def parse_spec(self, fname):
+        self.rng = default_rng  # capture default_rng if we fork
+        if isinstance(fname, dict):
+            spec = fname
+            fname = "{dict}"
+        else:
+            with open(fname) as stream:
+                spec = yaml.safe_load(stream)
+        assert set(spec.keys()).issubset(set("prefix datasets buckets".split())), list(
+            spec.keys()
+        )
+        prefix = expand(spec.get("prefix", ""))
+        self.sources = []
+        for ds in spec["datasets"]:
+            assert set(ds.keys()).issubset(
+                set("buckets name shards resample choose".split())
+            ), list(ds.keys())
+            buckets = ds.get("buckets", spec.get("buckets", []))
+            if isinstance(buckets, str):
+                buckets = [buckets]
+            buckets = [expand(s) for s in buckets]
+            if buckets == []:
+                buckets = [""]
+            assert (
+                len(buckets) == 1
+            ), f"{buckets}: FIXME support for multiple buckets unimplemented"
+            bucket = buckets[0]
+            name = ds.get("name", "@" + bucket)
+            urls = ds["shards"]
+            if isinstance(urls, str):
+                urls = [urls]
+            # urls = [u for url in urls for u in braceexpand.braceexpand(url)]
+            urls = [
+                prefix + os.path.join(bucket, u)
+                for url in urls
+                for u in braceexpand.braceexpand(expand(url))
+            ]
+            resample = ds.get("resample", -1)
+            nsample = ds.get("choose", -1)
+            if nsample > len(urls):
+                raise ValueError(
+                    f"perepoch {nsample} must be no greater than the number of shards"
+                )
+            if (nsample > 0) and (resample > 0):
+                raise ValueError("specify only one of perepoch or choose")
+            entry = MSSource(name=name, urls=urls, perepoch=nsample, resample=resample)
+            self.sources.append(entry)
+            print(f"# {name} {len(urls)} {nsample}", file=sys.stderr)
+
+    def set_epoch(self, seed):
+        """Set the current epoch (for consistent shard selection among nodes)."""
+        self.rng = random.Random(seed)
+
+    def get_shards_for_epoch(self):
+        result = []
+        for source in self.sources:
+            if source.resample > 0:
+                # sample with replacement
+                l = self.rng.choices(source.urls, k=source.resample)
+            elif source.perepoch > 0:
+                # sample without replacement
+                l = list(source.urls)
+                self.rng.shuffle(l)
+                l = l[: source.perepoch]
+            else:
+                l = list(source.urls)
+            result += l
+        self.rng.shuffle(result)
+        return result
+
+    def __iter__(self):
+        shards = self.get_shards_for_epoch()
+        for shard in shards:
+            yield dict(url=shard)
+
+
+def shardspec(spec):
+    if spec.endswith(".yaml"):
+        return MultiShardSample(spec)
+    else:
+        return SimpleShardList(spec)

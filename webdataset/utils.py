@@ -164,23 +164,53 @@ def pytorch_worker_seed(group=None):
     return rank * 1000 + worker
 
 
-def deprecated(func):
+def deprecated(arg=None):
+    if callable(arg):
+        # The decorator was used without arguments
+        func = arg
+        reason = None
+    else:
+        # The decorator was used with arguments
+        func = None
+        reason = arg
+
+    def decorator(func):
+        @functools.wraps(func)
+        def new_func(*args, **kwargs):
+            msg = f"Call to deprecated function {func.__name__}."
+            if reason is not None:
+                msg += " Reason: " + reason
+            warnings.warn(
+                msg,
+                category=DeprecationWarning,
+                stacklevel=2,
+            )
+            return func(*args, **kwargs)
+
+        return new_func
+
+    if func is None:
+        # The decorator was used with arguments
+        return decorator
+    else:
+        # The decorator was used without arguments
+        return decorator(func)
+
+
+def obsolete(func=None, *, reason=None):
+    if func is None:
+        return functools.partial(obsolete, reason=reason)
+
     @functools.wraps(func)
     def new_func(*args, **kwargs):
-        warnings.warn(
-            f"Call to deprecated function {func.__name__}.",
-            category=DeprecationWarning,
-            stacklevel=2,
-        )
+        if int(os.environ.get("ALLOW_OBSOLETE", "0")):
+            pass
+        else:
+            msg = f"Call to obsolete function {func.__name__}. Set env ALLOW_OBSOLETE=1 to permit."
+            if reason is not None:
+                msg += " Reason: " + reason
+            raise Exception(msg)
         return func(*args, **kwargs)
-
-    return new_func
-
-
-def obsolete(func):
-    @functools.wraps(func)
-    def new_func(*args, **kwargs):
-        raise Exception("obsolete function called: " + func.__name__)
 
     return new_func
 

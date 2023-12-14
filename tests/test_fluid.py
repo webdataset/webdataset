@@ -145,6 +145,7 @@ datasets:
       - ia1-{000000..000033}.tar
 """
 
+os.environ["ALLOW_OBSOLETE"] = "1"
 
 yaml3_data = """
 prefix: pipe:curl -s -L http://storage.googleapis.com/
