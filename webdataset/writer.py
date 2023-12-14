@@ -30,9 +30,9 @@ def imageencoder(image: Any, format: str = "PNG"):  # skipcq: PYL-W0622
     :param format: compression format (PNG, JPEG, PPM)
 
     """
-    import PIL
+    from PIL import Image
 
-    assert isinstance(image, (PIL.Image.Image, np.ndarray)), type(image)
+    assert isinstance(image, (Image.Image, np.ndarray)), type(image)
 
     if isinstance(image, np.ndarray):
         if image.dtype in [np.dtype("f"), np.dtype("d")]:
@@ -45,7 +45,7 @@ def imageencoder(image: Any, format: str = "PNG"):  # skipcq: PYL-W0622
         assert image.ndim in [2, 3]
         if image.ndim == 3:
             assert image.shape[2] in [1, 3]
-        image = PIL.Image.fromarray(image)
+        image = Image.fromarray(image)
     if format.upper() == "JPG":
         format = "JPEG"
     elif format.upper() in {"IMG", "IMAGE"}:
