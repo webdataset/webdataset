@@ -1,4 +1,5 @@
 invoke
+typer
 
 mkdocs
 setuptools
@@ -19,11 +20,11 @@ pdoc
 
 
 jupyter
-nbconvert
-notebook
-ipywidgets
 jupyterlab
-jupyter_contrib_nbextensions
+notebook
+nbconvert
+# ipywidgets
+# jupyter_contrib_nbextensions
 
 msgpack
 cbor

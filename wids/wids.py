@@ -7,6 +7,7 @@ import random
 import re
 import sqlite3
 import sys
+import uuid
 import warnings
 from functools import partial
 from typing import Any, BinaryIO, Dict, Optional, TypeVar, Union
@@ -193,6 +194,9 @@ def default_decoder(sample: Dict[str, Any], format: Optional[Union[bool, str]] =
     return sample
 
 
+open_itfs = {}
+
+
 class IndexedTarSamples:
     """A class that accesses samples in a tar file. The tar file must follow
     WebDataset conventions. The tar file is indexed when the IndexedTarSamples
@@ -207,42 +211,54 @@ class IndexedTarSamples:
 
     def __init__(
         self,
-        tar_file,
         *,
         path=None,
+        stream=None,
         md5sum=None,
         expected_size=None,
-        source=None,
         use_mmap=True,
         index_file=find_index_file,
     ):
+        assert path is not None or stream is not None
+
         # Create TarFileReader object to read from tar_file
-        self.source = source
-        self.path = path or tar_file
-        assert isinstance(
-            self.path, str
-        ), f"specify path= if the tar_file is a stream, got {path}, {tar_file}"
+        self.path = path
+        stream = self.stream = stream or open(path, "rb")
+
+        # verify the MD5 sum
+        if md5sum is not None:
+            stream.seek(0)
+            got = compute_file_md5sum(stream)
+            assert got == md5sum, f"MD5 sum mismatch: expected {md5sum}, got {got}"
+            stream.seek(0)
+
+        # use either the mmap or the stream based implementation
         if use_mmap:
-            self.reader = MMIndexedTar(tar_file)
+            self.reader = MMIndexedTar(stream)
         else:
-            self.reader = TarFileReader(tar_file, index_file=index_file)
-        # Get list of all files in tar_file
+            self.reader = TarFileReader(stream, index_file=index_file)
+
+        # Get list of all files in stream
         all_files = self.reader.names()
+
         # Group files by key into samples
         self.samples = group_by_key(all_files)
-        if md5sum is not None:
-            got = compute_file_md5sum(tar_file)
-            assert got == md5sum, f"MD5 sum mismatch: expected {md5sum}, got {got}"
+
+        # check that the number of samples is correct
         if expected_size is not None:
             assert (
                 len(self) == expected_size
             ), f"Expected {expected_size} samples, got {len(self)}"
 
-    def __len__(self):
-        return len(self.samples)
+        self.uuid = str(uuid.uuid4())
 
     def close(self):
         self.reader.close()
+        if not self.stream.closed:
+            self.stream.close()
+
+    def __len__(self):
+        return len(self.samples)
 
     def __getitem__(self, idx):
         # Get indexes of files for the sample at index idx
@@ -261,6 +277,12 @@ class IndexedTarSamples:
         # Add key to sample
         sample["__key__"] = key
         return sample
+
+    def __str__(self):
+        return f"<IndexedTarSamples-{id(self)} {self.path}>"
+
+    def __repr__(self):
+        return str(self)
 
 
 def hash_localname(dldir="/tmp/_wids_cache"):
@@ -332,10 +354,10 @@ class LRUShards:
     are not deleted when they are no longer needed.
     """
 
-    def __init__(self, num_shards, keep=False, localname=default_localname()):
+    def __init__(self, lru_size, keep=False, localname=default_localname()):
         self.localname = localname
         # the cache contains the local name as the key and the downloaded path as the value
-        self.lru = LRUCache(num_shards, release_handler=self.release_handler)
+        self.lru = LRUCache(lru_size, release_handler=self.release_handler)
         # keep statistics
         self.reset_stats()
 
@@ -358,7 +380,7 @@ class LRUShards:
         if url not in self.lru:
             local = self.localname(url)
             with download_and_open(url, local) as stream:
-                itf = IndexedTarSamples(stream, source=url, path=local)
+                itf = IndexedTarSamples(path=local, stream=stream)
             self.lru[url] = itf
             self.misses += 1
             self.last_missed = True
@@ -421,6 +443,7 @@ class ShardListDataset(Dataset[T]):
         shards,
         cache_size=int(1e12),
         cache_dir=None,
+        lru_size=10,
         dataset_name=None,
         localname=None,
         transformations="PIL",
@@ -433,7 +456,10 @@ class ShardListDataset(Dataset[T]):
         Args:
             shards: a list of (filename, length) pairs or a URL pointing to a JSON descriptor file
             cache_size: the number of shards to keep in the cache
+            lru_size: the number of shards to keep in the LRU cache
             localname: a function that maps URLs to local filenames
+
+        Note that there are two caches: an on-disk directory, and an in-memory LRU cache.
         """
         if options is None:
             options = {}
@@ -493,7 +519,11 @@ class ShardListDataset(Dataset[T]):
             )
         self.transformations = interpret_transformations(transformations)
 
-        self.cache = LRUShards(cache_size, localname=self.localname, keep=keep)
+        if lru_size > 200:
+            warnings.warn(
+                "LRU size is very large; consider reducing it to avoid running out of file descriptors"
+            )
+        self.cache = LRUShards(lru_size, localname=self.localname, keep=keep)
 
     def add_transform(self, transform):
         """Add a transformation to the dataset."""
@@ -696,7 +726,7 @@ def DistributedChunkedSampler(
 ) -> ChunkedSampler:
     """Return a ChunkedSampler for the current worker in distributed training.
 
-    Reverts to a simple ChunkedSampler if no running in distributed mode.
+    Reverts to a simple ChunkedSampler if not running in distributed mode.
 
     Since the split among workers takes place before the chunk shuffle,
     workers end up with a fixed set of shards they need to download. The

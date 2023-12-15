@@ -2,6 +2,7 @@ import glob
 import os
 import re
 import shutil
+import sys
 import tempfile
 
 from invoke import task
@@ -42,20 +43,20 @@ def virtualenv(c):
 @task
 def black(c):
     """Run black on the code."""
-    c.run(f"{ACTIVATE}{PYTHON3} -m black webdataset wids tests")
+    c.run(f"{ACTIVATE}{PYTHON3} -m black webdataset wids tests examples")
 
 
 @task
 def autoflake(c):
     """Run autoflake on the code."""
     c.run(
-        f"{ACTIVATE}{PYTHON3} -m autoflake --in-place --remove-all-unused-imports webdataset/[a-z]*.py tests/[a-z]*.py wids/[a-z]*.py tasks.py"
+        f"{ACTIVATE}{PYTHON3} -m autoflake --in-place --remove-all-unused-imports examples/[a-z]*.py webdataset/[a-z]*.py tests/[a-z]*.py wids/[a-z]*.py tasks.py"
     )
 
 @task
 def isort(c):
     """Run isort on the code."""
-    c.run(f"{ACTIVATE}{PYTHON3} -m isort --atomic --float-to-top webdataset wids tests tasks.py")
+    c.run(f"{ACTIVATE}{PYTHON3} -m isort --atomic --float-to-top webdataset examples wids tests tasks.py")
 
 @task
 def cleanup(c):
@@ -106,12 +107,14 @@ def testwids(c):
 def nbstrip(c):
     "Strip outputs from notebooks."
     for nb in glob.glob("examples/*.ipynb"):
+        print("stripping", nb, file=sys.stderr)
         c.run(f"{ACTIVATE}jupyter nbconvert --ClearOutputPreprocessor.enabled=True --inplace {nb}")
 
 @task
 def nbexecute(c):
     print("executing notebooks, this will take a while")
     for nb in glob.glob("examples/*.ipynb"):
+        print("executing", nb, file=sys.stderr)
         c.run(f"{ACTIVATE}jupyter nbconvert --execute --inplace {nb}")
 
 @task

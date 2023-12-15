@@ -1,0 +1,14 @@
+#!/bin/bash -x
+
+source ../venv/bin/activate
+
+ls *.ipynb | fgrep -v .out |
+while read nb; do
+    base=$(basename $nb .ipynb)
+    echo $nb '->' $base.out.ipynb
+    test -f $base.out.ipynb && continue
+    jupyter nbconvert --to notebook --ClearOutputPreprocessor.enabled=True $nb --output $nb.stripped.ipynb && \
+        mv $nb.stripped.ipynb $base.ipynb
+    jupyter nbconvert --to notebook --execute $nb --output $base.temp.ipynb --ExecutePreprocessor.timeout=720 2>&1 | tee $base.log &&
+        mv $base.temp.ipynb $base.out.ipynb
+done

@@ -4,9 +4,13 @@ import shutil
 import sys
 import time
 from collections import deque
+from datetime import datetime
 from urllib.parse import urlparse
 
 recent_downloads = deque(maxlen=1000)
+
+open_objects = {}
+max_open_objects = 100
 
 
 class ULockFile:
@@ -129,4 +133,14 @@ def download_and_open(remote, local, mode="rb", handlers=default_cmds, verbose=F
         else:
             if verbose:
                 print("using cached", local, file=sys.stderr)
-        return open(local, mode)
+        result = open(local, mode)
+        if open_objects is not None:
+            for k, v in list(open_objects.items()):
+                if v.closed:
+                    del open_objects[k]
+            if len(open_objects) > max_open_objects:
+                raise RuntimeError("Too many open objects")
+            current_time = datetime.now().strftime("%Y%m%d%H%M%S")
+            key = tuple(str(x) for x in [remote, local, mode, current_time])
+            open_objects[key] = result
+        return result
