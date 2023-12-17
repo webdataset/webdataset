@@ -1,14 +1,29 @@
-#!/bin/bash -x
+#!/bin/bash
+
+nblang() {
+    jq '.metadata.kernelspec.language = "python"' $1 > temp.ipynb && mv temp.ipynb $1
+}
+
+nbprocess() {
+    echo "nbprocess $*"
+    nb="$1"
+    shift
+    if [ ! -f "out/$nb" ] || [ "$nb" -nt "out/$nb" ]; then
+        papermill -l python "$@" "$nb" "out/_$nb"  && mv "out/_$nb" "out/$nb"
+    fi
+}
 
 source ../venv/bin/activate
 
-ls *.ipynb | fgrep -v .out |
-while read nb; do
-    base=$(basename $nb .ipynb)
-    echo $nb '->' $base.out.ipynb
-    test -f $base.out.ipynb && continue
-    jupyter nbconvert --to notebook --ClearOutputPreprocessor.enabled=True $nb --output $nb.stripped.ipynb && \
-        mv $nb.stripped.ipynb $base.ipynb
-    jupyter nbconvert --to notebook --execute $nb --output $base.temp.ipynb --ExecutePreprocessor.timeout=720 2>&1 | tee $base.log &&
-        mv $base.temp.ipynb $base.out.ipynb
-done
+rm -f *.log *.out.ipynb *.stripped.ipynb _temp.ipynb
+
+mkdir -p out
+
+set -e
+
+nbprocess generate-text-dataset.ipynb
+nbprocess train-ocr-errors-hf.ipynb -p max_steps 100
+nbprocess train-resnet50-wds.ipynb -p max_steps 10000
+nbprocess train-resnet50-wids.ipynb -p max_steps 10000
+nbprocess train-resnet50-multiray-wds.ipynb -p max_steps 1000
+#nbprocess train-resnet50-multiray-wids.ipynb -p max_steps 1000

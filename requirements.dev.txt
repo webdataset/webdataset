@@ -23,6 +23,7 @@ jupyter
 jupyterlab
 notebook
 nbconvert
+papermill
 # ipywidgets
 # jupyter_contrib_nbextensions
 
