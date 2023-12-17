@@ -26,4 +26,4 @@ nbprocess train-ocr-errors-hf.ipynb -p max_steps 100
 nbprocess train-resnet50-wds.ipynb -p max_steps 10000
 nbprocess train-resnet50-wids.ipynb -p max_steps 10000
 nbprocess train-resnet50-multiray-wds.ipynb -p max_steps 1000
-#nbprocess train-resnet50-multiray-wids.ipynb -p max_steps 1000
+nbprocess train-resnet50-multiray-wids.ipynb -p max_steps 1000
