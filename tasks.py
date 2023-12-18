@@ -191,14 +191,25 @@ command_template = """
 
 
 @task
-def nbgen(c):
-    "Reexecute IPython Notebooks."
-    opts = "--ExecutePreprocessor.timeout=-1"
-    for nb in glob.glob("notebooks/*.ipynb") + glob.glob("examples/*.ipynb"):
-        if "/convert-" in nb:
-            continue
-        c.run(f"{ACTIVATE} jupyter nbconvert {opts} --execute --to notebook {nb}")
+def nbprocess(c, nb, *args, **kwargs):
+    out_file = f"out/{nb}"
+    if not os.path.exists(out_file) or os.path.getmtime(nb) > os.path.getmtime(out_file):
+        c.run(f"../venv/bin/python -m papermill -l python {' '.join(args)} {nb} out/_{nb}")
+        c.run(f"mv out/_{nb} {out_file}")
 
+@task
+def nbrun(c):
+    with c.cd('examples'):  # Change directory to 'examples'
+        c.run("rm -f *.log *.out.ipynb *.stripped.ipynb _temp.ipynb", pty=True)
+        c.run("mkdir -p out", pty=True)
+
+        nbprocess(c, 'generate-text-dataset.ipynb')
+        nbprocess(c, 'train-ocr-errors-hf.ipynb', '-p', 'max_steps', '100')
+        nbprocess(c, 'train-resnet50-wds.ipynb', '-p', 'max_steps', '10000')
+        nbprocess(c, 'train-resnet50-wids.ipynb', '-p', 'max_steps', '10000')
+        nbprocess(c, 'train-resnet50-multiray-wds.ipynb', '-p', 'max_steps', '1000')
+        nbprocess(c, 'train-resnet50-multiray-wids.ipynb', '-p', 'max_steps', '1000')
+        nbprocess(c, 'tesseract-wds.ipynb')
 
 @task
 def gendocs(c):
@@ -206,11 +217,11 @@ def gendocs(c):
 
     c.run("jupyter nbconvert --to markdown readme.ipynb && mv readme.md README.md")
     # convert IPython Notebooks
-    for nb in glob.glob("notebooks/*.ipynb"):
-        c.run(f"{ACTIVATE} jupyter nbconvert {nb} --to markdown --output-dir=docsrc/.")
-    c.run(f"mkdocs build")
-    c.run(f"pdoc -t docsrc -o docs/api webdataset")
-    c.run("git add docs")
+    # for nb in glob.glob("notebooks/*.ipynb"):
+    #    c.run(f"{ACTIVATE} jupyter nbconvert {nb} --to markdown --output-dir=docsrc/.")
+    #c.run(f"mkdocs build")
+    #c.run(f"pdoc -t docsrc -o docs/api webdataset")
+    #c.run("git add docs")
 
 
 @task
