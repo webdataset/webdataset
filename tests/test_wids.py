@@ -1,12 +1,15 @@
 import io
 import json
 import os
+import random
 import textwrap
+from contextlib import contextmanager
+from unittest.mock import patch
 
 import pytest
 
-from wids import wids, wids_specs
-from wids.wids import ShardedSampler, ShardListDataset
+from wids import DistributedChunkedSampler, wids, wids_specs
+from wids.wids import ChunkedSampler, ShardedSampler, ShardListDataset
 
 
 class TestIndexedTarSamples:
@@ -15,7 +18,7 @@ class TestIndexedTarSamples:
         md5sum = "3b3c0afe31e45325b7c4e6dec5235d13"
         expected_size = 10
         self.indexed_samples = wids.IndexedTarSamples(
-            tar_file, md5sum=md5sum, expected_size=expected_size
+            path=tar_file, md5sum=md5sum, expected_size=expected_size
         )
 
     def test_length(self):
@@ -225,3 +228,210 @@ class TestShardedSampler:
         indexes1 = list(sharded_sampler)
         indexes2 = list(sharded_sampler)
         assert indexes1 != indexes2  # Ensure order changes with each iteration
+
+
+class TestChunkedSampler:
+    def setup_method(self):
+        self.dataset = list(range(10000))
+        self.sampler = ChunkedSampler(
+            self.dataset,
+            num_samples=5000,
+            chunksize=1000,
+            seed=0,
+            shuffle=True,
+            shufflefirst=False,
+        )
+
+    def test_init(self):
+        assert self.sampler.ranges == [
+            (0, 1000),
+            (1000, 2000),
+            (2000, 3000),
+            (3000, 4000),
+            (4000, 5000),
+        ]
+        assert self.sampler.seed == 0
+        assert self.sampler.shuffle == True
+        assert self.sampler.shufflefirst == False
+        assert self.sampler.epoch == 0
+
+    def test_set_epoch(self):
+        self.sampler.set_epoch(5)
+        assert self.sampler.epoch == 5
+
+    def test_iter(self):
+        random.seed(0)
+        samples = list(iter(self.sampler))
+        assert len(samples) == 5000
+        assert samples != list(range(5000))  # The samples should be shuffled
+
+    def test_iter_no_shuffle(self):
+        self.sampler.shuffle = False
+        samples = list(iter(self.sampler))
+        assert len(samples) == 5000
+        assert samples == list(range(5000))  # The samples should not be shuffled
+
+    def test_iter_full_range(self):
+        self.sampler = ChunkedSampler(
+            self.dataset,
+            num_samples=5000,
+            chunksize=1000,
+            seed=0,
+            shuffle=True,
+            shufflefirst=False,
+        )
+        samples = list(iter(self.sampler))
+        assert set(samples) == set(
+            range(5000)
+        )  # The samples should cover the full range
+
+    def test_iter_full_range_no_shuffle(self):
+        self.sampler = ChunkedSampler(
+            self.dataset,
+            num_samples=5000,
+            chunksize=1000,
+            seed=0,
+            shuffle=False,
+            shufflefirst=False,
+        )
+        samples = list(iter(self.sampler))
+        assert set(samples) == set(
+            range(5000)
+        )  # The samples should cover the full range
+
+    def test_num_samples_range(self):
+        self.sampler = ChunkedSampler(
+            self.dataset,
+            num_samples=(1111, 2222),
+            chunksize=1000,
+            seed=0,
+            shuffle=True,
+            shufflefirst=False,
+        )
+        samples = list(iter(self.sampler))
+        assert set(samples) == set(
+            range(1111, 2222)
+        )  # The samples should cover the range from 1111 to 2222
+
+
+# Fixture for mocking the distributed environment
+@pytest.fixture
+def mock_distributed_env():
+    def _mock_distributed_env(rank, world_size):
+        with patch("torch.distributed.init_process_group"):
+            with patch("torch.distributed.get_rank", return_value=rank):
+                with patch("torch.distributed.get_world_size", return_value=world_size):
+                    yield
+
+    return _mock_distributed_env
+
+
+# Context manager for mocking the distributed environment
+@contextmanager
+def mock_distributed_env(rank, world_size):
+    with patch("torch.distributed.init_process_group"), patch(
+        "torch.distributed.get_rank", return_value=rank
+    ), patch("torch.distributed.get_world_size", return_value=world_size), patch(
+        "torch.distributed.is_initialized", return_value=True
+    ):
+        yield
+
+
+class TestDistributedChunkedSampler:
+    def setup_method(self, method):
+        self.dataset = list(range(10000))
+        with mock_distributed_env(0, 2):
+            self.sampler = DistributedChunkedSampler(
+                self.dataset,
+                num_samples=5000,
+                chunksize=1000,
+                seed=0,
+                shuffle=True,
+                shufflefirst=False,
+            )
+
+    def test_init(self):
+        assert self.sampler.ranges == [(0, 1000), (1000, 2000), (2000, 2500)]
+        assert self.sampler.seed == 0
+        assert self.sampler.shuffle == True
+        assert self.sampler.shufflefirst == False
+        assert self.sampler.epoch == 0
+
+    def test_set_epoch(self):
+        self.sampler.set_epoch(5)
+        assert self.sampler.epoch == 5
+
+    def test_iter(self):
+        with mock_distributed_env(0, 2):
+            sampler = DistributedChunkedSampler(
+                self.dataset,
+                num_samples=5000,
+                chunksize=1000,
+                seed=0,
+                shuffle=True,
+                shufflefirst=False,
+            )
+            samples = list(iter(sampler))
+            assert len(samples) == 2500
+            assert samples != list(range(2500))  # The samples should be shuffled
+            assert set(samples) == set(
+                range(2500)
+            )  # The samples should cover the full range
+        with mock_distributed_env(1, 2):
+            sampler = DistributedChunkedSampler(
+                self.dataset,
+                num_samples=5000,
+                chunksize=1000,
+                seed=0,
+                shuffle=True,
+                shufflefirst=False,
+            )
+            samples = list(iter(sampler))
+            assert len(samples) == 2500
+            assert samples != list(range(2500, 5000))  # The samples should be shuffled
+            assert set(samples) == set(
+                range(2500, 5000)
+            )  # The samples should cover the full range
+
+    def test_iter_no_shuffle(self):
+        with mock_distributed_env(0, 2):
+            sampler = DistributedChunkedSampler(
+                self.dataset,
+                num_samples=5000,
+                chunksize=1000,
+                seed=0,
+                shuffle=False,
+                shufflefirst=False,
+            )
+            samples = list(iter(sampler))
+            assert len(samples) == 2500
+            assert samples == list(range(2500))  # The samples should not be shuffled
+
+    def test_disjoint_samples(self):
+        with mock_distributed_env(0, 2):
+            sampler1 = DistributedChunkedSampler(
+                self.dataset,
+                num_samples=5000,
+                chunksize=1000,
+                seed=0,
+                shuffle=True,
+                shufflefirst=False,
+            )
+            samples1 = set(iter(sampler1))
+
+        with mock_distributed_env(1, 2):
+            sampler2 = DistributedChunkedSampler(
+                self.dataset,
+                num_samples=5000,
+                chunksize=1000,
+                seed=0,
+                shuffle=True,
+                shufflefirst=False,
+            )
+            samples2 = set(iter(sampler2))
+
+        assert set(samples1) == set(range(2500))
+        assert set(samples2) == set(range(2500, 5000))
+        assert (
+            samples1.intersection(samples2) == set()
+        )  # The samples should be disjoint

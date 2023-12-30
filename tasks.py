@@ -2,6 +2,7 @@ import glob
 import os
 import re
 import shutil
+import sys
 import tempfile
 
 from invoke import task
@@ -42,20 +43,20 @@ def virtualenv(c):
 @task
 def black(c):
     """Run black on the code."""
-    c.run(f"{ACTIVATE}{PYTHON3} -m black webdataset wids tests")
+    c.run(f"{ACTIVATE}{PYTHON3} -m black webdataset wids tests examples")
 
 
 @task
 def autoflake(c):
     """Run autoflake on the code."""
     c.run(
-        f"{ACTIVATE}{PYTHON3} -m autoflake --in-place --remove-all-unused-imports webdataset/[a-z]*.py tests/[a-z]*.py wids/[a-z]*.py tasks.py"
+        f"{ACTIVATE}{PYTHON3} -m autoflake --in-place --remove-all-unused-imports examples/[a-z]*.py webdataset/[a-z]*.py tests/[a-z]*.py wids/[a-z]*.py tasks.py"
     )
 
 @task
 def isort(c):
     """Run isort on the code."""
-    c.run(f"{ACTIVATE}{PYTHON3} -m isort --atomic --float-to-top webdataset wids tests tasks.py")
+    c.run(f"{ACTIVATE}{PYTHON3} -m isort --atomic --float-to-top webdataset examples wids tests tasks.py")
 
 @task
 def cleanup(c):
@@ -102,6 +103,19 @@ def testwids(c):
     "Run the wids tests."
     c.run(f"{ACTIVATE}{PYTHON3} -m pytest -x tests/test_wids*.py")
 
+@task
+def nbstrip(c):
+    "Strip outputs from notebooks."
+    for nb in glob.glob("examples/*.ipynb"):
+        print("stripping", nb, file=sys.stderr)
+        c.run(f"{ACTIVATE}jupyter nbconvert --ClearOutputPreprocessor.enabled=True --inplace {nb}")
+
+@task
+def nbexecute(c):
+    print("executing notebooks, this will take a while")
+    for nb in glob.glob("examples/*.ipynb"):
+        print("executing", nb, file=sys.stderr)
+        c.run(f"{ACTIVATE}jupyter nbconvert --execute --inplace {nb}")
 
 @task
 def newversion(c):
@@ -177,14 +191,25 @@ command_template = """
 
 
 @task
-def nbgen(c):
-    "Reexecute IPython Notebooks."
-    opts = "--ExecutePreprocessor.timeout=-1"
-    for nb in glob.glob("notebooks/*.ipynb") + glob.glob("examples/*.ipynb"):
-        if "/convert-" in nb:
-            continue
-        c.run(f"{ACTIVATE} jupyter nbconvert {opts} --execute --to notebook {nb}")
+def nbprocess(c, nb, *args, **kwargs):
+    out_file = f"out/{nb}"
+    if not os.path.exists(out_file) or os.path.getmtime(nb) > os.path.getmtime(out_file):
+        c.run(f"../venv/bin/python -m papermill -l python {' '.join(args)} {nb} out/_{nb}")
+        c.run(f"mv out/_{nb} {out_file}")
 
+@task
+def nbrun(c):
+    with c.cd('examples'):  # Change directory to 'examples'
+        c.run("rm -f *.log *.out.ipynb *.stripped.ipynb _temp.ipynb", pty=True)
+        c.run("mkdir -p out", pty=True)
+
+        nbprocess(c, 'generate-text-dataset.ipynb')
+        nbprocess(c, 'train-ocr-errors-hf.ipynb', '-p', 'max_steps', '100')
+        nbprocess(c, 'train-resnet50-wds.ipynb', '-p', 'max_steps', '10000')
+        nbprocess(c, 'train-resnet50-wids.ipynb', '-p', 'max_steps', '10000')
+        nbprocess(c, 'train-resnet50-multiray-wds.ipynb', '-p', 'max_steps', '1000')
+        nbprocess(c, 'train-resnet50-multiray-wids.ipynb', '-p', 'max_steps', '1000')
+        nbprocess(c, 'tesseract-wds.ipynb')
 
 @task
 def gendocs(c):
@@ -192,11 +217,11 @@ def gendocs(c):
 
     c.run("jupyter nbconvert --to markdown readme.ipynb && mv readme.md README.md")
     # convert IPython Notebooks
-    for nb in glob.glob("notebooks/*.ipynb"):
-        c.run(f"{ACTIVATE} jupyter nbconvert {nb} --to markdown --output-dir=docsrc/.")
-    c.run(f"mkdocs build")
-    c.run(f"pdoc -t docsrc -o docs/api webdataset")
-    c.run("git add docs")
+    # for nb in glob.glob("notebooks/*.ipynb"):
+    #    c.run(f"{ACTIVATE} jupyter nbconvert {nb} --to markdown --output-dir=docsrc/.")
+    #c.run(f"mkdocs build")
+    #c.run(f"pdoc -t docsrc -o docs/api webdataset")
+    #c.run("git add docs")
 
 
 @task

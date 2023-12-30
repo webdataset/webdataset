@@ -5,7 +5,9 @@ from multiprocessing import Pool
 
 from wids.wids_dl import download_and_open, download_file, recent_downloads
 
-test_download_url = "gs://webdataset/d-tokens/d-tokens-000000.tar"
+test_download_url = (
+    "https://storage.googleapis.com/webdataset/d-tokens/d-tokens-000000.tar"
+)
 
 
 def test_download_file():
@@ -13,12 +15,12 @@ def test_download_file():
     with tempfile.TemporaryDirectory() as tmpdir:
         local = os.path.join(tmpdir, "tempfile")
 
-    try:
-        download_file(remote, local)
-        assert os.path.exists(local)
-    finally:
-        if os.path.exists(local):
-            os.remove(local)
+        try:
+            download_file(remote, local)
+            assert os.path.exists(local)
+        finally:
+            if os.path.exists(local):
+                os.remove(local)
 
 
 def test_download_and_open():
@@ -41,7 +43,9 @@ def download_and_read(remote, local, *, n=10):
     return data
 
 
-test_download_url2 = "gs://webdataset/d-tokens/d-tokens-000002.tar"
+test_download_url2 = (
+    "https://storage.googleapis.com/webdataset/d-tokens/d-tokens-000002.tar"
+)
 
 
 def test_concurrent_download_and_open():

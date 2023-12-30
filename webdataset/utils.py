@@ -6,7 +6,9 @@
 
 """Miscellaneous utility functions."""
 
+import fnmatch
 import functools
+import glob
 import importlib
 import itertools as itt
 import os
@@ -15,12 +17,43 @@ import sys
 import warnings
 from typing import Any, Callable, Iterator, Union
 
+import numpy as np
+
+
+def glob_with_braces(pattern):
+    """Apply glob to patterns with braces by pre-expanding the braces."""
+    expanded = braceexpand.braceexpand(pattern)
+    return [f for pat in expanded for f in glob.glob(pat)]
+
+
+def fnmatch_with_braces(filename, pattern):
+    """Apply fnmatch to patterns with braces by pre-expanding the braces."""
+    expanded = braceexpand.braceexpand(pattern)
+    for pat in expanded:
+        if fnmatch.fnmatch(filename, pat):
+            return True
+    return any(fnmatch.fnmatch(filename, pat) for pat in expanded)
+
 
 def make_seed(*args):
     seed = 0
     for arg in args:
         seed = (seed * 31 + hash(arg)) & 0x7FFFFFFF
     return seed
+
+
+def is_iterable(obj):
+    if isinstance(obj, str):
+        return False
+    if isinstance(obj, bytes):
+        return False
+    if isinstance(obj, list):
+        return True
+    if isinstance(obj, Iterator):
+        return True
+    if isinstance(obj, Iterable):
+        return True
+    return False
 
 
 class PipelineStage:
@@ -131,22 +164,60 @@ def pytorch_worker_seed(group=None):
     return rank * 1000 + worker
 
 
-def deprecated(func):
+def deprecated(arg=None):
+    if callable(arg):
+        # The decorator was used without arguments
+        func = arg
+        reason = None
+    else:
+        # The decorator was used with arguments
+        func = None
+        reason = arg
+
+    def decorator(func):
+        @functools.wraps(func)
+        def new_func(*args, **kwargs):
+            msg = f"Call to deprecated function {func.__name__}."
+            if reason is not None:
+                msg += " Reason: " + reason
+            warnings.warn(
+                msg,
+                category=DeprecationWarning,
+                stacklevel=2,
+            )
+            return func(*args, **kwargs)
+
+        return new_func
+
+    if func is None:
+        # The decorator was used with arguments
+        return decorator
+    else:
+        # The decorator was used without arguments
+        return decorator(func)
+
+
+def obsolete(func=None, *, reason=None):
+    if func is None:
+        return functools.partial(obsolete, reason=reason)
+
     @functools.wraps(func)
     def new_func(*args, **kwargs):
-        warnings.warn(
-            f"Call to deprecated function {func.__name__}.",
-            category=DeprecationWarning,
-            stacklevel=2,
-        )
+        if int(os.environ.get("ALLOW_OBSOLETE", "0")):
+            pass
+        else:
+            msg = f"Call to obsolete function {func.__name__}. Set env ALLOW_OBSOLETE=1 to permit."
+            if reason is not None:
+                msg += " Reason: " + reason
+            raise Exception(msg)
         return func(*args, **kwargs)
 
     return new_func
 
 
-def obsolete(func):
-    @functools.wraps(func)
-    def new_func(*args, **kwargs):
-        raise Exception("obsolete function called: " + func.__name__)
-
-    return new_func
+def compute_sample_weights(n_w_pairs):
+    ns = np.array([p[0] for p in n_w_pairs])
+    ws = np.array([p[1] for p in n_w_pairs])
+    weighted = ns * ws
+    ps = weighted / np.amax(weighted)
+    return ps

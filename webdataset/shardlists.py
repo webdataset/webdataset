@@ -10,6 +10,7 @@
 Code works locally or over HTTP connections.
 """
 
+import glob
 import os
 import os.path
 import random
@@ -26,6 +27,7 @@ import yaml
 from . import utils
 from .filters import pipelinefilter
 from .pytorch import IterableDataset
+from .utils import obsolete
 
 
 def envlookup(m):
@@ -55,6 +57,34 @@ def envsubst(s):
     return re.sub(r"\$\{(\w+)\}", envlookup, s)
 
 
+def split_by_node(src, group=None):
+    """Split the input sequence by PyTorch distributed rank."""
+    rank, world_size, worker, num_workers = utils.pytorch_worker_info(group=group)
+    if world_size > 1:
+        yield from islice(src, rank, None, world_size)
+    else:
+        yield from src
+
+
+def single_node_only(src, group=None):
+    """Don't split the input sequence, but detect multi-node training."""
+    rank, world_size, worker, num_workers = utils.pytorch_worker_info(group=group)
+    if world_size > 1:
+        raise ValueError(
+            "you need to add an explicit nodesplitter to your input pipeline for multi-node training"
+        )
+    yield from src
+
+
+def split_by_worker(src):
+    """Split the input sequence by PyTorch DataLoader worker."""
+    rank, world_size, worker, num_workers = utils.pytorch_worker_info()
+    if num_workers > 1:
+        yield from islice(src, worker, None, num_workers)
+    else:
+        yield from src
+
+
 def expand_urls(urls):  # sourcery skip: for-index-underscore, last-if-guard
     """Expand the urls if they are a string.
 
@@ -72,19 +102,27 @@ def expand_urls(urls):  # sourcery skip: for-index-underscore, last-if-guard
     Returns:
         List[str]: list of  urls
     """
-    if isinstance(urls, str):
-        urllist = urls.split("::")
-        result = []
-        for url in urllist:
-            for i in range(10):
-                last = url
-                url = envsubst(url)
-                if url == last:
-                    break
-            result.extend(braceexpand.braceexpand(url))
-        return result
+    urllist = urls.split("::")
+    result = []
+    for url in urllist:
+        for i in range(10):
+            last = url
+            url = envsubst(url)
+            if url == last:
+                break
+        result.extend(braceexpand.braceexpand(url))
+    return result
+
+
+def expand_source(source, max_urls=int(1e9)):
+    if isinstance(source, str):
+        return expand_urls(source)
+    elif isinstance(source, list):
+        return source
+    elif is_iterable(source):
+        return list(islice(source, max_urls))
     else:
-        return list(urls)
+        raise ValueError(f"cannot handle {type(source)}")
 
 
 class SimpleShardList(IterableDataset):
@@ -94,11 +132,17 @@ class SimpleShardList(IterableDataset):
         """Iterate through the list of shards.
 
         :param urls: a list of URLs as a Python list or brace notation string
+        :param seed: random seed for shuffling; if None, no shuffling is done, if True, a random seed is generated
         """
         super().__init__()
-        urls = expand_urls(urls)
+        if isinstance(urls, str):
+            urls = expand_urls(urls)
+        else:
+            urls = list(urls)
         self.urls = urls
         assert isinstance(self.urls[0], str)
+        if seed is True:
+            seed = time.time()
         self.seed = seed
 
     def __len__(self):
@@ -111,31 +155,6 @@ class SimpleShardList(IterableDataset):
             random.Random(self.seed).shuffle(urls)
         for url in urls:
             yield dict(url=url)
-
-
-def split_by_node(src, group=None):
-    rank, world_size, worker, num_workers = utils.pytorch_worker_info(group=group)
-    if world_size > 1:
-        yield from islice(src, rank, None, world_size)
-    else:
-        yield from src
-
-
-def single_node_only(src, group=None):
-    rank, world_size, worker, num_workers = utils.pytorch_worker_info(group=group)
-    if world_size > 1:
-        raise ValueError(
-            "you need to add an explicit nodesplitter to your input pipeline for multi-node training"
-        )
-    yield from src
-
-
-def split_by_worker(src):
-    rank, world_size, worker, num_workers = utils.pytorch_worker_info()
-    if num_workers > 1:
-        yield from islice(src, worker, None, num_workers)
-    else:
-        yield from src
 
 
 def resampled_(src, n=sys.maxsize):
@@ -185,7 +204,149 @@ def expand(s):
     return os.path.expanduser(os.path.expandvars(s))
 
 
+class ResampledShards(IterableDataset):
+    """An iterable dataset yielding a list of urls."""
+
+    def __init__(
+        self,
+        urls,
+        nshards=sys.maxsize,
+        seed=0,
+        worker_seed=None,
+        deterministic=False,
+        max_urls=int(1e6),
+    ):
+        """Sample shards from the shard list with replacement.
+
+        :param urls: a list of URLs as a Python list or brace notation string
+        """
+        super().__init__()
+        self.urls = expand_source(urls, max_urls)
+        assert isinstance(self.urls[0], str)
+        self.nshards = nshards
+        self.worker_seed = (
+            utils.pytorch_worker_seed if worker_seed is None else worker_seed
+        )
+        self.deterministic = deterministic
+        self.seed = seed
+        self.epoch = -1
+
+    def __iter__(self):
+        """Return an iterator over the shards."""
+        self.epoch += 1
+        if self.deterministic:
+            seed = utils.make_seed(self.worker_seed(), self.epoch, self.seed)
+        else:
+            seed = utils.make_seed(
+                self.worker_seed(),
+                self.epoch,
+                self.seed,
+                os.getpid(),
+                time.time_ns(),
+                os.urandom(4),
+            )
+        if os.environ.get("WDS_SHOW_SEED", "0") == "1":
+            print(f"# ResampledShards seed {seed}")
+        self.rng = random.Random(seed)
+        for _ in range(self.nshards):
+            index = self.rng.randint(0, len(self.urls) - 1)
+            yield dict(url=self.urls[index])
+
+
+ResampledShardList = ResampledShards
+
+
+def check_pid_is_running(pid):
+    """Check For the existence of a unix pid."""
+    try:
+        os.kill(pid, 0)
+    except OSError:
+        return False
+    else:
+        return True
+
+
+def without_last_extension(fname):
+    return re.sub(r"\.[^.]*$", "", fname)
+
+
+def get_pid_from_filename(fname):
+    """Get the pid from a filename."""
+    match = re.match(r"^(.*)\._(\d+)_$", fname)
+    if not match:
+        return None
+    return int(match.group(2))
+
+
+class DirectoryShardList(IterableDataset):
+    def __init__(
+        self,
+        path,
+        pattern="*.{tar,tgz,tar.tgz}",
+        poll=1,
+        timeout=1e12,
+        mode="resample",
+        select="random",
+        fate=None,
+    ):
+        assert path.endswith("/")
+        assert os.path.isdir(path)
+        self.path = path
+        self.poll = poll
+        self.pattern = pattern
+        self.mode = mode
+        self.select = select
+        self.fate = fate
+        self.timeout = timeout
+
+    def recycle(self, activename):
+        if self.mode == "unlink":
+            os.unlink(activename)
+        elif self.mode == "keep":
+            os.rename(activename, without_last_extension(activename) + "._done_")
+        elif self.mode == "resample":
+            os.rename(activename, without_last_extension(activename))
+
+    def cleanup_files_without_processes(self):
+        for fname in glob.glob(os.path.join(self.path, "*._*_")):
+            pid = get_pid_from_filename(fname)
+            if pid is None:
+                continue
+            if not check_pid_is_running(pid):
+                self.recycle(fname)
+
+    def __iter__(self):
+        last = time.time()
+        while time.time() - last < self.timeout:
+            candidates = sorted(glob.glob(self.path + self.pattern))
+            if len(candidates) == 0:
+                if self.poll is None:
+                    return
+                time.sleep(self.poll)
+                continue
+
+            if self.select == "oldest":
+                candidate = min(candidates, key=lambda fn: os.stat(fn).st_mtime)
+            elif self.select == "random":
+                candidate = random.choice(candidates)
+            else:
+                raise ValueError(f"unknown selection strategy {self.select}")
+
+            activename = candidate + f"._{os.getpid()}_"
+            try:
+                os.rename(candidate, activename)
+            except FileNotFoundError as exn:
+                time.sleep(self.poll)
+                continue
+
+            yield dict(url=activename)
+
+            self.recycle(activename)
+            self.cleanup_files_without_processes()
+
+
 class MultiShardSample(IterableDataset):
+    @obsolete(reason="this is going to be replaced with the WIDS JSON format")
     def __init__(self, fname):
         """Construct a shardlist from multiple sources using a YAML spec."""
         self.epoch = -1
@@ -272,52 +433,3 @@ def shardspec(spec):
         return MultiShardSample(spec)
     else:
         return SimpleShardList(spec)
-
-
-class ResampledShards(IterableDataset):
-    """An iterable dataset yielding a list of urls."""
-
-    def __init__(
-        self,
-        urls,
-        nshards=sys.maxsize,
-        seed=0,
-        worker_seed=None,
-        deterministic=False,
-    ):
-        """Sample shards from the shard list with replacement.
-
-        :param urls: a list of URLs as a Python list or brace notation string
-        """
-        super().__init__()
-        urls = expand_urls(urls)
-        self.urls = urls
-        assert isinstance(self.urls[0], str)
-        self.nshards = nshards
-        self.worker_seed = (
-            utils.pytorch_worker_seed if worker_seed is None else worker_seed
-        )
-        self.deterministic = deterministic
-        self.seed = seed
-        self.epoch = -1
-
-    def __iter__(self):
-        """Return an iterator over the shards."""
-        self.epoch += 1
-        if self.deterministic:
-            seed = utils.make_seed(self.worker_seed(), self.epoch, self.seed)
-        else:
-            seed = utils.make_seed(
-                self.worker_seed(),
-                self.epoch,
-                self.seed,
-                os.getpid(),
-                time.time_ns(),
-                os.urandom(4),
-            )
-        if os.environ.get("WDS_SHOW_SEED", "0") == "1":
-            print(f"# ResampledShards seed {seed}")
-        self.rng = random.Random(seed)
-        for _ in range(self.nshards):
-            index = self.rng.randint(0, len(self.urls) - 1)
-            yield dict(url=self.urls[index])

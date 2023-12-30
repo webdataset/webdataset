@@ -55,4 +55,10 @@ class LRUCache:
 
     def clear(self):
         for key in list(self.keys()):
+            value = self.cache[key]
+            if self.release_handler is not None:
+                self.release_handler(key, value)
             del self[key]
+
+    def __del__(self):
+        self.clear()

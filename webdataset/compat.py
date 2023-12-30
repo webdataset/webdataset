@@ -1,12 +1,14 @@
 import os
 import random
+from types import SimpleNamespace
+from urllib.parse import urlparse
 
 import yaml
 
-from . import autodecode, cache, filters, shardlists
+from . import autodecode, cache, filters, shardlists, utils
 from .filters import pipelinefilter, reraise_exception
 from .pipeline import DataPipeline
-from .pytorch import DataLoader, IterableDataset
+from .pytorch import DataLoader
 from .tariterators import group_by_keys, tar_file_expander
 
 
@@ -100,6 +102,7 @@ class WebDataset(DataPipeline, FluidInterface):
         self,
         urls,
         handler=reraise_exception,
+        mode=None,
         resampled=False,
         repeat=False,
         shardshuffle=None,
@@ -108,58 +111,108 @@ class WebDataset(DataPipeline, FluidInterface):
         url_to_name=cache.pipe_cleaner,
         detshuffle=False,
         nodesplitter=shardlists.single_node_only,
+        workersplitter=shardlists.split_by_worker,
         select_files=None,
         rename_files=None,
         verbose=False,
         seed=None,
     ):
         super().__init__()
+        if resampled:
+            mode = "resampled"
+        if shardshuffle is True:
+            shardshuffle = 100
+        args = SimpleNamespace(**locals())
         self.seed = seed or os.environ.get("WDS_SEED", random.randint(0, 1000000))
-        cache_size = int(os.environ.get("WDS_CACHE_SIZE", cache_size))
-        cache_dir = os.environ.get("WDS_CACHE", cache_dir)
-        if cache_dir is not None:
-            cache_dir = os.path.expanduser(cache_dir)
-            if not os.path.exists(cache_dir):
-                raise ValueError(f"cache directory {cache_dir} does not exist")
-        if isinstance(urls, IterableDataset):
-            assert not resampled
-            self.append(urls)
-        elif isinstance(urls, str) and (
-            urls.endswith(".yaml") or urls.endswith(".yml")
-        ):
-            with open(urls) as stream:
-                spec = yaml.safe_load(stream)
-            assert "datasets" in spec
-            self.append(shardlists.MultiShardSample(spec))
-        elif isinstance(urls, dict):
-            assert "datasets" in urls
-            self.append(shardlists.MultiShardSample(urls))
-        elif resampled:
-            self.append(shardlists.ResampledShards(urls, seed=self.seed))
-        else:
-            self.append(shardlists.SimpleShardList(urls))
+        self.update_cache_info(args)
+
+        # first, we add a generator for the urls to used
+        # this generates a stream of dict(url=...)
+        self.create_url_iterator(args)
+
+        # split by node (for distributed processing)
+        if nodesplitter is not None:
             self.append(nodesplitter)
+
+        # split by worker (for DataLoader)
+        if workersplitter:
             self.append(shardlists.split_by_worker)
-            if shardshuffle is True:
-                shardshuffle = 100
-            if shardshuffle is not None:
-                if detshuffle:
-                    self.append(filters.detshuffle(shardshuffle, seed=self.seed))
-                else:
-                    self.append(filters.shuffle(shardshuffle, seed=self.seed))
-        # self.append(filters.info(name="shard"))
+
+        # add a shard shuffler
+        if args.shardshuffle is not None:
+            if args.detshuffle:
+                self.append(filters.detshuffle(args.shardshuffle, seed=args.seed))
+            else:
+                self.append(filters.shuffle(args.shardshuffle, seed=args.seed))
+
+        # next, we select a URL opener, either with or without caching
+        # this generates a stream of dict(url=..., stream=...)
         if cache_dir is None or cache_size == 0:
-            self.append(cache.StreamingOpen(handler=handler))
+            opener = cache.StreamingOpen(handler=handler)
         else:
-            self.append(cache.FileCache(cache_dir=cache_dir, cache_size=cache_size, handler=handler))
-        # self.append(filters.info(name="opened"))
+            opener = cache.FileCache(
+                cache_dir=cache_dir, cache_size=cache_size, handler=handler
+            )
+        self.append(opener)
+
+        # now we need to open each stream and read the tar files contained in it
+        # this generates a stream of dict(fname=..., data=...) objects
+        expander = pipelinefilter(tar_file_expander)
         self.append(
-            pipelinefilter(tar_file_expander)(
+            expander(
                 handler=handler, select_files=select_files, rename_files=rename_files
             )
         )
-        # self.append(filters.info(name="expanded"))
-        self.append(pipelinefilter(group_by_keys)(handler=handler))
+
+        # finally, the files need to be groups into samples
+        # this generates a stream of dict(__key__=..., ...=...) objects
+        grouper = pipelinefilter(group_by_keys)
+        self.append(grouper(handler=handler))
+
+    def update_cache_info(self, args):
+        """Compute the correct cache directory and size from the arguments and environment."""
+        args.cache_size = int(os.environ.get("WDS_CACHE_SIZE", args.cache_size))
+        args.cache_dir = os.environ.get("WDS_CACHE", args.cache_dir)
+        if args.cache_dir is not None:
+            args.cache_dir = os.path.expanduser(args.cache_dir)
+            if not os.path.exists(args.cache_dir):
+                raise ValueError(f"cache directory {args.cache_dir} does not exist")
+
+    def create_url_iterator(self, args):
+        urls = args.urls
+
+        # .yaml specification files
+        if isinstance(urls, str) and (urls.endswith(".yaml") or urls.endswith(".yml")):
+            with open(args.urls) as stream:
+                spec = yaml.safe_load(stream)
+            assert "datasets" in spec
+            self.append(shardlists.MultiShardSample(spec))
+            return
+
+        # .yaml specifications already loaded as dictionaries
+        if isinstance(args.urls, dict):
+            assert "datasets" in args.urls
+            self.append(shardlists.MultiShardSample(args.urls))
+            return
+
+        # .json specification files (from wids)
+        if isinstance(urls, str) and urls.endswith(".json"):
+            raise ValueError("unimplemented")
+
+        # any URL ending in "/" is assumed to be a directory
+        if isinstance(urls, str) and urlparse(urls).path.endswith("/"):
+            self.append(shardlists.DirectoryShardlist(urls, mode=args.mode))
+            return
+
+        # the rest is either a shard list or a resampled shard list
+        if isinstance(args.urls, str) or utils.is_iterable(args.urls):
+            if args.mode == "resampled":
+                self.append(shardlists.ResampledShardList(args.urls))
+            else:
+                self.append(shardlists.SimpleShardList(args.urls))
+            return
+
+        raise ValueError(f"cannot handle urls of type {type(args.urls)}")
 
     def __enter__(self):
         return self
