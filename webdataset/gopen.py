@@ -186,7 +186,7 @@ def gopen_curl(url, mode="rb", bufsize=8192):
     :param bufsize: buffer size
     """
     if mode[0] == "r":
-        cmd = f"curl -f -s -L '{url}'"
+        cmd = f"curl --connect-timeout 30 --retry 30 --retry-delay 2 -f -s -L '{url}'"
         return Pipe(
             cmd,
             mode=mode,
