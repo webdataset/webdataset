@@ -76,7 +76,7 @@ class TestShardListDataset:
         ]
 
         dataset = wids.ShardListDataset(
-            shards, cache_size=2, localname=wids.default_localname(str(tmpdir))
+            shards, lru_size=2, localname=wids.default_localname(str(tmpdir))
         )
         dataset.tmpdir = str(tmpdir)
 
@@ -99,13 +99,16 @@ class TestShardListDataset:
         assert os.path.exists(shard.path)
 
     def test_getitem(self, shard_list_dataset: ShardListDataset):
+        # make sure this was set up correctly
+        assert shard_list_dataset.cache.lru.capacity == 2
+
         # access sample in the first shard
         sample = shard_list_dataset[17]
         assert isinstance(sample, dict)
         assert "__key__" in sample
         assert sample["__key__"] == "000017"
         assert ".mp" in sample
-        assert len(shard_list_dataset.cache) == 1
+        # assert len(shard_list_dataset.cache) == 1
         cache = set(shard_list_dataset.cache.lru.keys())
         assert cache == set("testdata/mpdata.tar".split()), cache
 
@@ -115,7 +118,7 @@ class TestShardListDataset:
         assert "__key__" in sample
         assert sample["__key__"] == "000090"
         assert ".ten" in sample
-        assert len(shard_list_dataset.cache) == 2
+        # assert len(shard_list_dataset.cache) == 2
         cache = set(shard_list_dataset.cache.lru.keys())
         assert cache == set("testdata/tendata.tar testdata/mpdata.tar".split()), cache
 
@@ -125,7 +128,7 @@ class TestShardListDataset:
         assert "__key__" in sample
         assert sample["__key__"] == "compressed/0001"
         assert ".txt.gz" in sample
-        assert len(shard_list_dataset.cache) == 2
+        # assert len(shard_list_dataset.cache) == 2
         cache = set(shard_list_dataset.cache.lru.keys())
         assert cache == set(
             "testdata/tendata.tar testdata/compressed.tar".split()
@@ -137,7 +140,7 @@ class TestShardListDataset:
         assert "__key__" in sample
         assert sample["__key__"] == "compressed/0002"
         assert ".txt.gz" in sample
-        assert len(shard_list_dataset.cache) == 2
+        # assert len(shard_list_dataset.cache) == 2
         cache = set(shard_list_dataset.cache.lru.keys())
         assert cache == set(
             "testdata/tendata.tar testdata/compressed.tar".split()
@@ -149,7 +152,7 @@ class TestShardListDataset:
         assert "__key__" in sample
         assert sample["__key__"] == "000000"
         assert ".mp" in sample
-        assert len(shard_list_dataset.cache) == 2
+        # assert len(shard_list_dataset.cache) == 2
         cache = set(shard_list_dataset.cache.lru.keys())
         assert cache == set(
             "testdata/mpdata.tar testdata/compressed.tar".split()

@@ -441,6 +441,7 @@ class ShardListDataset(Dataset[T]):
     def __init__(
         self,
         shards,
+        *,
         cache_size=int(1e12),
         cache_dir=None,
         lru_size=10,
