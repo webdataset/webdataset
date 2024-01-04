@@ -139,6 +139,12 @@ def npy_loads(data):
     stream = io.BytesIO(data)
     return numpy.lib.format.read_array(stream)
 
+def npz_loads(data):
+    import numpy.lib.format
+
+    stream = io.BytesIO(data)
+    return dict(np.load(stream))
+
 
 def cbor_loads(data):
     import cbor
@@ -165,7 +171,7 @@ decoders = {
     "mp": msgpack_loads,
     "msg": msgpack_loads,
     "npy": npy_loads,
-    "npz": lambda data: np.load(io.BytesIO(data)),
+    "npz": npz_loads,
     "cbor": cbor_loads,
 }
 

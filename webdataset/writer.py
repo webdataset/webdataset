@@ -13,7 +13,7 @@ import pickle
 import re
 import tarfile
 import time
-from typing import Any, Callable, Optional, Union
+from typing import Any, Callable, Optional, Union, Dict
 
 import numpy as np
 
@@ -31,6 +31,7 @@ def imageencoder(image: Any, format: str = "PNG"):  # skipcq: PYL-W0622
 
     """
     import PIL
+    import PIL.Image
 
     assert isinstance(image, (PIL.Image.Image, np.ndarray)), type(image)
 
@@ -103,12 +104,17 @@ def numpy_dumps(data: np.ndarray):
     return stream.getvalue()
 
 
-def numpy_npz_dumps(data: np.ndarray):
+def numpy_npz_dumps(data: Dict[str, np.ndarray]):
     """Dump data into a bytestring using numpy npz format.
 
     :param data: data to be dumped
     """
     import io
+
+    assert isinstance(data, dict)
+    for k, v in list(data.items()):
+        assert isinstance(k, str)
+        assert isinstance(v, np.ndarray)
 
     stream = io.BytesIO()
     np.savez_compressed(stream, **data)
