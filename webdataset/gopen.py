@@ -1,4 +1,4 @@
-#
+
 # Copyright (c) 2017-2021 NVIDIA CORPORATION. All rights reserved.
 # This file is part of the WebDataset library.
 # See the LICENSE file for licensing terms (BSD-style).
@@ -103,9 +103,10 @@ class Pipe:
 
     def close(self):
         """Wrap stream.close, wait for the subprocess, and handle errors."""
-        self.stream.close()
-        self.status = self.proc.wait(self.timeout)
-        self.wait_for_child()
+        if not self.stream.closed:
+            self.stream.close()
+            self.status = self.proc.wait(self.timeout)
+            self.wait_for_child()
 
     def __enter__(self):
         """Context handler."""
