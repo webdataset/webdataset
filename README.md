@@ -60,6 +60,7 @@ There are several libraries supporting the WebDataset format:
 - [Webdataset.jl](https://github.com/webdataset/WebDataset.jl) a Julia implementation
 - [tarp](https://github.com/webdataset/tarp), a Golang implementation and command line tool
 - Ray Data sources and sinks
+- Hugging Face [datasets](https://github.com/huggingface/datasets) library
 
 The `webdataset` library can be used with PyTorch, Tensorflow, and Jax.
 
