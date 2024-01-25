@@ -7,6 +7,7 @@
 
 """Low level iteration functions for tar archives."""
 
+import os
 import random
 import re
 import tarfile
@@ -20,6 +21,23 @@ from .handlers import reraise_exception
 trace = False
 meta_prefix = "__"
 meta_suffix = "__"
+
+
+def extract_storage_url(command):
+    """
+    Extracts the S3/GCS URL from a CLI command.
+
+    Args:
+    command (str): The CLI command.
+
+    Returns:
+    str: The extracted Storage URL or an empty string if the URL is not found.
+    """
+    parts = command.split()
+    for part in parts:
+        if part.startswith("s3://") or part.startswith("gs://"):
+            return part
+    return ""
 
 
 def base_plus_ext(path):
@@ -187,6 +205,11 @@ def tar_file_expander(
                 sample["__url__"] = url
                 if local_path is not None:
                     sample["__local_path__"] = local_path
+                    sample["fname"] = os.path.join(local_path, sample["fname"])
+                else:
+                    sample["fname"] = os.path.join(
+                        extract_storage_url(url), sample["fname"]
+                    )
                 yield sample
         except Exception as exn:
             exn.args = exn.args + (source.get("stream"), source.get("url"))
