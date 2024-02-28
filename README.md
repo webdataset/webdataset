@@ -1,7 +1,7 @@
 [![Test](https://github.com/tmbdev/webdataset/workflows/Test/badge.svg)](https://github.com/tmbdev/webdataset/actions?query=workflow%3ATest)
 [![DeepSource](https://static.deepsource.io/deepsource-badge-light-mini.svg)](https://deepsource.io/gh/tmbdev/webdataset/?ref=repository-badge)
 
-(February 27, 2024: I was dealing with COVID and a cross-country move for the past couple of months. I'm back now. Sorry for the slow response on some issues.)
+<b><i>February 27, 2024: I was dealing with COVID and a cross-country move for the past couple of months. I'm back now. Sorry for the slow response on some issues.</i></b>
 
 ```python
 %matplotlib inline
