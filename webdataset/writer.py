@@ -398,6 +398,7 @@ class ShardWriter:
         post: Optional[Callable] = None,
         start_shard: int = 0,
         verbose: int = 1,
+        opener: Optional[Callable] = None,
         **kw,
     ):
         """Create a ShardWriter.
@@ -420,6 +421,7 @@ class ShardWriter:
         self.count = 0
         self.size = 0
         self.fname = None
+        self.opener = opener
         self.next_stream()
 
     def next_stream(self):
@@ -435,7 +437,10 @@ class ShardWriter:
                 self.total,
             )
         self.shard += 1
-        self.tarstream = TarWriter(self.fname, **self.kw)
+        if self.opener:
+            self.tarstream = TarWriter(opener(self.fname), **self.kw)
+        else:
+            self.tarstream = TarWriter(self.fname, **self.kw)
         self.count = 0
         self.size = 0
 
