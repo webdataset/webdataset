@@ -209,7 +209,7 @@ def _shuffle(data, bufsize=1000, initial=100, rng=None, seed=None, handler=None)
     """
     if seed is not None:
         assert rng is None
-        rng = random.Random(rng)
+        rng = random.Random(seed)
     elif rng is None:
         rng = random.Random(int((os.getpid() + time.time()) * 1e9))
     initial = min(initial, bufsize)
