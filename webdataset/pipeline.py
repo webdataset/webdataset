@@ -67,7 +67,13 @@ class DataPipeline(IterableDataset, PipelineStage):
     def iterator(self):
         """Create an iterator through the entire dataset, using the given number of repetitions."""
         for _ in range(self.repetitions):
-            yield from self.iterator1()
+            count = 0            
+            for sample in self.iterator1():
+                yield sample
+                count += 1
+            if count == 0:
+                # if the dataset is empty, don't keep looping
+                break
 
     def __iter__(self):  # sourcery skip: merge-duplicate-blocks
         """Create an iterator through the pipeline, repeating and slicing as requested."""

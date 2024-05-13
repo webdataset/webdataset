@@ -213,6 +213,7 @@ class ResampledShards(IterableDataset):
         nshards=sys.maxsize,
         seed=0,
         worker_seed=None,
+        empty_check=True,
         deterministic=False,
         max_urls=int(1e6),
     ):
@@ -222,6 +223,9 @@ class ResampledShards(IterableDataset):
         """
         super().__init__()
         self.urls = expand_source(urls, max_urls)
+        if empty_check:
+            if len(self.urls) == 0:
+                raise ValueError("empty_check=True, but no shards found in ResampledShards")
         assert isinstance(self.urls[0], str)
         self.nshards = nshards
         self.worker_seed = (

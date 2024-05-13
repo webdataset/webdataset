@@ -93,6 +93,16 @@ class FluidInterface:
 
     def lmdb_cached(self, *args, **kw):
         return self.compose(filters.LMDBCached(*args, **kw))
+    
+
+def check_empty(source):
+    count = 0
+    for sample in source:
+        yield sample
+        count += 1
+    if count == 0:
+        raise ValueError("No samples found in dataset; perhaps you have fewer shards than workers.\n" +
+                         "Turn off using empty_check=False in the WebDataset constructor.")
 
 
 class WebDataset(DataPipeline, FluidInterface):
@@ -114,6 +124,7 @@ class WebDataset(DataPipeline, FluidInterface):
         workersplitter=shardlists.split_by_worker,
         select_files=None,
         rename_files=None,
+        empty_check=True,
         verbose=False,
         seed=None,
     ):
@@ -168,6 +179,10 @@ class WebDataset(DataPipeline, FluidInterface):
         # this generates a stream of dict(__key__=..., ...=...) objects
         grouper = pipelinefilter(group_by_keys)
         self.append(grouper(handler=handler))
+
+        # check for empty datasets
+        if empty_check:
+            self.append(check_empty)
 
     def update_cache_info(self, args):
         """Compute the correct cache directory and size from the arguments and environment."""
