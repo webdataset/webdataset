@@ -77,4 +77,4 @@ from .tariterators import tarfile_samples, tarfile_to_samples
 from .utils import PipelineStage, repeatedly
 from .writer import ShardWriter, TarWriter, numpy_dumps, torch_dumps
 
-__version__ = "0.2.89"
+__version__ = "0.2.90"
