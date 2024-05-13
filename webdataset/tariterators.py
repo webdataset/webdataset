@@ -158,6 +158,7 @@ def tar_file_expander(
     handler: Callable[[Exception], bool] = reraise_exception,
     select_files: Optional[Callable[[str], bool]] = None,
     rename_files: Optional[Callable[[str], str]] = None,
+    eof_value: Optional[Any] = {},
 ) -> Iterator[Dict[str, Any]]:
     """Expand tar files.
 
@@ -188,6 +189,10 @@ def tar_file_expander(
                 if local_path is not None:
                     sample["__local_path__"] = local_path
                 yield sample
+            # we yield an EOF marker at the end of each shard so that
+            # samples from different shards don't get mixed up
+            if eof_value is not None:
+                yield eof_value
         except Exception as exn:
             exn.args = exn.args + (source.get("stream"), source.get("url"))
             if handler(exn):
@@ -222,7 +227,12 @@ def group_by_keys(
     for filesample in data:
         try:
             assert isinstance(filesample, dict)
-            fname, value = filesample["fname"], filesample["data"]
+            if filesample == {}:
+                if valid_sample(current_sample):
+                    yield current_sample
+                current_sample = None
+                continue
+            fname, value = filesample["fname"], filesample["data"]            
             prefix, suffix = keys(fname)
             if trace:
                 print(
