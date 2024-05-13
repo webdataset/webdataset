@@ -213,9 +213,9 @@ class ResampledShards(IterableDataset):
         nshards=sys.maxsize,
         seed=0,
         worker_seed=None,
-        empty_check=True,
         deterministic=False,
         max_urls=int(1e6),
+        empty_check=True,
     ):
         """Sample shards from the shard list with replacement.
 
