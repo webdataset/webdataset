@@ -1,7 +1,6 @@
 [![Test](https://github.com/tmbdev/webdataset/workflows/Test/badge.svg)](https://github.com/tmbdev/webdataset/actions?query=workflow%3ATest)
 [![DeepSource](https://static.deepsource.io/deepsource-badge-light-mini.svg)](https://deepsource.io/gh/tmbdev/webdataset/?ref=repository-badge)
 
-<b><i>February 27, 2024: I was dealing with COVID and a cross-country move for the past couple of months. I'm back now. Sorry for the slow response on some issues.</i></b>
 
 ```python
 %matplotlib inline
@@ -20,6 +19,8 @@ WebDataset format files are tar files, with two conventions:
 
 - within each tar file, files that belong together and make up a training sample share the same basename when stripped of all filename extensions
 - the shards of a tar file are numbered like `something-000000.tar` to `something-012345.tar`, usually specified using brace notation `something-{000000..012345}.tar`
+
+You can find a longer, more detailed specification of the WebDataset format in the [WebDataset Format Specification](https://docs.google.com/document/d/18OdLjruFNX74ILmgrdiCI9J1fQZuhzzRBCHV9URWto0/edit?usp=sharing)
 
 WebDataset can read files from local disk or from any pipe, which allows it to access files using common cloud object stores. WebDataset can also read concatenated MsgPack and CBORs sources.
 
