@@ -64,8 +64,8 @@ class FluidInterface:
     def select(self, predicate, **kw):
         return self.compose(filters.select(predicate, **kw))
 
-    def to_tuple(self, *args, handler=reraise_exception):
-        return self.compose(filters.to_tuple(*args, handler=handler))
+    def to_tuple(self, *args, **kw):
+        return self.compose(filters.to_tuple(*args, **kw))
 
     def map_tuple(self, *args, handler=reraise_exception):
         return self.compose(filters.map_tuple(*args, handler=handler))
