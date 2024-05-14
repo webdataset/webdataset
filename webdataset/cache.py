@@ -235,12 +235,13 @@ class FileCache:
                 try:
                     dest = self.get_file(url)
                     stream = open(dest, "rb")
-                    yield dict(url=url, stream=stream, local_path=dest)
                 except Exception as e:
                     if self.handler(e):
                         continue
                     else:
                         break
+                yield dict(url=url, stream=stream, local_path=dest)
+                break
 
 
 @obsolete
