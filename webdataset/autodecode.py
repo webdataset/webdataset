@@ -500,6 +500,7 @@ class Decoder:
         :param only: a list of extensions; when give, only ignores files with those extensions
         :param partial: allow partial decoding (i.e., don't decode fields that aren't of type bytes)
         """
+        assert isinstance(handlers, list), f"handlers = {handlers} must be a list"
         if isinstance(only, str):
             only = only.split()
         self.only = only if only is None else set(only)
