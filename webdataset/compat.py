@@ -2,6 +2,7 @@ import os
 import random
 from types import SimpleNamespace
 from urllib.parse import urlparse
+import warnings
 
 import yaml
 
@@ -131,6 +132,8 @@ class WebDataset(DataPipeline, FluidInterface):
         super().__init__()
         if resampled:
             mode = "resampled"
+        if shardshuffle is None:
+            warnings.warn("Webdataset(shardshuffle=...) is None; set explicitly to False or a number")
         if shardshuffle is True:
             shardshuffle = 100
         args = SimpleNamespace(**locals())
