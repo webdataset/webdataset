@@ -4,6 +4,7 @@ import re
 import shutil
 import sys
 import tempfile
+import textwrap
 
 from invoke import task
 
@@ -348,12 +349,52 @@ def pypitest(c):
     docker_build(c, pypi_test, nocache=True)
 
 
-required_files = f"""
+required_files = """
 .github/workflows/pypi.yml
 .github/workflows/test.yml
 .githooks/pre-push
 .gitignore
 """.strip().split()
+
+def wrap_long_lines(text, width=80, threshold=120):
+    lines = text.split('\n')
+    wrapped_lines = []
+    for line in lines:
+        if len(line) > threshold:
+            wrapped_lines.append(textwrap.fill(line, width))
+        else:
+            wrapped_lines.append(line)
+    return '\n'.join(wrapped_lines)
+
+faq_intro = """
+# WebDataset FAQ
+
+This is a Frequently Asked Questions file for WebDataset.  It is
+automatically generated from selected WebDataset issues using AI.
+
+Since the entries are generated automatically, not all of them may
+be correct.  When in doubt, check the original issue.
+
+"""
+
+@task
+def makefaq(c):
+    "Create the FAQ.md file from faqs/*.md"
+    output = open("FAQ.txt", "w")
+    output.write(faq_intro)
+    entries = sorted(glob.glob("faqs/[a-zA-Z]*.md"))
+    entries = sorted(glob.glob("faqs/[0-9]*.md"))
+    for fname in entries:
+        with open(fname) as stream:
+            text = stream.read()
+        text = text.strip()
+        text = re.sub(r'[ \t]+$', '', text, flags=re.MULTILINE)
+        if len(text) < 10:
+            continue
+        text += "\n\n"
+        output.write("-"*78 + "\n\n")
+        output.write(text.strip()+"\n\n")
+    output.close()
 
 
 @task
