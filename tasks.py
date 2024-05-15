@@ -380,7 +380,7 @@ be correct.  When in doubt, check the original issue.
 @task
 def makefaq(c):
     "Create the FAQ.md file from faqs/*.md"
-    output = open("FAQ.txt", "w")
+    output = open("FAQ.md", "w")
     output.write(faq_intro)
     entries = sorted(glob.glob("faqs/[a-zA-Z]*.md"))
     entries = sorted(glob.glob("faqs/[0-9]*.md"))
