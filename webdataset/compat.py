@@ -25,7 +25,7 @@ class FluidInterface:
         return self.compose(filters.unbatched())
 
     def listed(self, batchsize, partial=True):
-        return self.compose(filters.batched(), batchsize=batchsize, collation_fn=None)
+        return self.compose(filters.batched(batchsize=batchsize, collation_fn=None))
 
     def unlisted(self):
         return self.compose(filters.unlisted())
