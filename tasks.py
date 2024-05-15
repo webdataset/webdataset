@@ -380,7 +380,7 @@ be correct.  When in doubt, check the original issue.
 @task
 def makefaq(c):
     "Create the FAQ.md file from faqs/*.md"
-    output = open("FAQ.txt", "w")
+    output = open("FAQ.md", "w")
     output.write(faq_intro)
     entries = sorted(glob.glob("faqs/[a-zA-Z]*.md"))
     entries = sorted(glob.glob("faqs/[0-9]*.md"))
@@ -393,6 +393,9 @@ def makefaq(c):
         if len(text) < 10:
             continue
         text += "\n\n"
+        if match := re.match(r"faqs/([0-9]+)\.md", fname):
+            issue_number = int(match.group(1))
+            text = f"Issue #{issue_number}\n\n{text}"
         output.write("-"*78 + "\n\n")
         output.write(text.strip()+"\n\n")
     output.close()
