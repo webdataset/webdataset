@@ -389,7 +389,7 @@ def makefaq(c):
             text = stream.read()
         text = text.strip()
         text = re.sub(r'[ \t]+$', '', text, flags=re.MULTILINE)
-        text = re.sub(r'^#', ' #', text, flags=re.MULTILINE)
+        text = re.sub(r'^#', '.#', text, flags=re.MULTILINE)
         if len(text) < 10:
             continue
         text += "\n\n"
