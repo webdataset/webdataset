@@ -380,7 +380,7 @@ be correct.  When in doubt, check the original issue.
 @task
 def makefaq(c):
     "Create the FAQ.md file from faqs/*.md"
-    output = open("FAQ.md", "w")
+    output = open("FAQ.txt", "w")
     output.write(faq_intro)
     entries = sorted(glob.glob("faqs/[a-zA-Z]*.md"))
     entries = sorted(glob.glob("faqs/[0-9]*.md"))
@@ -389,7 +389,7 @@ def makefaq(c):
             text = stream.read()
         text = text.strip()
         text = re.sub(r'[ \t]+$', '', text, flags=re.MULTILINE)
-        text = re.sub(r'^#', '.#', text, flags=re.MULTILINE)
+        text = wrap_long_lines(text)
         if len(text) < 10:
             continue
         text += "\n\n"
