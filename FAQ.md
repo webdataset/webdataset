@@ -1218,15 +1218,14 @@ Q: How can I prevent training from blocking when using WebDataset with large sha
 
 A: To prevent training from blocking when using WebDataset with large shards,
 you can increase the `num_workers` parameter in your `DataLoader`. This approach
-allows multiple workers to download shards concurrently, reducing the waiting
-time when a shard is exhausted. For example, if downloading takes 25% of the
-total processing time for one shard, you can increase `num_workers` to
+leverages additional workers to handle the download and processing of shards
+concurrently, thus minimizing idle time. For example, if downloading takes 25%
+of the total processing time for one shard, you can increase `num_workers` to
 accommodate this overhead. Additionally, you can adjust the `prefetch_factor` to
-ensure that the next shard is downloaded before the current one is fully
-processed.
+ensure that the next shard is downloaded before the current one is exhausted.
 
 ```python
-dataset = wds.WebDataset(urls)
+dataset = wds.WebDataset(urls, cache_dir=cache_dir, cache_size=cache_size)
 dataloader = DataLoader(dataset, num_workers=8, prefetch_factor=4)
 ```
 
@@ -1237,14 +1236,13 @@ requesting different shards, ensuring efficient data loading.
 
 Issue #303
 
-Q: Why does the total number of steps in an epoch change when using `num_workers
-> 0` in DDP training with WebDataset, and how can it be fixed?
+Q: Why does the total number of steps per epoch change when using `num_workers > 0` in DDP training with WebDataset?
 
 A: When using `num_workers > 0` in DDP training with WebDataset, the total
-number of steps in an epoch can be incorrect due to how the dataset is
-partitioned and shuffled across workers. To fix this, you should remove the
+number of steps per epoch can change due to how the dataset is partitioned and
+shuffled across multiple workers. To address this, you should remove the
 `with_epoch` from the WebDataset and apply it to the WebLoader instead.
-Additionally, you can add cross-worker shuffling to ensure proper data
+Additionally, consider adding cross-worker shuffling to ensure proper data
 distribution.
 
 ```python
@@ -1263,15 +1261,15 @@ loader = loader.unbatched().shuffle(2000).batched(20).with_epoch(200)
 
 Issue #307
 
-Q: Is it possible to skip loading certain files (e.g., large `jpg` files) when reading a tar file with WebDataset?
+Q: Is it possible to skip loading certain files when reading a tar file with WebDataset?
 
-A: When using WebDataset to read tar files, it is not possible to completely
-skip loading certain files (like large `jpg` files) because WebDataset operates
-on a streaming paradigm, meaning it reads the bytes as they stream in. However,
-you can use the `select_files` argument in the `wds.WebDataset` class to filter
-out unwanted files. Alternatively, you can use the "wids" interface for indexed
-access, which only reads the data you actually use. If performance is a concern,
-consider creating a new dataset that only includes the necessary fields.
+A: When using WebDataset to read a tar file, it is not possible to completely
+skip loading certain files (e.g., `jpg` files) into memory because WebDataset
+operates on a streaming paradigm. This means that all bytes must be read from
+the tar file, even if they are not used. However, you can use the `select_files`
+argument in the `wds.WebDataset` class or `wds.tarfile_to_samples` to filter out
+unwanted files. For more efficient access, consider using the "wids" interface,
+which provides indexed access and only reads the necessary data from disk.
 
 ```python
 import webdataset as wds
@@ -1284,7 +1282,7 @@ for sample in dataset:
     print(sample["txt"])
 ```
 
-This approach ensures that only the specified files are processed, potentially improving performance.
+If performance is a concern, generating a new dataset with only the required fields might be the best approach.
 
 ------------------------------------------------------------------------------
 
@@ -1292,23 +1290,29 @@ Issue #314
 
 Q: How can I detect when a tarball has been fully consumed by `tariterators.tar_file_expander`?
 
-A: Detecting when a tarball has been fully consumed can be challenging,
-especially with remote files represented as `io.BytesIO` objects. One approach
-is to add `__index_in_shard__` metadata to the samples. When this index is 0, it
-indicates that the last shard was fully consumed. Another potential solution is
-to fix issue #311, which might allow hooking into the `close` method. This would
-enable you to detect when the tar file has been fully processed. Here is a
-simple example of adding metadata:
+A: Detecting when a tarball has been fully consumed by
+`tariterators.tar_file_expander` can be challenging, especially with remote
+files represented as `io.BytesIO` objects. One approach is to add
+`__index_in_shard__` metadata to the samples. When this index is 0, it indicates
+that the last shard was fully consumed. Another potential solution is to hook
+into the `close` method, which might be facilitated by fixing issue #311. This
+would allow you to detect when the tar file is closed, signaling that it has
+been fully processed.
 
 ```python
-for sample in tar_file_expander(tar_file):
-    sample['__index_in_shard__'] = index
-    index += 1
+# Example of adding __index_in_shard__ metadata
+for sample in tar_file_expander(fileobj):
     if sample['__index_in_shard__'] == 0:
         print("Last shard fully consumed")
 ```
 
-This method ensures you can track the consumption of each tarball effectively.
+```python
+# Example of hooking into the close method (hypothetical)
+class CustomTarFileExpander(tariterators.tar_file_expander):
+    def close(self):
+        super().close()
+        print("Tar file fully consumed")
+```
 
 ------------------------------------------------------------------------------
 
@@ -1316,13 +1320,12 @@ Issue #316
 
 Q: How can I handle the error caused by webdataset attempting to collate `npy` files of different `num_frames` lengths?
 
-A: This error occurs because webdataset's default collation function tries to
-create a homogeneous array from `npy` files with varying `num_frames` lengths,
-leading to a `ValueError`. To resolve this, you can specify a custom collation
-function using the `collation_fn` argument in the `batched` method.
+A: This error occurs because webdataset's default collation function cannot
+handle `npy` files with varying `num_frames` lengths. To resolve this, you can
+specify a custom collation function that can handle these variations.
 Alternatively, you can set `combine_tensors=False` and `combine_scalars=False`
-to prevent automatic collation. Here’s an example of how to specify a custom
-collation function:
+to prevent automatic collation. Here's how you can specify a custom collation
+function:
 
 ```python
 def custom_collate_fn(batch):
@@ -1362,13 +1365,21 @@ files?
 
 A: When dealing with complex hierarchical data structures in WebDataset, you can
 use a naming scheme with separators like "." to define the hierarchy. For
-instance, you can name files as `sample_0.frames.0.jpg` and
+example, you can name files as `sample_0.frames.0.jpg` and
 `sample_0.frames.1.jpg` to represent different frames. However, for more complex
-structures, it's often easier to use sequential numbering for files and express
-the hierarchy explicitly in a JSON file. This approach simplifies the naming and
-allows you to define the structure within the JSON metadata.
+structures, it's often easier to use a flat naming scheme and express the
+hierarchy in a JSON file. This way, you can number the files sequentially and
+include the structure in the JSON metadata.
 
-Example:
+```json
+{
+    "frames": ["000.jpg", "001.jpg", "002.jpg"],
+    "timestamps": [10001, 10002, 10003],
+    "duration": 3
+}
+```
+
+Files would be named as:
 
 ```
 sample_0.000.jpg
@@ -1377,35 +1388,28 @@ sample_0.002.jpg
 sample_0.json
 ```
 
-JSON content:
-
-```json
-{
-    "frames": ["000.jpg", "001.jpg", "002.jpg"],
-    "timestamps": [...],
-    "duration": ...
-}
-```
+This approach simplifies the file naming and allows you to maintain complex structures within the JSON metadata.
 
 ------------------------------------------------------------------------------
 
 Issue #329
 
-Q: How can I create a JSON metafile for random access in WebDataset (wds) from an off-the-shelf wds shards dataset?
+Q: How can I create a JSON file for WIDS from an off-the-shelf WDS shards dataset?
 
-A: You can create a JSON metafile for random access in WebDataset using the
-`widsindex` command, which is part of the WebDataset distribution. This command
-takes a list of shards or shardspecs and generates an index for them. Here is an
-example of how to use `widsindex`:
+A: To create a JSON file for WIDS from an existing WDS shards dataset, you can
+use the `widsindex` command provided by the webdataset distribution. This
+command takes a list of shards or shardspecs and generates an index for them.
+Here is a basic example of how to use `widsindex`:
 
 ```bash
 widsindex shard1.tar shard2.tar shard3.tar > index.json
 ```
 
 This command will create an `index.json` file that can be used for random access
-in WebDataset. You can refer to the example JSON file at [imagenet-
+in WIDS. For more details, you can refer to the example JSON file provided in
+the webdataset repository: [imagenet-
 train.json](https://storage.googleapis.com/webdataset/fake-imagenet/imagenet-
-train.json) for the structure.
+train.json).
 
 ------------------------------------------------------------------------------
 
@@ -1414,9 +1418,9 @@ Issue #331
 Q: How can I handle gzipped tar files with WIDS when loading the SAM dataset?
 
 A: WIDS currently does not support gzipped tar files directly due to the
-complexities of random access in compressed files. The best workaround is to re-
-tar the dataset without compression. You can use the `tarfile` library in Python
-to extract and re-tar the files. Here is a sample script to do this:
+inefficiency of random access in compressed streams. The best workaround is to
+re-tar the dataset without compression. You can use the `tarfile` library in
+Python to extract and re-tar the files. Here is a sample script to do this:
 
 ```python
 import os
@@ -1436,46 +1440,34 @@ tdev = tarfile.open(fpath, "w")
 
 for idx, member in tqdm(enumerate(t.getmembers())):
     print(idx, member, flush=True)
-    tdev.addfile(member, t.extractfile(member.name))
-
-t.close()
-tdev.close()
-print("Finish")
-```
-
-Alternatively, you can compress individual files inside the tar file (e.g.,
-`.json.gz` instead of `.json`), which WebDataset will automatically decompress.
+    tdev.add
 
 ------------------------------------------------------------------------------
 
 Issue #332
 
-Q: How can I ensure deterministic dataloading with WebDataset to cover all images without any left behind?
+Q: How can I ensure deterministic dataloading with WebDataset to cover all images without any being left behind?
 
-A: To achieve deterministic dataloading with WebDataset, you can iterate through
-each sample in sequence from beginning to end. This can be done by simply using
-the WebDataset iterator without any shuffling. Here is an example:
+A: To achieve deterministic dataloading with WebDataset, you should iterate
+through each sample in sequence from beginning to end. This can be done by
+setting up your dataset and iterator as follows:
 
 ```python
 dataset = WebDataset("data-{000000..000999}.tar")
 for sample in dataset:
-    # Process each sample
     ...
 ```
 
-For large-scale parallel inference, you can parallelize over shards using a library like Ray. Here is an example:
+For large-scale parallel inference, consider parallelizing over shards using a
+parallel library like Ray. Here’s an example:
 
 ```python
-import ray
-import webdataset as wds
-
 def process_shard(input_shard):
     output_shard = ...  # compute output shard name
     src = wds.WebDataset(input_shard).decode("PIL")
     snk = wds.TarWriter(output_shard)
     for sample in src:
         sample["cls"] = classifier(sample["jpg"])
-        # Do more/other stuff, maybe delete the image
         snk.write(sample)
     src.close()
     snk.close()
@@ -1486,23 +1478,25 @@ results = ray.map(process_shard, shards)
 ray.get(results)
 ```
 
-This approach ensures that all images are processed deterministically and none are left behind.
+This approach ensures that each shard is processed deterministically and in
+parallel, covering all images without any being left behind.
 
 ------------------------------------------------------------------------------
 
 Issue #350
 
-Q: How does shuffling work in WebDataset, and how can I achieve the best shuffling?
+Q: How does shuffling work in WebDataset, and how can I achieve optimal shuffling?
 
 A: The `.shuffle(...)` method in WebDataset shuffles samples within a shard. To
-shuffle shards, you need to use `WebDataset(..., shardshuffle=True, ...)`. The
-best way to shuffle both between and within shards is to use a combination of
-`shardshuffle` and `.shuffle(...)` methods. Here is an example:
+shuffle shards, you need to use `WebDataset(..., shardshuffle=True, ...)`. For
+optimal shuffling, you should shuffle both between shards and within shards.
+Here is an example of how to achieve this:
 
 ```python
 dataset = WebDataset(..., shardshuffle=100).shuffle(...) ... .batched(64)
 dataloader = WebLoader(dataset, num_workers=..., ...).unbatched().shuffle(5000).batched(batch_size)
 ```
 
-This approach ensures that you achieve comprehensive shuffling, enhancing the randomness and quality of your dataset.
+This approach ensures that data is shuffled at both the shard level and the
+sample level, providing a more randomized dataset for training.
 
