@@ -9,6 +9,9 @@ from invoke import task
 import subprocess
 import json
 import time
+from invoke import task
+import subprocess
+import textwrap
 
 
 from invoke import task
@@ -59,10 +62,12 @@ def autoflake(c):
         f"{ACTIVATE}{PYTHON3} -m autoflake --in-place --remove-all-unused-imports examples/[a-z]*.py webdataset/[a-z]*.py tests/[a-z]*.py wids/[a-z]*.py tasks.py"
     )
 
+
 @task
 def isort(c):
     """Run isort on the code."""
     c.run(f"{ACTIVATE}{PYTHON3} -m isort --atomic --float-to-top webdataset examples wids tests tasks.py")
+
 
 @task
 def cleanup(c):
@@ -94,20 +99,24 @@ def test(c):
     # venv(c)
     c.run(f"{ACTIVATE}{PYTHON3} -m pytest -x tests")
 
-@task 
+
+@task
 def debugtest(c):
     "Run the tests with --pdb."
     c.run(f"{ACTIVATE}{PYTHON3} -m pytest -x --pdb tests")
+
 
 @task
 def tests(c):
     "Run the tests."
     test(c)
 
+
 @task
 def testwids(c):
     "Run the wids tests."
     c.run(f"{ACTIVATE}{PYTHON3} -m pytest -x tests/test_wids*.py")
+
 
 @task
 def nbstrip(c):
@@ -116,61 +125,13 @@ def nbstrip(c):
         print("stripping", nb, file=sys.stderr)
         c.run(f"{ACTIVATE}jupyter nbconvert --ClearOutputPreprocessor.enabled=True --inplace {nb}")
 
+
 @task
 def nbexecute(c):
     print("executing notebooks, this will take a while")
     for nb in glob.glob("examples/*.ipynb"):
         print("executing", nb, file=sys.stderr)
         c.run(f"{ACTIVATE}jupyter nbconvert --execute --inplace {nb}")
-
-@task
-def newversion(c):
-    """Increment the version number."""
-    text = open("setup.py").read()
-    version = re.search('version *= *"([0-9.]+)"', text).group(1)
-    print("old version", version)
-    version = [int(x) for x in version.split(".")]
-    version[-1] += 1
-    version = ".".join(str(x) for x in version)
-    print("new version", version)
-    text = re.sub(
-        r'version *= *"[0-9]+[.][0-9]+[.][0-9]+"',
-        f'version = "{version}"',
-        text,
-    )
-    with open("setup.py", "w") as stream:
-        stream.write(text)
-    with open("VERSION", "w") as stream:
-        stream.write(version)
-    text = open("webdataset/__init__.py").read()
-    text = re.sub(
-        r'^__version__ = ".*',
-        f'__version__ = "{version}"',
-        text,
-        flags=re.MULTILINE,
-    )
-    with open("webdataset/__init__.py", "w") as stream:
-        stream.write(text)
-    os.system("grep 'version *=' setup.py")
-    os.system("grep '__version__ *=' webdataset/__init__.py")
-    # venv(c)
-    # c.run(f"{ACTIVATE}{PYTHON3} -m pytest")
-    # c.run("git add VERSION setup.py webdataset/__init__.py")
-    # c.run("git commit -m 'incremented version'")
-    # c.run("git push")
-
-
-@task
-def release(c):
-    "Tag the current version as a release on Github."
-    if "working tree clean" not in c.run("git status").stdout:
-        input()
-    newversion(c)
-    version = open("VERSION").read().strip()
-    # os.system(f"hub release create {version}")  # interactive
-    assert os.system("git commit -a -m 'new version'") == 0
-    assert os.system("git push") == 0
-    os.system(f"gh release create {version}")  # interactive
 
 
 @task
@@ -203,19 +164,21 @@ def nbprocess(c, nb, *args, **kwargs):
         c.run(f"../venv/bin/python -m papermill -l python {' '.join(args)} {nb} out/_{nb}")
         c.run(f"mv out/_{nb} {out_file}")
 
+
 @task
 def nbrun(c):
-    with c.cd('examples'):  # Change directory to 'examples'
+    with c.cd("examples"):  # Change directory to 'examples'
         c.run("rm -f *.log *.out.ipynb *.stripped.ipynb _temp.ipynb", pty=True)
         c.run("mkdir -p out", pty=True)
 
-        nbprocess(c, 'generate-text-dataset.ipynb')
-        nbprocess(c, 'train-ocr-errors-hf.ipynb', '-p', 'max_steps', '100')
-        nbprocess(c, 'train-resnet50-wds.ipynb', '-p', 'max_steps', '10000')
-        nbprocess(c, 'train-resnet50-wids.ipynb', '-p', 'max_steps', '10000')
-        nbprocess(c, 'train-resnet50-multiray-wds.ipynb', '-p', 'max_steps', '1000')
-        nbprocess(c, 'train-resnet50-multiray-wids.ipynb', '-p', 'max_steps', '1000')
-        nbprocess(c, 'tesseract-wds.ipynb')
+        nbprocess(c, "generate-text-dataset.ipynb")
+        nbprocess(c, "train-ocr-errors-hf.ipynb", "-p", "max_steps", "100")
+        nbprocess(c, "train-resnet50-wds.ipynb", "-p", "max_steps", "10000")
+        nbprocess(c, "train-resnet50-wids.ipynb", "-p", "max_steps", "10000")
+        nbprocess(c, "train-resnet50-multiray-wds.ipynb", "-p", "max_steps", "1000")
+        nbprocess(c, "train-resnet50-multiray-wids.ipynb", "-p", "max_steps", "1000")
+        nbprocess(c, "tesseract-wds.ipynb")
+
 
 @task
 def gendocs(c):
@@ -225,9 +188,9 @@ def gendocs(c):
     # convert IPython Notebooks
     # for nb in glob.glob("notebooks/*.ipynb"):
     #    c.run(f"{ACTIVATE} jupyter nbconvert {nb} --to markdown --output-dir=docsrc/.")
-    #c.run(f"mkdocs build")
-    #c.run(f"pdoc -t docsrc -o docs/api webdataset")
-    #c.run("git add docs")
+    # c.run(f"mkdocs build")
+    # c.run(f"pdoc -t docsrc -o docs/api webdataset")
+    # c.run("git add docs")
 
 
 @task
@@ -329,6 +292,7 @@ def dockerbase(c):
     "Build a base container."
     docker_build(c, base_container, tag="webdatasettest-base")
 
+
 @task
 def dockerlocal(c):
     """Run tests locally in a docker container."""
@@ -339,6 +303,7 @@ def dockerlocal(c):
     c.run("cp dist/*.whl current.whl")
     c.run("cp dist/*.tar current.tar")
     docker_build(c, local_test, files=["current.whl", "current.tar"], nocache=True)
+
 
 @task(dockerbase)
 def githubtest(c):
@@ -361,15 +326,17 @@ required_files = """
 .gitignore
 """.strip().split()
 
+
 def wrap_long_lines(text, width=80, threshold=120):
-    lines = text.split('\n')
+    lines = text.split("\n")
     wrapped_lines = []
     for line in lines:
         if len(line) > threshold:
             wrapped_lines.append(textwrap.fill(line, width))
         else:
             wrapped_lines.append(line)
-    return '\n'.join(wrapped_lines)
+    return "\n".join(wrapped_lines)
+
 
 faq_intro = """
 # WebDataset FAQ
@@ -382,6 +349,7 @@ be correct.  When in doubt, check the original issue.
 
 """
 
+
 @task
 def makefaq(c):
     "Create the FAQ.md file from faqs/*.md"
@@ -393,7 +361,7 @@ def makefaq(c):
         with open(fname) as stream:
             text = stream.read()
         text = text.strip()
-        text = re.sub(r'[ \t]+$', '', text, flags=re.MULTILINE)
+        text = re.sub(r"[ \t]+$", "", text, flags=re.MULTILINE)
         text = wrap_long_lines(text)
         if len(text) < 10:
             continue
@@ -401,8 +369,8 @@ def makefaq(c):
         if match := re.match(r"faqs/([0-9]+)\.md", fname):
             issue_number = int(match.group(1))
             text = f"Issue #{issue_number}\n\n{text}"
-        output.write("-"*78 + "\n\n")
-        output.write(text.strip()+"\n\n")
+        output.write("-" * 78 + "\n\n")
+        output.write(text.strip() + "\n\n")
     output.close()
 
 
@@ -418,26 +386,27 @@ def checkall(c):
         assert os.path.exists(fname), fname
     assert "run: make" not in open(".github/workflows/test.yml").read()
 
+summarize_issue_instructions = """
+    - turn this issue report into an FAQ entry if and only if it contains some useful information for users
+    - if it does not contain useful information, ONLY return the string N/A
+    - the FAQ entry should focus on the single most important part of the issue
+    - the FAQ should start with a short Q: and then have an A: that is 1-2 paragraphs long
+    - be sure that both Q: and A: start in the first column
+    - the very first characters of your answer should be "Q: "
+    - you can include 1-2 short code examples
+    - use Markdown format to format the output
+    - be sure to use ```...``` and `...` consistently for all code
+    - YOU MUST USE MARKDOWN FORMAT FOR YOUR OUTPUT
+    - DO NOT EVER RETURN CODE BLOCKS WITHOUT SURROUNDING THEM WITH ```...```
+"""
 
 @task
-def summarize(c, content):
+def summarize_issue(c, content):
     result = subprocess.run(
         [
             "sgpt",
             "--no-md",
-            """
-            - turn this issue report into an FAQ entry if and only if it contains some useful information for users
-            - if it does not contain useful information, ONLY return the string N/A
-            - the FAQ entry should focus on the single most important part of the issue
-            - the FAQ should start with a short Q: and then have an A: that is 1-2 paragraphs long
-            - be sure that both Q: and A: start in the first column
-            - the very first characters of your answer should be "Q: "
-            - you can include 1-2 short code examples
-            - use Markdown format to format the output
-            - be sure to use ```...``` and `...` consistently for all code
-            - YOU MUST USE MARKDOWN FORMAT FOR YOUR OUTPUT
-            - DO NOT EVER RETURN CODE BLOCKS WITHOUT SURROUNDING THEM WITH ```...```
-        """,
+            summarize_issue_instructions,
         ],
         input=content.encode(),
         stdout=subprocess.PIPE,
@@ -492,9 +461,141 @@ def faqs(c):
         combined_content = f"# {issue_title}\n\n{issue_body}\n\n## Comments\n\n{comments}"
 
         # Pipe the combined content to the summarize function and write the output to a file
-        summarized_content = summarize(c, combined_content)
+        summarized_content = summarize_issue(c, combined_content)
         with open(output, "w") as f:
             f.write(summarized_content)
         print(summarized_content)
         time.sleep(3)
         print("\n\n")
+
+
+summarize_version_instructions = """
+Summarize the changes in this git diff in one concise paragraph
+suitable for inclusion in a changelog or release notes.
+Do not output any Markdown section headers (like ## or ###).
+Use Markdown lists to structure the output more cleanly.
+Do not simply describe changes ("added xyz file", "updated abc function"), only summarize the intention/meaning of changes.
+Leave out any comments related to changes of the maintainer or project status.
+Leave out any comments related to VERSION files or version numbers.
+Leave out any comments related to README files.
+Leave out any comments related to changes formatting or coding style
+Be sure to use Markdown conventions to quote code or filenames: `like this`.
+Do not include verbiage like "The git diff shows..."
+Do not include verbiage like "Updated version to..." or "Reverted version to..." or "updated ... to reflect new version"
+Do NOT include comments like "Modified setup.py to update version number".
+NO COMMENTS ABOUT VERSIONS OR VERSION NUMBERS, EVER!!!
+"""
+
+
+def summarize_version(commit, prev_commit):
+    maxsize = 200000
+
+    diff = subprocess.run(f"git log {prev_commit}..{commit} --decorate=short; git diff --stat {prev_commit} {commit}; git diff {prev_commit} {commit} -- '*.py'", capture_output=True, text=True, shell=True).stdout
+
+    if len(diff) > maxsize:
+        print(f"WARNING: diff too large ({len(diff)} bytes), truncating to {maxsize} bytes", file=sys.stderr)
+
+    diff = diff[:maxsize]
+
+    result = subprocess.run(
+        ["sgpt", "--no-md", summarize_version_instructions], input=diff, capture_output=True, text=True
+    ).stdout
+
+    return result
+
+
+@task
+def versions(ctx, n=1000):
+    commits = subprocess.run(
+        f"git log --pretty=format:'%ai %h %d' -n{n}", shell=True, capture_output=True, text=True
+    ).stdout
+
+    print("# Commit Summaries\n")
+
+    commit = "HEAD"
+
+    output_stream = open("VERSIONS.md", "w")
+
+    for line in commits.splitlines():
+        if "tag:" in line:
+            parts = line.split()
+            prev_d, prev_t, prev_z, prev_commit = parts[0], parts[1], parts[2], parts[3]
+            message = subprocess.run(
+                "git log --format=%B -n 1 {}".format(prev_commit), capture_output=True, text=True, shell=True
+            ).stdout.strip()
+
+            summary = summarize_version(commit, prev_commit)
+
+            tag = subprocess.run(
+                "git describe --tags {}".format(commit), capture_output=True, text=True, shell=True
+            ).stdout.strip()
+
+            prev_tag = subprocess.run(
+                "git describe --tags {}".format(prev_commit), capture_output=True, text=True, shell=True
+            ).stdout.strip()
+            result = f"## Commit: {prev_tag} -> {tag}\n\n"
+            result += f"{prev_commit} -> {commit} @ {prev_d} {prev_t} {prev_z}\n\n"
+            result += f"{summary}\n"
+
+            print(result)
+            output_stream.write(result)
+
+            commit = prev_commit
+
+    output_stream.close()
+
+
+@task
+def newversion(c):
+    """Increment the version number."""
+    text = open("setup.py").read()
+    version = re.search('version *= *"([0-9.]+)"', text).group(1)
+    print("old version", version)
+    version = [int(x) for x in version.split(".")]
+    version[-1] += 1
+    version = ".".join(str(x) for x in version)
+    print("new version", version)
+    text = re.sub(
+        r'version *= *"[0-9]+[.][0-9]+[.][0-9]+"',
+        f'version = "{version}"',
+        text,
+    )
+    with open("setup.py", "w") as stream:
+        stream.write(text)
+    with open("VERSION", "w") as stream:
+        stream.write(version)
+    text = open("webdataset/__init__.py").read()
+    text = re.sub(
+        r'^__version__ = ".*',
+        f'__version__ = "{version}"',
+        text,
+        flags=re.MULTILINE,
+    )
+    with open("webdataset/__init__.py", "w") as stream:
+        stream.write(text)
+    os.system("grep 'version *=' setup.py")
+    os.system("grep '__version__ *=' webdataset/__init__.py")
+    # venv(c)
+    # c.run(f"{ACTIVATE}{PYTHON3} -m pytest")
+    # c.run("git add VERSION setup.py webdataset/__init__.py")
+    # c.run("git commit -m 'incremented version'")
+    # c.run("git push")
+
+
+@task
+def release(c):
+    "Tag the current version as a release on Github."
+    if "working tree clean" not in c.run("git status").stdout:
+        input()
+    # newversion(c)
+    version = open("VERSION").read().strip()
+    changes = summarize_version(version, "last_release")
+    print(changes)
+    return
+    # os.system(f"hub release create {version}")  # interactive
+    assert os.system("git commit -a -m 'new version'") == 0
+    assert os.system("git push") == 0
+    os.system(f"gh release create {version}")  # interactive
+    os.system(f"git tag -f last_release {version}")
+
+
