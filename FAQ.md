@@ -71,30 +71,39 @@ Issue #331
 
 Q: How can I handle gzipped tar files with WIDS when loading the SAM dataset?
 
-A: WIDS currently does not support gzipped tar files directly due to the
-inefficiency of random access in compressed streams. The best workaround is to
-re-tar the dataset without compression. You can use the `tarfile` library in
-Python to extract and re-tar the files. Here is a sample script to do this:
+A: When using WIDS to load the SAM dataset, you may encounter a
+`UnicodeDecodeError` due to the dataset being gzipped. WIDS does not natively
+support gzipped tar files for random access. As a workaround, you can re-tar the
+dataset without compression. This can be done using the `tarfile` library in
+Python to extract and re-tar the files. Alternatively, you can compress
+individual files within the tar archive (e.g., `.json.gz` instead of `.json`),
+which WIDS can handle. Here is an example of re-tarring the dataset:
 
 ```python
 import os
-import os.path as osp
 import tarfile
 from tqdm import tqdm
 
-src_tar_path = osp.expanduser(src_tar)
-src_folder_path = osp.expanduser(src_folder)
-tgt_folder_path = osp.expanduser(tgt_folder)
-rpath = osp.relpath(src_tar_path, src_folder_path)
+src_tar_path = "path/to/sa_000000.tar"
+src_folder_path = "path/to/src_folder"
+tgt_folder_path = "path/to/tgt_folder"
+rpath = os.path.relpath(src_tar_path, src_folder_path)
 t = tarfile.open(src_tar_path)
 
-fpath = osp.join(tgt_folder_path, rpath)
-os.makedirs(osp.dirname(fpath), exist_ok=True)
+fpath = os.path.join(tgt_folder_path, rpath)
+os.makedirs(os.path.dirname(fpath), exist_ok=True)
 tdev = tarfile.open(fpath, "w")
 
 for idx, member in tqdm(enumerate(t.getmembers())):
     print(idx, member, flush=True)
-    tdev.add
+    tdev.addfile(member, t.extractfile(member.name))
+
+t.close()
+tdev.close()
+print("Finish")
+```
+
+This approach ensures compatibility with WIDS by avoiding the issues associated with gzipped tar files.
 
 ------------------------------------------------------------------------------
 

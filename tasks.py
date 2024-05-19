@@ -396,6 +396,7 @@ summarize_issue_instructions = """
     - you can include 1-2 short code examples
     - use Markdown format to format the output
     - be sure to use ```...``` and `...` consistently for all code
+    - be sure your quotes are matching and that you are using proper Markdown formatting
     - YOU MUST USE MARKDOWN FORMAT FOR YOUR OUTPUT
     - DO NOT EVER RETURN CODE BLOCKS WITHOUT SURROUNDING THEM WITH ```...```
 """
