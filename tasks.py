@@ -356,7 +356,7 @@ def makefaq(c):
     output = open("FAQ.md", "w")
     output.write(faq_intro)
     entries = sorted(glob.glob("faqs/[a-zA-Z]*.md"))
-    entries = sorted(glob.glob("faqs/[0-9]*.md"))
+    entries = sorted(glob.glob("faqs/[0-9]*.md"), reverse=True)
     for fname in entries:
         with open(fname) as stream:
             text = stream.read()
