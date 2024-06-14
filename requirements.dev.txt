@@ -39,12 +39,12 @@ imageio
 
 torch
 torchvision
-pytorch_lightning
-adapter-transformers
-sentencepiece
-pyphen
+# pytorch_lightning
+# adapter-transformers
+# sentencepiece
+# pyphen
 
-ray
-ray[tune]
-ray[default]
-ray[sgd]
+# ray
+# ray[tune]
+# ray[default]
+# ray[sgd]

@@ -133,7 +133,7 @@ class WebDataset(DataPipeline, FluidInterface):
         if resampled:
             mode = "resampled"
         if shardshuffle is None:
-            warnings.warn("Webdataset(shardshuffle=...) is None; set explicitly to False or a number")
+            warnings.warn("WebDataset(shardshuffle=...) is None; set explicitly to False or a number")
         if shardshuffle is True:
             shardshuffle = 100
         args = SimpleNamespace(**locals())
