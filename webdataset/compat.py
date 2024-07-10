@@ -155,9 +155,9 @@ class WebDataset(DataPipeline, FluidInterface):
         # add a shard shuffler
         if args.shardshuffle is not None:
             if args.detshuffle:
-                self.append(filters.detshuffle(args.shardshuffle, seed=args.seed))
+                self.append(filters.detshuffle(args.shardshuffle, seed=self.seed))
             else:
-                self.append(filters.shuffle(args.shardshuffle, seed=args.seed))
+                self.append(filters.shuffle(args.shardshuffle, seed=self.seed))
 
         # next, we select a URL opener, either with or without caching
         # this generates a stream of dict(url=..., stream=...)
