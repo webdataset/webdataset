@@ -592,7 +592,6 @@ def release(c):
     version = open("VERSION").read().strip()
     changes = summarize_version(version, "last_release")
     print(changes)
-    return
     # os.system(f"hub release create {version}")  # interactive
     assert os.system("git commit -a -m 'new version'") == 0
     assert os.system("git push") == 0
