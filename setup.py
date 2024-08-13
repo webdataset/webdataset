@@ -16,7 +16,7 @@ scripts = []
 
 setuptools.setup(
     name="webdataset",
-    version = "0.2.94",
+    version = "0.2.95",
     description="Record sequential storage for deep learning.",
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
