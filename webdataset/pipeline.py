@@ -46,10 +46,10 @@ class DataPipeline(IterableDataset, PipelineStage):
 
     def invoke(self, f, *args, **kwargs):
         """Apply a pipeline stage, possibly to the output of a previous stage."""
-        if isinstance(f, PipelineStage):
-            return f.run(*args, **kwargs)
         if isinstance(f, (IterableDataset, DataLoader)) and len(args) == 0:
             return iter(f)
+        if isinstance(f, PipelineStage):
+            return f.run(*args, **kwargs)
         if isinstance(f, list):
             return iter(f)
         if callable(f):
