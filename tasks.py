@@ -386,6 +386,7 @@ def checkall(c):
         assert os.path.exists(fname), fname
     assert "run: make" not in open(".github/workflows/test.yml").read()
 
+
 summarize_issue_instructions = """
     - turn this issue report into an FAQ entry if and only if it contains some useful information for users
     - if it does not contain useful information, ONLY return the string N/A
@@ -400,6 +401,7 @@ summarize_issue_instructions = """
     - YOU MUST USE MARKDOWN FORMAT FOR YOUR OUTPUT
     - DO NOT EVER RETURN CODE BLOCKS WITHOUT SURROUNDING THEM WITH ```...```
 """
+
 
 @task
 def summarize_issue(c, content):
@@ -491,7 +493,12 @@ NO COMMENTS ABOUT VERSIONS OR VERSION NUMBERS, EVER!!!
 def summarize_version(commit, prev_commit):
     maxsize = 200000
 
-    diff = subprocess.run(f"git log {prev_commit}..{commit} --decorate=short; git diff --stat {prev_commit} {commit}; git diff {prev_commit} {commit} -- '*.py'", capture_output=True, text=True, shell=True).stdout
+    diff = subprocess.run(
+        f"git log {prev_commit}..{commit} --decorate=short; git diff --stat {prev_commit} {commit}; git diff {prev_commit} {commit} -- '*.py'",
+        capture_output=True,
+        text=True,
+        shell=True,
+    ).stdout
 
     if len(diff) > maxsize:
         print(f"WARNING: diff too large ({len(diff)} bytes), truncating to {maxsize} bytes", file=sys.stderr)
@@ -545,12 +552,14 @@ def versions(ctx, n=1000):
 
     output_stream.close()
 
+
 def read_version():
     """Read the current version number from setup.py."""
     text = open("setup.py").read()
     version = re.search('version *= *"([0-9.]+)"', text).group(1)
     print("old version", version)
     return version
+
 
 def increment_version(version):
     """Increment the version number."""
@@ -559,6 +568,7 @@ def increment_version(version):
     new_version = ".".join(str(x) for x in version)
     print("new version", new_version)
     return new_version
+
 
 def write_version_to_setup(version):
     """Write the new version number to setup.py."""
@@ -571,10 +581,12 @@ def write_version_to_setup(version):
     with open("setup.py", "w") as stream:
         stream.write(text)
 
+
 def write_version_to_version_file(version):
     """Write the new version number to VERSION file."""
     with open("VERSION", "w") as stream:
         stream.write(version)
+
 
 def write_version_to_init(version):
     """Write the new version number to webdataset/__init__.py."""
@@ -588,7 +600,8 @@ def write_version_to_init(version):
     with open("webdataset/__init__.py", "w") as stream:
         stream.write(text)
 
-def update_version_numbers_locally(c):
+
+def update_version_numbers_locally():
     """Increment the version number."""
     old_version = read_version()
     new_version = increment_version(old_version)
@@ -616,10 +629,10 @@ def release(c):
     if "working tree clean" not in result.stdout:
         print("Working tree is not clean. Please commit or stash your changes.")
         return
-    
+
     update_version_numbers_locally()
     version = read_version()
-    
+
     try:
         subprocess.check_call(["git", "commit", "-a", "-m", "Incremented version number"])
         subprocess.check_call(["git", "push", "--set-upstream", "origin", "main"])
@@ -633,5 +646,3 @@ def release(c):
         return
 
     print(f"Release {version} created successfully.")
-
-
