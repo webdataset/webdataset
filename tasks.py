@@ -545,17 +545,24 @@ def versions(ctx, n=1000):
 
     output_stream.close()
 
-
-@task
-def newversion(c):
-    """Increment the version number."""
+def read_version():
+    """Read the current version number from setup.py."""
     text = open("setup.py").read()
     version = re.search('version *= *"([0-9.]+)"', text).group(1)
     print("old version", version)
+    return version
+
+def increment_version(version):
+    """Increment the version number."""
     version = [int(x) for x in version.split(".")]
     version[-1] += 1
-    version = ".".join(str(x) for x in version)
-    print("new version", version)
+    new_version = ".".join(str(x) for x in version)
+    print("new version", new_version)
+    return new_version
+
+def write_version_to_setup(version):
+    """Write the new version number to setup.py."""
+    text = open("setup.py").read()
     text = re.sub(
         r'version *= *"[0-9]+[.][0-9]+[.][0-9]+"',
         f'version = "{version}"',
@@ -563,8 +570,14 @@ def newversion(c):
     )
     with open("setup.py", "w") as stream:
         stream.write(text)
+
+def write_version_to_version_file(version):
+    """Write the new version number to VERSION file."""
     with open("VERSION", "w") as stream:
         stream.write(version)
+
+def write_version_to_init(version):
+    """Write the new version number to webdataset/__init__.py."""
     text = open("webdataset/__init__.py").read()
     text = re.sub(
         r'^__version__ = ".*',
@@ -574,28 +587,48 @@ def newversion(c):
     )
     with open("webdataset/__init__.py", "w") as stream:
         stream.write(text)
-    os.system("grep 'version *=' setup.py")
-    os.system("grep '__version__ *=' webdataset/__init__.py")
-    # venv(c)
-    # c.run(f"{ACTIVATE}{PYTHON3} -m pytest")
-    # c.run("git add VERSION setup.py webdataset/__init__.py")
-    # c.run("git commit -m 'incremented version'")
-    # c.run("git push")
+
+def update_version_numbers_locally(c):
+    """Increment the version number."""
+    old_version = read_version()
+    new_version = increment_version(old_version)
+    write_version_to_setup(new_version)
+    write_version_to_version_file(new_version)
+    write_version_to_init(new_version)
+
+
+def get_changes(version):
+    """Get the changes for the given version."""
+    try:
+        changes = summarize_version(version, "last_release")
+        return changes
+    except:
+        print("summarize_changes failed, just using git log")
+        return subprocess.run(
+            f"git log last_release..{version} --oneline", shell=True, capture_output=True, text=True
+        ).stdout
 
 
 @task
 def release(c):
     "Tag the current version as a release on Github."
-    if "working tree clean" not in c.run("git status").stdout:
-        input()
-    # newversion(c)
-    version = open("VERSION").read().strip()
-    changes = summarize_version(version, "last_release")
-    print(changes)
-    # os.system(f"hub release create {version}")  # interactive
-    assert os.system("git commit -a -m 'new version'") == 0
-    assert os.system("git push") == 0
-    os.system(f"gh release create {version}")  # interactive
-    os.system(f"git tag -f last_release {version}")
+    result = c.run("git status", hide=True)
+    if "working tree clean" not in result.stdout:
+        print("Working tree is not clean. Please commit or stash your changes.")
+        return
+    
+    update_version_numbers_locally()
+    version = read_version()
+    
+    try:
+        subprocess.check_call(["git", "commit", "-a", "-m", "Incremented version number"])
+        subprocess.check_call(["git", "push"])
+        subprocess.check_call(["gh", "release", "create", version, "-t", version, "-n", f"Release {version}"])
+        subprocess.check_call(["git", "tag", "-f", "last_release", version])
+    except subprocess.CalledProcessError as e:
+        print(f"An error occurred: {e}")
+        return
+
+    print(f"Release {version} created successfully.")
 
 
