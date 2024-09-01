@@ -119,18 +119,16 @@ def main_create(args):
         fnames.extend(braceexpand.braceexpand(f))
 
     # create the shard index
-    downloader = wids_dl.SimpleDownloader()
     files = []
     for fname in fnames:
         print(fname)
-        downloaded = downloader.download(fname, "/tmp/shard.tar")
+        downloaded = wids_dl.download_file(fname, "/tmp/shard.tar")
         md5sum = wids.compute_file_md5sum(downloaded)
         nsamples = wids.compute_num_samples(downloaded)
         filesize = os.stat(downloaded).st_size
         files.append(
             dict(url=fname, md5sum=md5sum, nsamples=nsamples, filesize=filesize)
         )
-        downloader.release(downloaded)
 
     files = sorted(files, key=lambda x: x["url"])
 
