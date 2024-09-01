@@ -85,7 +85,7 @@ def compute_file_md5sum(fname: Union[str, BinaryIO], chunksize: int = 1000000) -
 
 
 def compute_num_samples(fname):
-    ds = IndexedTarSamples(fname)
+    ds = IndexedTarSamples(path=fname)
     return len(ds)
 
 
