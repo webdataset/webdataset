@@ -622,9 +622,12 @@ def release(c):
     
     try:
         subprocess.check_call(["git", "commit", "-a", "-m", "Incremented version number"])
-        subprocess.check_call(["git", "push"])
+        subprocess.check_call(["git", "push", "--set-upstream", "origin", "main"])
+        subprocess.check_call(["git", "tag", version])
+        subprocess.check_call(["git", "push", "origin", version])
         subprocess.check_call(["gh", "release", "create", version, "-t", version, "-n", f"Release {version}"])
         subprocess.check_call(["git", "tag", "-f", "last_release", version])
+        subprocess.check_call(["git", "push", "origin", "--tags"])
     except subprocess.CalledProcessError as e:
         print(f"An error occurred: {e}")
         return
