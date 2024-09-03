@@ -685,6 +685,7 @@ class Cached(PipelineStage):
 
 
 class LMDBCached(PipelineStage):
+
     def __init__(self, fname, map_size=1e12, pickler=pickle, chunksize=500):
         import lmdb
 

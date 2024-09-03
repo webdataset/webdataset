@@ -22,11 +22,13 @@ verbose_cache = int(os.environ.get("WDS_VERBOSE_CACHE", "0"))
 
 
 def islocal(url):
+    """Check whether a URL is a local file."""
     parsed = urlparse(url)
     return parsed.scheme in ["", "file"]
 
 
 def get_filetype(fname: str):
+    """Get the file type of a file."""
     assert os.path.exists(fname), fname
     assert os.system("file . > /dev/null") == 0, "UNIX/Linux file command not available"
     with os.popen("file '%s'" % fname) as f:
@@ -82,6 +84,8 @@ def url_to_cache_name(url, ndir=0):
 
 
 class LRUCleanup:
+    """Perform LRU cleanup on a cache directory."""
+
     def __init__(
         self,
         cache_dir=None,
@@ -90,6 +94,7 @@ class LRUCleanup:
         verbose=False,
         interval=30,
     ):
+        """Initialize the LRU cleanup object."""
         self.cache_dir = cache_dir
         self.cache_size = cache_size
         self.keyfn = keyfn
@@ -98,11 +103,13 @@ class LRUCleanup:
         self.last_run = 0
 
     def set_cache_dir(self, cache_dir):
+        """Set the cache directory."""
         self.cache_dir = cache_dir
 
     def cleanup(self):
         """Performs cleanup of the file cache in cache_dir using an LRU strategy,
-        keeping the total size of all remaining files below cache_size."""
+        keeping the total size of all remaining files below cache_size.
+        """
         if not os.path.exists(self.cache_dir):
             return
         if self.interval is not None and time.time() - self.last_run < self.interval:
@@ -147,11 +154,15 @@ def download(url, dest, chunk_size=1024**2, verbose=False):
 
 
 class StreamingOpen:
+    """Open a stream from a URL."""
+
     def __init__(self, verbose=False, handler=reraise_exception):
+        """Initialize the streaming open object."""
         self.verbose = verbose
         self.handler = handler
 
     def __call__(self, urls):
+        """Open a stream from a URL."""
         for url in urls:
             if isinstance(url, dict):
                 url = url["url"]
@@ -171,6 +182,8 @@ class StreamingOpen:
 
 
 class FileCache:
+    """Cache files from URLs."""
+
     def __init__(
         self,
         cache_dir: Optional[str] = None,
@@ -222,8 +235,7 @@ class FileCache:
                         data = f.read(200)
                     os.remove(dest)
                     raise ValueError(
-                        "%s (%s) is not a tar archive, but a %s, contains %s"
-                        % (dest, url, ftype, repr(data))
+                        "%s (%s) is not a tar archive, but a %s, contains %s" % (dest, url, ftype, repr(data))
                     )
         return dest
 
@@ -282,8 +294,7 @@ def cached_url_opener(
                     data = f.read(200)
                 os.remove(dest)
                 raise ValueError(
-                    "%s (%s) is not a tar archive, but a %s, contains %s"
-                    % (dest, url, ftype, repr(data))
+                    "%s (%s) is not a tar archive, but a %s, contains %s" % (dest, url, ftype, repr(data))
                 )
             try:
                 stream = open(dest, "rb")
@@ -326,9 +337,7 @@ def cached_tarfile_samples(
         url_to_name=url_to_name,
         always=always,
     )
-    files = tar_file_expander(
-        streams, handler=handler, select_files=select_files, rename_files=rename_files
-    )
+    files = tar_file_expander(streams, handler=handler, select_files=select_files, rename_files=rename_files)
     samples = group_by_keys(files, handler=handler)
     return samples
 

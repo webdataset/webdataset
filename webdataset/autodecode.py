@@ -122,24 +122,28 @@ def torch_loads(data: bytes):
 
 
 def tenbin_loads(data):
+    """Load data from tenbin format. Imports tenbin only if necessary."""
     from . import tenbin
 
     return tenbin.decode_buffer(data)
 
 
 def msgpack_loads(data):
+    """Load data from msgpack format. Imports msgpack only if necessary."""
     import msgpack
 
     return msgpack.unpackb(data)
 
 
 def npy_loads(data):
+    """Load data from npy format. Imports numpy only if necessary."""
     import numpy.lib.format
 
     stream = io.BytesIO(data)
     return numpy.lib.format.read_array(stream)
 
 def npz_loads(data):
+    """Load data from npz format. Imports numpy only if necessary."""
     import numpy.lib.format
 
     stream = io.BytesIO(data)
@@ -147,6 +151,7 @@ def npz_loads(data):
 
 
 def cbor_loads(data):
+    """Load data from cbor format. Imports cbor only if necessary."""
     import cbor
 
     return cbor.loads(data)

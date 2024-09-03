@@ -101,6 +101,17 @@ def test(c):
 
 
 @task
+def testcov(c):
+    "Run the tests."
+    # venv(c)
+    c.run(
+        f"{ACTIVATE}{PYTHON3} -m pytest ./tests --cov=wids "
+        + "--cov=webdataset --cov-report=term-missing --cov-branch "
+        + "--cov-report=json:coverage.json --cov-report=lcov:coverage.lcov"
+    )
+
+
+@task
 def debugtest(c):
     "Run the tests with --pdb."
     c.run(f"{ACTIVATE}{PYTHON3} -m pytest -x --pdb tests")

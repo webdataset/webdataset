@@ -1,0 +1,135 @@
+#!/usr/bin/env python3
+
+import ast
+import os
+import sys
+
+import ast
+import typer
+
+app = typer.Typer()
+
+
+class ParentFinder(ast.NodeVisitor):
+    def __init__(self):
+        self.parent_map = {}
+
+    def visit(self, node):
+        for child in ast.iter_child_nodes(node):
+            self.parent_map[child] = node
+        self.generic_visit(node)
+
+
+def function_ranges(pyfile):
+    """
+    Reads a Python source file and outputs a list of definitions in the form:
+    (pyfile, kind, name, start_line, end_line)
+
+    Args:
+        pyfile: The path to the Python source file.
+
+    Returns:
+        A list of tuples representing definitions.
+    """
+
+    with open(pyfile, "r") as f:
+        source = f.read()
+
+    tree = ast.parse(source)
+    definitions = []
+
+    # Create a ParentFinder instance to build the parent map
+    finder = ParentFinder()
+    finder.visit(tree)
+
+    for node in ast.walk(tree):
+        if isinstance(node, (ast.ClassDef, ast.FunctionDef, ast.AsyncFunctionDef)):
+            kind = "class" if isinstance(node, ast.ClassDef) else "function"
+
+            # Check if it's a method within a class using the parent map
+            if isinstance(node, ast.FunctionDef) and isinstance(finder.parent_map.get(node), ast.ClassDef):
+                kind = "method"
+
+            definitions.append((pyfile, kind, node.name, node.lineno, node.end_lineno))
+
+    return definitions
+
+
+import json
+
+
+def read_and_get_file_coverage(coverage_json_fname, fname):
+    """
+    Reads the coverage JSON file and extracts coverage data for a specific file.
+
+    Args:
+        coverage_json_fname: The filename of the pytest coverage JSON file.
+        fname: The filename of the file to extract coverage data for.
+
+    Returns:
+        The list of executed lines for the specified file, or an empty list if
+        no coverage data is found.
+    """
+    with open(coverage_json_fname, "r") as f:
+        coverage_data = json.load(f)
+
+    file_data = coverage_data.get("files", {}).get(fname)
+    if not file_data:
+        return []  # No coverage data for this file
+
+    return file_data.get("executed_lines", [])
+
+
+def extract_coverage(line_coverage, line_number_ranges):
+    """
+    Analyzes pytest coverage data for specified line number ranges.
+
+    Args:
+        line_coverage: The list of executed lines for the file.
+        line_number_ranges: A list of tuples representing line number ranges
+                             (start_line, end_line).
+
+    Returns:
+        A dictionary mapping each line number range to its coverage count.
+    """
+    range_coverage = {}
+    for start_line, end_line in line_number_ranges:
+        coverage_count = sum(1 for line in line_coverage if start_line <= line <= end_line)
+        range_coverage[(start_line, end_line)] = coverage_count
+
+    coverages_in_order = [range_coverage[t] for t in line_number_ranges]
+
+    return coverages_in_order
+
+
+# Example usage:
+# line_number_ranges = [(1, 5), (10, 15)]
+# coverage_counts = extract_coverage('coverage.json', line_number_ranges)
+# print(coverage_counts)
+
+
+@app.command()
+def main(file, coverage="coverage.json"):
+    for fname in [file]:
+        assert fname.endswith(".py"), fname
+        full_ranges = function_ranges(fname)
+
+        line_coverage = read_and_get_file_coverage(coverage, fname)
+        if line_coverage is None:
+            print("no coverage data for file:", fname)
+            continue
+
+        ranges = [(x[3], x[4]) for x in full_ranges]
+        rcoverage = extract_coverage(line_coverage, ranges)
+
+        assert len(rcoverage) == len(ranges)
+
+        for i in range(len(ranges)):
+            counts = rcoverage[i]
+            if rcoverage[i] == 0:
+                fname, kind, name, start, end = full_ranges[i]
+                print("no coverage:", fname, kind, name, start, end)
+
+
+if __name__ == "__main__":
+    app()

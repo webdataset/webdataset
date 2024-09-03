@@ -7,6 +7,7 @@ wheel
 
 autoflake
 pytest
+pytest-cov
 isort
 black
 mypy
