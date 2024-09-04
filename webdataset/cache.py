@@ -1,3 +1,7 @@
+"""Code related to caching files downloaded from storage
+servers, object servers, and web servers.
+"""
+
 import io
 import os
 import random
@@ -10,7 +14,7 @@ from urllib.parse import urlparse
 
 import webdataset.gopen as gopen
 
-from . import filters, gopen
+from . import filters
 from .handlers import reraise_exception
 from .tariterators import group_by_keys, tar_file_expander
 from .utils import obsolete
@@ -214,6 +218,14 @@ class FileCache:
             self.cleaner = None
 
     def get_file(self, url: str) -> str:
+        """Download a file from a given URL and returns the path to the downloaded file.
+
+        Args:
+            url: A string representing the URL of the file to download.
+
+        Returns:
+            A string representing the path to the downloaded file.
+        """
         assert isinstance(url, str)
         if islocal(url):
             return urlparse(url).path
@@ -240,6 +252,14 @@ class FileCache:
         return dest
 
     def __call__(self, urls: Iterable[str]) -> Iterable[io.IOBase]:
+        """Download files from a list of URLs and yields file streams.
+
+        Args:
+            urls: An iterable of strings representing the URLs to download files from.
+
+        Returns:
+            An iterable of file streams for the downloaded files.
+        """
         for url in urls:
             if isinstance(url, dict):
                 url = url["url"]
@@ -254,6 +274,7 @@ class FileCache:
                         break
                 yield dict(url=url, stream=stream, local_path=dest)
                 break
+
 
 
 @obsolete
@@ -327,6 +348,7 @@ def cached_tarfile_samples(
     select_files=None,
     rename_files=None,
 ):
+    """Obsolete."""
     verbose = verbose or int(os.environ.get("GOPEN_VERBOSE", 0))
     streams = cached_url_opener(
         src,
