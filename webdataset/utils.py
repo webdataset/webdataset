@@ -15,7 +15,7 @@ import os
 import re
 import sys
 import warnings
-from typing import Any, Callable, Iterator, Union
+from typing import Any, Callable, Iterable, Union
 
 import numpy as np
 
@@ -43,17 +43,12 @@ def make_seed(*args):
 
 
 def is_iterable(obj):
-    if isinstance(obj, str):
+    """
+    Return `True` if the object is iterable, with the exception of strings and bytes.
+    """
+    if isinstance(obj, (str, bytes)):
         return False
-    if isinstance(obj, bytes):
-        return False
-    if isinstance(obj, list):
-        return True
-    if isinstance(obj, Iterator):
-        return True
-    if isinstance(obj, Iterable):
-        return True
-    return False
+    return isinstance(obj, Iterable)
 
 
 class PipelineStage:
