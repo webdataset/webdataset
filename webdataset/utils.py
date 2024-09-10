@@ -15,7 +15,7 @@ import os
 import re
 import sys
 import warnings
-from typing import Any, Callable, Iterator, Union
+from typing import Any, Callable, Iterator, Iterable, Union
 
 import numpy as np
 
