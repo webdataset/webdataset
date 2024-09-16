@@ -101,7 +101,7 @@ class DataPipeline(IterableDataset, PipelineStage):
             result.append(arg)
         return result
 
-    def with_length(self, n):
+    def with_length(self, n, silent=False):
         """Add a __len__ method returning the desired value.
 
         This does not change the actual number of samples in an epoch.
@@ -109,6 +109,8 @@ class DataPipeline(IterableDataset, PipelineStage):
         This is provided only as a workaround for some broken training environments
         that require a __len__ method.
         """
+        if not silent:
+            warnings.warn(".with_length() only sets the value of __len__ for compatibility with some training environments. It does not change the number of samples in an epoch.")
         self.size = n
         return add_length_method(self)
 

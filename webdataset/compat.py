@@ -132,9 +132,12 @@ class WebDataset(DataPipeline, FluidInterface):
         super().__init__()
         if resampled:
             mode = "resampled"
-        if shardshuffle is None:
+        if mode == "resampled" and shardshuffle not in (False, None):
+            warnings.warn("WebDataset(shardshuffle=...) is ignored for resampled datasets")
+        elif shardshuffle is None:
             warnings.warn("WebDataset(shardshuffle=...) is None; set explicitly to False or a number")
         if shardshuffle is True:
+            warnings.warn("set WebDataset(shardshuffle=...) to a positive integer or 0 or False")
             shardshuffle = 100
         args = SimpleNamespace(**locals())
         self.seed = seed or os.environ.get("WDS_SEED", random.randint(0, 1000000))

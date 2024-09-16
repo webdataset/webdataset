@@ -49,8 +49,6 @@ def is_iterable(obj):
         return False
     if isinstance(obj, list):
         return True
-    if isinstance(obj, Iterator):
-        return True
     if isinstance(obj, Iterable):
         return True
     return False
