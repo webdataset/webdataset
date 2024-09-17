@@ -1,9 +1,7 @@
-
 # Copyright (c) 2017-2021 NVIDIA CORPORATION. All rights reserved.
 # This file is part of the WebDataset library.
 # See the LICENSE file for licensing terms (BSD-style).
 #
-
 
 """Open URLs by calling subcommands."""
 
@@ -25,11 +23,13 @@ class Pipe:
     This way, clients of the class do not need to know that they are
     dealing with subprocesses.
 
-    :param *args: passed to `subprocess.Pipe`
-    :param **kw: passed to `subprocess.Pipe`
-    :param timeout: timeout for closing/waiting
-    :param ignore_errors: don't raise exceptions on subprocess errors
-    :param ignore_status: list of status codes to ignore
+    Args:
+        *args: Passed to `subprocess.Pipe`
+        mode: The mode for opening the pipe.
+        timeout: Timeout for closing/waiting.
+        ignore_errors: Don't raise exceptions on subprocess errors.
+        ignore_status: List of status codes to ignore.
+        **kw: Passed to `subprocess.Pipe`
     """
 
     def __init__(
@@ -59,6 +59,7 @@ class Pipe:
         self.status = None
 
     def __str__(self):
+        """Return a string representation of the Pipe object."""
         return f"<Pipe {self.args}>"
 
     def check_status(self):
@@ -83,19 +84,43 @@ class Pipe:
             raise IOError(f"{self.args}: exit {self.status} (read) {info}")
 
     def read(self, *args, **kw):
-        """Wrap stream.read and checks status."""
+        """Wrap stream.read and checks status.
+
+        Args:
+            *args: Arguments to pass to stream.read
+            **kw: Keyword arguments to pass to stream.read
+
+        Returns:
+            The result of stream.read
+        """
         result = self.stream.read(*args, **kw)
         self.check_status()
         return result
 
     def write(self, *args, **kw):
-        """Wrap stream.write and checks status."""
+        """Wrap stream.write and checks status.
+
+        Args:
+            *args: Arguments to pass to stream.write
+            **kw: Keyword arguments to pass to stream.write
+
+        Returns:
+            The result of stream.write
+        """
         result = self.stream.write(*args, **kw)
         self.check_status()
         return result
 
     def readLine(self, *args, **kw):
-        """Wrap stream.readLine and checks status."""
+        """Wrap stream.readLine and checks status.
+
+        Args:
+            *args: Arguments to pass to stream.readLine
+            **kw: Keyword arguments to pass to stream.readLine
+
+        Returns:
+            The result of stream.readLine
+        """
         result = self.stream.readLine(*args, **kw)
         self.status = self.proc.poll()
         self.check_status()
@@ -129,11 +154,15 @@ def set_options(
     This function can be called on any stream. It will set pipe options only
     when its argument is a pipe.
 
-    :param obj: any kind of stream
-    :param timeout: desired timeout
-    :param ignore_errors: desired ignore_errors setting
-    :param ignore_status: desired ignore_status setting
-    :param handler: desired error handler
+    Args:
+        obj: Any kind of stream
+        timeout: Desired timeout
+        ignore_errors: Desired ignore_errors setting
+        ignore_status: Desired ignore_status setting
+        handler: Desired error handler
+
+    Returns:
+        True if options were set, False otherwise
     """
     if not isinstance(obj, Pipe):
         return False
@@ -153,9 +182,13 @@ def gopen_file(url, mode="rb", bufsize=8192):
 
     This works for local files; path names only.
 
-    :param url: URL to be opened
-    :param mode: mode to open it with
-    :param bufsize: requested buffer size
+    Args:
+        url: URL to be opened
+        mode: Mode to open it with
+        bufsize: Requested buffer size
+
+    Returns:
+        An opened file object
     """
     if url.startswith("file:"):
         url = re.sub(r"^file://?", "", url)
@@ -165,9 +198,16 @@ def gopen_file(url, mode="rb", bufsize=8192):
 def gopen_pipe(url, mode="rb", bufsize=8192):
     """Use gopen to open a pipe.
 
-    :param url: a pipe: URL
-    :param mode: desired mode
-    :param bufsize: desired buffer size
+    Args:
+        url: A pipe: URL
+        mode: Desired mode
+        bufsize: Desired buffer size
+
+    Returns:
+        A Pipe object
+
+    Raises:
+        ValueError: If the mode is unknown
     """
     assert url.startswith("pipe:")
     cmd = url[5:]
@@ -186,9 +226,16 @@ def gopen_pipe(url, mode="rb", bufsize=8192):
 def gopen_curl(url, mode="rb", bufsize=8192):
     """Open a URL with `curl`.
 
-    :param url: url (usually, http:// etc.)
-    :param mode: file mode
-    :param bufsize: buffer size
+    Args:
+        url: URL (usually, http:// etc.)
+        mode: File mode
+        bufsize: Buffer size
+
+    Returns:
+        A Pipe object
+
+    Raises:
+        ValueError: If the mode is unknown
     """
     if mode[0] == "r":
         cmd = f"curl --connect-timeout 30 --retry 30 --retry-delay 2 -f -s -L '{url}'"
@@ -215,9 +262,16 @@ def gopen_curl(url, mode="rb", bufsize=8192):
 def gopen_htgs(url, mode="rb", bufsize=8192):
     """Open a URL with `curl`.
 
-    :param url: url (usually, http:// etc.)
-    :param mode: file mode
-    :param bufsize: buffer size
+    Args:
+        url: URL (usually, http:// etc.)
+        mode: File mode
+        bufsize: Buffer size
+
+    Returns:
+        A Pipe object
+
+    Raises:
+        ValueError: If the mode is write or unknown
     """
     if mode[0] == "r":
         url = re.sub(r"(?i)^htgs://", "gs://", url)
@@ -238,9 +292,16 @@ def gopen_htgs(url, mode="rb", bufsize=8192):
 def gopen_gsutil(url, mode="rb", bufsize=8192):
     """Open a URL with `curl`.
 
-    :param url: url (usually, http:// etc.)
-    :param mode: file mode
-    :param bufsize: buffer size
+    Args:
+        url: URL (usually, gs:// etc.)
+        mode: File mode
+        bufsize: Buffer size
+
+    Returns:
+        A Pipe object
+
+    Raises:
+        ValueError: If the mode is unknown
     """
     if mode[0] == "r":
         cmd = f"gsutil cat '{url}'"
@@ -265,11 +326,18 @@ def gopen_gsutil(url, mode="rb", bufsize=8192):
 
 
 def gopen_ais(url, mode="rb", bufsize=8192):
-    """Open a URL with `curl`.
+    """Open a URL with `ais`.
 
-    :param url: url (usually, http:// etc.)
-    :param mode: file mode
-    :param bufsize: buffer size
+    Args:
+        url: URL (usually, ais:// etc.)
+        mode: File mode
+        bufsize: Buffer size
+
+    Returns:
+        A Pipe object
+
+    Raises:
+        ValueError: If the mode is unknown
     """
     if mode[0] == "r":
         cmd = f"ais get '{url}' -"
@@ -296,9 +364,13 @@ def gopen_ais(url, mode="rb", bufsize=8192):
 def gopen_error(url, *args, **kw):
     """Raise a value error.
 
-    :param url: url
-    :param args: other arguments
-    :param kw: other keywords
+    Args:
+        url: URL
+        *args: Other arguments
+        **kw: Other keywords
+
+    Raises:
+        ValueError: Always raised with the URL and a message
     """
     raise ValueError(f"{url}: no gopen handler defined")
 
@@ -323,6 +395,40 @@ if "USE_AIS_FOR" in os.environ:
 
 
 def rewrite_url(url):
+    """Rewrite the URL based on environment variables.
+
+    This function checks for URL rewrite rules defined in the GOPEN_REWRITE
+    environment variable and applies them to the given URL. The rewrite rules
+    allow for flexible modification of URLs before they are processed by the
+    gopen system.
+
+    The GOPEN_REWRITE environment variable should contain one or more rewrite
+    rules separated by semicolons. Each rule consists of two parts separated
+    by an equals sign: a pattern to match at the start of the URL, and a
+    replacement string.
+
+    Format of GOPEN_REWRITE:
+    GOPEN_REWRITE="pattern1=replacement1;pattern2=replacement2;..."
+
+    The function applies these rules in order, stopping at the first match.
+    If a match is found, the pattern is replaced with the corresponding
+    replacement at the start of the URL.
+
+    The GOPEN_VERBOSE environment variable can be set to control logging.
+    If GOPEN_VERBOSE is set to a non-zero value, the function will print
+    information about any URL rewrites that occur.
+
+    Args:
+        url (str): The original URL to potentially rewrite.
+
+    Returns:
+        str: The rewritten URL if a rewrite rule matches, otherwise the original URL.
+
+    Example:
+        If GOPEN_REWRITE is set to "http://old.com/=http://new.com/;ftp://=http://"
+        and the input URL is "http://old.com/file.txt", the function will return
+        "http://new.com/file.txt".
+    """
     name = "GOPEN_REWRITE"
     verbose = int(os.environ.get("GOPEN_VERBOSE", 0))
     if name not in os.environ:
@@ -336,27 +442,46 @@ def rewrite_url(url):
             return nurl
     return url
 
-
 def gopen(url, mode="rb", bufsize=8192, **kw):
-    """Open the URL.
+    """Open the URL using various schemes and protocols.
 
-    This uses the `gopen_schemes` dispatch table to dispatch based
-    on scheme.
+    This function provides a unified interface for opening resources specified by URLs,
+    supporting multiple schemes and protocols. It uses the `gopen_schemes` dispatch table
+    to handle different URL schemes.
 
-    Support for the following schemes is built-in: pipe, file,
-    http, https, sftp, ftps, scp.
+    Built-in support is provided for the following schemes:
+    - pipe: for opening named pipes
+    - file: for local file system access
+    - http, https: for web resources
+    - sftp, ftps: for secure file transfer
+    - scp: for secure copy protocol
 
-    When no scheme is given the url is treated as a file.
+    When no scheme is specified in the URL, it is treated as a local file path.
 
-    You can use the GOPEN_VERBOSE argument to get info about
-    files being opened.
+    Environment Variables:
+    - GOPEN_VERBOSE: Set to a non-zero value to enable verbose logging of file operations.
+      Format: GOPEN_VERBOSE=1
+    - USE_AIS_FOR: Specifies which cloud storage services should use AIS (and its cache) for access.
+      Format: USE_AIS_FOR=aws:gs:s3
+    - GOPEN_BUFFER: Sets the buffer size for file operations (in bytes).
+      Format: GOPEN_BUFFER=8192
 
-    YOu can use the USE_AIS_FOR=aws:gs:s3 to use AIS (and its cache)
-    to access urls via the "ais" command.
+    Args:
+        url (str): The source URL or file path to open.
+        mode (str): The mode for opening the resource. Only "rb" (read binary) and "wb" (write binary) are supported.
+        bufsize (int): The buffer size for file operations. Default is 8192 bytes.
+        **kw: Additional keyword arguments to pass to the underlying open function.
 
-    :param url: the source URL
-    :param mode: the mode ("rb", "r")
-    :param bufsize: the buffer size
+    Returns:
+        file-like object: An opened file-like object for the specified resource.
+
+    Raises:
+        ValueError: If an unsupported mode is specified.
+        Other exceptions may be raised depending on the specific handler used for the URL scheme.
+
+    Note:
+    - For stdin/stdout operations, use "-" as the URL.
+    - The function applies URL rewriting based on the GOPEN_REWRITE environment variable before processing.
     """
     global fallback_gopen
     verbose = int(os.environ.get("GOPEN_VERBOSE", 0))
@@ -386,7 +511,11 @@ def gopen(url, mode="rb", bufsize=8192, **kw):
 def reader(url, **kw):
     """Open url with gopen and mode "rb".
 
-    :param url: source URL
-    :param kw: other keywords forwarded to gopen
+    Args:
+        url: Source URL
+        **kw: Other keywords forwarded to gopen
+
+    Returns:
+        An opened file-like object in read mode
     """
     return gopen(url, "rb", **kw)

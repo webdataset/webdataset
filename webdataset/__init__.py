@@ -17,6 +17,7 @@ from .autodecode import (
     torch_audio,
     torch_loads,
     torch_video,
+    pytorch_weights_only,
 )
 from .cache import (
     LRUCleanup,

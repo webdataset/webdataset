@@ -16,6 +16,8 @@ from functools import partial
 
 import numpy as np
 
+pytorch_weights_only = int(os.environ.get("WDS_PYTORCH_WEIGHTS_ONLY", "0")) != 0
+
 # Obtained with:
 # ```
 # import PIL.Image
@@ -118,7 +120,7 @@ def torch_loads(data: bytes):
     import torch
 
     stream = io.BytesIO(data)
-    return torch.load(stream)
+    return torch.load(stream, weights_only=pytorch_weights_only)
 
 
 def tenbin_loads(data):

@@ -6,6 +6,7 @@ from tests.testconfig import count_samples_tuple, local_data, remote_loc, remote
 
 
 def test_webloader():
+    wds.pytorch_weights_only = True
     ds = wds.DataPipeline(
         wds.SimpleShardList(local_data),
         wds.split_by_worker,
@@ -19,6 +20,7 @@ def test_webloader():
 
 
 def test_webloader2():
+    wds.pytorch_weights_only = True
     ds = wds.DataPipeline(
         wds.SimpleShardList(local_data),
         wds.split_by_worker,
@@ -35,12 +37,14 @@ def test_webloader2():
 
 
 def test_dataloader():
+    wds.pytorch_weights_only = True
     ds = wds.WebDataset(remote_loc + remote_shards, shardshuffle=False)
     dl = DataLoader(ds, num_workers=4)
     assert count_samples_tuple(dl, n=100) == 100
 
 
 def test_webloader_repeat():
+    wds.pytorch_weights_only = True
     ds = wds.WebDataset(local_data, empty_check=False, shardshuffle=False).decode().to_tuple("cls")
     dl = wds.WebLoader(ds, num_workers=4, batch_size=3).repeat(nepochs=2)
     nsamples = count_samples_tuple(dl)
@@ -48,12 +52,14 @@ def test_webloader_repeat():
 
 
 def test_webloader_unbatched():
+    wds.pytorch_weights_only = True
     ds = wds.WebDataset(local_data, empty_check=False, shardshuffle=False).decode().to_tuple("cls")
     dl = wds.WebLoader(ds, num_workers=4, batch_size=3).unbatched()
     nsamples = count_samples_tuple(dl)
     assert nsamples == 47, nsamples
 
 def test_check_empty_throws_ValueError():
+    wds.pytorch_weights_only = True
     with pytest.raises(ValueError):
         ds = wds.WebDataset(local_data, shardshuffle=False).decode().to_tuple("cls")
         dl = wds.WebLoader(ds, num_workers=4, batch_size=3).repeat(nepochs=2)
