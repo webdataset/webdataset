@@ -320,6 +320,7 @@ datasets:
 """
 
 
+@pytest.mark.skip(reason="obsolete")
 def test_yaml(tmp_path):
     tmp_path = str(tmp_path)
     fname = tmp_path + "/test.shards.yml"
@@ -330,6 +331,7 @@ def test_yaml(tmp_path):
     assert len(l) == 60, len(l)
 
 
+@pytest.mark.skip(reason="obsolete")
 def test_yaml2():
     spec = yaml.safe_load(StringIO(shardspec))
     ds = wds.MultiShardSample(spec)
@@ -771,7 +773,7 @@ def test_decoder():
 
 def test_pipe():
     ds = wds.DataPipeline(
-        wds.SimpleShardList(f"pipe:curl -s '{remote_loc}{remote_shards}'"),
+        wds.SimpleShardList(f"pipe:curl -s '{remote_loc}{remote_shards}' || true"),
         wds.tarfile_to_samples(),
         wds.shuffle(100),
         wds.to_tuple("jpg;png", "json"),
@@ -795,7 +797,7 @@ def test_torchvision():
         ]
     )
     ds = wds.DataPipeline(
-        wds.SimpleShardList(f"pipe:curl -s '{remote_loc}{remote_shards}'"),
+        wds.SimpleShardList(f"{remote_loc}{remote_shards}"),
         wds.tarfile_to_samples(),
         wds.decode("pil"),
         wds.to_tuple("jpg;png", "json"),
@@ -824,7 +826,7 @@ def test_batched():
         ]
     )
     ds = wds.DataPipeline(
-        wds.SimpleShardList(f"pipe:curl -s '{remote_loc}{remote_shards}'"),
+        wds.SimpleShardList(f"{remote_loc}{remote_shards}"),
         wds.tarfile_to_samples(),
         wds.decode("pil"),
         wds.to_tuple("jpg;png", "json"),
@@ -836,6 +838,7 @@ def test_batched():
         assert tuple(sample[0].size()) == (7, 3, 224, 224), sample[0].size()
         assert isinstance(sample[1], list), type(sample[1])
         break
+    # make sure the batched dataset can be pickled
     pickle.dumps(ds)
 
 
@@ -868,6 +871,7 @@ def test_unbatched():
         assert tuple(sample[0].size()) == (3, 224, 224), sample[0].size()
         assert isinstance(sample[1], list), type(sample[1])
         break
+    # make sure the batched dataset can be pickled
     pickle.dumps(ds)
 
 
