@@ -20,7 +20,16 @@ def download_file(url, filename):
 
 
 def download_file(url, filename):
-    """Download a file from a URL."""
+
+    """Download a file from a URL.
+
+    Args:
+        url (str): The URL of the file to download.
+        filename (str): The local path where the file will be saved.
+
+    Returns:
+        None
+    """
     with gopen.gopen(url, "rb") as stream:
         with open(filename, "wb") as out:
             while True:
@@ -31,9 +40,15 @@ def download_file(url, filename):
 
 
 def download_with(command):
-    """Return a function that downloads a file with the given command.
 
-    The command must contain {url} and {output} placeholders.
+    """Create a download function using a custom command.
+
+
+    Args:
+        command (str): The command to use for downloading, containing {url} and {output} placeholders.
+
+    Returns:
+        function: A function that takes a URL and filename as arguments and downloads the file.
     """
 
     def download(url, filename):
@@ -45,30 +60,74 @@ def download_with(command):
 
 
 def total_file_size(files):
-    """Return the total size of a list of files."""
+
+    """Calculate the total size of a list of files.
+
+    Args:
+        files (list): A list of file paths.
+
+    Returns:
+        int: The total size of all files in bytes.
+    """
     return sum(os.path.getsize(f) for f in files)
 
 
 def file_of_tempfile(tempfile):
-    """Return the file name corresponding to a tempfile."""
+
+    """Get the original file name from a temporary file name.
+
+    Args:
+        tempfile (str): The temporary file name.
+
+    Returns:
+        str: The original file name without the temporary suffix.
+
+    Raises:
+        AssertionError: If the tempfile doesn't end with '_' or doesn't contain a period.
+    """
     assert tempfile.endswith("_") and "." in tempfile
     return tempfile.rsplit(".", 1)[0]
 
 
 def get_oldest_file(files):
-    """Return the oldest file in a list of files."""
+
+    """Find the oldest file in a list of files.
+
+    Args:
+        files (list): A list of file paths.
+
+    Returns:
+        str: The path of the oldest file.
+    """
     return min(files, key=os.path.getmtime)
 
 
 class RandomShardDownloader:
-    """Download shards randomly from a source to directory.
 
-    This can be run in one of two modes:
+    """Download shards randomly from a source to a directory.
 
-    - update_every: keep filling the directory with shards until it contains nshards shards;
-                    does not remove shards (gpu job removes shards)
-    - replace_every: keep filling the directory with shards until it contains nshards shards;
-                    removes a shard every polling period (gpu job samples with replacement)
+
+    This class can be run in two modes:
+    - update_every: Keep filling the directory with shards until it contains nshards shards.
+    - replace_every: Keep filling the directory with shards, removing a shard every polling period.
+
+
+
+
+
+    Args:
+        shards (list): List of shard URLs to download from.
+        nshards (int): Number of shards to maintain in the directory.
+        directory (str, optional): Directory to download shards to.
+        pattern (str, optional): Glob pattern for matching shard files.
+        increment (int, optional): Maximum number of shards to add in one update.
+        maxsize (int, optional): Maximum total size of downloaded shards in bytes.
+        verbose (bool, optional): Whether to print verbose output.
+        download (function, optional): Custom download function to use.
+        errors (str, optional): Error handling strategy ('ignore', 'warn', or 'fail').
+
+    Raises:
+        AssertionError: If a shard filename doesn't match the given pattern.
     """
 
     def __init__(
@@ -103,10 +162,16 @@ class RandomShardDownloader:
             ), f"shard {os.path.basename(shard)} does not match pattern {pattern}"
 
     def list_files(self, inactive=False):
-        """Return a list of files matching the given pattern.
 
-        Files with temporary file name patterns ("*._*_") are also included and
-        mapped to their names without the temporary extension.
+        """List files in the download directory matching the given pattern.
+
+
+
+        Args:
+            inactive (bool, optional): Whether to include only inactive (non-temporary) files.
+
+        Returns:
+            list: A list of file paths matching the pattern.
         """
         files = glob_with_braces(os.path.join(self.directory, self.pattern))
         if not inactive:
@@ -115,15 +180,26 @@ class RandomShardDownloader:
         return list(set(files))
 
     def set_directory(self, directory):
-        """Set the directory to download to."""
+
+        """Set the directory to download shards to.
+
+        Args:
+            directory (str): The path to the download directory.
+        """
         self.directory = directory
 
     def update(self):
-        """Download shards randomly from a source to directory.
 
-        Ensure that there are nshards shards in the directory.
-        If there are fewer, download random shards from the source.
-        Use the basename of the shards as the local file name.
+        """Download shards randomly from the source to the directory.
+
+
+
+
+        Ensures that there are nshards shards in the directory. If there are fewer,
+        download random shards from the source.
+
+        Raises:
+            RuntimeError: If unable to download the required number of shards.
         """
         assert self.directory is not None, "directory must be set"
         files = self.list_files()
@@ -162,17 +238,38 @@ class RandomShardDownloader:
         raise RuntimeError(f"unable to download {self.nshards} shards")
 
     def sleep(self, poll=10):
+        """Sleep for a randomized duration based on the poll interval.
+
+        Args:
+            poll (float, optional): The base polling interval in seconds.
+        """
         delta = poll * random.uniform(0.7, 1.3)
         time.sleep(delta)
 
     def update_every(self, poll=10):
-        """Repeatedly call update with the given delay."""
+
+        """Repeatedly call update with a given delay.
+
+        Args:
+            poll (float, optional): The polling interval in seconds.
+        """
         while True:
             self.update()
             delta = poll * random.uniform(0.7, 1.3)
             time.sleep(delta)
 
     def maybe_remove(self, strategy="oldest"):
+        """Attempt to remove a shard if the number of shards exceeds the limit.
+
+        Args:
+            strategy (str, optional): The strategy for selecting which file to remove ('oldest' or 'random').
+
+        Returns:
+            bool: True if a file was removed, False otherwise.
+
+        Raises:
+            ValueError: If an unknown strategy is provided.
+        """
         files = self.list_files()
         if len(files) > self.nshards:
             inactive = self.list_files(inactive=True)
@@ -192,13 +289,29 @@ class RandomShardDownloader:
         return False
 
     def replace_every(self, poll=60, strategy="oldest"):
-        """Repeatedly call update with the given delay."""
+
+        """Repeatedly update and remove shards to maintain the desired number.
+
+        Args:
+            poll (float, optional): The polling interval in seconds.
+            strategy (str, optional): The strategy for selecting which file to remove.
+        """
         while len(self.list_files()) >= self.nshards:
             if self.maybe_remove(strategy=strategy):
                 self.update()
             self.sleep(poll)
 
     def run_job(self, poll=10, mode="update", strategy="oldest"):
+        """Run the downloader job in the specified mode.
+
+        Args:
+            poll (float, optional): The polling interval in seconds.
+            mode (str, optional): The mode to run in ('update' or 'replace').
+            strategy (str, optional): The strategy for selecting which file to remove in replace mode.
+
+        Raises:
+            ValueError: If an unknown mode is provided.
+        """
         if mode == "update":
             self.update_every(poll)
         elif mode == "replace":
@@ -223,7 +336,26 @@ def random_downloader(
     errors: str = "ignore",
     verbose: bool = False,
 ):
-    """Start njobs jobs to download shards randomly from the given list of shards."""
+
+    """Start multiple jobs to download shards randomly from the given list of shards.
+
+    Args:
+        shards (List[str]): List of shard URLs or patterns to download from.
+        directory (Optional[str]): Directory to download shards to.
+        nshards (int): Number of shards to maintain in the directory.
+        command (Optional[str]): Custom download command to use.
+        pattern (str): Glob pattern for matching shard files.
+        increment (int): Maximum number of shards to add in one update.
+        maxsize (int): Maximum total size of downloaded shards in bytes.
+        njobs (int): Number of parallel download jobs to run.
+        poll (float): Polling interval in seconds.
+        mode (str): Mode to run in ('update' or 'replace').
+        errors (str): Error handling strategy ('ignore', 'warn', or 'fail').
+        verbose (bool): Whether to print verbose output.
+
+    Raises:
+        AssertionError: If the directory is not provided.
+    """
     assert directory is not None
     shards = [fname for shard in shards for fname in braceexpand.braceexpand(shard)]
     print(f"got {len(shards)} shards", file=sys.stderr)

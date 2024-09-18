@@ -186,7 +186,6 @@ class StreamingOpen:
 
 
 class FileCache:
-
     """Cache files from URLs.
 
     This class provides functionality to download and cache files from URLs,
