@@ -20,7 +20,6 @@ def download_file(url, filename):
 
 
 def download_file(url, filename):
-
     """Download a file from a URL.
 
     Args:
@@ -40,9 +39,7 @@ def download_file(url, filename):
 
 
 def download_with(command):
-
     """Create a download function using a custom command.
-
 
     Args:
         command (str): The command to use for downloading, containing {url} and {output} placeholders.
@@ -60,7 +57,6 @@ def download_with(command):
 
 
 def total_file_size(files):
-
     """Calculate the total size of a list of files.
 
     Args:
@@ -73,7 +69,6 @@ def total_file_size(files):
 
 
 def file_of_tempfile(tempfile):
-
     """Get the original file name from a temporary file name.
 
     Args:
@@ -90,7 +85,6 @@ def file_of_tempfile(tempfile):
 
 
 def get_oldest_file(files):
-
     """Find the oldest file in a list of files.
 
     Args:
@@ -103,17 +97,11 @@ def get_oldest_file(files):
 
 
 class RandomShardDownloader:
-
     """Download shards randomly from a source to a directory.
-
 
     This class can be run in two modes:
     - update_every: Keep filling the directory with shards until it contains nshards shards.
     - replace_every: Keep filling the directory with shards, removing a shard every polling period.
-
-
-
-
 
     Args:
         shards (list): List of shard URLs to download from.
@@ -162,10 +150,7 @@ class RandomShardDownloader:
             ), f"shard {os.path.basename(shard)} does not match pattern {pattern}"
 
     def list_files(self, inactive=False):
-
         """List files in the download directory matching the given pattern.
-
-
 
         Args:
             inactive (bool, optional): Whether to include only inactive (non-temporary) files.
@@ -180,7 +165,6 @@ class RandomShardDownloader:
         return list(set(files))
 
     def set_directory(self, directory):
-
         """Set the directory to download shards to.
 
         Args:
@@ -189,11 +173,7 @@ class RandomShardDownloader:
         self.directory = directory
 
     def update(self):
-
         """Download shards randomly from the source to the directory.
-
-
-
 
         Ensures that there are nshards shards in the directory. If there are fewer,
         download random shards from the source.
@@ -247,7 +227,6 @@ class RandomShardDownloader:
         time.sleep(delta)
 
     def update_every(self, poll=10):
-
         """Repeatedly call update with a given delay.
 
         Args:
@@ -289,7 +268,6 @@ class RandomShardDownloader:
         return False
 
     def replace_every(self, poll=60, strategy="oldest"):
-
         """Repeatedly update and remove shards to maintain the desired number.
 
         Args:
@@ -336,7 +314,6 @@ def random_downloader(
     errors: str = "ignore",
     verbose: bool = False,
 ):
-
     """Start multiple jobs to download shards randomly from the given list of shards.
 
     Args:
