@@ -17,41 +17,51 @@ from .utils import PipelineStage
 
 
 class MockDataset(IterableDataset):
-    """MockDataset.
+    """Create a mock dataset for performance testing and unit testing.
 
-    A mock dataset for performance testing and unit testing.
+    Args:
+        sample: The sample to be returned repeatedly.
+        length (int): The length of the mock dataset.
     """
 
     def __init__(self, sample, length):
-        """Create a mock dataset instance.
-
-        :param sample: the sample to be returned repeatedly
-        :param length: the length of the mock dataset
-        """
         self.sample = sample
         self.length = length
 
     def __iter__(self):
-        """Return an iterator over this mock dataset."""
+        """Yield samples from the mock dataset.
+
+        Returns:
+            Iterator: An iterator that yields the same sample repeatedly.
+        """
         for _ in range(self.length):
             yield self.sample
 
 
 class repeatedly(IterableDataset, PipelineStage):
-    """Repeatedly yield samples from a dataset."""
+    """Repeatedly yield samples from a dataset.
+
+    Args:
+        source: The source dataset to repeat.
+        nepochs (int, optional): Maximum number of epochs to repeat.
+        nbatches (int, optional): Maximum number of batches to repeat.
+        length (int, optional): Length of the repeated dataset.
+    """
 
     def __init__(self, source, nepochs=None, nbatches=None, length=None):
-        """Create an instance of Repeatedly.
-
-        :param nepochs: repeat for a maximum of nepochs
-        :param nbatches: repeat for a maximum of nbatches
-        """
         self.source = source
         self.length = length
         self.nbatches = nbatches
 
     def invoke(self, source):
-        """Return an iterator that iterates repeatedly over a source."""
+        """Return an iterator that iterates repeatedly over a source.
+
+        Args:
+            source: The source dataset to repeat.
+
+        Returns:
+            Iterator: An iterator that repeatedly yields samples from the source.
+        """
         return utils.repeatedly(
             source,
             nepochs=self.nepochs,
@@ -68,15 +78,12 @@ class with_epoch(IterableDataset):
     It is also useful for choosing smaller nominal epoch sizes with
     very large datasets.
 
+    Args:
+        dataset: The source IterableDataset.
+        length (int): Declared length of the dataset.
     """
 
     def __init__(self, dataset, length):
-        """Chop the dataset to the given length.
-
-        :param dataset: IterableDataset
-        :param length: declared length of the dataset
-        :param nominal: nominal length of dataset (if different from declared)
-        """
         super().__init__()
         self.length = length
         self.source = None
@@ -85,6 +92,9 @@ class with_epoch(IterableDataset):
         """Return the pickled state of the dataset.
 
         This resets the dataset iterator, since that can't be pickled.
+
+        Returns:
+            dict: A dictionary representing the pickled state of the dataset.
         """
         result = dict(self.__dict__)
         result["source"] = None
@@ -93,8 +103,13 @@ class with_epoch(IterableDataset):
     def invoke(self, dataset):
         """Return an iterator over the dataset.
 
-        This iterator returns as many samples as given by the `length`
-        parameter.
+        This iterator returns as many samples as given by the `length` parameter.
+
+        Args:
+            dataset: The source dataset to iterate over.
+
+        Yields:
+            Sample: The next sample from the dataset.
         """
         if self.source is None:
             self.source = iter(dataset)
@@ -112,22 +127,33 @@ class with_epoch(IterableDataset):
 
 
 class with_length(IterableDataset, PipelineStage):
-    """Repeatedly yield samples from a dataset."""
+    """Repeatedly yield samples from a dataset with a specified length.
+
+    Args:
+        dataset: The source dataset.
+        length (int): The stated length of the dataset.
+    """
 
     def __init__(self, dataset, length):
-        """Create an instance of Repeatedly.
-
-        :param dataset: source dataset
-        :param length: stated length
-        """
         super().__init__()
         self.dataset = dataset
         self.length = length
 
     def invoke(self, dataset):
-        """Return an iterator that iterates repeatedly over a source."""
+        """Return an iterator that iterates over the source dataset.
+
+        Args:
+            dataset: The source dataset to iterate over.
+
+        Returns:
+            Iterator: An iterator over the source dataset.
+        """
         return iter(dataset)
 
     def __len__(self):
-        """Return the user specified length."""
+        """Return the user specified length.
+
+        Returns:
+            int: The specified length of the dataset.
+        """
         return self.length
