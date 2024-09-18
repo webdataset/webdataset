@@ -186,7 +186,21 @@ class StreamingOpen:
 
 
 class FileCache:
-    """Cache files from URLs."""
+
+    """Cache files from URLs.
+
+    This class provides functionality to download and cache files from URLs,
+    with options for validation, error handling, and cache management.
+
+    Args:
+        cache_dir (Optional[str]): The directory to use for caching. Defaults to None.
+        url_to_name (Callable[[str], str]): Function to convert URLs to cache names.
+        verbose (bool): Whether to print verbose output. Defaults to False.
+        validator (Callable[[str], bool]): Function to validate downloaded files.
+        handler (Callable[[Exception], bool]): Function to handle exceptions.
+        cache_size (int): Maximum size of the cache in bytes. Defaults to -1 (unlimited).
+        cache_cleanup_interval (int): Interval between cache cleanup operations in seconds.
+    """
 
     def __init__(
         self,
@@ -218,18 +232,21 @@ class FileCache:
             self.cleaner = None
 
     def get_file(self, url: str) -> str:
-        """Download a file from a given URL and returns the path to the downloaded file.
+        """Download a file from a given URL and return the path to the downloaded file.
 
         Args:
-            url: A string representing the URL of the file to download.
+            url (str): The URL of the file to download.
 
         Returns:
-            A string representing the path to the downloaded file.
+            str: The path to the downloaded file.
+
+        Raises:
+            ValueError: If the downloaded file fails validation.
         """
         assert isinstance(url, str)
         if islocal(url):
             return urlparse(url).path
-        cache_name = self.url_to_name(str(url))
+        cache_name = self.url_to_name(url)
         assert "/" not in cache_name, f"bad cache name {cache_name} for {url}"
         destdir = os.path.join(self.cache_dir, os.path.dirname(cache_name))
         os.makedirs(destdir, exist_ok=True)
@@ -252,13 +269,16 @@ class FileCache:
         return dest
 
     def __call__(self, urls: Iterable[str]) -> Iterable[io.IOBase]:
-        """Download files from a list of URLs and yields file streams.
+        """Download files from a list of URLs and yield file streams.
 
         Args:
-            urls: An iterable of strings representing the URLs to download files from.
+            urls (Iterable[str]): An iterable of URLs to download files from.
 
-        Returns:
-            An iterable of file streams for the downloaded files.
+        Yields:
+            dict: A dictionary containing the URL, file stream, and local path of each downloaded file.
+
+        Raises:
+            Exception: If there's an error downloading or opening a file.
         """
         for url in urls:
             if isinstance(url, dict):
@@ -288,7 +308,27 @@ def cached_url_opener(
     verbose=False,
     always=False,
 ):
-    """Given a stream of url names (packaged in `dict(url=url)`), yield opened streams."""
+    """Open streams for a sequence of URLs, with caching.
+
+    Given a stream of URL names (packaged in `dict(url=url)`), yield opened streams.
+
+    Args:
+        data: An iterable of dictionaries containing URLs.
+        handler: Function to handle exceptions. Defaults to reraise_exception.
+        cache_size (int): Maximum size of the cache in bytes. Defaults to -1 (unlimited).
+        cache_dir (Optional[str]): The directory to use for caching. Defaults to None.
+        url_to_name: Function to convert URLs to cache names. Defaults to pipe_cleaner.
+        validator: Function to validate downloaded files. Defaults to check_tar_format.
+        verbose (bool): Whether to print verbose output. Defaults to False.
+        always (bool): Whether to always download files, even if they exist locally. Defaults to False.
+
+    Yields:
+        dict: A dictionary containing the original sample data and an opened file stream.
+
+    Raises:
+        ValueError: If a downloaded file fails validation.
+        Exception: For any other errors during download or file opening.
+    """
     verbose = verbose or verbose_cache
     for sample in data:
         assert isinstance(sample, dict), sample
@@ -348,7 +388,24 @@ def cached_tarfile_samples(
     select_files=None,
     rename_files=None,
 ):
-    """Obsolete."""
+    """Process and yield samples from cached tar files.
+
+    This function is obsolete.
+
+    Args:
+        src: An iterable source of URLs or dictionaries containing URLs.
+        handler: Function to handle exceptions. Defaults to reraise_exception.
+        cache_size (int): Maximum size of the cache in bytes. Defaults to -1 (unlimited).
+        cache_dir (Optional[str]): The directory to use for caching. Defaults to None.
+        verbose (bool): Whether to print verbose output. Defaults to False.
+        url_to_name: Function to convert URLs to cache names. Defaults to pipe_cleaner.
+        always (bool): Whether to always download files, even if they exist locally. Defaults to False.
+        select_files: Function to select specific files from the tar archive. Defaults to None.
+        rename_files: Function to rename files from the tar archive. Defaults to None.
+
+    Returns:
+        An iterable of samples extracted from the cached tar files.
+    """
     verbose = verbose or int(os.environ.get("GOPEN_VERBOSE", 0))
     streams = cached_url_opener(
         src,
