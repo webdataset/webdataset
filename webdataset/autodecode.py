@@ -16,7 +16,7 @@ from functools import partial
 
 import numpy as np
 
-pytorch_weights_only = int(os.environ.get("WDS_PYTORCH_WEIGHTS_ONLY", "0")) != 0
+pytorch_weights_only = os.environ.get("WDS_PYTORCH_WEIGHTS_ONLY", "0") == "1"
 
 # Obtained with:
 # ```
