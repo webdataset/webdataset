@@ -20,29 +20,64 @@ import warnings
 
 
 def reraise_exception(exn):
-    """Call in an exception handler to re-raise the exception."""
+    """Re-raise the given exception.
+
+    Args:
+        exn: The exception to be re-raised.
+
+    Raises:
+        The input exception.
+    """
     raise exn
 
 
 def ignore_and_continue(exn):
-    """Call in an exception handler to ignore any exception and continue."""
+    """Ignore the exception and continue processing.
+
+    Args:
+        exn: The exception to be ignored.
+
+    Returns:
+        bool: Always returns True to indicate continuation.
+    """
     return True
 
 
 def warn_and_continue(exn):
-    """Call in an exception handler to ignore any exception, isssue a warning, and continue."""
+    """Issue a warning for the exception and continue processing.
+
+    Args:
+        exn: The exception to be warned about.
+
+    Returns:
+        bool: Always returns True to indicate continuation.
+    """
     warnings.warn(repr(exn))
     time.sleep(0.5)
     return True
 
 
 def ignore_and_stop(exn):
-    """Call in an exception handler to ignore any exception and stop further processing."""
+    """Ignore the exception and stop further processing.
+
+    Args:
+        exn: The exception to be ignored.
+
+    Returns:
+        bool: Always returns False to indicate stopping.
+    """
     return False
 
 
 def warn_and_stop(exn):
-    """Call in an exception handler to ignore any exception and stop further processing."""
+    """Issue a warning for the exception and stop further processing.
+
+    Args:
+        exn: The exception to be warned about.
+
+    Returns:
+        bool: Always returns False to indicate stopping.
+    """
     warnings.warn(repr(exn))
     time.sleep(0.5)
     return False
