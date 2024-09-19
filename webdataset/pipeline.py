@@ -1,4 +1,4 @@
-# %%
+import warnings
 import copy
 import sys
 from itertools import islice
@@ -8,6 +8,14 @@ from .utils import PipelineStage
 
 
 def add_length_method(obj):
+    """Add a length method to the given object.
+
+    Args:
+        obj: The object to which the length method will be added.
+
+    Returns:
+        The modified object with a new length method.
+    """
     def length(self):
         return self.size
 
@@ -21,7 +29,12 @@ def add_length_method(obj):
 
 
 class DataPipeline(IterableDataset, PipelineStage):
-    """A pipeline starting with an IterableDataset and a series of filters."""
+    """A pipeline starting with an IterableDataset and a series of filters.
+
+    Args:
+        *args: Variable length argument list of pipeline stages.
+        **kwargs: Arbitrary keyword arguments.
+    """
 
     def __init__(self, *args, **kwargs):
         super().__init__()
@@ -38,14 +51,26 @@ class DataPipeline(IterableDataset, PipelineStage):
                 self.pipeline.append(arg)
 
     def close(self):
-        """Close the pipeline."""
+        """Close the pipeline and release resources."""
         for step in self.pipeline:
             if hasattr(step, "close"):
                 step.close()
         del self.pipeline
 
     def invoke(self, f, *args, **kwargs):
-        """Apply a pipeline stage, possibly to the output of a previous stage."""
+        """Apply a pipeline stage, possibly to the output of a previous stage.
+
+        Args:
+            f: The pipeline stage to invoke.
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
+
+        Returns:
+            The result of invoking the pipeline stage.
+
+        Raises:
+            ValueError: If the pipeline stage is not valid.
+        """
         if isinstance(f, PipelineStage):
             return f.run(*args, **kwargs)
         if isinstance(f, (IterableDataset, DataLoader)) and len(args) == 0:
@@ -58,14 +83,22 @@ class DataPipeline(IterableDataset, PipelineStage):
         raise ValueError(f"{f}: not a valid pipeline stage")
 
     def iterator1(self):
-        """Create an iterator through one epoch in the pipeline."""
+        """Create an iterator through one epoch in the pipeline.
+
+        Returns:
+            An iterator for one epoch of the pipeline.
+        """
         source = self.invoke(self.pipeline[0])
         for step in self.pipeline[1:]:
             source = self.invoke(step, source)
         return source
 
     def iterator(self):
-        """Create an iterator through the entire dataset, using the given number of repetitions."""
+        """Create an iterator through the entire dataset, using the given number of repetitions.
+
+        Yields:
+            Samples from the dataset.
+        """
         for _ in range(self.repetitions):
             count = 0            
             for sample in self.iterator1():
@@ -75,8 +108,12 @@ class DataPipeline(IterableDataset, PipelineStage):
                 # if the dataset is empty, don't keep looping
                 break
 
-    def __iter__(self):  # sourcery skip: merge-duplicate-blocks
-        """Create an iterator through the pipeline, repeating and slicing as requested."""
+    def __iter__(self):
+        """Create an iterator through the pipeline, repeating and slicing as requested.
+
+        Returns:
+            An iterator through the pipeline.
+        """
         if self.repetitions != 1:
             if self.nsamples > 0:
                 return islice(self.iterator(), self.nsamples)
@@ -86,15 +123,33 @@ class DataPipeline(IterableDataset, PipelineStage):
             return self.iterator()
 
     def stage(self, i):
-        """Return pipeline stage i."""
+        """Return pipeline stage i.
+
+        Args:
+            i: The index of the pipeline stage to return.
+
+        Returns:
+            The pipeline stage at index i.
+        """
         return self.pipeline[i]
 
     def append(self, f):
-        """Append a pipeline stage (modifies the object)."""
+        """Append a pipeline stage (modifies the object).
+
+        Args:
+            f: The pipeline stage to append.
+        """
         self.pipeline.append(f)
 
     def compose(self, *args):
-        """Append a pipeline stage to a copy of the pipeline and returns the copy."""
+        """Append pipeline stages to a copy of the pipeline and return the copy.
+
+        Args:
+            *args: Variable length argument list of pipeline stages to append.
+
+        Returns:
+            A new DataPipeline object with the appended stages.
+        """
         result = copy.copy(self)
         result.pipeline = copy.copy(result.pipeline)
         for arg in args:
@@ -108,6 +163,13 @@ class DataPipeline(IterableDataset, PipelineStage):
         PyTorch IterableDataset should not have a __len__ method.
         This is provided only as a workaround for some broken training environments
         that require a __len__ method.
+
+        Args:
+            n: The length value to set.
+            silent: If True, suppress the warning message.
+
+        Returns:
+            The modified DataPipeline object with a __len__ method.
         """
         if not silent:
             warnings.warn(".with_length() only sets the value of __len__ for compatibility with some training environments. It does not change the number of samples in an epoch.")
@@ -117,14 +179,27 @@ class DataPipeline(IterableDataset, PipelineStage):
     def with_epoch(self, nsamples=-1, nbatches=-1):
         """Change the epoch to return the given number of samples/batches.
 
-        The two arguments mean the same thing."""
+        Args:
+            nsamples: The number of samples per epoch.
+            nbatches: The number of batches per epoch.
+
+        Returns:
+            The modified DataPipeline object.
+        """
         self.repetitions = sys.maxsize
         self.nsamples = max(nsamples, nbatches)
         return self
 
     def repeat(self, nepochs=-1, nbatches=-1):
-        # sourcery skip: hoist-similar-statement-from-if, hoist-statement-from-if
-        """Repeat iterating through the dataset for the given #epochs up to the given #samples."""
+        """Repeat iterating through the dataset for the given number of epochs up to the given number of samples.
+
+        Args:
+            nepochs: The number of epochs to repeat.
+            nbatches: The number of batches to limit per repetition.
+
+        Returns:
+            The modified DataPipeline object.
+        """
         if nepochs > 0:
             self.repetitions = nepochs
             self.nsamples = nbatches

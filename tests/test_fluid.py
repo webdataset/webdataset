@@ -99,7 +99,7 @@ def test_dataset():
     Raises:
         AssertionError: If the number of samples in the WebDataset object does not match the expected value.
     """
-    ds = wds.WebDataset(local_data)
+    ds = wds.WebDataset(local_data, shardshuffle=False)
     assert count_samples_tuple(ds) == 47
 
 
@@ -164,13 +164,13 @@ def test_yaml3():
     The spec is a list of datasets, each of which is a list of shards.
     """
     spec = yaml.safe_load(StringIO(yaml3_data))
-    ds = wds.WebDataset(spec)
+    ds = wds.WebDataset(spec, shardshuffle=False)
     next(iter(ds))
 
 
 def test_length():
     """Test the with_length and repeat methods."""
-    ds = wds.WebDataset(local_data)
+    ds = wds.WebDataset(local_data, shardshuffle=False)
     # ensure that the dataset does not have a length property
     with pytest.raises(TypeError):
         len(ds)
@@ -193,31 +193,31 @@ def test_mock():
 
 @pytest.mark.skip(reason="ddp_equalize is obsolete")
 def test_ddp_equalize():
-    ds = wds.WebDataset(local_data).ddp_equalize(733)
+    ds = wds.WebDataset(local_data, shardshuffle=False).ddp_equalize(733)
     assert count_samples_tuple(ds) == 733
 
 
 def test_dataset_shuffle_extract():
     """Basic WebDataset usage: shuffle, extract, and count samples."""
-    ds = wds.WebDataset(local_data).shuffle(5).to_tuple("png;jpg cls")
+    ds = wds.WebDataset(local_data, shardshuffle=False).shuffle(5).to_tuple("png;jpg cls")
     assert count_samples_tuple(ds) == 47
 
 
 def test_dataset_context():
     """Basic WebDataset usage: shuffle, extract, and count samples."""
-    with wds.WebDataset(local_data).shuffle(5).to_tuple("png;jpg cls") as ds:
+    with wds.WebDataset(local_data, shardshuffle=100).shuffle(5).to_tuple("png;jpg cls") as ds:
         assert count_samples_tuple(ds) == 47
 
 
 def test_dataset_pipe_cat():
     """Test that WebDataset can read from a pipe."""
-    ds = wds.WebDataset(f"pipe:cat {local_data}").shuffle(5).to_tuple("png;jpg cls")
+    ds = wds.WebDataset(f"pipe:cat {local_data}", shardshuffle=100).shuffle(5).to_tuple("png;jpg cls")
     assert count_samples_tuple(ds) == 47
 
 
 def test_slice():
     """Test the slice method."""
-    ds = wds.WebDataset(local_data).slice(10)
+    ds = wds.WebDataset(local_data, shardshuffle=100).slice(10)
     assert count_samples_tuple(ds) == 10
 
 
@@ -226,14 +226,14 @@ def test_dataset_eof():
     import tarfile
 
     with pytest.raises(tarfile.ReadError):
-        ds = wds.WebDataset(f"pipe:dd if={local_data} bs=1024 count=10").shuffle(5)
+        ds = wds.WebDataset(f"pipe:dd if={local_data} bs=1024 count=10", shardshuffle=100).shuffle(5)
         assert count_samples(ds) == 47
 
 
 def test_dataset_eof_handler():
     """Test that we can ignore EOF errors by using a handler."""
     ds = wds.WebDataset(
-        f"pipe:dd if={local_data} bs=1024 count=10", handler=wds.ignore_and_stop
+        f"pipe:dd if={local_data} bs=1024 count=10", handler=wds.ignore_and_stop, shardshuffle=100
     )
     assert count_samples(ds) < 47
 
@@ -250,21 +250,21 @@ def test_dataset_decode_nohandler():
         count[0] += 1
 
     with pytest.raises(ValueError):
-        ds = wds.WebDataset(local_data).decode(faulty_decoder)
+        ds = wds.WebDataset(local_data, shardshuffle=100).decode(faulty_decoder)
         count_samples_tuple(ds)
 
 
 def test_dataset_missing_totuple_raises():
     """Test that missing keys in to_tuple raise an error."""
     with pytest.raises(ValueError):
-        ds = wds.WebDataset(local_data).to_tuple("foo", "bar")
+        ds = wds.WebDataset(local_data, shardshuffle=100).to_tuple("foo", "bar")
         count_samples_tuple(ds)
 
 
 def test_dataset_missing_rename_raises():
     """Test that missing keys in rename raise an error."""
     with pytest.raises(ValueError):
-        ds = wds.WebDataset(local_data).rename(x="foo", y="bar")
+        ds = wds.WebDataset(local_data, shardshuffle=100).rename(x="foo", y="bar")
         count_samples_tuple(ds)
 
 
@@ -277,10 +277,10 @@ def test_dataset_rename_keep():
 
     This option determines whether the original keys are kept or only the renamed keys.
     """
-    ds = wds.WebDataset(local_data).rename(image="png", keep=False)
+    ds = wds.WebDataset(local_data, shardshuffle=100).rename(image="png", keep=False)
     sample = next(iter(ds))
     assert getkeys(sample) == set(["image"]), getkeys(sample)
-    ds = wds.WebDataset(local_data).rename(image="png")
+    ds = wds.WebDataset(local_data, shardshuffle=100).rename(image="png")
     sample = next(iter(ds))
     assert getkeys(sample) == set("cls image wnid xml".split()), getkeys(sample)
 
@@ -289,10 +289,10 @@ def test_dataset_rsample():
     """Test the rsample method.
 
     The rsample method selects samples from a stream with a given probability."""
-    ds = wds.WebDataset(local_data).rsample(1.0)
+    ds = wds.WebDataset(local_data, shardshuffle=100).rsample(1.0)
     assert count_samples_tuple(ds) == 47
 
-    ds = wds.WebDataset(local_data).rsample(0.5)
+    ds = wds.WebDataset(local_data, shardshuffle=100).rsample(0.5)
     result = [count_samples_tuple(ds) for _ in range(300)]
     assert np.mean(result) >= 0.3 * 47 and np.mean(result) <= 0.7 * 47, np.mean(result)
 
@@ -312,7 +312,7 @@ def test_dataset_decode_handler():
             good[0] += 1
             return data
 
-    ds = wds.WebDataset(local_data).decode(
+    ds = wds.WebDataset(local_data, shardshuffle=100).decode(
         faulty_decoder, handler=wds.ignore_and_continue
     )
     result = count_samples_tuple(ds)
@@ -324,11 +324,11 @@ def test_dataset_decode_handler():
 def test_dataset_rename_handler():
     """Test basic rename functionality."""
 
-    ds = wds.WebDataset(local_data).rename(image="png;jpg", cls="cls")
+    ds = wds.WebDataset(local_data, shardshuffle=100).rename(image="png;jpg", cls="cls")
     count_samples_tuple(ds)
 
     with pytest.raises(ValueError):
-        ds = wds.WebDataset(local_data).rename(image="missing", cls="cls")
+        ds = wds.WebDataset(local_data, shardshuffle=100).rename(image="missing", cls="cls")
         count_samples_tuple(ds)
 
 
@@ -342,36 +342,36 @@ def test_dataset_map_handler():
     def g(x):
         raise ValueError()
 
-    ds = wds.WebDataset(local_data).map(f)
+    ds = wds.WebDataset(local_data, shardshuffle=100).map(f)
     count_samples_tuple(ds)
 
     with pytest.raises(ValueError):
-        ds = wds.WebDataset(local_data).map(g)
+        ds = wds.WebDataset(local_data, shardshuffle=100).map(g)
         count_samples_tuple(ds)
 
 
 def test_dataset_map_dict_handler():
     """Test the map_dict method on a dataset, including error handling."""
 
-    ds = wds.WebDataset(local_data).map_dict(png=identity, cls=identity)
+    ds = wds.WebDataset(local_data, shardshuffle=100).map_dict(png=identity, cls=identity)
     count_samples_tuple(ds)
 
     with pytest.raises(KeyError):
-        ds = wds.WebDataset(local_data).map_dict(png=identity, cls2=identity)
+        ds = wds.WebDataset(local_data, shardshuffle=100).map_dict(png=identity, cls2=identity)
         count_samples_tuple(ds)
 
     def g(x):
         raise ValueError()
 
     with pytest.raises(ValueError):
-        ds = wds.WebDataset(local_data).map_dict(png=g, cls=identity)
+        ds = wds.WebDataset(local_data, shardshuffle=100).map_dict(png=g, cls=identity)
         count_samples_tuple(ds)
 
 
 def test_dataset_shuffle_decode_rename_extract():
     """Test the basic shuffle-decode-rename-to_tuple pipeline."""
     ds = (
-        wds.WebDataset(local_data)
+        wds.WebDataset(local_data, shardshuffle=100)
         .shuffle(5)
         .decode("rgb")
         .rename(image="png;jpg", cls="cls")
@@ -385,7 +385,7 @@ def test_dataset_shuffle_decode_rename_extract():
 
 def test_rgb8():
     """Test decoding to RGB8 numpy arrays."""
-    ds = wds.WebDataset(local_data).decode("rgb8").to_tuple("png;jpg", "cls")
+    ds = wds.WebDataset(local_data, shardshuffle=100).decode("rgb8").to_tuple("png;jpg", "cls")
     assert count_samples_tuple(ds) == 47
     image, cls = next(iter(ds))
     assert isinstance(image, np.ndarray), type(image)
@@ -395,7 +395,7 @@ def test_rgb8():
 
 def test_pil():
     """Test decoding to PIL images."""
-    ds = wds.WebDataset(local_data).decode("pil").to_tuple("jpg;png", "cls")
+    ds = wds.WebDataset(local_data, shardshuffle=100).decode("pil").to_tuple("jpg;png", "cls")
     assert count_samples_tuple(ds) == 47
     image, cls = next(iter(ds))
     assert isinstance(image, PIL.Image.Image)
@@ -403,7 +403,7 @@ def test_pil():
 
 def test_raw():
     """Test absence of decoding."""
-    ds = wds.WebDataset(local_data).to_tuple("jpg;png", "cls")
+    ds = wds.WebDataset(local_data, shardshuffle=100).to_tuple("jpg;png", "cls")
     assert count_samples_tuple(ds) == 47
     image, cls = next(iter(ds))
     assert isinstance(image, bytes)
@@ -412,14 +412,14 @@ def test_raw():
 
 def test_only1():
     """Test partial decoding using the only option to decode."""
-    ds = wds.WebDataset(local_data).decode(only="cls").to_tuple("jpg;png", "cls")
+    ds = wds.WebDataset(local_data, shardshuffle=100).decode(only="cls").to_tuple("jpg;png", "cls")
     assert count_samples_tuple(ds) == 47
     image, cls = next(iter(ds))
     assert isinstance(image, bytes)
     assert isinstance(cls, int)
 
     ds = (
-        wds.WebDataset(local_data)
+        wds.WebDataset(local_data, shardshuffle=100)
         .decode("l", only=["jpg", "png"])
         .to_tuple("jpg;png", "cls")
     )
@@ -431,7 +431,7 @@ def test_only1():
 
 def test_gz():
     """Test chained decoding: txt.gz is first decompressed then decoded."""
-    ds = wds.WebDataset(compressed).decode()
+    ds = wds.WebDataset(compressed, shardshuffle=100).decode()
     sample = next(iter(ds))
     print(sample)
     assert sample["txt.gz"] == "hello\n", sample
@@ -442,11 +442,11 @@ def test_rgb8_np_vs_torch():
     import warnings
 
     warnings.filterwarnings("error")
-    ds = wds.WebDataset(local_data).decode("rgb8").to_tuple("png;jpg", "cls")
+    ds = wds.WebDataset(local_data, shardshuffle=100).decode("rgb8").to_tuple("png;jpg", "cls")
     image, cls = next(iter(ds))
     assert isinstance(image, np.ndarray), type(image)
     assert isinstance(cls, int), type(cls)
-    ds = wds.WebDataset(local_data).decode("torchrgb8").to_tuple("png;jpg", "cls")
+    ds = wds.WebDataset(local_data, shardshuffle=100).decode("torchrgb8").to_tuple("png;jpg", "cls")
     image2, cls2 = next(iter(ds))
     assert isinstance(image2, torch.Tensor), type(image2)
     assert isinstance(cls, int), type(cls)
@@ -456,9 +456,9 @@ def test_rgb8_np_vs_torch():
 
 def test_float_np_vs_torch():
     """Compare decoding to numpy and to torch and ensure that they give the same results."""
-    ds = wds.WebDataset(local_data).decode("rgb").to_tuple("png;jpg", "cls")
+    ds = wds.WebDataset(local_data, shardshuffle=100).decode("rgb").to_tuple("png;jpg", "cls")
     image, cls = next(iter(ds))
-    ds = wds.WebDataset(local_data).decode("torchrgb").to_tuple("png;jpg", "cls")
+    ds = wds.WebDataset(local_data, shardshuffle=100).decode("torchrgb").to_tuple("png;jpg", "cls")
     image2, cls2 = next(iter(ds))
     assert (image == image2.permute(1, 2, 0).numpy()).all(), (image.shape, image2.shape)
     assert cls == cls2
@@ -473,7 +473,7 @@ def test_associate():
     def associate(key):
         return dict(MY_EXTRA_DATA=extra_data[key])
 
-    ds = wds.WebDataset(local_data).associate(associate)
+    ds = wds.WebDataset(local_data, shardshuffle=100).associate(associate)
 
     for sample in ds:
         assert "MY_EXTRA_DATA" in sample.keys()
@@ -498,7 +498,7 @@ def test_tenbin():
 
 def test_tenbin_dec():
     """Test tensor binary decoding."""
-    ds = wds.WebDataset("testdata/tendata.tar").decode().to_tuple("ten")
+    ds = wds.WebDataset("testdata/tendata.tar", shardshuffle=100).decode().to_tuple("ten")
     assert count_samples_tuple(ds) == 100
     for sample in ds:
         xs, ys = sample[0]
@@ -510,7 +510,7 @@ def test_tenbin_dec():
 
 @pytest.mark.skip(reason="untested")
 def test_container_mp():
-    ds = wds.WebDataset("testdata/mpdata.tar", container="mp", decoder=None)
+    ds = wds.WebDataset("testdata/mpdata.tar", container="mp", decoder=None, shardshuffle=100)
     assert count_samples_tuple(ds) == 100
     for sample in ds:
         assert isinstance(sample, dict)
@@ -519,7 +519,7 @@ def test_container_mp():
 
 @pytest.mark.skip(reason="untested")
 def test_container_ten():
-    ds = wds.WebDataset("testdata/tendata.tar", container="ten", decoder=None)
+    ds = wds.WebDataset("testdata/tendata.tar", container="ten", decoder=None, shardshuffle=100)
     assert count_samples_tuple(ds) == 100
     for xs, ys in ds:
         assert xs.dtype == np.float64
@@ -535,7 +535,7 @@ def test_decoder():
         return len(sample)
 
     ds = (
-        wds.WebDataset(remote_loc + remote_shard)
+        wds.WebDataset(remote_loc + remote_shard, shardshuffle=100)
         .decode(mydecoder)
         .to_tuple("jpg;png", "json")
     )
@@ -547,7 +547,7 @@ def test_decoder():
 def test_cache_dir(tmp_path):
     """Test a custom decoder function."""
 
-    ds = wds.WebDataset(remote_sample, cache_dir=tmp_path)
+    ds = wds.WebDataset(remote_sample, cache_dir=tmp_path, shardshuffle=100)
 
     count = 0
     for epoch in range(3):
@@ -565,7 +565,7 @@ def test_cache_dir(tmp_path):
 def test_shard_syntax():
     """Test that remote shards are correctly handled."""
     print(remote_loc, remote_shards)
-    ds = wds.WebDataset(remote_loc + remote_shards).decode().to_tuple("jpg;png", "json")
+    ds = wds.WebDataset(remote_loc + remote_shards, shardshuffle=100).decode().to_tuple("jpg;png", "json")
     assert count_samples_tuple(ds, n=10) == 10
 
 
@@ -580,7 +580,7 @@ def test_opener():
         ).stdout
 
     ds = (
-        wds.WebDataset("{000000..000099}", open_fn=opener)
+        wds.WebDataset("{000000..000099}", open_fn=opener, shardshuffle=100)
         .shuffle(100)
         .to_tuple("jpg;png", "json")
     )
@@ -590,7 +590,7 @@ def test_opener():
 @pytest.mark.skip(reason="failing for unknown reason")
 def test_pipe():
     ds = (
-        wds.WebDataset(f"pipe:curl -s -L '{remote_loc}{remote_shards}'")
+        wds.WebDataset(f"pipe:curl -s -L '{remote_loc}{remote_shards}'", shardshuffle=100)
         .shuffle(100)
         .to_tuple("jpg;png", "json")
     )
@@ -614,7 +614,7 @@ def test_torchvision():
         ]
     )
     ds = (
-        wds.WebDataset(remote_loc + remote_shards)
+        wds.WebDataset(remote_loc + remote_shards, shardshuffle=100)
         .decode("pil")
         .to_tuple("jpg;png", "json")
         .map_tuple(preproc, identity)
@@ -642,7 +642,7 @@ def test_batched():
             normalize,
         ]
     )
-    raw = wds.WebDataset(remote_loc + remote_shards)
+    raw = wds.WebDataset(remote_loc + remote_shards, shardshuffle=100)
     ds = (
         raw.decode("pil")
         .to_tuple("jpg;png", "json")
@@ -674,7 +674,7 @@ def test_unbatched():
         ]
     )
     ds = (
-        wds.WebDataset(remote_loc + remote_shards)
+        wds.WebDataset(remote_loc + remote_shards, shardshuffle=100)
         .decode("pil")
         .to_tuple("jpg;png", "json")
         .map_tuple(preproc, identity)
@@ -691,7 +691,7 @@ def test_unbatched():
 
 def test_with_epoch():
     """Test the with_epoch(n) method, forcing epochs of a given size."""
-    ds = wds.WebDataset(local_data)
+    ds = wds.WebDataset(local_data, shardshuffle=100)
     for _ in range(10):
         assert count_samples_tuple(ds) == 47
     be = ds.with_epoch(193)
@@ -704,13 +704,13 @@ def test_with_epoch():
 
 def test_repeat():
     """Test the repeatn(n) method, repeating the dataset n times."""
-    ds = wds.WebDataset(local_data)
+    ds = wds.WebDataset(local_data, shardshuffle=100)
     assert count_samples_tuple(ds.repeat(nepochs=2)) == 47 * 2
 
 
 def test_repeat2():
     """Testing the repeat(nbatches=n) method, repeating the dataset n batches."""
-    ds = wds.WebDataset(local_data).to_tuple("png", "cls").batched(2)
+    ds = wds.WebDataset(local_data, shardshuffle=100).to_tuple("png", "cls").batched(2)
     assert count_samples_tuple(ds.repeat(nbatches=20)) == 20
 
 
@@ -718,7 +718,7 @@ def test_repeat2():
 def test_log_keys(tmp_path):
     tmp_path = str(tmp_path)
     fname = tmp_path + "/test.ds.yml"
-    ds = wds.WebDataset(local_data).log_keys(fname)
+    ds = wds.WebDataset(local_data, shardshuffle=100).log_keys(fname)
     result = [x for x in ds]
     assert len(result) == 47
     with open(fname) as stream:
@@ -728,7 +728,7 @@ def test_log_keys(tmp_path):
 
 @pytest.mark.skip(reason="FIXME")
 def test_length():
-    ds = wds.WebDataset(local_data)
+    ds = wds.WebDataset(local_data, shardshuffle=100)
     with pytest.raises(TypeError):
         len(ds)
     dsl = ds.with_length(1793)
@@ -742,11 +742,11 @@ def test_rgb8_np_vs_torch():
     import warnings
 
     warnings.filterwarnings("error")
-    ds = wds.WebDataset(local_data).decode("rgb8").to_tuple("png;jpg", "cls")
+    ds = wds.WebDataset(local_data, shardshuffle=100).decode("rgb8").to_tuple("png;jpg", "cls")
     image, cls = next(iter(ds))
     assert isinstance(image, np.ndarray), type(image)
     assert isinstance(cls, int), type(cls)
-    ds = wds.WebDataset(local_data).decode("torchrgb8").to_tuple("png;jpg", "cls")
+    ds = wds.WebDataset(local_data, shardshuffle=100).decode("torchrgb8").to_tuple("png;jpg", "cls")
     image2, cls2 = next(iter(ds))
     assert isinstance(image2, torch.Tensor), type(image2)
     assert isinstance(cls, int), type(cls)
@@ -762,7 +762,7 @@ def test_associate():
     def associate(key):
         return dict(MY_EXTRA_DATA=extra_data[key])
 
-    ds = wds.WebDataset(local_data).associate(associate)
+    ds = wds.WebDataset(local_data, shardshuffle=100).associate(associate)
 
     for sample in ds:
         assert "MY_EXTRA_DATA" in sample.keys()
@@ -771,7 +771,7 @@ def test_associate():
 
 @pytest.mark.skip(reason="fixme")
 def test_container_mp():
-    ds = wds.WebDataset("testdata/mpdata.tar", container="mp", decoder=None)
+    ds = wds.WebDataset("testdata/mpdata.tar", container="mp", decoder=None, shardshuffle=100)
     assert count_samples_tuple(ds) == 100
     for sample in ds:
         assert isinstance(sample, dict)
@@ -780,7 +780,7 @@ def test_container_mp():
 
 @pytest.mark.skip(reason="fixme")
 def test_container_ten():
-    ds = wds.WebDataset("testdata/tendata.tar", container="ten", decoder=None)
+    ds = wds.WebDataset("testdata/tendata.tar", container="ten", decoder=None, shardshuffle=100)
     assert count_samples_tuple(ds) == 100
     for xs, ys in ds:
         assert xs.dtype == np.float64
@@ -800,20 +800,20 @@ def test_multimode():
         urls, verbose=True, epoch_shuffle=True, shuffle=True
     )
     os.environ["WDS_EPOCH"] = "7"
-    ds = wds.WebDataset(shardlist)
+    ds = wds.WebDataset(shardlist, shardshuffle=100)
     dl = torch.utils.data.DataLoader(ds, num_workers=4)
     count = count_samples_tuple(dl)
     assert count == nsamples, count
     del os.environ["WDS_EPOCH"]
 
     shardlist = wds.PytorchShardList(urls, verbose=True, split_by_worker=False)
-    ds = wds.WebDataset(shardlist)
+    ds = wds.WebDataset(shardlist, shardshuffle=100)
     dl = torch.utils.data.DataLoader(ds, num_workers=4)
     count = count_samples_tuple(dl)
     assert count == 4 * nsamples, count
 
     shardlist = shardlists.ResampledShards(urls)
-    ds = wds.WebDataset(shardlist).slice(170)
+    ds = wds.WebDataset(shardlist, shardshuffle=100).slice(170)
     dl = torch.utils.data.DataLoader(ds, num_workers=4)
     count = count_samples_tuple(dl)
     assert count == 170 * 4, count
