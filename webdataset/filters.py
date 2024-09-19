@@ -31,87 +31,195 @@ from .utils import PipelineStage
 
 
 class FilterFunction(object):
-    """Helper class for currying pipeline stages.
+    """
+    Helper class for currying pipeline stages.
 
-    We use this roundabout construct becauce it can be pickled.
+    This class is used to create a curried function that can be pickled.
+
+    Attributes:
+        f: The function to be curried.
+        args: Positional arguments for the function.
+        kw: Keyword arguments for the function.
     """
 
     def __init__(self, f, *args, **kw):
-        """Create a curried function."""
+        """
+        Create a curried function.
+
+        Args:
+            f: The function to be curried.
+            *args: Positional arguments for the function.
+            **kw: Keyword arguments for the function.
+        """
         self.f = f
         self.args = args
         self.kw = kw
 
     def __call__(self, data):
-        """Call the curried function with the given argument."""
+        """
+        Call the curried function with the given argument.
+
+        Args:
+            data: The data to be processed by the curried function.
+
+        Returns:
+            The result of calling the curried function with the given data and stored arguments.
+        """
         return self.f(data, *self.args, **self.kw)
 
     def __str__(self):
-        """Compute a string representation."""
+        """
+        Compute a string representation.
+
+        Returns:
+            str: A string representation of the FilterFunction object.
+        """
         return f"<{self.f.__name__} {self.args} {self.kw}>"
 
     def __repr__(self):
-        """Compute a string representation."""
+        """
+        Compute a string representation.
+
+        Returns:
+            str: A string representation of the FilterFunction object.
+        """
         return f"<{self.f.__name__} {self.args} {self.kw}>"
 
 
 class RestCurried(object):
-    """Helper class for currying pipeline stages.
+    """
+    Helper class for currying pipeline stages.
 
-    We use this roundabout construct because it can be pickled.
+    This class is used to create a curried function that can be pickled.
+
+    Attributes:
+        f: The function to be curried.
     """
 
     def __init__(self, f):
-        """Store the function for future currying."""
+        """
+        Store the function for future currying.
+
+        Args:
+            f: The function to be curried.
+        """
         self.f = f
 
     def __call__(self, *args, **kw):
-        """Curry with the given arguments."""
+        """
+        Curry with the given arguments.
+
+        Args:
+            *args: Positional arguments for the function.
+            **kw: Keyword arguments for the function.
+
+        Returns:
+            FilterFunction: A FilterFunction object with the curried function and arguments.
+        """
         return FilterFunction(self.f, *args, **kw)
 
 
 def pipelinefilter(f):
-    """Turn the decorated function into one that is partially applied for
-    all arguments other than the first."""
+    """
+    Turn the decorated function into one that is partially applied for all arguments other than the first.
+
+    Args:
+        f: The function to be decorated.
+
+    Returns:
+        RestCurried: A RestCurried object that can be used to create a FilterFunction.
+    """
     result = RestCurried(f)
     functools.update_wrapper(result, f)
     return result
 
 
 def reraise_exception(exn):
-    """Reraises the given exception; used as a handler.
+    """
+    Reraise the given exception.
 
-    :param exn: exception
+    Args:
+        exn: The exception to be reraised.
+
+    Raises:
+        The input exception.
     """
     raise exn
 
 
 def identity(x):
-    """Return the argument."""
+    """
+    Return the argument unchanged.
+
+    Args:
+        x: The input value.
+
+    Returns:
+        The input value unchanged.
+    """
     return x
 
 
 def compose2(f, g):
-    """Compose two functions, g(f(x))."""
+    """
+    Compose two functions, g(f(x)).
+
+    Args:
+        f: The first function to be composed.
+        g: The second function to be composed.
+
+    Returns:
+        function: A new function that applies f and then g to its input.
+    """
     return lambda x: g(f(x))
 
 
 def compose(*args):
-    """Compose a sequence of functions (left-to-right)."""
+    """
+    Compose a sequence of functions (left-to-right).
+
+    Args:
+        *args: Functions to be composed.
+
+    Returns:
+        function: A new function that applies all input functions in sequence.
+    """
     return reduce(compose2, args)
 
 
 def pipeline(source, *args):
-    """Write an input pipeline; first argument is source, rest are filters."""
+    """
+    Write an input pipeline; first argument is source, rest are filters.
+
+    Args:
+        source: The data source for the pipeline.
+        *args: Filters to be applied to the data.
+
+    Returns:
+        The result of applying all filters to the source data.
+    """
     if len(args) == 0:
         return source
     return compose(*args)(source)
 
 
 def getfirst(a, keys, default=None, missing_is_error=True):
-    """Get the first matching key from a dictionary.
+    """
+    Get the first matching key from a dictionary.
 
     Keys can be specified as a list, or as a string of keys separated by ';'.
+
+    Args:
+        a (dict): The dictionary to search.
+        keys (str or list): The keys to search for.
+        default: The default value to return if no key is found.
+        missing_is_error (bool): If True, raise an error when no key is found.
+
+    Returns:
+        The value of the first matching key found in the dictionary.
+
+    Raises:
+        ValueError: If no matching key is found and missing_is_error is True.
     """
     if isinstance(keys, str):
         assert " " not in keys
@@ -125,10 +233,17 @@ def getfirst(a, keys, default=None, missing_is_error=True):
 
 
 def parse_field_spec(fields):
-    """Parse a specification for a list of fields to be extracted.
+    """
+    Parse a specification for a list of fields to be extracted.
 
     Keys are separated by spaces in the spec. Each key can itself
     be composed of key alternatives separated by ';'.
+
+    Args:
+        fields (str or list): The field specification to parse.
+
+    Returns:
+        list: A list of parsed field specifications.
     """
     if isinstance(fields, str):
         fields = fields.split()
@@ -136,14 +251,19 @@ def parse_field_spec(fields):
 
 
 def transform_with(sample, transformers):
-    """Transform a list of values using a list of functions.
-
-    sample: list of values
-    transformers: list of functions
+    """
+    Transform a list of values using a list of functions.
 
     If there are fewer transformers than inputs, or if a transformer
     function is None, then the identity function is used for the
     corresponding sample fields.
+
+    Args:
+        sample (list): List of values to transform.
+        transformers (list): List of functions to apply to the sample.
+
+    Returns:
+        list: The transformed sample.
     """
     if transformers is None or len(transformers) == 0:
         return sample
@@ -162,15 +282,20 @@ def transform_with(sample, transformers):
 
 
 def _info(data, fmt=None, n=3, every=-1, width=50, stream=sys.stderr, name=""):
-    """Print information about the samples that are passing through.
+    """
+    Print information about the samples that are passing through.
 
-    :param data: source iterator
-    :param fmt: format statement (using sample dict as keyword)
-    :param n: when to stop
-    :param every: how often to print
-    :param width: maximum width
-    :param stream: output stream
-    :param name: identifier printed before any output
+    Args:
+        data: Source iterator.
+        fmt (str): Format statement (using sample dict as keyword).
+        n (int): When to stop printing.
+        every (int): How often to print.
+        width (int): Maximum width for printed values.
+        stream: Output stream.
+        name (str): Identifier printed before any output.
+
+    Yields:
+        The samples from the input iterator.
     """
     for i, sample in enumerate(data):
         if i < n or (every > 0 and (i + 1) % every == 0):
@@ -187,6 +312,16 @@ info = pipelinefilter(_info)
 
 
 def pick(buf, rng):
+    """
+    Pick a random item from the buffer and remove it.
+
+    Args:
+        buf (list): The buffer to pick from.
+        rng: Random number generator.
+
+    Returns:
+        The randomly picked item.
+    """
     k = rng.randint(0, len(buf) - 1)
     sample = buf[k]
     buf[k] = buf[-1]
@@ -195,17 +330,23 @@ def pick(buf, rng):
 
 
 def _shuffle(data, bufsize=1000, initial=100, rng=None, seed=None, handler=None):
-    """Shuffle the data in the stream.
+    """
+    Shuffle the data in the stream.
 
     This uses a buffer of size `bufsize`. Shuffling at
     startup is less random; this is traded off against
     yielding samples quickly.
 
-    data: iterator
-    bufsize: buffer size for shuffling
-    returns: iterator
-    rng: either random module or random.Random instance
+    Args:
+        data: Iterator to shuffle.
+        bufsize (int): Buffer size for shuffling.
+        initial (int): Initial buffer size before yielding.
+        rng: Random number generator.
+        seed: Seed for the random number generator.
+        handler: Exception handler.
 
+    Yields:
+        Shuffled items from the input iterator.
     """
     if seed is not None:
         assert rng is None
@@ -231,13 +372,43 @@ shuffle = pipelinefilter(_shuffle)
 
 
 class detshuffle(PipelineStage):
+    """
+    A deterministic shuffling stage for the pipeline.
+
+    This class provides a reproducible shuffling mechanism based on a seed and epoch.
+
+    Attributes:
+        bufsize (int): Size of the buffer for shuffling.
+        initial (int): Initial number of samples to collect before shuffling.
+        seed (int): Seed for the random number generator.
+        epoch (int): Current epoch number.
+    """
+
     def __init__(self, bufsize=1000, initial=100, seed=0, epoch=-1):
+        """
+        Initialize the detshuffle stage.
+
+        Args:
+            bufsize (int): Size of the buffer for shuffling.
+            initial (int): Initial number of samples to collect before shuffling.
+            seed (int): Seed for the random number generator.
+            epoch (int): Starting epoch number.
+        """
         self.bufsize = bufsize
         self.initial = initial
         self.seed = seed
         self.epoch = epoch
 
     def run(self, src):
+        """
+        Run the shuffling process on the input source.
+
+        Args:
+            src: Input data source to be shuffled.
+
+        Returns:
+            Iterator: Shuffled data iterator.
+        """
         self.epoch += 1
         rng = random.Random()
         rng.seed(self.seed + self.epoch)
@@ -245,10 +416,15 @@ class detshuffle(PipelineStage):
 
 
 def _select(data, predicate):
-    """Select samples based on a predicate.
+    """
+    Select samples based on a predicate.
 
-    :param data: source iterator
-    :param predicate: predicate (function)
+    Args:
+        data: Source iterator.
+        predicate: Function that returns True for samples to be selected.
+
+    Yields:
+        Samples that satisfy the predicate.
     """
     for sample in data:
         if predicate(sample):
@@ -259,6 +435,16 @@ select = pipelinefilter(_select)
 
 
 def _log_keys(data, logfile=None):
+    """
+    Log keys of the samples passing through the pipeline.
+
+    Args:
+        data: Source iterator.
+        logfile (str): Path to the log file.
+
+    Yields:
+        Samples from the input iterator.
+    """
     import fcntl
 
     if logfile is None or logfile == "":
@@ -279,8 +465,21 @@ log_keys = pipelinefilter(_log_keys)
 
 
 def _decode(data, *args, handler=reraise_exception, **kw):
-    """Decode data based on the decoding functions given as arguments."""
+    """
+    Decode data based on the decoding functions given as arguments.
 
+    Args:
+        data: Source iterator.
+        *args: Decoding functions to be applied.
+        handler: Exception handler function.
+        **kw: Additional keyword arguments for the Decoder.
+
+    Yields:
+        Decoded samples.
+
+    Raises:
+        Exception: If the handler doesn't handle an exception.
+    """
     decoder = lambda x: autodecode.imagehandler(x) if isinstance(x, str) else x
     handlers = [decoder(x) for x in args]
     f = autodecode.Decoder(handlers, **kw)
@@ -299,9 +498,21 @@ def _decode(data, *args, handler=reraise_exception, **kw):
 
 decode = pipelinefilter(_decode)
 
-
 def _map(data, f, handler=reraise_exception):
-    """Map samples."""
+    """
+    Map samples through a function.
+
+    Args:
+        data: Source iterator.
+        f: Function to apply to each sample.
+        handler: Exception handler function.
+
+    Yields:
+        Processed samples.
+
+    Raises:
+        Exception: If the handler doesn't handle an exception.
+    """
     for sample in data:
         try:
             result = f(sample)
@@ -321,7 +532,21 @@ map = pipelinefilter(_map)
 
 
 def _rename(data, handler=reraise_exception, keep=True, **kw):
-    """Rename samples based on keyword arguments."""
+    """
+    Rename samples based on keyword arguments.
+
+    Args:
+        data: Source iterator.
+        handler: Exception handler function.
+        keep (bool): Whether to keep original keys not being renamed.
+        **kw: Mapping of new names to old names.
+
+    Yields:
+        Samples with renamed keys.
+
+    Raises:
+        Exception: If the handler doesn't handle an exception.
+    """
     for sample in data:
         try:
             if not keep:
@@ -353,7 +578,17 @@ rename = pipelinefilter(_rename)
 
 
 def _associate(data, associator, **kw):
-    """Associate additional data with samples."""
+    """
+    Associate additional data with samples.
+
+    Args:
+        data: Source iterator.
+        associator: Function or dictionary to associate extra data.
+        **kw: Additional keyword arguments.
+
+    Yields:
+        Samples with associated data.
+    """
     for sample in data:
         if callable(associator):
             extra = associator(sample["__key__"])
@@ -365,9 +600,21 @@ def _associate(data, associator, **kw):
 
 associate = pipelinefilter(_associate)
 
-
 def _map_dict(data, handler=reraise_exception, **kw):
-    """Map the entries in a dict sample with individual functions."""
+    """
+    Map the entries in a dict sample with individual functions.
+
+    Args:
+        data: Source iterator of dictionary samples.
+        handler: Exception handler function.
+        **kw: Mapping of keys to functions to apply.
+
+    Yields:
+        Samples with mapped values.
+
+    Raises:
+        Exception: If the handler doesn't handle an exception.
+    """
     assert len(list(kw.keys())) > 0
     for key, f in kw.items():
         assert callable(f), (key, f)
@@ -391,7 +638,22 @@ map_dict = pipelinefilter(_map_dict)
 def _to_tuple(
     data, *args, handler=reraise_exception, missing_is_error=True, none_is_error=None
 ):
-    """Convert dict samples to tuples."""
+    """
+    Convert dict samples to tuples.
+
+    Args:
+        data: Source iterator of dictionary samples.
+        *args: Keys to extract from the dictionaries.
+        handler: Exception handler function.
+        missing_is_error (bool): Whether missing keys should raise an error.
+        none_is_error (bool): Whether None values should raise an error.
+
+    Yields:
+        Tuples of extracted values.
+
+    Raises:
+        Exception: If the handler doesn't handle an exception.
+    """
     if none_is_error is None:
         none_is_error = missing_is_error
     if len(args) == 1 and isinstance(args[0], str) and " " in args[0]:
@@ -416,7 +678,20 @@ to_tuple = pipelinefilter(_to_tuple)
 
 
 def _map_tuple(data, *args, handler=reraise_exception):
-    """Map the entries of a tuple with individual functions."""
+    """
+    Map the entries of a tuple with individual functions.
+
+    Args:
+        data: Source iterator of tuple samples.
+        *args: Functions to apply to each element of the tuples.
+        handler: Exception handler function.
+
+    Yields:
+        Tuples with mapped values.
+
+    Raises:
+        Exception: If the handler doesn't handle an exception.
+    """
     args = [f if f is not None else utils.identity for f in args]
     for f in args:
         assert callable(f), f
@@ -437,18 +712,17 @@ def _map_tuple(data, *args, handler=reraise_exception):
 
 map_tuple = pipelinefilter(_map_tuple)
 
-
 def default_collation_fn(samples, combine_tensors=True, combine_scalars=True):
-    """Take a collection of samples (dictionaries) and create a batch.
+    """
+    Take a collection of samples (dictionaries) and create a batch.
 
-    If `tensors` is True, `ndarray` objects are combined into
-    tensor batches.
+    Args:
+        samples (list): List of samples to be batched.
+        combine_tensors (bool): Whether to combine tensor-like objects into batches.
+        combine_scalars (bool): Whether to combine scalar values into numpy arrays.
 
-    :param dict samples: list of samples
-    :param bool tensors: whether to turn lists of ndarrays into a single ndarray
-    :returns: single sample consisting of a batch
-    :rtype: dict
-
+    Returns:
+        list: A batch of samples.
     """
     assert isinstance(samples[0], (list, tuple)), type(samples[0])
     batched = list(zip(*samples))
@@ -460,7 +734,6 @@ def default_collation_fn(samples, combine_tensors=True, combine_scalars=True):
         elif isinstance(b[0], TorchTensor):
             if combine_tensors:
                 import torch
-
                 b = torch.stack(list(b))
         elif isinstance(b[0], np.ndarray):
             if combine_tensors:
@@ -477,14 +750,17 @@ def _batched(
     collation_fn=default_collation_fn,
     partial=True,
 ):
-    """Create batches of the given size.
+    """
+    Create batches of the given size.
 
-    :param data: iterator
-    :param batchsize: target batch size
-    :param tensors: automatically batch lists of ndarrays into ndarrays
-    :param partial: return partial batches
-    :returns: iterator
+    Args:
+        data: Iterator of samples.
+        batchsize (int): Target batch size.
+        collation_fn (callable): Function to use for collating samples into a batch.
+        partial (bool): Whether to return partial batches at the end.
 
+    Yields:
+        Batches of samples.
     """
     batch = []
     for sample in data:
@@ -506,9 +782,17 @@ batched = pipelinefilter(_batched)
 
 
 def _unlisted(data):
-    """Turn batched data back into unbatched data."""
+    """
+    Turn batched data back into unbatched data.
+
+    Args:
+        data: Iterator of batches.
+
+    Yields:
+        Individual samples from the batches.
+    """
     for batch in data:
-        assert isinstance(batch, list), sample
+        assert isinstance(batch, list), batch
         yield from batch
 
 
@@ -516,7 +800,15 @@ unlisted = pipelinefilter(_unlisted)
 
 
 def _unbatched(data):
-    """Turn batched data back into unbatched data."""
+    """
+    Turn batched data back into unbatched data.
+
+    Args:
+        data: Iterator of batches.
+
+    Yields:
+        Individual samples from the batches.
+    """
     for sample in data:
         assert isinstance(sample, (tuple, list)), sample
         assert len(sample) > 0
@@ -526,9 +818,17 @@ def _unbatched(data):
 
 unbatched = pipelinefilter(_unbatched)
 
-
 def _rsample(data, p=0.5):
-    """Randomly subsample a stream of data."""
+    """
+    Randomly subsample a stream of data.
+
+    Args:
+        data: Iterator of samples.
+        p (float): Probability of keeping each sample.
+
+    Yields:
+        Randomly selected samples from the input stream.
+    """
     assert p >= 0.0 and p <= 1.0
     for sample in data:
         if random.uniform(0.0, 1.0) < p:
@@ -541,6 +841,22 @@ slice = pipelinefilter(itertools.islice)
 
 
 def _extract_keys(source, *patterns, duplicate_is_error=True, ignore_missing=False):
+    """
+    Extract values from samples based on key patterns.
+
+    Args:
+        source: Iterator of dictionary samples.
+        *patterns: Patterns to match keys against.
+        duplicate_is_error (bool): Whether multiple matches for a pattern should raise an error.
+        ignore_missing (bool): Whether to ignore patterns that don't match any keys.
+
+    Yields:
+        Tuples of extracted values.
+
+    Raises:
+        ValueError: If a pattern matches multiple keys and duplicate_is_error is True,
+                    or if a pattern doesn't match any keys and ignore_missing is False.
+    """
     for sample in source:
         result = []
         for pattern in patterns:
@@ -566,10 +882,27 @@ def _extract_keys(source, *patterns, duplicate_is_error=True, ignore_missing=Fal
 
 extract_keys = pipelinefilter(_extract_keys)
 
-
 def _rename_keys(
     source, *args, keep_unselected=False, must_match=True, duplicate_is_error=True, **kw
 ):
+    """
+    Rename keys in dictionary samples based on patterns.
+
+    Args:
+        source: Iterator of dictionary samples.
+        *args: Tuples of (new_name, pattern) for renaming.
+        keep_unselected (bool): Whether to keep keys that don't match any patterns.
+        must_match (bool): Whether all patterns must match at least one key.
+        duplicate_is_error (bool): Whether multiple matches for a pattern should raise an error.
+        **kw: Keyword arguments of the form new_name=pattern for renaming.
+
+    Yields:
+        Dictionary samples with renamed keys.
+
+    Raises:
+        ValueError: If a pattern matches multiple keys and duplicate_is_error is True,
+                    or if not all patterns match and must_match is True.
+    """
     renamings = [(pattern, output) for output, pattern in args]
     renamings += [(pattern, output) for output, pattern in kw.items()]
     for sample in source:
@@ -606,15 +939,42 @@ rename_keys = pipelinefilter(_rename_keys)
 
 
 def decode_bin(stream):
+    """
+    Decode binary data from a stream.
+
+    Args:
+        stream: A file-like object containing binary data.
+
+    Returns:
+        bytes: The binary data read from the stream.
+    """
     return stream.read()
 
 
 def decode_text(stream):
+    """
+    Decode text data from a stream.
+
+    Args:
+        stream: A file-like object containing text data.
+
+    Returns:
+        str: The decoded text data.
+    """
     binary = stream.read()
     return binary.decode("utf-8")
 
 
 def decode_pickle(stream):
+    """
+    Decode pickle data from a stream.
+
+    Args:
+        stream: A file-like object containing pickle data.
+
+    Returns:
+        The unpickled object.
+    """
     return pickle.load(stream)
 
 
@@ -625,7 +985,17 @@ default_decoders = [
 ]
 
 
-def find_decoder(decoders, path):  # sourcery skip: use-next
+def find_decoder(decoders, path):
+    """
+    Find the appropriate decoder for a given path.
+
+    Args:
+        decoders: List of (pattern, decoder_function) pairs.
+        path: The path to find a decoder for.
+
+    Returns:
+        callable: The decoder function for the given path, or None if no match is found.
+    """
     fname = re.sub(r".*/", "", path)
     if fname.startswith("__"):
         return lambda x: x
@@ -634,7 +1004,6 @@ def find_decoder(decoders, path):  # sourcery skip: use-next
             return fun
     return None
 
-
 def _xdecode(
     source,
     *args,
@@ -642,6 +1011,22 @@ def _xdecode(
     defaults=default_decoders,
     **kw,
 ):
+    """
+    Decode data in samples using specified decoders.
+
+    Args:
+        source: Iterator of dictionary samples.
+        *args: Additional (pattern, decoder_function) pairs.
+        must_decode (bool): Whether all data must be decoded.
+        defaults: Default decoders to use.
+        **kw: Additional decoders specified as key=decoder_function.
+
+    Yields:
+        Dictionary samples with decoded data.
+
+    Raises:
+        ValueError: If no decoder is found for a key and must_decode is True.
+    """
     decoders = list(defaults) + list(args)
     decoders += [("*." + k, v) for k, v in kw.items()]
     for sample in source:
@@ -669,11 +1054,28 @@ xdecode = pipelinefilter(_xdecode)
 
 
 class Cached(PipelineStage):
+    """
+    A pipeline stage that caches its output.
+
+    This stage will cache all samples that pass through it, allowing subsequent
+    iterations to use the cached data instead of recomputing it.
+    """
+
     def __init__(self):
+        """Initialize the Cached pipeline stage."""
         super().__init__()
         self.cached = None
 
     def run(self, source):
+        """
+        Run the caching process on the input source.
+
+        Args:
+            source: Input data source to be cached.
+
+        Yields:
+            Samples from the source, caching them for future use.
+        """
         if self.cached is None:
             self.temp = []
             for sample in source:
@@ -685,8 +1087,23 @@ class Cached(PipelineStage):
 
 
 class LMDBCached(PipelineStage):
+    """
+    A pipeline stage that caches its output in an LMDB database.
+
+    This stage will cache all samples that pass through it in an LMDB database,
+    allowing subsequent iterations to use the cached data instead of recomputing it.
+    """
 
     def __init__(self, fname, map_size=1e12, pickler=pickle, chunksize=500):
+        """
+        Initialize the LMDBCached pipeline stage.
+
+        Args:
+            fname (str): Filename for the LMDB database.
+            map_size (int): Maximum size database may grow to.
+            pickler: Module to use for pickling (default is Python's pickle module).
+            chunksize (int): Number of samples to write in each transaction.
+        """
         import lmdb
 
         self.db = lmdb.open(fname, readonly=False, map_size=int(map_size))
@@ -694,15 +1111,39 @@ class LMDBCached(PipelineStage):
         self.chunksize = chunksize
 
     def is_complete(self):
+        """
+        Check if the database is complete.
+
+        Returns:
+            bool: True if the database is complete, False otherwise.
+        """
         with self.db.begin(write=False) as txn:
             return txn.get(b"_") is not None
 
     def add_samples(self, samples):
+        """
+        Add samples to the database.
+
+        Args:
+            samples: Iterable of (key, sample) pairs to add to the database.
+        """
         with self.db.begin(write=True) as txn:
             for key, sample in samples:
                 txn.put(key.encode(), self.pickler.dumps(sample))
 
     def run(self, source):
+        """
+        Run the caching process on the input source.
+
+        If the database is complete, yield samples from the database.
+        Otherwise, yield samples from the source and cache them in the database.
+
+        Args:
+            source: Input data source to be cached.
+
+        Yields:
+            Samples from the source or the database.
+        """
         if self.is_complete():
             with self.db.begin(write=False) as txn:
                 for key, value in txn.cursor():
