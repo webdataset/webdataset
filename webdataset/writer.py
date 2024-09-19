@@ -316,10 +316,8 @@ class TarWriter:
             else:
                 tarmode = "w|gz" if fileobj.endswith("gz") else "w|"
             fileobj = gopen(fileobj, "wb")
-            self.own_fileobj = fileobj
         else:
             tarmode = "w|gz" if compress is True else "w|"
-            self.own_fileobj = None
         self.encoder = make_encoder(encoder)
         self.keep_meta = keep_meta
         self.stream = fileobj
@@ -341,9 +339,9 @@ class TarWriter:
     def close(self):
         """Close the tar file."""
         self.tarstream.close()
-        if self.own_fileobj is not None:
-            self.own_fileobj.close()
-            self.own_fileobj = None
+        if self.stream is not None:
+            self.stream.close()
+            self.stream = None
 
     def write(self, obj):
         """Write a dictionary to the tar file.
