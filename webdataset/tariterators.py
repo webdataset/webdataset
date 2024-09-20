@@ -25,13 +25,11 @@ meta_suffix = "__"
 def base_plus_ext(path):
     """Split off all file extensions.
 
-    Returns base, allext.
-
     Args:
-        path: path with extensions
+        path: Path with extensions.
 
     Returns:
-        path with all extensions removed
+        Tuple containing the base path and all extensions.
     """
     match = re.match(r"^((?:.*/|)[^.]+)[.]([^/]*)$", path)
     if not match:
@@ -43,10 +41,10 @@ def valid_sample(sample: Dict[str, Any]) -> bool:
     """Check whether a sample is valid.
 
     Args:
-        sample: a
+        sample: A dictionary representing a sample.
 
     Returns:
-        boolean indicating whether the sample is valid.
+        Boolean indicating whether the sample is valid.
     """
     return (
         sample is not None
@@ -58,7 +56,15 @@ def valid_sample(sample: Dict[str, Any]) -> bool:
 
 # FIXME: UNUSED
 def shardlist(urls, *, shuffle=False):
-    """Given a list of URLs, yields that list, possibly shuffled."""
+    """Generate a list of URLs, possibly shuffled.
+
+    Args:
+        urls: A string or list of URLs.
+        shuffle: Whether to shuffle the URLs.
+
+    Yields:
+        Dictionary containing the URL.
+    """
     if isinstance(urls, str):
         urls = braceexpand.braceexpand(urls)
     else:
@@ -77,12 +83,12 @@ def url_opener(
     """Open URLs and yield a stream of url+stream pairs.
 
     Args:
-        data: iterator over dict(url=...)
-        handler: exception handler.
-        kw: keyword arguments for gopen.gopen.
+        data: Iterator over dict(url=...).
+        handler: Exception handler.
+        **kw: Keyword arguments for gopen.gopen.
 
     Yields:
-        a stream of url+stream pairs.
+        A stream of url+stream pairs.
     """
     for sample in data:
         assert isinstance(sample, dict), sample
@@ -110,13 +116,14 @@ def tar_file_iterator(
     """Iterate over tar file, yielding filename, content pairs for the given tar stream.
 
     Args:
-        fileobj: the tar file stream.
-        skip_meta: regexp for keys that are skipped entirely. Defaults to r"__[^/]*__($|/)".
-        handler: exception handler. Defaults to reraise_exception.
-        select: predicate for selecting files. Defaults to None.
+        fileobj: The tar file stream.
+        skip_meta: Regexp for keys that are skipped entirely.
+        handler: Exception handler.
+        select_files: Predicate for selecting files.
+        rename_files: Function to rename files.
 
     Yields:
-        a stream of samples.
+        A stream of samples.
     """
     stream = tarfile.open(fileobj=fileobj, mode="r|*")
     for tarinfo in stream:
@@ -163,12 +170,14 @@ def tar_file_expander(
     """Expand tar files.
 
     Args:
-        data: iterator over opened tar file streams.
-        handler: exception handler.
-        select_files: select files from tarfiles by name (permits skipping files).
+        data: Iterator over opened tar file streams.
+        handler: Exception handler.
+        select_files: Select files from tarfiles by name (permits skipping files).
+        rename_files: Function to rename files.
+        eof_value: Value to yield at the end of each shard.
 
     Yields:
-        a stream of samples.
+        A stream of samples.
     """
     for source in data:
         url = source["url"]
@@ -211,17 +220,17 @@ def group_by_keys(
     """Group tarfile contents by keys and yield samples.
 
     Args:
-        data: iterator over tarfile contents
-        keys: function that takes a file name and returns a key and a suffix.
-        lcase: whether to lowercase the suffix.
-        suffixes: list of suffixes to keep.
-        handler: exception handler.
+        data: Iterator over tarfile contents.
+        keys: Function that takes a file name and returns a key and a suffix.
+        lcase: Whether to lowercase the suffix.
+        suffixes: List of suffixes to keep.
+        handler: Exception handler.
 
     Raises:
-        ValueError: raised if there are duplicate file names in the tar file.
+        ValueError: If there are duplicate file names in the tar file.
 
     Yields:
-        iterator over samples.
+        Iterator over samples.
     """
     current_sample = None
     for filesample in data:
@@ -273,15 +282,16 @@ def tarfile_samples(
     select_files: Optional[Callable[[str], bool]] = None,
     rename_files: Optional[Callable[[str], str]] = None,
 ) -> Iterable[Dict[str, Any]]:
-    """Given a stream of tar files, yield samples.
+    """Generate samples from a stream of tar files.
 
     Args:
-        src: stream of tar files
-        handler: exception handler
-        select_files: function that selects files to be included
+        src: Stream of tar files.
+        handler: Exception handler.
+        select_files: Function that selects files to be included.
+        rename_files: Function to rename files.
 
     Returns:
-        stream of samples
+        Stream of samples.
     """
     streams = url_opener(src, handler=handler)
     files = tar_file_expander(
