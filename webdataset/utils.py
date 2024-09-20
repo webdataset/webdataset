@@ -21,13 +21,28 @@ import numpy as np
 
 
 def glob_with_braces(pattern):
-    """Apply glob to patterns with braces by pre-expanding the braces."""
+    """Apply glob to patterns with braces by pre-expanding the braces.
+
+    Args:
+        pattern (str): The glob pattern with braces.
+
+    Returns:
+        list: A list of file paths matching the expanded pattern.
+    """
     expanded = braceexpand.braceexpand(pattern)
     return [f for pat in expanded for f in glob.glob(pat)]
 
 
 def fnmatch_with_braces(filename, pattern):
-    """Apply fnmatch to patterns with braces by pre-expanding the braces."""
+    """Apply fnmatch to patterns with braces by pre-expanding the braces.
+
+    Args:
+        filename (str): The filename to match against.
+        pattern (str): The pattern with braces to match.
+
+    Returns:
+        bool: True if the filename matches any of the expanded patterns, False otherwise.
+    """
     expanded = braceexpand.braceexpand(pattern)
     for pat in expanded:
         if fnmatch.fnmatch(filename, pat):
@@ -36,6 +51,14 @@ def fnmatch_with_braces(filename, pattern):
 
 
 def make_seed(*args):
+    """Generate a seed value from the given arguments.
+
+    Args:
+        *args: Variable length argument list to generate the seed from.
+
+    Returns:
+        int: A 31-bit positive integer seed value.
+    """
     seed = 0
     for arg in args:
         seed = (seed * 31 + hash(arg)) & 0x7FFFFFFF
@@ -43,6 +66,14 @@ def make_seed(*args):
 
 
 def is_iterable(obj):
+    """Check if an object is iterable (excluding strings and bytes).
+
+    Args:
+        obj: The object to check for iterability.
+
+    Returns:
+        bool: True if the object is iterable (excluding strings and bytes), False otherwise.
+    """
     if isinstance(obj, str):
         return False
     if isinstance(obj, bytes):
@@ -55,24 +86,61 @@ def is_iterable(obj):
 
 
 class PipelineStage:
+    """Base class for pipeline stages."""
+
     def invoke(self, *args, **kw):
+        """Invoke the pipeline stage.
+
+        Args:
+            *args: Variable length argument list.
+            **kw: Arbitrary keyword arguments.
+
+        Raises:
+            NotImplementedError: This method should be implemented by subclasses.
+        """
         raise NotImplementedError
 
 
 def identity(x: Any) -> Any:
-    """Return the argument as is."""
+    """Return the argument as is.
+
+    Args:
+        x (Any): The input value.
+
+    Returns:
+        Any: The input value unchanged.
+    """
     return x
 
 
 def safe_eval(s: str, expr: str = "{}"):
-    """Evaluate the given expression more safely."""
+    """Evaluate the given expression more safely.
+
+    Args:
+        s (str): The string to evaluate.
+        expr (str, optional): The expression format. Defaults to "{}".
+
+    Returns:
+        Any: The result of the evaluation.
+
+    Raises:
+        ValueError: If the input string contains illegal characters.
+    """
     if re.sub("[^A-Za-z0-9_]", "", s) != s:
         raise ValueError(f"safe_eval: illegal characters in: '{s}'")
     return eval(expr.format(s))
 
 
 def lookup_sym(sym: str, modules: list):
-    """Look up a symbol in a list of modules."""
+    """Look up a symbol in a list of modules.
+
+    Args:
+        sym (str): The symbol to look up.
+        modules (list): A list of module names to search in.
+
+    Returns:
+        Any: The found symbol, or None if not found.
+    """
     for mname in modules:
         module = importlib.import_module(mname, package="webdataset")
         result = getattr(module, sym, None)
@@ -80,17 +148,32 @@ def lookup_sym(sym: str, modules: list):
             return result
     return None
 
-
 def repeatedly0(
     loader: Iterator, nepochs: int = sys.maxsize, nbatches: int = sys.maxsize
 ):
-    """Repeatedly returns batches from a DataLoader."""
+    """Repeatedly returns batches from a DataLoader.
+
+    Args:
+        loader (Iterator): The data loader to yield batches from.
+        nepochs (int, optional): Number of epochs to repeat. Defaults to sys.maxsize.
+        nbatches (int, optional): Number of batches per epoch. Defaults to sys.maxsize.
+
+    Yields:
+        Any: Batches from the data loader.
+    """
     for _ in range(nepochs):
         yield from itt.islice(loader, nbatches)
 
 
 def guess_batchsize(batch: Union[tuple, list]):
-    """Guess the batch size by looking at the length of the first element in a tuple."""
+    """Guess the batch size by looking at the length of the first element in a tuple.
+
+    Args:
+        batch (Union[tuple, list]): The batch to guess the size of.
+
+    Returns:
+        int: The guessed batch size.
+    """
     return len(batch[0])
 
 
@@ -101,7 +184,18 @@ def repeatedly(
     nsamples: int = None,
     batchsize: Callable[..., int] = guess_batchsize,
 ):
-    """Repeatedly yield samples from an iterator."""
+    """Repeatedly yield samples from an iterator.
+
+    Args:
+        source (Iterator): The source iterator to yield samples from.
+        nepochs (int, optional): Number of epochs to repeat. Defaults to None.
+        nbatches (int, optional): Number of batches to yield. Defaults to None.
+        nsamples (int, optional): Number of samples to yield. Defaults to None.
+        batchsize (Callable[..., int], optional): Function to guess batch size. Defaults to guess_batchsize.
+
+    Yields:
+        Any: Samples from the source iterator.
+    """
     epoch = 0
     batch = 0
     total = 0
@@ -121,7 +215,14 @@ def repeatedly(
 
 
 def pytorch_worker_info(group=None):  # sourcery skip: use-contextlib-suppress
-    """Return node and worker info for PyTorch and some distributed environments."""
+    """Return node and worker info for PyTorch and some distributed environments.
+
+    Args:
+        group (optional): The process group for distributed environments. Defaults to None.
+
+    Returns:
+        tuple: A tuple containing (rank, world_size, worker, num_workers).
+    """
     rank = 0
     world_size = 1
     worker = 0
@@ -157,10 +258,16 @@ def pytorch_worker_info(group=None):  # sourcery skip: use-contextlib-suppress
 
 
 def pytorch_worker_seed(group=None):
-    """Compute a distinct, deterministic RNG seed for each worker and node."""
+    """Compute a distinct, deterministic RNG seed for each worker and node.
+
+    Args:
+        group (optional): The process group for distributed environments. Defaults to None.
+
+    Returns:
+        int: A deterministic RNG seed.
+    """
     rank, world_size, worker, num_workers = pytorch_worker_info(group=group)
     return rank * 1000 + worker
-
 
 def deprecated(arg=None):
     if callable(arg):
