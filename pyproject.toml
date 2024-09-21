@@ -1,0 +1,161 @@
+[project]
+name = "webdataset"
+version = "0.2.101"
+description = "High performance storage and I/O for deep learning and data processing."
+authors = [
+    {name = "Thomas Breuel", email = "tmbdev+removeme@gmail.com"},
+]
+license = {text = "BSD"}
+readme = "README.md"
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "License :: OSI Approved :: BSD License",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+requires-python = ">=3.10,<=3.13"
+dependencies = [
+    "braceexpand",
+    "numpy",
+    "pyyaml",
+    "dataclasses",
+]
+
+[project.urls]
+homepage = "http://github.com/webdataset/webdataset"
+repository = "http://github.com/webdataset/webdataset"
+
+[build-system]
+requires = ["setuptools>=45", "setuptools_scm[toml]>=6.2"]
+build-backend = "setuptools.build_meta"
+Homepage = "http://github.com/webdataset/webdataset"
+
+[project.scripts]
+widsindex = "wids.wids_index:main"
+
+[tool.pdm]
+venv.location = "./venv"
+python_version = "3.12"
+
+[tool.setuptools]
+packages = ["webdataset", "wids"]
+
+[tool.setuptools_scm]
+write_to = "webdataset/__version__.py"
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+testpaths = ["webdataset/tests"]
+
+[tool.black]
+target-version = ['py310', 'py311', 'py312']
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  # directories
+  \.eggs
+  | \.git
+  | build
+  | dist
+)/
+'''
+
+[tool.isort]
+profile = "black"
+multi_line_output = 3
+include_trailing_comma = true
+force_grid_wrap = 0
+use_parentheses = true
+ensure_newline_before_comments = true
+
+[tool.coverage.run]
+source = ["webdataset"]
+branch = true
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "if self.debug:",
+    "if __name__ == .__main__.:",
+    "raise NotImplementedError",
+    "pass",
+]
+ignore_errors = true
+
+[tool.tox]
+legacy_tox_ini = """
+[tox]
+envlist = py36, py37, py38, py39
+isolated_build = True
+
+[testenv]
+deps = pytest
+commands = pytest
+"""
+
+# [tool.nox]
+# sessions = ["tests", "lint"]
+
+# [tool.nox.sessions.tests]
+# python = ["3.10", "3.11", "3.12"]
+# deps = ["pytest"]
+# commands = ["pytest"]
+
+# [tool.nox.sessions.lint]
+# deps = ["flake8"]
+# commands = ["flake8 webdataset tests"]
+
+[project.optional-dependencies]
+dev = [
+    # "adapter-transformers",
+    "autoflake",
+    "bandit",
+    "black",
+    "build",
+    "bump2version",
+    # "cbor",
+    "flake8",
+    "imageio",
+    "invoke",
+    # "ipywidgets",
+    "isort",
+    "jupyter",
+    # "jupyter_contrib_nbextensions",
+    "jupyterlab",
+    "lmdb",
+    "matplotlib",
+    "mkdocs",
+    "mkdocs-autorefs",
+    "mkdocs-material",
+    "mkdocs-material-extensions",
+    "mkdocs-minify-plugin",
+    "mkdocstrings",
+    "mkdocstrings-python",
+    "msgpack",
+    "mypy",
+    "nbconvert",
+    "notebook",
+    "numpy",
+    "papermill",
+    "pdm",
+    "Pillow",
+    "pydocstyle",
+    # "pyphen",
+    "pytest",
+    "pytest-cov",
+    " pytorch_lightning",
+    # "ray",
+    # "ray[default]",
+    # "ray[sgd]",
+    # "ray[tune]",
+    "scipy",
+    # "sentencepiece",
+    "setuptools",
+    "torch",
+    "torchvision",
+    "twine",
+    "typer",
+    "wheel",
+]

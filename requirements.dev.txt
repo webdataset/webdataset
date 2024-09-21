@@ -1,57 +1,49 @@
-invoke
-typer
-
-mkdocs
-setuptools
-wheel
-
+# adapter-transformers
 autoflake
-pytest
-pytest-cov
-isort
-black
-mypy
-flake8
-pydocstyle
 bandit
-twine
-wheel
+black
+build
+bump2version
+# cbor
+flake8
+imageio
+invoke
+# ipywidgets
+isort
+jupyter
+# jupyter_contrib_nbextensions
+jupyterlab
+lmdb
+matplotlib
 mkdocs
 mkdocs-autorefs
 mkdocs-material
-mkdocs-minify-plugin
 mkdocs-material-extensions
+mkdocs-minify-plugin
 mkdocstrings
 mkdocstrings-python
-
-jupyter
-jupyterlab
-notebook
-nbconvert
-papermill
-# ipywidgets
-# jupyter_contrib_nbextensions
-
 msgpack
-cbor
-lmdb
-
-Pillow
+mypy
+nbconvert
+notebook
 numpy
-scipy
-matplotlib
-imageio
-
-torch
-torchvision
-# pytorch_lightning
-# adapter-transformers
-# sentencepiece
+papermill
+pdm
+Pillow
+pydocstyle
 # pyphen
-
+pytest
+pytest-cov
+ pytorch_lightning
 # ray
-# ray[tune]
 # ray[default]
 # ray[sgd]
-
-bump2version
+# ray[tune]
+scipy
+# sentencepiece
+setuptools
+torch
+torchvision
+twine
+typer
+wheel

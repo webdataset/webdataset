@@ -40,3 +40,5 @@ Untitled*.ipynb
 venv
 webdataset.egg-info
 webdataset/tests/test_pipeline.log
+pdm.lock
+log
