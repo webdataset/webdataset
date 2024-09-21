@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <link rel="shortcut icon" href="../img/favicon.ico" />
+    <title>Resnet 50 Training on (Fake)Imagenet with WebDataset - webdataset</title>
+    <link rel="stylesheet" href="../css/theme.css" />
+    <link rel="stylesheet" href="../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+        <link href="../assets/_mkdocstrings.css" rel="stylesheet" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "Resnet 50 Training on (Fake)Imagenet with WebDataset";
+        var mkdocs_page_input_path = "train-resnet50-wds.md";
+        var mkdocs_page_url = null;
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href=".." class="icon icon-home"> webdataset
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="" href="../README.md">README</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../webdataset/">WebDataset</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../wids/">WIDS</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Examples</span></p>
+              <ul class="current">
+                  <li class="toctree-l1"><a class="reference internal" href="../generate-text-dataset/">Dataset Generation</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../tesseract-wds/">Tesseract wds</a>
+                  </li>
+                  <li class="toctree-l1 current"><a class="reference internal current" href="#">Resnet 50 Training on (Fake)Imagenet with WebDataset</a>
+    <ul class="current">
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../train-resnet50-wids/">Train resnet50 wids</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../train-resnet50-multiray-wds/">WebDataset + Distributed PyTorch Training</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../train-resnet50-multiray-wids/">WebIndexedDataset + Distributed PyTorch Training</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../train-ocr-errors-hf/">Fine Tuning LLM with Huggingface and WebDataset</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../mi-images/">Mini Imagenet Generation</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../mi-prompts/">Mini Imagenet Generation</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../wds-notes/">Wds notes</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../column-store/">Using WebDataset as a Column Store</a>
+                  </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="..">webdataset</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href=".." class="icon icon-home" aria-label="Docs"></a></li>
+          <li class="breadcrumb-item">Examples</li>
+      <li class="breadcrumb-item active">Resnet 50 Training on (Fake)Imagenet with WebDataset</li>
+    <li class="wy-breadcrumbs-aside">
+          <a href="http://github.com/webdataset/webdataset/edit/master/docs/train-resnet50-wds.md" class="icon icon-github"> Edit on GitHub</a>
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="resnet-50-training-on-fakeimagenet-with-webdataset">Resnet 50 Training on (Fake)Imagenet with WebDataset</h1>
+<p>This notebook illustrates how to use WebDataset with PyTorch training.</p>
+<pre><code class="language-python"># imports
+
+%matplotlib inline
+
+from functools import partial
+from pprint import pprint
+import random
+from collections import deque
+import numpy as np
+from matplotlib import pyplot as plt
+import sys
+import os
+
+import torch
+import torchvision
+import torchvision.transforms as transforms
+from torchvision.models import resnet50
+from torch.utils.data import DataLoader
+from torch import nn, optim
+
+# helpers
+
+import time
+
+
+def enumerate_report(seq, delta, growth=1.0):
+    last = 0
+    count = 0
+    for count, item in enumerate(seq):
+        now = time.time()
+        if now - last &gt; delta:
+            last = now
+            yield count, item, True
+        else:
+            yield count, item, False
+        delta *= growth
+</code></pre>
+<pre><code class="language-python"># We usually abbreviate webdataset as wds
+import webdataset as wds
+</code></pre>
+<pre><code class="language-python"># parameters
+epochs = 1
+max_steps = int(1e12)
+batchsize = 32
+bucket = &quot;https://storage.googleapis.com/webdataset/fake-imagenet&quot;
+training_urls = bucket + &quot;/imagenet-train-{000000..001281}.tar&quot;
+</code></pre>
+<h1 id="data-loader-construction">Data Loader Construction</h1>
+<pre><code class="language-python">
+# WebDataset is designed to work without any local storage. Use caching
+# only if you are on a desktop with slow networking.
+
+if 'google.colab' in sys.modules:
+    cache_dir = None
+    print(&quot;running on colab, streaming data directly from storage&quot;)
+else:
+    !mkdir -p ./_cache
+    cache_dir = &quot;./_cache&quot;
+    print(f&quot;not running in colab, caching data locally in {cache_dir}&quot;)
+</code></pre>
+<pre><code class="language-python"># The standard TorchVision transformations.
+
+transform_train = transforms.Compose(
+    [
+        transforms.RandomResizedCrop(224),
+        transforms.RandomHorizontalFlip(),
+        transforms.ToTensor(),
+        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+    ]
+)
+
+
+def make_sample(sample, val=False):
+    &quot;&quot;&quot;Take a decoded sample dictionary, augment it, and return an (image, label) tuple.&quot;&quot;&quot;
+    assert not val, &quot;only implemented training dataset for this notebook&quot;
+    image = sample[&quot;jpg&quot;]
+    label = sample[&quot;cls&quot;]
+    return transform_train(image), label
+</code></pre>
+<pre><code class="language-python"># Create the datasets with shard and sample shuffling and decoding.
+trainset = wds.WebDataset(
+    training_urls, resampled=True, cache_dir=cache_dir, shardshuffle=True
+)
+trainset = trainset.shuffle(1000).decode(&quot;pil&quot;).map(make_sample)
+
+# Since this is an IterableDataset, PyTorch requires that we batch in the dataset.
+# WebLoader is PyTorch DataLoader with some convenience methods.
+trainset = trainset.batched(64)
+trainloader = wds.WebLoader(trainset, batch_size=None, num_workers=4)
+
+# Unbatch, shuffle between workers, then rebatch.
+trainloader = trainloader.unbatched().shuffle(1000).batched(64)
+
+# Since we are using resampling, the dataset is infinite; set an artificial epoch size.
+trainloader = trainloader.with_epoch(1282 * 100 // 64)
+</code></pre>
+<pre><code class="language-python"># Smoke test it.
+
+os.environ[&quot;GOPEN_VERBOSE&quot;] = &quot;1&quot;
+images, classes = next(iter(trainloader))
+print(images.shape, classes.shape)
+os.environ[&quot;GOPEN_VERBOSE&quot;] = &quot;0&quot;
+</code></pre>
+<h1 id="pytorch-training">PyTorch Training</h1>
+<p>This is a typical PyTorch training pipeline.</p>
+<pre><code class="language-python"># The usual PyTorch model definition. We use an uninitialized ResNet50 model.
+
+model = resnet50(pretrained=False)
+
+# Define the loss function and optimizer
+criterion = nn.CrossEntropyLoss()
+optimizer = optim.SGD(model.parameters(), lr=0.01, momentum=0.9, weight_decay=5e-4)
+
+# Move the model to the GPU if available
+device = torch.device(&quot;cuda:0&quot; if torch.cuda.is_available() else &quot;cpu&quot;)
+model = model.to(device)
+</code></pre>
+<pre><code class="language-python">losses, accuracies = deque(maxlen=100), deque(maxlen=100)
+
+steps = 0
+
+# Train the model
+for epoch in range(epochs):
+    for i, data, verbose in enumerate_report(trainloader, 5):
+        # get the inputs; data is a list of [inputs, labels]
+        inputs, labels = data[0].to(device), data[1].to(device)
+
+        # zero the parameter gradients
+        optimizer.zero_grad()
+
+        # forward + backward + optimize
+        outputs = model(inputs)
+        loss = criterion(outputs, labels)
+        loss.backward()
+        optimizer.step()
+
+        pred = outputs.cpu().detach().argmax(dim=1, keepdim=True)
+        correct = pred.eq(labels.cpu().view_as(pred)).sum().item()
+        accuracy = correct / float(len(labels))
+
+        losses.append(loss.item())
+        accuracies.append(accuracy)
+        steps += len(inputs)
+
+        if verbose and len(losses) &gt; 5:
+            print(
+                &quot;[%d, %5d] loss: %.5f correct: %.5f&quot;
+                % (epoch + 1, i + 1, np.mean(losses), np.mean(accuracies))
+            )
+            running_loss = 0.0
+
+        if steps &gt; max_steps:
+            break
+
+    if steps &gt; max_steps:
+        break
+
+print(&quot;Finished Training&quot;)
+</code></pre>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../tesseract-wds/" class="btn btn-neutral float-left" title="Tesseract wds"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../train-resnet50-wids/" class="btn btn-neutral float-right" title="Train resnet50 wids">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+        <span>
+          <a href="http://github.com/webdataset/webdataset" class="fa fa-github" style="color: #fcfcfc"> GitHub</a>
+        </span>
+    
+    
+      <span><a href="../tesseract-wds/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../train-resnet50-wids/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script src="../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "..";</script>
+    <script src="../js/theme_extra.js"></script>
+    <script src="../js/theme.js"></script>
+      <script src="../search/main.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>

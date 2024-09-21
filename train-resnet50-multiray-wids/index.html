@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <link rel="shortcut icon" href="../img/favicon.ico" />
+    <title>WebIndexedDataset + Distributed PyTorch Training - webdataset</title>
+    <link rel="stylesheet" href="../css/theme.css" />
+    <link rel="stylesheet" href="../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+        <link href="../assets/_mkdocstrings.css" rel="stylesheet" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "WebIndexedDataset + Distributed PyTorch Training";
+        var mkdocs_page_input_path = "train-resnet50-multiray-wids.md";
+        var mkdocs_page_url = null;
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href=".." class="icon icon-home"> webdataset
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="" href="../README.md">README</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../webdataset/">WebDataset</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../wids/">WIDS</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Examples</span></p>
+              <ul class="current">
+                  <li class="toctree-l1"><a class="reference internal" href="../generate-text-dataset/">Dataset Generation</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../tesseract-wds/">Tesseract wds</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../train-resnet50-wds/">Resnet 50 Training on (Fake)Imagenet with WebDataset</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../train-resnet50-wids/">Train resnet50 wids</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../train-resnet50-multiray-wds/">WebDataset + Distributed PyTorch Training</a>
+                  </li>
+                  <li class="toctree-l1 current"><a class="reference internal current" href="#">WebIndexedDataset + Distributed PyTorch Training</a>
+    <ul class="current">
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../train-ocr-errors-hf/">Fine Tuning LLM with Huggingface and WebDataset</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../mi-images/">Mini Imagenet Generation</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../mi-prompts/">Mini Imagenet Generation</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../wds-notes/">Wds notes</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../column-store/">Using WebDataset as a Column Store</a>
+                  </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="..">webdataset</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href=".." class="icon icon-home" aria-label="Docs"></a></li>
+          <li class="breadcrumb-item">Examples</li>
+      <li class="breadcrumb-item active">WebIndexedDataset + Distributed PyTorch Training</li>
+    <li class="wy-breadcrumbs-aside">
+          <a href="http://github.com/webdataset/webdataset/edit/master/docs/train-resnet50-multiray-wids.md" class="icon icon-github"> Edit on GitHub</a>
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="webindexeddataset-distributed-pytorch-training">WebIndexedDataset + Distributed PyTorch Training</h1>
+<p>This notebook illustrates how to use the Web Indexed Dataset (<code>wids</code>) library for distributed PyTorch training using <code>DistributedDataParallel</code>.</p>
+<p>Using <code>wids</code> results in training code that is almost identical to plain PyTorch, with the only changes being the use of <code>ShardListDataset</code> for the dataset construction, and the use of the <code>DistributedChunkedSampler</code> for generating random samples from the dataset.</p>
+<p><code>ShardListDataset</code> requires some local storage. By default, that local storage just grows as shards are downloaded, but if you have limited space, you can run <code>create_cleanup_background_process</code> to clean up the cache; shards will be re-downloaded as necessary.</p>
+<pre><code class="language-python">import os
+import sys
+from typing import (
+    List,
+    Tuple,
+    Dict,
+    Optional,
+    Any,
+    Union,
+    Callable,
+    Iterable,
+    Iterator,
+    NamedTuple,
+    Set,
+    Sequence,
+)
+import torch
+import torch.nn as nn
+import torch.distributed as dist
+from torch.nn.parallel import DistributedDataParallel
+from torchvision.models import resnet50
+from torchvision import datasets, transforms
+from torch.utils.data import DataLoader
+import ray
+import wids
+import dataclasses
+import time
+from collections import deque
+from pprint import pprint
+
+
+def enumerate_report(seq, delta, growth=1.0):
+    last = 0
+    count = 0
+    for count, item in enumerate(seq):
+        now = time.time()
+        if now - last &gt; delta:
+            last = now
+            yield count, item, True
+        else:
+            yield count, item, False
+        delta *= growth
+</code></pre>
+<h1 id="data-loading-for-distributed-training">Data Loading for Distributed Training</h1>
+<p>The datasets we use for training are stored in the cloud.
+We use <code>fake-imagenet</code>, which is 1/10th the size of Imagenet
+and artificially generated, but it has the same number of
+shards and trains quickly.</p>
+<p>Note that unlike the <code>webdataset</code> library, <code>wids</code> always needs
+a local cache directory (it will use <code>/tmp</code> if you don't give it
+anything explicitly).</p>
+<pre><code class="language-python"># Parameters
+epochs = 1
+max_steps = int(1e12)
+batch_size = 32
+bucket = &quot;https://storage.googleapis.com/webdataset/fake-imagenet/&quot;
+trainset_url = bucket+&quot;imagenet-train.json&quot;
+valset_url = bucket+&quot;imagenet-val.json&quot;
+cache_dir = &quot;./_cache&quot;
+</code></pre>
+<pre><code class="language-python"># This is a typical PyTorch dataset, except that we read from the cloud.
+
+
+def make_dataset_train():
+    transform_train = transforms.Compose(
+        [
+            transforms.RandomResizedCrop(224),
+            transforms.RandomHorizontalFlip(),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+        ]
+    )
+
+    def make_sample(sample):
+        image = sample[&quot;.jpg&quot;]
+        label = sample[&quot;.cls&quot;]
+        return transform_train(image), label
+
+    trainset = wids.ShardListDataset(trainset_url, cache_dir=&quot;./_cache&quot;, keep=True)
+    trainset = trainset.add_transform(make_sample)
+
+    return trainset
+</code></pre>
+<p>This is really the only thing that is ever so slightly special about the <code>wids</code> library:
+you should use the special <code>DistributedChunkedSampler</code> for sampling.</p>
+<p>The regular <code>DistributedSampler</code> will technically work, but because of its poor locality
+of reference, will be significantly slower.</p>
+<pre><code class="language-python"># To keep locality of reference in the dataloader, we use a special sampler
+# for distributed training, DistributedChunkedSampler.
+
+
+def make_dataloader_train():
+    dataset = make_dataset_train()
+    sampler = wids.DistributedChunkedSampler(dataset, chunksize=1000, shuffle=True)
+    dataloader = DataLoader(
+        dataset, batch_size=batch_size, sampler=sampler, num_workers=4
+    )
+    return dataloader
+
+
+def make_dataloader(split=&quot;train&quot;):
+    &quot;&quot;&quot;Make a dataloader for training or validation.&quot;&quot;&quot;
+    if split == &quot;train&quot;:
+        return make_dataloader_train()
+    elif split == &quot;val&quot;:
+        return make_dataloader_val()
+    else:
+        raise ValueError(f&quot;unknown split {split}&quot;)
+
+
+# Try it out.
+sample = next(iter(make_dataloader()))
+print(sample[0].shape, sample[1].shape)
+</code></pre>
+<h1 id="pytorch-distributed-training-code">PyTorch Distributed Training Code</h1>
+<p>Really, all that's needed for distributed training is the <code>DistributedDataParallel</code> wrapper around the model.</p>
+<pre><code class="language-python"># For convenience, we collect all the configuration parameters into
+# a dataclass.
+
+
+@dataclasses.dataclass
+class Config:
+    rank: Optional[int] = None
+    epochs: int = 1
+    max_steps: int = int(1e18)
+    lr: float = 0.001
+    momentum: float = 0.9
+    world_size: int = 8
+    backend: str = &quot;nccl&quot;
+    master_addr: str = &quot;localhost&quot;
+    master_port: str = &quot;12355&quot;
+    report_s: float = 15.0
+    report_growth: float = 1.1
+
+
+Config()
+</code></pre>
+<pre><code class="language-python"># A typical PyTorch training function.
+
+
+def train(config):
+    # Define the model, loss function, and optimizer
+    model = resnet50(pretrained=False).cuda()
+    if config.rank is not None:
+        model = DistributedDataParallel(model)
+    loss_fn = nn.CrossEntropyLoss()
+    optimizer = torch.optim.SGD(model.parameters(), lr=config.lr)
+
+    # Data loading code
+    trainloader = make_dataloader(split=&quot;train&quot;)
+
+    losses, accuracies, steps = deque(maxlen=100), deque(maxlen=100), 0
+
+    # Training loop
+    for epoch in range(config.epochs):
+        for i, data, verbose in enumerate_report(trainloader, config.report_s):
+            inputs, labels = data[0].cuda(), data[1].cuda()
+
+            # zero the parameter gradients
+            optimizer.zero_grad()
+
+            # forward + backward + optimize
+            outputs = model(inputs)
+            loss = loss_fn(outputs, labels)
+            loss.backward()
+            optimizer.step()
+
+            # just bookkeping and progress report
+            steps += len(labels)
+            accuracy = (
+                (outputs.argmax(1) == labels).float().mean()
+            )  # calculate accuracy
+            losses.append(loss.item())
+            accuracies.append(accuracy.item())
+            if verbose and len(losses) &gt; 0:
+                avgloss = sum(losses) / len(losses)
+                avgaccuracy = sum(accuracies) / len(accuracies)
+                print(
+                    f&quot;rank {config.rank} epoch {epoch:5d}/{i:9d} loss {avgloss:8.3f} acc {avgaccuracy:8.3f} {steps:9d}&quot;,
+                    file=sys.stderr,
+                )
+            if steps &gt; config.max_steps:
+                print(
+                    &quot;finished training (max_steps)&quot;,
+                    steps,
+                    config.max_steps,
+                    file=sys.stderr,
+                )
+                return
+
+    print(&quot;finished Training&quot;, steps)
+</code></pre>
+<pre><code class="language-python"># A quick smoke test.
+
+os.environ[&quot;GOPEN_VERBOSE&quot;] = &quot;1&quot;
+config = Config()
+config.epochs = 1
+config.max_steps = 1000
+train(config)
+os.environ[&quot;GOPEN_VERBOSE&quot;] = &quot;0&quot;
+</code></pre>
+<h1 id="distributed-training-in-ray">Distributed Training in Ray</h1>
+<p>The code above can be used with any distributed computing framwork, including <code>torch.distributed.launch</code>.</p>
+<p>Below is simply an example of how to launch the training jobs with the Ray framework. Ray is nice
+for distributed training because it makes the Python code independent of the runtime environment
+(Kubernetes, Slurm, ad-hoc networking, etc.). Meaning, the code below will work regardless of how
+you start up your Ray cluster.</p>
+<pre><code class="language-python"># The distributed training function to be used with Ray.
+# Since this is started via Ray remote, we set up the distributed
+# training environment here.
+
+
+@ray.remote(num_gpus=1)
+def train_in_ray(rank, config):
+    if rank is not None:
+        # Set up distributed PyTorch.
+        config.rank = rank
+        os.environ[&quot;MASTER_ADDR&quot;] = config.master_addr
+        os.environ[&quot;MASTER_PORT&quot;] = config.master_port
+        dist.init_process_group(
+            backend=config.backend, rank=rank, world_size=config.world_size
+        )
+        # Ray will automatically set CUDA_VISIBLE_DEVICES for each task.
+    train(config)
+</code></pre>
+<pre><code class="language-python">if not ray.is_initialized():
+    ray.init()
+print(&quot;#gpus available in the cluster&quot;, ray.available_resources()[&quot;GPU&quot;])
+
+
+def distributed_training(config):
+    num_gpus = ray.available_resources()[&quot;GPU&quot;]
+    config.world_size = int(min(config.world_size, num_gpus))
+    pprint(config)
+    results = ray.get(
+        [train_in_ray.remote(i, config) for i in range(config.world_size)]
+    )
+    print(results)
+
+
+config = Config()
+config.epochs = epochs
+config.max_steps = max_steps
+config.batch_size = batch_size
+print(config)
+distributed_training(config)
+</code></pre>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../train-resnet50-multiray-wds/" class="btn btn-neutral float-left" title="WebDataset + Distributed PyTorch Training"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../train-ocr-errors-hf/" class="btn btn-neutral float-right" title="Fine Tuning LLM with Huggingface and WebDataset">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+        <span>
+          <a href="http://github.com/webdataset/webdataset" class="fa fa-github" style="color: #fcfcfc"> GitHub</a>
+        </span>
+    
+    
+      <span><a href="../train-resnet50-multiray-wds/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../train-ocr-errors-hf/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script src="../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "..";</script>
+    <script src="../js/theme_extra.js"></script>
+    <script src="../js/theme.js"></script>
+      <script src="../search/main.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>

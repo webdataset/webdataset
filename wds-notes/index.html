@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <link rel="shortcut icon" href="../img/favicon.ico" />
+    <title>Wds notes - webdataset</title>
+    <link rel="stylesheet" href="../css/theme.css" />
+    <link rel="stylesheet" href="../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+        <link href="../assets/_mkdocstrings.css" rel="stylesheet" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "Wds notes";
+        var mkdocs_page_input_path = "wds-notes.md";
+        var mkdocs_page_url = null;
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href=".." class="icon icon-home"> webdataset
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="" href="../README.md">README</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../webdataset/">WebDataset</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../wids/">WIDS</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Examples</span></p>
+              <ul class="current">
+                  <li class="toctree-l1"><a class="reference internal" href="../generate-text-dataset/">Dataset Generation</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../tesseract-wds/">Tesseract wds</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../train-resnet50-wds/">Resnet 50 Training on (Fake)Imagenet with WebDataset</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../train-resnet50-wids/">Train resnet50 wids</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../train-resnet50-multiray-wds/">WebDataset + Distributed PyTorch Training</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../train-resnet50-multiray-wids/">WebIndexedDataset + Distributed PyTorch Training</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../train-ocr-errors-hf/">Fine Tuning LLM with Huggingface and WebDataset</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../mi-images/">Mini Imagenet Generation</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../mi-prompts/">Mini Imagenet Generation</a>
+                  </li>
+                  <li class="toctree-l1 current"><a class="reference internal current" href="#">Wds notes</a>
+    <ul class="current">
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../column-store/">Using WebDataset as a Column Store</a>
+                  </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="..">webdataset</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href=".." class="icon icon-home" aria-label="Docs"></a></li>
+          <li class="breadcrumb-item">Examples</li>
+      <li class="breadcrumb-item active">Wds notes</li>
+    <li class="wy-breadcrumbs-aside">
+          <a href="http://github.com/webdataset/webdataset/edit/master/docs/wds-notes.md" class="icon icon-github"> Edit on GitHub</a>
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <p><a href="https://github.com/tmbdev/webdataset/actions?query=workflow%3ATest"><img alt="Test" src="https://github.com/tmbdev/webdataset/workflows/Test/badge.svg" /></a>
+<a href="https://deepsource.io/gh/tmbdev/webdataset/?ref=repository-badge"><img alt="DeepSource" src="https://static.deepsource.io/deepsource-badge-light-mini.svg" /></a></p>
+<pre><code class="language-python">%matplotlib inline
+import matplotlib.pyplot as plt
+import torch.utils.data
+import torch.nn
+from random import randrange
+import os
+os.environ[&quot;WDS_VERBOSE_CACHE&quot;] = &quot;1&quot;
+os.environ[&quot;GOPEN_VERBOSE&quot;] = &quot;0&quot;
+</code></pre>
+<h1 id="the-webdataset-format">The WebDataset Format</h1>
+<p>WebDataset format files are tar files, with two conventions:</p>
+<ul>
+<li>within each tar file, files that belong together and make up a training sample share the same basename when stripped of all filename extensions</li>
+<li>the shards of a tar file are numbered like <code>something-000000.tar</code> to <code>something-012345.tar</code>, usually specified using brace notation <code>something-{000000..012345}.tar</code></li>
+</ul>
+<p>WebDataset can read files from local disk or from any pipe, which allows it to access files using common cloud object stores. WebDataset can also read concatenated MsgPack and CBORs sources.</p>
+<p>The WebDataset representation allows writing purely sequential I/O pipelines for large scale deep learning. This is important for achieving high I/O rates from local storage (3x-10x for local drives compared to random access) and for using object stores and cloud storage for training.</p>
+<p>The WebDataset format represents images, movies, audio, etc. in their native file formats, making the creation of WebDataset format data as easy as just creating a tar archive. Because of the way data is aligned, WebDataset works well with block deduplication as well and aligns data on predictable boundaries.</p>
+<p>Standard tools can be used for accessing and processing WebDataset-format files.</p>
+<pre><code class="language-python">bucket = &quot;https://storage.googleapis.com/webdataset/testdata/&quot;
+dataset = &quot;publaynet-train-{000000..000009}.tar&quot;
+
+url = bucket + dataset
+!curl -s {url} | tar tf - | sed 10q
+</code></pre>
+<pre><code>PMC4991227_00003.json
+PMC4991227_00003.png
+PMC4537884_00002.json
+PMC4537884_00002.png
+PMC4323233_00003.json
+PMC4323233_00003.png
+PMC5429906_00004.json
+PMC5429906_00004.png
+PMC5592712_00002.json
+PMC5592712_00002.png
+
+
+tar: stdout: write error
+</code></pre>
+<p>Note that in these <code>.tar</code> files, we have pairs of <code>.json</code> and <code>.png</code> files; each such pair makes up a training sample.</p>
+<h1 id="webdataset-libraries">WebDataset Libraries</h1>
+<p>There are several libraries supporting the WebDataset format:</p>
+<ul>
+<li><code>webdataset</code> for Python3 (includes the <code>wids</code> library), this repository</li>
+<li><a href="https://github.com/webdataset/WebDataset.jl">Webdataset.jl</a> a Julia implementation</li>
+<li><a href="https://github.com/webdataset/tarp">tarp</a>, a Golang implementation and command line tool</li>
+<li>Ray Data sources and sinks</li>
+</ul>
+<p>The <code>webdataset</code> library can be used with PyTorch, Tensorflow, and Jax.</p>
+<h1 id="the-webdataset-library">The <code>webdataset</code> Library</h1>
+<p>The <code>webdataset</code> library is an implementation of PyTorch <code>IterableDataset</code> (or a mock implementation thereof if you aren't using PyTorch). It implements as form of stream processing. Some of its features are:</p>
+<ul>
+<li>large scale parallel data access through sharding</li>
+<li>high performance disk I/O due to purely sequential reads</li>
+<li>latency insensitive due to big fat pipes</li>
+<li>no local storage required</li>
+<li>instant startup for training jobs</li>
+<li>only requires reading from file descriptors/network streams, no special APIs</li>
+<li>its API encourages high performance I/O pipelines</li>
+<li>scalable from tiny desktop datasets to petascale datasets</li>
+<li>provides local caching if desired</li>
+<li>requires no dataset metadata; any collection of shards can be read and used instantly</li>
+</ul>
+<p>The main limitations people run into are related to the fact that <code>IterableDataset</code> is less commonly used in PyTorch and some existing code may not support it as well, and that achieving an exactly balanced number of training samples across many compute nodes for a fixed epoch size is tricky; for multinode training, <code>webdataset</code> is usually used with shard resampling.</p>
+<p>There are two interfaces, the concise "fluid" interface and a longer "pipeline" interface. We'll show examples using the fluid interface, which is usually what you want.</p>
+<pre><code class="language-python">import webdataset as wds
+pil_dataset = wds.WebDataset(url).shuffle(1000).decode(&quot;pil&quot;).to_tuple(&quot;png&quot;, &quot;json&quot;)
+</code></pre>
+<p>The resulting datasets are standard PyTorch <code>IterableDataset</code> instances.</p>
+<pre><code class="language-python">isinstance(pil_dataset, torch.utils.data.IterableDataset)
+</code></pre>
+<pre><code>True
+</code></pre>
+<pre><code class="language-python">for image, json in pil_dataset:
+    break
+plt.imshow(image)
+</code></pre>
+<pre><code>&lt;matplotlib.image.AxesImage at 0x7f6e34732dd0&gt;
+</code></pre>
+<p><img alt="png" src="../wds-notes_files/wds-notes_11_1.png" /></p>
+<p>We can add onto the existing pipeline for augmentation and data preparation.</p>
+<pre><code class="language-python">import torchvision.transforms as transforms
+from PIL import Image
+
+preproc = transforms.Compose([
+    transforms.Resize((224, 224)),
+    transforms.ToTensor(),
+    lambda x: 1-x,
+])
+
+def preprocess(sample):
+    image, json = sample
+    try:
+        label = json[&quot;annotations&quot;][0][&quot;category_id&quot;]
+    except:
+        label = 0
+    return preproc(image), label
+
+dataset = pil_dataset.map(preprocess)
+
+for image, label in dataset:
+    break
+plt.imshow(image.numpy().transpose(1, 2, 0))
+</code></pre>
+<pre><code>&lt;matplotlib.image.AxesImage at 0x7f6e347a1c90&gt;
+</code></pre>
+<p><img alt="png" src="../wds-notes_files/wds-notes_13_1.png" /></p>
+<p><code>WebDataset</code> is just an instance of a standard <code>IterableDataset</code>. It's a single-threaded way of iterating over a dataset. Since image decompression and data augmentation can be compute intensive, PyTorch usually uses the <code>DataLoader</code> class to parallelize data loading and preprocessing. <code>WebDataset</code> is fully compatible with the standard <code>DataLoader</code>.</p>
+<p>The <code>wds.WebDataset</code> fluid interface is just a convenient shorthand for writing down pipelines. The underlying pipeline is an instance of the <code>wds.DataPipeline</code> class, and you can construct data pipelines explicitly, similar to the way you use <code>nn.Sequential</code> inside models.</p>
+<pre><code class="language-python">dataset = wds.DataPipeline(
+    wds.SimpleShardList(url),
+
+    # at this point we have an iterator over all the shards
+    wds.shuffle(100),
+
+    # add wds.split_by_node here if you are using multiple nodes
+    wds.split_by_worker,
+
+    # at this point, we have an iterator over the shards assigned to each worker
+    wds.tarfile_to_samples(),
+
+    # this shuffles the samples in memory
+    wds.shuffle(1000),
+
+    # this decodes the images and json
+    wds.decode(&quot;pil&quot;),
+    wds.to_tuple(&quot;png&quot;, &quot;json&quot;),
+    wds.map(preprocess),
+    wds.shuffle(1000),
+    wds.batched(16)
+)
+
+batch = next(iter(dataset))
+batch[0].shape, batch[1].shape
+</code></pre>
+<pre><code>(torch.Size([16, 3, 224, 224]), (16,))
+</code></pre>
+<p>Here are a number of notebooks showing how to use WebDataset for image classification and LLM training:</p>
+<ul>
+<li><a href="examples/train-resnet50-wds.ipynb">train-resnet50-wds</a> -- simple, single GPU training from Imagenet</li>
+<li><a href="examples/train-resnet50-multiray-wds.ipynb">train-resnet50-multiray-wds</a> -- multinode training using webdataset</li>
+<li><a href="examples/generate-text-dataset.ipynb">generate-text-dataset</a> -- initial dataset generation</li>
+<li><a href="examples/tesseract-wds.ipynb">tesseract-wds</a> -- shard-to-shard transformations, here for OCR running over large dataset</li>
+</ul>
+<h1 id="installation-and-documentation">Installation and Documentation</h1>
+<pre><code>$ pip install webdataset
+</code></pre>
+<p>For the Github version:</p>
+<pre><code>$ pip install git+https://github.com/tmbdev/webdataset.git
+</code></pre>
+<p>Here are some videos talking about WebDataset and large scale deep learning:</p>
+<ul>
+<li><a href="https://www.youtube.com/watch?v=kNuA2wflygM">Introduction to Large Scale Deep Learning</a></li>
+<li><a href="https://www.youtube.com/watch?v=mTv_ePYeBhs">Loading Training Data with WebDataset</a></li>
+<li><a href="https://www.youtube.com/watch?v=v_PacO-3OGQ">Creating Datasets in WebDataset Format</a></li>
+<li><a href="https://www.youtube.com/watch?v=kIv8zDpRUec">Tools for Working with Large Datasets</a></li>
+</ul>
+<p>Examples: (NB: some of these are for older versions of WebDataset, but the differences should be small)</p>
+<ul>
+<li><a href="https://github.com/tmbdev/webdataset/blob/master/docs/video-loading-example.ipynb">loading videos</a></li>
+<li><a href="https://github.com/tmbdev/webdataset/blob/master/docs/ytsamples-split.ipynb">splitting raw videos into clips for training</a></li>
+<li><a href="https://github.com/tmbdev/webdataset/blob/master/docs/falling-things-make-shards.ipynb">converting the Falling Things dataset</a></li>
+</ul>
+<h1 id="dependencies">Dependencies</h1>
+<p>The WebDataset library only requires PyTorch, NumPy, and a small library called <code>braceexpand</code>.</p>
+<p>WebDataset loads a few additional libraries dynamically only when they are actually needed and only in the decoder:</p>
+<ul>
+<li>PIL/Pillow for image decoding</li>
+<li><code>torchvision</code>, <code>torchvideo</code>, <code>torchaudio</code> for image/video/audio decoding</li>
+<li><code>msgpack</code> for MessagePack decoding</li>
+<li>the <code>curl</code> command line tool for accessing HTTP servers</li>
+<li>the Google/Amazon/Azure command line tools for accessing cloud storage buckets</li>
+</ul>
+<p>Loading of one of these libraries is triggered by configuring a decoder that attempts to decode content in the given format and encountering a file in that format during decoding. (Eventually, the torch... dependencies will be refactored into those libraries.)</p>
+<h1 id="data-decoding">Data Decoding</h1>
+<p>Data decoding is a special kind of transformations of samples. You could simply write a decoding function like this:</p>
+<pre><code class="language-Python">def my_sample_decoder(sample):
+    result = dict(__key__=sample[&quot;__key__&quot;])
+    for key, value in sample.items():
+        if key == &quot;png&quot; or key.endswith(&quot;.png&quot;):
+            result[key] = mageio.imread(io.BytesIO(value))
+        elif ...:
+            ...
+    return result
+
+dataset = wds.Processor(wds.map, my_sample_decoder)(dataset)
+</code></pre>
+<p>This gets tedious, though, and it also unnecessarily hardcodes the sample's keys into the processing pipeline. To help with this, there is a helper class that simplifies this kind of code. The primary use of <code>Decoder</code> is for decoding compressed image, video, and audio formats, as well as unzipping <code>.gz</code> files.</p>
+<p>Here is an example of automatically decoding <code>.png</code> images with <code>imread</code> and using the default <code>torch_video</code> and <code>torch_audio</code> decoders for video and audio:</p>
+<pre><code class="language-Python">def my_png_decoder(key, value):
+    if not key.endswith(&quot;.png&quot;):
+        return None
+    assert isinstance(value, bytes)
+    return imageio.imread(io.BytesIO(value))
+
+dataset = wds.Decoder(my_png_decoder, wds.torch_video, wds.torch_audio)(dataset)
+</code></pre>
+<p>You can use whatever criteria you like for deciding how to decode values in samples. When used with standard <code>WebDataset</code> format files, the keys are the full extensions of the file names inside a <code>.tar</code> file. For consistency, it's recommended that you primarily rely on the extensions (e.g., <code>.png</code>, <code>.mp4</code>) to decide which decoders to use. There is a special helper function that simplifies this:</p>
+<pre><code class="language-Python">def my_decoder(value):
+    return imageio.imread(io.BytesIO(value))
+
+dataset = wds.Decoder(wds.handle_extension(&quot;.png&quot;, my_decoder))(dataset)
+</code></pre>
+<h1 id="smaller-datasets-and-desktop-computing">"Smaller" Datasets and Desktop Computing</h1>
+<p>WebDataset is an ideal solution for training on petascale datasets kept on high performance distributed data stores like AIStore, AWS/S3, and Google Cloud. Compared to data center GPU servers, desktop machines have much slower network connections, but training jobs on desktop machines often also use much smaller datasets. WebDataset also is very useful for such smaller datasets, and it can easily be used for developing and testing on small datasets and then scaling up to large datasets by simply using more shards.</p>
+<p>Here are different usage scenarios:</p>
+<ul>
+<li><strong>desktop deep learning, smaller datasets</strong><ul>
+<li>copy all shards to local disk manually</li>
+<li>use automatic shard caching</li>
+</ul>
+</li>
+<li><strong>prototyping, development, testing of jobs for large scale training</strong><ul>
+<li>copy a small subset of shards to local disk</li>
+<li>use automatic shard caching with a small subrange of shards</li>
+</ul>
+</li>
+<li><strong>cloud training against cloud buckets</strong><ul>
+<li>use WebDataset directly with remote URLs</li>
+</ul>
+</li>
+<li><strong>on premises training with high performance store (e.g., AIStore) and fast networks</strong><ul>
+<li>use WebDataset directly with remote URLs</li>
+</ul>
+</li>
+<li><strong>on premises training with slower object stores and/or slower networks</strong><ul>
+<li>use automatic shard caching</li>
+</ul>
+</li>
+</ul>
+<h1 id="location-independence-caching-etc">Location Independence, Caching, Etc.</h1>
+<p>WebDataset makes it easy to use a single specification for your datasets and run your code without change in different environments.</p>
+<h2 id="loadable-dataset-specifications">Loadable Dataset Specifications</h2>
+<p>If you write your input pipelines such that they are defined by a dataset specification in some language, you can most easily retarget your training pipelines to different datasets. You can do this either by dynamically loading the Python code that constructs the pipeline or by using a YAML/JSON dataset specification. </p>
+<p>A YAML dataset specification looks like this:</p>
+<pre><code>dataset:
+  - shards: gs://nvdata-ocropus-tess/ia1-{000000..000033}.tar
+    scaleprob: 0.3
+  - shards: gs://nvdata-ocropus-tess/cdipsub-{000000..000022}.tar
+    scale: [1.0, 3.0]
+  - shards: gs://nvdata-ocropus-tess/gsub-{000000..000167}.tar
+    scale: [0.4, 1.0]
+  - shards: gs://nvdata-ocropus-tess/bin-gsub-{000000..000167}.tar
+    extensions: nrm.jpg
+    scale: [0.3, 1.0]
+  - shards: gs://nvdata-ocropus/rendered.tar
+    scaleprob: 1.0
+</code></pre>
+<p>Note that datasets can be composed from different shard collections, mixed in different proportions.</p>
+<p>The dataset specification reader will be integrated in the next minor version update.</p>
+<h2 id="aistore-proxy">AIStore Proxy</h2>
+<p>If you want to use an AISTore server as a cache, you can tell any WebDataset pipeline to replace direct accesses to your URLs to proxied accesses via the AIStore server. To do that, you need to set a couple of environment variables.</p>
+<pre><code>export AIS_ENDPOINT=http://nix:51080
+export USE_AIS_FOR=&quot;gs&quot;
+</code></pre>
+<p>Now, any accesses to Google Cloud Storage (<code>gs://</code> urls) will be routed through the AIS server.</p>
+<h2 id="url-rewriting">URL Rewriting</h2>
+<p>You can rewrite URLs using regular expressions via an environment variable; the syntax is <code>WDS_REWRITE=regex=regex;regex=regex</code>.</p>
+<p>For example, to replace <code>gs://</code> accesses with local file accesses, use</p>
+<pre><code>export WDS_REWRITE=&quot;gs://=/shared/data/&quot;
+</code></pre>
+<p>To access Google cloud data via ssh, you might use something like:</p>
+<pre><code>export WDS_REWRITE=&quot;gs://=pipe:ssh proxyhost gsutil cat &quot;
+</code></pre>
+<h2 id="use-the-caching-mechanism">Use the Caching Mechanism</h2>
+<p>If you use the built-in caching mechanism, you can simply download shards to a local directory and specify that directory as the cache directory. The shards in that directory will override the shards that are being downloaded. Shards in the cache are mapped based on the pathname and file name of your shard names.</p>
+<h2 id="direct-copying-of-shards">Direct Copying of Shards</h2>
+<p>Let's take the OpenImages dataset as an example; it's half a terabyte large. For development and testing, you may not want to download the entire dataset, but you may also not want to use the dataset remotely. With WebDataset, you can just download a small number of shards and use them during development.</p>
+<pre><code class="language-python">!curl -L -s http://storage.googleapis.com/nvdata-openimages/openimages-train-000000.tar &gt; /tmp/openimages-train-000000.tar
+</code></pre>
+<pre><code class="language-python">dataset = wds.DataPipeline(
+    wds.SimpleShardList(&quot;/tmp/openimages-train-000000.tar&quot;),
+    wds.tarfile_to_samples(),
+)
+repr(next(iter(dataset)))[:200]
+</code></pre>
+<pre><code>"{'__key__': 'e39871fd9fd74f55', '__url__': '/tmp/openimages-train-000000.tar', 'jpg': b'\\xff\\xd8\\xff\\xe0\\x00\\x10JFIF\\x00\\x01\\x01\\x01\\x01:\\x01:\\x00\\x00\\xff\\xdb\\x00C\\x00\\x06\\x04\\x05\\x06\\x05\\x04\\x06\\x06\\"
+</code></pre>
+<p>Note that the WebDataset class works the same way on local files as it does on remote files. Furthermore, unlike other kinds of dataset formats and archive formats, downloaded datasets are immediately useful and don't need to be unpacked.</p>
+<h1 id="creating-a-webdataset">Creating a WebDataset</h1>
+<h2 id="using-tar">Using <code>tar</code></h2>
+<p>Since WebDatasets are just regular tar files, you can usually create them by just using the <code>tar</code> command. All you have to do is to arrange for any files that should be in the same sample to share the same basename. Many datasets already come that way. For those, you can simply create a WebDataset with</p>
+<pre><code>$ tar --sort=name -cf dataset.tar dataset/
+</code></pre>
+<p>If your dataset has some other directory layout, you may need a different file name in the archive from the name on disk. You can use the <code>--transform</code> argument to GNU tar to transform file names. You can also use the <code>-T</code> argument to read the files from a text file and embed other options in that text file.</p>
+<h2 id="the-tarp-create-command">The <code>tarp create</code> Command</h2>
+<p>The <a href="https://github.com/tmbdev/tarp"><code>tarp</code></a> command is a little utility for manipulating <code>tar</code> archives. Its <code>create</code> subcommand makes it particularly simple to construct tar archives from files. The <code>tarp create</code> command takes a recipe for building
+a tar archive that contains lines of the form:</p>
+<pre><code>archive-name-1 source-name-1
+archive-name-2 source-name-2
+...
+</code></pre>
+<p>The source name can either be a file, "text:something", or "pipe:something".</p>
+<h2 id="programmatically-in-python">Programmatically in Python</h2>
+<p>You can also create a WebDataset with library functions in this library:</p>
+<ul>
+<li><code>webdataset.TarWriter</code> takes dictionaries containing key value pairs and writes them to disk</li>
+<li><code>webdataset.ShardWriter</code> takes dictionaries containing key value pairs and writes them to disk as a series of shards</li>
+</ul>
+<p>Here is a quick way of converting an existing dataset into a WebDataset; this will store all tensors as Python pickles:</p>
+<pre><code class="language-Python">sink = wds.TarWriter(&quot;dest.tar&quot;)
+dataset = open_my_dataset()
+for index, (input, output) in dataset:
+    sink.write({
+        &quot;__key__&quot;: &quot;sample%06d&quot; % index,
+        &quot;input.pyd&quot;: input,
+        &quot;output.pyd&quot;: output,
+    })
+sink.close()
+</code></pre>
+<p>Storing data as Python pickles allows most common Python datatypes to be stored, it is lossless, and the format is fast to decode.
+However, it is uncompressed and cannot be read by non-Python programs. It's often better to choose other storage formats, e.g.,
+taking advantage of common image compression formats.</p>
+<p>If you know that the input is an image and the output is an integer class, you can also write something like this:</p>
+<pre><code class="language-Python">sink = wds.TarWriter(&quot;dest.tar&quot;)
+dataset = open_my_dataset()
+for index, (input, output) in dataset:
+    assert input.ndim == 3 and input.shape[2] == 3
+    assert input.dtype = np.float32 and np.amin(input) &gt;= 0 and np.amax(input) &lt;= 1
+    assert type(output) == int
+    sink.write({
+        &quot;__key__&quot;: &quot;sample%06d&quot; % index,
+        &quot;input.jpg&quot;: input,
+        &quot;output.cls&quot;: output,
+    })
+sink.close()
+</code></pre>
+<p>The <code>assert</code> statements in that loop are not necessary, but they document and illustrate the expectations for this
+particular dataset. Generally, the ".jpg" encoder can actually encode a wide variety of array types as images. The
+".cls" encoder always requires an integer for encoding.</p>
+<p>Here is how you can use <code>TarWriter</code> for writing a dataset without using an encoder:</p>
+<pre><code class="language-Python">sink = wds.TarWriter(&quot;dest.tar&quot;, encoder=False)
+for basename in basenames:
+    with open(f&quot;{basename}.png&quot;, &quot;rb&quot;) as stream):
+        image = stream.read()
+    cls = lookup_cls(basename)
+    sample = {
+        &quot;__key__&quot;: basename,
+        &quot;input.png&quot;: image,
+        &quot;target.cls&quot;: cls
+    }
+    sink.write(sample)
+sink.close()
+</code></pre>
+<p>Since no encoder is used, if you want to be able to read this data with the default decoder, <code>image</code> must contain a byte string corresponding to a PNG image (as indicated by the ".png" extension on its dictionary key), and <code>cls</code> must contain an integer encoded in ASCII (as indicated by the ".cls" extension on its dictionary key).</p>
+<h1 id="writing-filters-and-offline-augmentation">Writing Filters and Offline Augmentation</h1>
+<p>Webdataset can be used for filters and offline augmentation of datasets. Here is a complete example that pre-augments a shard and extracts class labels.</p>
+<pre><code class="language-python">from torchvision import transforms
+from itertools import islice
+
+def extract_class(data):
+    # mock implementation
+    return 0
+
+def preproc(image):
+    image = transforms.ToTensor()(image)
+    # more preprocessing here
+    return image
+
+def augment_wds(input, output, maxcount=999999999):
+    src = wds.DataPipeline(
+        wds.SimpleShardList(input),
+        wds.tarfile_to_samples(),
+        wds.decode(&quot;pil&quot;),
+        wds.to_tuple(&quot;__key__&quot;, &quot;jpg;png&quot;, &quot;json&quot;),
+        wds.map_tuple(None, preproc, None),
+    )
+    with wds.TarWriter(output) as dst:
+        for key, image, data in islice(src, 0, maxcount):
+            print(key)
+            image = image.numpy().transpose(1, 2, 0)
+            image -= np.amin(image)
+            image /= np.amax(image)
+            sample = {
+                &quot;__key__&quot;: key,
+                &quot;png&quot;: image,
+                &quot;cls&quot;: extract_class(data)
+            }
+            dst.write(sample)
+</code></pre>
+<p>Now run the augmentation pipeline:</p>
+<pre><code class="language-python">url = &quot;http://storage.googleapis.com/nvdata-openimages/openimages-train-000000.tar&quot;
+url = f&quot;pipe:curl -L -s {url} || true&quot;
+augment_wds(url, &quot;_temp.tar&quot;, maxcount=5)
+</code></pre>
+<pre><code>e39871fd9fd74f55
+f18b91585c4d3f3e
+ede6e66b2fb59aab
+ed600d57fcee4f94
+ff47e649b23f446d
+</code></pre>
+<p>To verify that things worked correctly, let's look at the output file:</p>
+<pre><code class="language-bash">%%bash
+tar tf _temp.tar
+</code></pre>
+<pre><code>e39871fd9fd74f55.cls
+e39871fd9fd74f55.png
+f18b91585c4d3f3e.cls
+f18b91585c4d3f3e.png
+ede6e66b2fb59aab.cls
+ede6e66b2fb59aab.png
+ed600d57fcee4f94.cls
+ed600d57fcee4f94.png
+ff47e649b23f446d.cls
+ff47e649b23f446d.png
+</code></pre>
+<p>If you want to preprocess the entire OpenImages dataset with a process like this, you can use your favorite job queueing or worflow system.</p>
+<p>For example, using Dask, you could process all 554 shards in parallel using code like this:</p>
+<pre><code class="language-Python">shards = braceexpand.braceexpand(&quot;{000000..000554}&quot;)
+inputs = [f&quot;gs://bucket/openimages-{shard}.tar&quot; for shard in shards]
+outputs = [f&quot;gs://bucket2/openimages-augmented-{shard}.tar&quot; for shard in shards]
+results = [dask.delayed(augment_wds)(args) for args in zip(inputs, outputs)]
+dask.compute(*results)
+</code></pre>
+<p>Note that the data is streaming from and to Google Cloud Storage buckets, so very little local storage is required on each worker.</p>
+<p>For very large scale processing, it's easiest to submit separate jobs to a Kubernetes cluster using the Kubernetes <code>Job</code> template, or using a workflow engine like Argo.</p>
+<p>Whether you prefer <code>WebDataset</code> or <code>Dataset</code> is a matter of style.</p>
+<h1 id="syntax-for-url-sources">Syntax for URL Sources</h1>
+<p>The <code>SimpleShardList</code> and <code>ResampledShards</code> take either a string or a list of URLs as an argument. If it is given a string, the string is expanded using the <code>braceexpand</code> library. So, the following are equivalent:</p>
+<pre><code class="language-Python">ShardList(&quot;dataset-{000..001}.tar&quot;)
+ShardList([&quot;dataset-000.tar&quot;, &quot;dataset-001.tar&quot;])
+</code></pre>
+<p>The url strings in a shard list are handled by default by the <code>webdataset.url_opener</code> filter. It recognizes three simple kinds of strings: "-", "/path/to/file", and "pipe:command":</p>
+<ul>
+<li>the string "-", referring to stdin</li>
+<li>a UNIX path, opened as a regular file</li>
+<li>a URL-like string with the schema "pipe:"; such URLs are opened with <code>subprocess.Popen</code>. For example:<ul>
+<li><code>pipe:curl -s -L http://server/file</code> accesses a file via HTTP</li>
+<li><code>pipe:gsutil cat gs://bucket/file</code> accesses a file on GCS</li>
+<li><code>pipe:az cp --container bucket --name file --file /dev/stdout</code> accesses a file on Azure</li>
+<li><code>pipe:ssh host cat file</code> accesses a file via <code>ssh</code></li>
+</ul>
+</li>
+</ul>
+<p>It might seem at first glance to be "more efficient" to use built-in Python libraries for accessing object stores rather than subprocesses, but efficient object store access from Python really requires spawning a separate process anyway, so this approach to accessing object stores is not only convenient, it also is as efficient as we can make it in Python.</p>
+<h1 id="length-properties">Length Properties</h1>
+<p>WebDataset instances are subclasses of <code>IterableDataset</code>. These instances are not supposed to have a <code>__len__</code> method, and some code actually tests for that.</p>
+<p>If you want to have a length property on your dataset, use the <code>with_length(n)</code> method with whatever length you would like to  set.</p>
+<p>If you want to change the size of the epoch, i.e., if you want to force the iterator to quit after a given number of samples or batches, use the <code>with_epoch</code> method.</p>
+<p>You can combine both methods; use <code>with_length</code> last.</p>
+<h1 id="tar-header-overhead">Tar Header Overhead</h1>
+<p>Tar imposes a 512 byte overhead for each file stored in the archive. For most applications, this is not an issue because images and other content tends to be much larger.</p>
+<p>If you have datasets that contain large amounts of small files (e.g., text-only training, etc.), this overhead may become significant. In that case, you have several options:</p>
+<ul>
+<li>store some or all of your sample in JSON, MsgPack, or CBOR format</li>
+<li>gzip-compress your tar file (use .tgz instead of .tar); WebDatset will automatically decompress</li>
+<li>pre-batch the data (not recommended)</li>
+</ul>
+<p>Both of the first options are very simple. To store your entire sample in MsgPack format, do something like this:</p>
+<pre><code># Writing
+
+    ... construct sample ...
+    sample = dict(mp=sample)
+    writer.write(sample)
+
+# Reading
+
+    dataset = ... initial construction ...
+    dataset = dataset.map(sample: sample[&quot;mp&quot;])
+    ... use sample as usual ...
+</code></pre>
+<h1 id="related-libraries-and-software">Related Libraries and Software</h1>
+<p>The <a href="http://github.com/NVIDIA/aistore">AIStore</a> server provides an efficient backend for WebDataset; it functions like a combination of web server, content distribution network, P2P network, and distributed file system. Together, AIStore and WebDataset can serve input data from rotational drives distributed across many servers at the speed of local SSDs to many GPUs, at a fraction of the cost. We can easily achieve hundreds of MBytes/s of I/O per GPU even in large, distributed training jobs.</p>
+<p>The <a href="http://github.com/tmbdev/tarproc">tarproc</a> utilities provide command line manipulation and processing of webdatasets and other tar files, including splitting, concatenation, and <code>xargs</code>-like functionality.</p>
+<p>The <a href="http://github.com/tmbdev/tensorcom/">tensorcom</a> library provides fast three-tiered I/O; it can be inserted between <a href="http://github.com/NVIDIA/aistore">AIStore</a> and <a href="http://github.com/tmbdev/webdataset">WebDataset</a> to permit distributed data augmentation and I/O. It is particularly useful when data augmentation requires more CPU than the GPU server has available.</p>
+<p>You can find the full PyTorch ImageNet sample code converted to WebDataset at <a href="http://github.com/tmbdev/pytorch-imagenet-wds">tmbdev/pytorch-imagenet-wds</a></p>
+<pre><code class="language-python">
+</code></pre>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../mi-prompts/" class="btn btn-neutral float-left" title="Mini Imagenet Generation"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../column-store/" class="btn btn-neutral float-right" title="Using WebDataset as a Column Store">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+        <span>
+          <a href="http://github.com/webdataset/webdataset" class="fa fa-github" style="color: #fcfcfc"> GitHub</a>
+        </span>
+    
+    
+      <span><a href="../mi-prompts/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../column-store/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script src="../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "..";</script>
+    <script src="../js/theme_extra.js"></script>
+    <script src="../js/theme.js"></script>
+      <script src="../search/main.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>
