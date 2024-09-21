@@ -17,8 +17,12 @@ bandit
 twine
 wheel
 mkdocs
-pdoc
-
+mkdocs-autorefs
+mkdocs-material
+mkdocs-minify-plugin
+mkdocs-material-extensions
+mkdocstrings
+mkdocstrings-python
 
 jupyter
 jupyterlab

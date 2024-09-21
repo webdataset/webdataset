@@ -2,7 +2,7 @@ import argparse
 import json
 
 from . import wids
-from .compat import WebDataset
+from webdataset import WebDataset
 
 
 def main_wids(args):

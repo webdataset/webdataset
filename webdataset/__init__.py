@@ -25,7 +25,7 @@ from .cache import (
     cached_tarfile_to_samples,
     pipe_cleaner,
 )
-from .compat import FluidWrapper, WebDataset, WebLoader
+from .compat import FluidWrapper, WebDataset, WebLoader, FluidInterface
 from .extradatasets import MockDataset, with_epoch, with_length
 from .filters import (
     Cached,

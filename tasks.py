@@ -191,17 +191,40 @@ def nbrun(c):
         nbprocess(c, "tesseract-wds.ipynb")
 
 
+def make_api(fname, title, module):
+    raise Exception("not implemented")
+    result = f"# {title}\n\n"
+    module = __import__(module)
+    for name in sorted(list(dir(module))):
+        if name.startswith("_"):
+            continue
+        # skip anything that is a module
+        if isinstance(getattr(module, name), type(module)):
+            continue
+        result += f"::: {module.__name__}.{name}\n\n"
+    with open(fname, "w") as stream:
+        stream.write(result)
+
+@task
+def mkdocs(c):
+    c.run(f"cp README.md docsrc/README.md")
+    # make_api("docsrc/webdataset.md", "WebDataset API", "webdataset")
+    # make_api("docsrc/wids.md", "WIDS API", "wids")
+    c.run(f"rm -rf docs")
+    c.run(f"mkdocs build")
+    # c.run(f"pdoc -d google -o docsrc/webdataset webdataset")
+    # c.run(f"pdoc -d google -o docsrc/wids wids")
+    # c.run("git add docs")
+
 @task
 def gendocs(c):
     "Generate docs."
-
     c.run("jupyter nbconvert --to markdown readme.ipynb && mv readme.md README.md")
+    c.run("rm -rf docsrc")
     # convert IPython Notebooks
-    # for nb in glob.glob("notebooks/*.ipynb"):
-    #    c.run(f"{ACTIVATE} jupyter nbconvert {nb} --to markdown --output-dir=docsrc/.")
-    # c.run(f"mkdocs build")
-    # c.run(f"pdoc -t docsrc -o docs/api webdataset")
-    # c.run("git add docs")
+    for nb in glob.glob("examples/*.ipynb"):
+       c.run(f"{ACTIVATE} jupyter nbconvert {nb} --to markdown --output-dir=docsrc/.")
+    mkdocs(c)
 
 
 @task
