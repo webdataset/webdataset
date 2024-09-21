@@ -44,13 +44,13 @@ def venv(c):
 
 
 @task
-def black(c):
+def fmtblack(c):
     """Run black on the code."""
     c.run(f"{ACTIVATE}{PYTHON3} -m black webdataset wids tests examples")
 
 
 @task
-def autoflake(c):
+def fmtautoflake(c):
     """Run autoflake on the code."""
     c.run(
         f"{ACTIVATE}{PYTHON3} -m autoflake --in-place --remove-all-unused-imports examples/[a-z]*.py webdataset/[a-z]*.py tests/[a-z]*.py wids/[a-z]*.py tasks.py"
@@ -58,13 +58,13 @@ def autoflake(c):
 
 
 @task
-def isort(c):
+def fmtisort(c):
     """Run isort on the code."""
     c.run(f"{ACTIVATE}{PYTHON3} -m isort --atomic --float-to-top webdataset examples wids tests tasks.py")
 
 
 @task
-def cleanup(c):
+def fmtall(c):
     """Run black, autoflake, and isort on the code."""
     autoflake(c)
     isort(c)
@@ -107,23 +107,6 @@ def testcov(c):
 #     c.run("coverage run -m pytest && coveragepy-lcov")
 
 
-pydoc_template = """
-# Module `{module}`
-
-```
-{text}
-```
-"""
-
-command_template = """
-# Command `{command}`
-
-```
-{text}
-```
-"""
-
-
 @task
 def nbstrip(c):
     "Strip outputs from notebooks."
@@ -142,7 +125,7 @@ def nbprocess(c, nb, *args, **kwargs):
 
 @task
 def nbrun(c):
-    """Run a number of notebooks with papermill and appropriate parameters, putting the output into out/."""
+    """Run selected notebooks with papermill, parameters; put into ./out."""
     with c.cd("examples"):  # Change directory to 'examples'
         c.run("rm -f *.log *.out.ipynb *.stripped.ipynb _temp.ipynb", pty=True)
         c.run("mkdir -p out", pty=True)
@@ -157,10 +140,11 @@ def nbrun(c):
 
 
 @task
-def gendocs(c):
+def docsgen(c):
     "Generate docs."
     c.run("jupyter nbconvert --to markdown readme.ipynb && mv readme.md README.md")
-    c.run(f"cp README.md docs/README.md")
+    c.run(f"cp README.md docs/index.md")
+    c.run(f"cp FAQ.md docs/FAQ.md")
     for nb in glob.glob("examples/*.ipynb"):
         output = nb.replace(".ipynb", ".md")
         if os.path.exists(output) and os.path.getmtime(nb) < os.path.getmtime(output):
@@ -171,13 +155,13 @@ def gendocs(c):
 
 
 @task
-def servedocs(c):
+def docsserve(c):
     "Serve docs."
     c.run(f"mkdocs serve")
 
 
 @task
-def pushdocs(c):
+def docspush(c):
     "Push docs to Github pages."
     c.run(f"mkdocs gh-deploy")
 
@@ -278,7 +262,6 @@ def here(s):
 @task
 def dockerbase(c):
     """Build a base container."""
-    "Build a base container."
     docker_build(c, base_container, tag="webdatasettest-base")
 
 
@@ -295,14 +278,14 @@ def dockerlocal(c):
 
 
 @task(dockerbase)
-def githubtest(c):
+def dockergithubtest(c):
     "Test the latest version on Github in a docker container."
     dockerbase(c)
     docker_build(c, github_test, nocache=True)
 
 
 @task
-def pypitest(c):
+def dockerpypitest(c):
     "Test the latest version on PyPI in a docker container."
     dockerbase(c)
     docker_build(c, pypi_test, nocache=True)
@@ -340,7 +323,7 @@ be correct.  When in doubt, check the original issue.
 
 
 @task
-def makefaq(c):
+def faqmake(c):
     "Create the FAQ.md file from faqs/*.md"
     output = open("FAQ.md", "w")
     output.write(faq_intro)
@@ -349,6 +332,8 @@ def makefaq(c):
     for fname in entries:
         with open(fname) as stream:
             text = stream.read()
+        if "N/A" in text[:20]:
+            continue
         text = text.strip()
         text = re.sub(r"[ \t]+$", "", text, flags=re.MULTILINE)
         text = wrap_long_lines(text)
@@ -361,6 +346,7 @@ def makefaq(c):
         output.write("-" * 78 + "\n\n")
         output.write(text.strip() + "\n\n")
     output.close()
+    c.run("cp FAQ.md docs/FAQ.md")
 
 
 @task
@@ -406,7 +392,8 @@ def summarize_issue(c, content):
     return result.stdout.decode()
 
 
-def faqs(c):
+@task
+def faqgen(c):
     """Create FAQ entries from issues."""
     assert os.path.isdir("faqs"), "Please create a directory named 'faqs' before running this task."
 
@@ -542,63 +529,6 @@ def versions(ctx, n=200):
     output_stream.close()
 
 
-def read_version():
-    """Read the current version number from setup.py."""
-    text = open("setup.py").read()
-    version = re.search('version *= *"([0-9.]+)"', text).group(1)
-    print("old version", version)
-    return version
-
-
-def increment_version(version):
-    """Increment the version number."""
-    version = [int(x) for x in version.split(".")]
-    version[-1] += 1
-    new_version = ".".join(str(x) for x in version)
-    print("new version", new_version)
-    return new_version
-
-
-def write_version_to_setup(version):
-    """Write the new version number to setup.py."""
-    text = open("setup.py").read()
-    text = re.sub(
-        r'version *= *"[0-9]+[.][0-9]+[.][0-9]+"',
-        f'version = "{version}"',
-        text,
-    )
-    with open("setup.py", "w") as stream:
-        stream.write(text)
-
-
-def write_version_to_version_file(version):
-    """Write the new version number to VERSION file."""
-    with open("VERSION", "w") as stream:
-        stream.write(version)
-
-
-def write_version_to_init(version):
-    """Write the new version number to webdataset/__init__.py."""
-    text = open("webdataset/__init__.py").read()
-    text = re.sub(
-        r'^__version__ = ".*',
-        f'__version__ = "{version}"',
-        text,
-        flags=re.MULTILINE,
-    )
-    with open("webdataset/__init__.py", "w") as stream:
-        stream.write(text)
-
-
-def update_version_numbers_locally():
-    """Increment the version number."""
-    old_version = read_version()
-    new_version = increment_version(old_version)
-    write_version_to_setup(new_version)
-    write_version_to_version_file(new_version)
-    write_version_to_init(new_version)
-
-
 def get_changes(version):
     """Get the changes for the given version."""
     try:
@@ -611,6 +541,10 @@ def get_changes(version):
         ).stdout
 
 
+def update_version_numbers_locally(c):
+    c.run("bump2version patch")
+
+
 @task
 def release(c):
     "Tag the current version as a release on Github."
@@ -619,7 +553,7 @@ def release(c):
         print("Working tree is not clean. Please commit or stash your changes.")
         return
 
-    update_version_numbers_locally()
+    update_version_numbers_locally(c)
     version = read_version()
 
     try:

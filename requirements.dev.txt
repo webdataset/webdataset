@@ -53,3 +53,5 @@ torchvision
 # ray[tune]
 # ray[default]
 # ray[sgd]
+
+bump2version

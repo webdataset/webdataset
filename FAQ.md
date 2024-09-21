@@ -9,138 +9,152 @@ be correct.  When in doubt, check the original issue.
 
 ------------------------------------------------------------------------------
 
-Issue #350
+Issue #367
 
-Q: How does shuffling work in WebDataset, and how can I achieve optimal shuffling?
+Q: How can I sample sequences of frames from large video datasets using WebDataset?
 
-A: The `.shuffle(...)` method in WebDataset shuffles samples within a shard. To
-shuffle shards, you need to use `WebDataset(..., shardshuffle=True, ...)`. For
-optimal shuffling, you should shuffle both between shards and within shards.
-Here is an example of how to achieve this:
+A: To sample sequences of frames from large video datasets with WebDataset, you
+can precompute sampled sequences of frames and treat each collection as a batch.
+Alternatively, you can split your videos into shorter clips with overlapping
+frames, generate multiple samples from each clip, and shuffle the resulting
+sequences. Here's a code snippet demonstrating how to generate and shuffle five-
+frame sequences from 50-frame clips:
 
 ```python
-dataset = WebDataset(..., shardshuffle=100).shuffle(...) ... .batched(64)
-dataloader = WebLoader(dataset, num_workers=..., ...).unbatched().shuffle(5000).batched(batch_size)
+from webdataset import WebDataset
+import random
+
+ds = WebDataset("video-clips-{000000..000999}.tar").decode()
+
+def generate_clips(src):
+    for sample in src:
+        # assume that each video clip sample contains sample.000.jpg to sample.049.jpg images
+        clip = [sample["%03d.jpg" % i] for i in range(50)]
+        starts = random.sample(range(46), 10)  # Choose 10 starting points
+        key = sample["__key__"]
+        for i in starts:
+            yield {
+               "__key__": f"{key}-{i}",
+               "sequence": clip[i:i+5],
+            }
+
+ds = ds.compose(generate_clips).shuffle(1000)
 ```
 
-This approach ensures that data is shuffled at both the shard level and the
-sample level, providing a more randomized dataset for training.
+This approach allows you to work with large datasets by handling smaller,
+manageable sequences, which can be efficiently preprocessed and shuffled to
+create a diverse training set.
 
 ------------------------------------------------------------------------------
 
-Issue #332
+Issue #364
 
-Q: How can I ensure deterministic dataloading with WebDataset to cover all images without any being left behind?
+Q: How can I ensure that each validation sample is seen exactly once per epoch
+in a multi-node setup using WebDataset with FSDP?
 
-A: To achieve deterministic dataloading with WebDataset, you should iterate
-through each sample in sequence from beginning to end. This can be done by
-setting up your dataset and iterator as follows:
+A: When using WebDataset in a multi-node setup with Fully Sharded Data Parallel
+(FSDP), you can ensure that each validation sample is seen exactly once per
+epoch by assigning each shard to a specific GPU. Since you have an equal number
+of shards and GPUs, you can map each shard to a GPU. For the shard that is about
+half the size, you can either accept that the corresponding GPU will do less
+work, or you can split another shard to balance the load. To ensure that each
+sample is loaded exactly once, you can use the `wds.ResampledShards` function
+without resampling, and avoid using `ddp_equalize` since it is designed for
+training rather than validation. Here's an example of how you might set up your
+validation dataset:
 
-```python
-dataset = WebDataset("data-{000000..000999}.tar")
-for sample in dataset:
-    ...
+```py
+val_dataset = wds.DataPipeline(
+    wds.ResampledShards(
+        os.path.join('path', 'to',  'val_samples_{0000...xxxx}.tar')
+    ),
+    wds.tarfile_to_samples(),
+    wds.decode(),
+    wds.to_tuple("input.npy", "target.npy"),
+    wds.batched(1)
+).with_length(num_val_samples)
 ```
 
-For large-scale parallel inference, consider parallelizing over shards using a
-parallel library like Ray. Here’s an example:
-
-```python
-def process_shard(input_shard):
-    output_shard = ...  # compute output shard name
-    src = wds.WebDataset(input_shard).decode("PIL")
-    snk = wds.TarWriter(output_shard)
-    for sample in src:
-        sample["cls"] = classifier(sample["jpg"])
-        snk.write(sample)
-    src.close()
-    snk.close()
-    return output_shard
-
-shards = list(braceexpand("data-{000000..000999}.tar"))
-results = ray.map(process_shard, shards)
-ray.get(results)
-```
-
-This approach ensures that each shard is processed deterministically and in
-parallel, covering all images without any being left behind.
+To ensure that the validation loop stops after all samples have been loaded, you
+can use the length of the dataset to control the number of iterations in your
+validation loop. This way, you can manually iterate over the dataset and stop
+when you've reached the total number of samples.
 
 ------------------------------------------------------------------------------
 
 Issue #331
 
-Q: How can I handle gzipped tar files with WIDS when loading the SAM dataset?
+Q: How can I handle gzipped tar files with WebDataset/WIDS?
 
-A: When using WIDS to load the SAM dataset, you may encounter a
-`UnicodeDecodeError` due to the dataset being gzipped. WIDS does not natively
-support gzipped tar files for random access. As a workaround, you can re-tar the
-dataset without compression. This can be done using the `tarfile` library in
-Python to extract and re-tar the files. Alternatively, you can compress
-individual files within the tar archive (e.g., `.json.gz` instead of `.json`),
-which WIDS can handle. Here is an example of re-tarring the dataset:
+A: When working with gzipped tar files in WebDataset or WIDS, it's important to
+understand that random access to compressed files is not straightforward due to
+the nature of compression. However, Python's `tarfile` library can handle gzip-
+compressed streams using `tarfile.open("filename.tar.gz", "r:gz")`. For WIDS,
+the best practice is to use uncompressed `.tar` files for the dataset, which
+allows for efficient random access. If storage is a concern, you can compress
+individual files within the tar archive (e.g., `.json.gz` instead of `.json`).
+This approach provides a balance between storage efficiency and compatibility
+with WIDS. Here's an example of how to compress individual files:
 
 ```python
-import os
 import tarfile
-from tqdm import tqdm
+import gzip
 
-src_tar_path = "path/to/sa_000000.tar"
-src_folder_path = "path/to/src_folder"
-tgt_folder_path = "path/to/tgt_folder"
-rpath = os.path.relpath(src_tar_path, src_folder_path)
-t = tarfile.open(src_tar_path)
-
-fpath = os.path.join(tgt_folder_path, rpath)
-os.makedirs(os.path.dirname(fpath), exist_ok=True)
-tdev = tarfile.open(fpath, "w")
-
-for idx, member in tqdm(enumerate(t.getmembers())):
-    print(idx, member, flush=True)
-    tdev.addfile(member, t.extractfile(member.name))
-
-t.close()
-tdev.close()
-print("Finish")
+# Compress individual files and add them to a tar archive
+with tarfile.open('archive.tar', 'w') as tar:
+    with open('file.json', 'rb') as f_in:
+        with gzip.open('file.json.gz', 'wb') as f_out:
+            f_out.writelines(f_in)
+    tar.add('file.json.gz', arcname='file.json.gz')
 ```
 
-This approach ensures compatibility with WIDS by avoiding the issues associated with gzipped tar files.
+Remember that for WebDataset, you can use `.tar.gz` files directly, as it
+supports on-the-fly decompression. If you encounter datasets that are not in
+order, you can repack them using GNU tar with sorting to ensure that
+corresponding files are adjacent, which is a requirement for WebDataset.
 
 ------------------------------------------------------------------------------
 
 Issue #329
 
-Q: How can I create a JSON file for WIDS from an off-the-shelf WDS shards dataset?
+Q: How can I create a JSON metafile for random access in a WebDataset?
 
-A: To create a JSON file for WIDS from an existing WDS shards dataset, you can
-use the `widsindex` command provided by the webdataset distribution. This
-command takes a list of shards or shardspecs and generates an index for them.
-Here is a basic example of how to use `widsindex`:
+A: To create a JSON metafile for a WebDataset, you can use the `widsindex`
+command that comes with the webdataset package. This command generates an index
+file for a given list of WebDataset shards. The index file is in JSON format and
+allows for efficient random access to the dataset. Here's a simple example of
+how to use `widsindex`:
 
 ```bash
-widsindex shard1.tar shard2.tar shard3.tar > index.json
+widsindex mydataset-0000.tar mydataset-0001.tar > mydataset-index.json
 ```
 
-This command will create an `index.json` file that can be used for random access
-in WIDS. For more details, you can refer to the example JSON file provided in
-the webdataset repository: [imagenet-
-train.json](https://storage.googleapis.com/webdataset/fake-imagenet/imagenet-
-train.json).
+This command will create a JSON file named `mydataset-index.json` that contains
+the index for the shards `mydataset-0000.tar` and `mydataset-0001.tar`.
 
 ------------------------------------------------------------------------------
 
 Issue #319
 
-Q: How can I handle more elaborate, hierarchical grouping schemes in WebDataset,
-such as multi-frame samples or object image datasets with multiple supporting
-files?
+Q: How can I handle complex hierarchical data structures in WebDataset?
 
-A: When dealing with complex hierarchical data structures in WebDataset, you can
-use a naming scheme with separators like "." to define the hierarchy. For
-example, you can name files as `sample_0.frames.0.jpg` and
-`sample_0.frames.1.jpg` to represent different frames. However, for more complex
-structures, it's often easier to use a flat naming scheme and express the
-hierarchy in a JSON file. This way, you can number the files sequentially and
-include the structure in the JSON metadata.
+A: When dealing with complex hierarchical data structures in WebDataset, it's
+often more practical to use a flat file naming scheme and express the hierarchy
+within a JSON metadata file. This approach simplifies the file naming while
+allowing for detailed structuring of the data. You can sequentially number the
+files and reference them in the JSON, which contains the structure of your
+dataset, including frame order, timestamps, and other relevant information.
+
+For example, instead of trying to express the hierarchy in the file names, you can name your files like this:
+
+```
+sample_0.000.jpg
+sample_0.001.jpg
+sample_0.002.jpg
+sample_0.json
+```
+
+And then use a JSON file to define the structure:
 
 ```json
 {
@@ -150,178 +164,113 @@ include the structure in the JSON metadata.
 }
 ```
 
-Files would be named as:
-
-```
-sample_0.000.jpg
-sample_0.001.jpg
-sample_0.002.jpg
-sample_0.json
-```
-
-This approach simplifies the file naming and allows you to maintain complex structures within the JSON metadata.
+This method keeps the file naming simple and leverages the JSON file to maintain
+the hierarchical relationships within the dataset.
 
 ------------------------------------------------------------------------------
 
 Issue #316
 
-Q: How can I handle the error caused by webdataset attempting to collate `npy` files of different `num_frames` lengths?
+Q: Why am I getting a ValueError when trying to batch variable-length numpy arrays using webdataset?
 
-A: This error occurs because webdataset's default collation function cannot
-handle `npy` files with varying `num_frames` lengths. To resolve this, you can
-specify a custom collation function that can handle these variations.
-Alternatively, you can set `combine_tensors=False` and `combine_scalars=False`
-to prevent automatic collation. Here's how you can specify a custom collation
+A: The error you're encountering is due to the attempt to collate numpy arrays
+with different shapes into a single batch. Since the `num_frames` dimension
+varies, you cannot directly convert a list of such arrays into a single numpy
+array without padding or truncating them to a uniform size. To resolve this, you
+can specify a custom collation function that handles variable-length sequences
+appropriately. This function can either pad the sequences to the same length or
+store them in a data structure that accommodates variable lengths, such as a
+list or a padded tensor. Here's an example of how to specify a custom collation
 function:
 
 ```python
 def custom_collate_fn(batch):
-    images, texts = zip(*batch)
-    return list(images), list(texts)
+    # Handle variable-length sequences here, e.g., by padding
+    # Return the batch in the desired format
+    return batch
 
 pipeline.extend([
-    wds.select(filter_no_caption_or_no_image),
-    wds.decode(handler=log_and_continue),
-    wds.rename(image="npy", text="txt"),
-    wds.map_dict(image=lambda x: x, text=lambda text: tokenizer(text)[0]),
-    wds.to_tuple("image", "text"),
-    wds.batched(args.batch_size, partial=not is_train, collation_fn=custom_collate_fn)
+    # ... other pipeline steps ...
+    wds.batched(args.batch_size, collation_fn=custom_collate_fn, partial=not is_train)
 ])
 ```
 
-Alternatively, you can disable tensor and scalar combination:
-
-```python
-pipeline.extend([
-    wds.select(filter_no_caption_or_no_image),
-    wds.decode(handler=log_and_continue),
-    wds.rename(image="npy", text="txt"),
-    wds.map_dict(image=lambda x: x, text=lambda text: tokenizer(text)[0]),
-    wds.to_tuple("image", "text"),
-    wds.batched(args.batch_size, partial=not is_train, combine_tensors=False, combine_scalars=False)
-])
-```
-
-------------------------------------------------------------------------------
-
-Issue #314
-
-Q: How can I detect when a tarball has been fully consumed by `tariterators.tar_file_expander`?
-
-A: Detecting when a tarball has been fully consumed by
-`tariterators.tar_file_expander` can be challenging, especially with remote
-files represented as `io.BytesIO` objects. One approach is to add
-`__index_in_shard__` metadata to the samples. When this index is 0, it indicates
-that the last shard was fully consumed. Another potential solution is to hook
-into the `close` method, which might be facilitated by fixing issue #311. This
-would allow you to detect when the tar file is closed, signaling that it has
-been fully processed.
-
-```python
-# Example of adding __index_in_shard__ metadata
-for sample in tar_file_expander(fileobj):
-    if sample['__index_in_shard__'] == 0:
-        print("Last shard fully consumed")
-```
-
-```python
-# Example of hooking into the close method (hypothetical)
-class CustomTarFileExpander(tariterators.tar_file_expander):
-    def close(self):
-        super().close()
-        print("Tar file fully consumed")
-```
+By providing a custom collation function, you can ensure that the data is
+prepared in a way that is compatible with your model's input requirements.
 
 ------------------------------------------------------------------------------
 
 Issue #307
 
-Q: Is it possible to skip loading certain files when reading a tar file with WebDataset?
+Q: Can I skip loading large files in a tar file when using WebDataset?
 
-A: When using WebDataset to read a tar file, it is not possible to completely
-skip loading certain files (e.g., `jpg` files) into memory because WebDataset
-operates on a streaming paradigm. This means that all bytes must be read from
-the tar file, even if they are not used. However, you can use the `select_files`
-argument in the `wds.WebDataset` class or `wds.tarfile_to_samples` to filter out
-unwanted files. For more efficient access, consider using the "wids" interface,
-which provides indexed access and only reads the necessary data from disk.
+A: When working with `WebDataset`, it is not possible to skip the reading of
+files within a tar archive that you do not need. The library operates on a
+streaming basis, which means that all bytes are read sequentially. However, you
+can filter out unwanted data after it has been read into memory. If performance
+is a concern, consider creating a new dataset containing only the necessary
+files. For indexed access to WebDataset files, you can use the "wids" interface,
+which reads only the data you use from disk when working with local files.
+
+Here's a short example of filtering out unwanted data after reading:
 
 ```python
-import webdataset as wds
+dataset = wds.WebDataset(["path/to/dataset.tar"])
+keys_to_keep = ["__key__", "__url__", "txt"]
 
-# Use select_files to filter out unwanted files
-dataset = wds.WebDataset("path/to/dataset.tar", select_files=["*.txt"])
+def filter_keys(sample):
+    return {k: sample[k] for k in keys_to_keep if k in sample}
 
-for sample in dataset:
-    # Process only the txt files
-    print(sample["txt"])
+filtered_dataset = dataset.map(filter_keys)
 ```
-
-If performance is a concern, generating a new dataset with only the required fields might be the best approach.
 
 ------------------------------------------------------------------------------
 
 Issue #303
 
-Q: Why does the total number of steps per epoch change when using `num_workers > 0` in DDP training with WebDataset?
+Q: Why does the number of steps per epoch change when increasing `num_workers` in DDP training with Webdataset?
 
-A: When using `num_workers > 0` in DDP training with WebDataset, the total
-number of steps per epoch can change due to how the dataset is partitioned and
-shuffled across multiple workers. To address this, you should remove the
-`with_epoch` from the WebDataset and apply it to the WebLoader instead.
-Additionally, consider adding cross-worker shuffling to ensure proper data
-distribution.
+A: When using multiple workers in a distributed data parallel (DDP) training
+setup with Webdataset, the number of steps per epoch may change if the epoch
+size is not properly configured to account for the parallelism introduced by the
+workers. The `with_epoch` method should be applied to the `WebLoader` instead of
+the `WebDataset` to ensure that the dataset is correctly divided among the
+workers. Additionally, to maintain proper shuffling across workers, you may need
+to add cross-worker shuffling. Here's an example of how to configure the loader:
 
 ```python
 data = wds.WebDataset(self.url, resampled=True).shuffle(1000).map(preprocess_train)
-loader = wds.WebLoader(data, pin_memory=True, shuffle=False, batch_size=20, num_workers=2).with_epoch(200)
+loader = wds.WebLoader(data, pin_memory=True, shuffle=False, batch_size=20, num_workers=2).with_epoch(...)
 ```
 
-For cross-worker shuffling:
+For cross-worker shuffling, you can modify the loader like this:
 
 ```python
-loader = wds.WebLoader(data, pin_memory=True, shuffle=False, batch_size=20, num_workers=2)
 loader = loader.unbatched().shuffle(2000).batched(20).with_epoch(200)
 ```
 
 ------------------------------------------------------------------------------
 
-Issue #300
-
-Q: How can I prevent training from blocking when using WebDataset with large shards on the cloud?
-
-A: To prevent training from blocking when using WebDataset with large shards,
-you can increase the `num_workers` parameter in your `DataLoader`. This approach
-leverages additional workers to handle the download and processing of shards
-concurrently, thus minimizing idle time. For example, if downloading takes 25%
-of the total processing time for one shard, you can increase `num_workers` to
-accommodate this overhead. Additionally, you can adjust the `prefetch_factor` to
-ensure that the next shard is downloaded before the current one is exhausted.
-
-```python
-dataset = wds.WebDataset(urls, cache_dir=cache_dir, cache_size=cache_size)
-dataloader = DataLoader(dataset, num_workers=8, prefetch_factor=4)
-```
-
-By setting `verbose=True` in `WebDataset`, you can verify that each worker is
-requesting different shards, ensuring efficient data loading.
-
-------------------------------------------------------------------------------
-
 Issue #291
 
-Q: How can I skip a sample if decoding fails in NVIDIA DALI?
+Q: How can I skip a corrupt image sample when using NVIDIA DALI for data loading?
 
-A: If you encounter issues with decoding samples (e.g., corrupt images) in
-NVIDIA DALI, you can use the `handler` parameter to manage such errors. By
-setting the `handler` to `warn_and_continue`, you can skip the problematic
-samples without interrupting the data pipeline. This can be applied when
-invoking methods like `.map`, `.map_tuple`, or `.decode`.
+A: When working with NVIDIA DALI for data loading, you can handle corrupt or
+missing data by using the `handler` parameter. This parameter allows you to
+specify a behavior when a decoding error occurs. For example, you can use
+`warn_and_continue` to issue a warning and skip the problematic sample, allowing
+the data pipeline to continue processing the remaining samples. This is
+particularly useful when dealing with large datasets where some samples may be
+corrupt or unreadable.
 
-Example:
+Here's a short code example demonstrating how to use the `handler` parameter:
+
 ```python
+from nvidia.dali.plugin import pytorch
 import webdataset as wds
-from webdataset.handlers import warn_and_continue
+
+def warn_and_continue(e):
+    print("Warning: skipping a corrupt sample.", e)
 
 ds = (
     wds.WebDataset(url, handler=warn_and_continue, shardshuffle=True, verbose=verbose)
@@ -331,444 +280,397 @@ ds = (
     .batched(batch_size)
 )
 ```
-This setup ensures that any decoding errors are handled gracefully, allowing the
-data pipeline to continue processing subsequent samples.
+
+By passing `warn_and_continue` to the `.map`, `.map_tuple`, or `.decode`
+methods, you instruct DALI to handle exceptions gracefully and continue with the
+next sample.
 
 ------------------------------------------------------------------------------
 
 Issue #289
 
-Q: Can webdataset support interleaved datasets such as MMC4, where one example may have a text list with several images?
+Q: Can WebDataset support interleaved datasets such as MMC4, where one example
+may include a list of texts with several images?
 
-A: Yes, webdataset can support interleaved datasets like MMC4. You can represent
-this structure similarly to how you would on a file system. An effective
-approach is to use a `.json` file to reference the hierarchical structure,
-including the text list and associated images. Then, include the image files
-within the same sample. This method allows you to maintain the relationship
-between the text and multiple images within a single dataset entry.
+A: Yes, WebDataset can support interleaved datasets like MMC4. You can organize
+your dataset by creating a `.json` file that contains the hierarchical structure
+and references to the image files. This `.json` file acts as a manifest for each
+sample, detailing the associated text and images. The image files themselves are
+stored alongside the `.json` file. Here's a simple example of how you might
+structure a `.json` file for an interleaved dataset:
 
-Example:
 ```json
 {
-  "text": ["text1", "text2"],
-  "images": ["image1.jpg", "image2.jpg"]
+  "text": ["This is the first text", "This is the second text"],
+  "images": ["image1.jpg", "image2.jpg", "image3.jpg"]
 }
 ```
-Ensure that the images referenced in the `.json` file are included in the same sample directory.
+
+And in your dataset, you would have the `.json` file and the referenced images in the same sample directory or archive.
 
 ------------------------------------------------------------------------------
 
 Issue #283
 
-Q: How can I provide credentials for reading objects from a private bucket using
-`webdataset` with a provider other than AWS or GCS, such as NetApp?
+Q: How can I authenticate to read objects from a private bucket with WebDataset?
 
-A: To load a `webdataset` from a non-publicly accessible bucket with a provider
-like NetApp, you can use the `pipe:` protocol in your URL. This allows you to
-specify a shell command to read a shard, including any necessary authentication.
-Ensure that the command works from the command line with the provided
-credentials. For example, you can create a script that includes your `access key
-id` and `secret access key` and use it in the `pipe:` URL.
+A: To authenticate and read objects from a private bucket using WebDataset, you
+need to provide the necessary credentials to the underlying command line
+programs that WebDataset uses for data access. If you are using a storage
+provider like NetApp, which is not directly supported by WebDataset's built-in
+protocols, you can use the `pipe:` protocol to specify a custom command that
+includes the necessary authentication steps. For example, you can create a shell
+script that uses your storage provider's CLI tools to authenticate with your
+`access key id` and `secret access key`, and then pass this script to
+WebDataset:
 
-Example:
-```python
-url = "pipe:./read_from_netapp.sh"
-dataset = webdataset.WebDataset(url)
+```bash
+# auth_script.sh
+# This script authenticates and downloads a shard from a private bucket
+# Replace <ACCESS_KEY>, <SECRET_KEY>, <BUCKET_NAME>, and <SHARD_NAME> with your actual values
+netappcli --access-key <ACCESS_KEY> --secret-key <SECRET_KEY> download <BUCKET_NAME>/<SHARD_NAME>
 ```
 
-In `read_from_netapp.sh`, include the necessary commands to authenticate and read from your NetApp bucket.
-
-------------------------------------------------------------------------------
-
-Issue #282
-
-Q: Why does the `with_epoch` configuration in WebDataset change behavior when
-specifying `batch_size` in the DataLoader for distributed DDP training with
-PyTorch Lightning?
-
-A: The `with_epoch` method in WebDataset slices the data stream based on the
-number of items, not batches. When you set `with_epoch` to a specific number, it
-defines the number of samples per epoch. However, when you specify a
-`batch_size` in the DataLoader, the effective number of epochs becomes the
-number of batches, as each batch contains multiple samples. To align the epoch
-size with your batch size, you need to divide the desired number of samples per
-epoch by the batch size. For example, if you want 100,000 samples per epoch and
-your batch size is 32, you should set `with_epoch(100_000 // 32)`.
+Then, use this script with WebDataset:
 
 ```python
-# Example adjustment
-self.train_dataset = MixedWebDataset(self.cfg, self.dataset_cfg,
-train=True).with_epoch(100_000 // self.cfg.TRAIN.BATCH_SIZE).shuffle(4000)
-train_dataloader = torch.utils.data.DataLoader(self.train_dataset,
-self.cfg.TRAIN.BATCH_SIZE, drop_last=True,
-num_workers=self.cfg.GENERAL.NUM_WORKERS,
-prefetch_factor=self.cfg.GENERAL.PREFETCH_FACTOR)
+import webdataset as wds
+
+# Use the 'pipe:' protocol with your authentication script
+dataset = wds.WebDataset("pipe:./auth_script.sh")
 ```
 
-This ensures that the epoch size is consistent with the number of batches processed.
-
-------------------------------------------------------------------------------
-
-Issue #280
-
-Q: How do I correctly use the `wds.DataPipeline` to create a dataset and get the expected batch size?
-
-A: When using `wds.DataPipeline` to create a dataset, ensure that you iterate
-over the dataset itself, not a loader. The correct pipeline order is crucial for
-the expected output. Here is the corrected code snippet:
-
-```python
-dataset = wds.DataPipeline(
-    wds.SimpleShardList(url),
-    wds.shuffle(100),
-    wds.split_by_worker,
-    wds.tarfile_to_samples(),
-    wds.shuffle(1000),
-    wds.decode("torchrgb"),
-    get_patches,
-    wds.shuffle(10000),
-    wds.to_tuple("big.jpg", "json"),
-    wds.batched(16)
-)
-
-batch = next(iter(dataset))
-batch[0].shape, batch[1].shape
-```
-
-The expected output should be `(torch.Size([16, 256, 256, 3]),
-torch.Size([16]))`, reflecting the correct batch size of 16.
+Ensure that your script has the necessary permissions to be executed and that it
+correctly handles the authentication and data retrieval process.
 
 ------------------------------------------------------------------------------
 
 Issue #278
 
-Q: Why is `with_epoch(N)` needed for multi-node training in WebDataset?
+Q: Why is `with_epoch(N)` needed for multinode training with WebDataset?
 
-A: `with_epoch(N)` is essential for multi-node training with WebDataset because
-it helps manage the concept of epochs in an infinite stream of samples. Without
-`with_epoch(N)`, the epoch would continue indefinitely, which is problematic for
-training routines that rely on epoch boundaries. WebDataset generates an
-infinite stream of samples when resampling is chosen, making `with_epoch(N)` a
-useful tool to define epoch boundaries. Unlike the `sampler` in PyTorch's
-DataLoader, `set_epoch` is not needed in WebDataset because it uses the
-IterableDataset interface, which does not support `set_epoch`.
+A: When using WebDataset for training models in PyTorch, the `with_epoch(N)`
+function is used to define the end of an epoch when working with an infinite
+stream of samples. This is particularly important in distributed training
+scenarios to ensure that all nodes process the same number of batches per epoch,
+which helps in synchronizing the training process across nodes. Without
+`with_epoch(N)`, the training loop would not have a clear indication of when an
+epoch ends, potentially leading to inconsistent training states among different
+nodes. WebDataset operates with the `IterableDataset` interface, which does not
+support the `set_epoch` method used by `DistributedSampler` in PyTorch's
+`DataLoader`. Therefore, `with_epoch(N)` serves as a mechanism to delineate
+epochs in the absence of `set_epoch`.
 
 ```python
-# Example usage of with_epoch(N) in WebDataset
-import webdataset as wds
-
-dataset = wds.WebDataset("data.tar").with_epoch(1000)
+# Example of using with_epoch in a training loop
 for epoch in range(num_epochs):
-    for sample in dataset:
-        # Training code here
+    for sample in webdataset_reader.with_epoch(epoch_length):
+        train(sample)
 ```
-
-This ensures that the dataset is properly segmented into epochs, facilitating multi-node training.
 
 ------------------------------------------------------------------------------
 
 Issue #264
 
-Q: How can I return the file name (without the extension) in the training loop using WebDataset?
+Q: How can I include the file name (only the stem, not the extension) in the
+`metadata` dictionary when using WebDataset?
 
-A: To include the file name (without the extension) in the `metadata` dictionary
-within your training loop, you can utilize the `sample["__key__"]` which
-contains the stem of the file name. You can modify your pipeline to include a
-step that adds this information to the `metadata`. Here is an example of how you
-can achieve this:
+A: When working with WebDataset, each sample in the dataset contains a special
+key `__key__` that holds the file name without the extension. To include the
+file name in the `metadata` dictionary, you can create a custom mapping function
+that extracts the `__key__` and adds it to the `metadata`. Here's a short code
+example on how to modify the pipeline to include the file name in the
+`metadata`:
 
 ```python
-import webdataset as wds
-
 def add_filename_to_metadata(sample):
     sample["metadata"]["filename"] = sample["__key__"]
     return sample
 
 pipeline = [
-    wds.SimpleShardList(input_shards),
-    wds.split_by_worker,
-    wds.tarfile_to_samples(handler=log_and_continue),
-    wds.select(filter_no_caption_or_no_image),
-    wds.decode("pilrgb", handler=log_and_continue),
-    wds.rename(image="jpg;png;jpeg;webp", text="txt", metadata="json"),
+    # ... (other pipeline steps)
     wds.map(add_filename_to_metadata),
-    wds.map_dict(
-        image=preprocess_img,
-        text=lambda text: tokenizer(text),
-        metadata=lambda x: x,
-    ),
-    wds.to_tuple("image", "text", "metadata"),
-    wds.batched(args.batch_size, partial=not is_train),
+    # ... (remaining pipeline steps)
 ]
 ```
 
-This way, the `metadata` dictionary will include the file name without the
-extension, accessible via `metadata["filename"]`.
-
-------------------------------------------------------------------------------
-
-Issue #262
-
-Q: Are there plans to support WebP in WebDataset?
-
-A: Yes, WebDataset can support WebP images. You can add a handler to
-`webdataset.writer.default_handlers` or override the `encoder` in `TarWriter`.
-ImageIO supports WebP natively, so it may be added by default in the future. For
-now, you can manually handle WebP images by converting them to bytes and writing
-them to the dataset.
-
-```python
-import io
-import torch
-import numpy
-from PIL import Image
-import webdataset as wds
-
-sink = wds.TarWriter('test.tar')
-image_byte = io.BytesIO()
-image = Image.fromarray(numpy.uint8(torch.randint(0, 256, (256, 256, 3))))
-image.save(image_byte, format='webp')
-sink.write({
-    '__key__': 'sample001',
-    'txt': 'Are you ok?',
-    'jpg': torch.rand(256, 256, 3).numpy(),
-    'webp': image_byte.getvalue()
-})
-```
-
-This approach allows you to store WebP images directly in your dataset.
+This function should be added to the pipeline after the `wds.decode` step and
+before the `wds.to_tuple` step. This way, the `metadata` dictionary will contain
+the file name for each sample processed by the pipeline.
 
 ------------------------------------------------------------------------------
 
 Issue #261
 
-Q: Why is my dataset created with `TarWriter` so large, and how can I reduce its size?
+Q: Why is my WebDataset tar file unexpectedly large when saving individual tensors?
 
-A: The large size of your dataset is due to the way tensors are being saved.
-When saving individual rows, each tensor points to a large underlying byte array
-buffer, resulting in excessive storage usage. To fix this, use
-`torch.save(v.clone(), buffer)` to save only the necessary data. Additionally,
-saving many small tensors incurs overhead. You can mitigate this by saving your
-`.tar` files as `.tar.gz` files, which will be decompressed upon reading.
-Another approach is to save batches of data and unbatch them upon reading.
+A: The large file size is due to the fact that each tensor is pointing to a
+large underlying byte array buffer, which is being saved in its entirety. This
+results in saving much more data than just the tensor's contents. To fix this,
+you should clone the tensor before saving it to ensure that only the relevant
+data is written to the file. Additionally, each file in a tar archive has a
+512-byte header, which can add significant overhead when saving many small
+files. To reduce file size, consider compressing the tar file or batching
+tensors before saving.
+
+Here's a code snippet showing how to clone the tensor before saving:
 
 ```python
-# Use clone to avoid saving large underlying buffers
-for k, v in d.items():
-    buffer = io.BytesIO()
-    torch.save(v.clone(), buffer)
-    obj[f"{k}.pth"] = buffer.getvalue()
+with wds.TarWriter(f"/tmp/dest.tar") as sink:
+    for i, d in tqdm(enumerate(tensordict), total=N):
+        obj = {"__key__": f"{i}"}
+        for k, v in d.items():
+            buffer = io.BytesIO()
+            torch.save(v.clone(), buffer)  # Clone the tensor here
+            obj[f"{k}.pth"] = buffer.getvalue()
+        sink.write(obj)
 ```
 
+To compress the tar file, simply save it with a `.tar.gz` extension and use a compression library:
+
 ```python
-# Save as .tar.gz to reduce overhead
-with wds.TarWriter(f"/tmp/dest.tar.gz") as sink:
-    # Your saving logic here
+with wds.TarWriter(f"/tmp/dest.tar.gz", compressor="gz") as sink:
+    # ... rest of the code ...
 ```
 
 ------------------------------------------------------------------------------
 
 Issue #260
 
-Q: How can I set the epoch length in WebDataset, and why is the `with_epoch()` method name confusing?
+Q: What is the purpose of the `.with_epoch()` method in WebDataset and could it be named more descriptively?
 
-A: The `with_epoch()` method in WebDataset is used to set the epoch length
-explicitly, which is crucial for distributed training. However, the name
-`with_epoch()` can be confusing as it doesn't clearly convey its purpose. A more
-descriptive name like `.set_one_epoch_samples()` would make its functionality
-clearer. To use this method, you can call it on your dataset object as shown
-below:
+A: The `.with_epoch()` method in WebDataset is used to explicitly set the number
+of samples that constitute an epoch during distributed training. This is
+important for ensuring that each worker in a distributed system processes a full
+epoch's worth of data. The name `.with_epoch()` might not be immediately clear,
+but it is intended to indicate that the dataset is being configured with a
+specific epoch length. A more descriptive name like `.set_epoch_size()` could
+potentially convey the purpose more clearly. However, changing the method name
+would be a breaking change for existing codebases. Improving the documentation
+with examples can help clarify the usage:
 
 ```python
-dataset = WebDataset("path/to/dataset").with_epoch(1000)
+# Original method name
+dataset = dataset.with_epoch(10000)
+
+# Hypothetical more descriptive method name
+dataset = dataset.set_epoch_size(10000)
 ```
 
-This sets the epoch length to 1000 samples. Improving the documentation with
-more details and examples can help users understand its purpose better.
-
-------------------------------------------------------------------------------
-
-Issue #259
-
-Q: Is there a way to use password-protected tar files during streaming?
-
-A: Yes, you can use password-protected tar files during streaming by
-incorporating streaming decoders in your data pipeline. For example, you can use
-`curl` to download the encrypted tar files and `gpg` to decrypt them on the fly.
-Here is a sample pipeline:
-
-```bash
-urls="pipe:curl -L -q https://storage.googleapis.com/bucket/shard-{000000..000999}.tar.encrypted | gpg --decrypt -o - -"
-dataset=WebDataset(urls).decode(...) etc.
-```
-
-This approach allows you to handle encrypted tar files seamlessly within your data processing workflow.
+In the meantime, users should refer to the improved documentation for guidance
+on how to use the `.with_epoch()` method effectively.
 
 ------------------------------------------------------------------------------
 
 Issue #257
 
-Q: How can I efficiently load a subset of files in a sample to avoid reading unnecessary data?
+Q: How can I efficiently load only the necessary auxiliary images for a sample
+in my training configuration to save on I/O and decoding time?
 
-A: To efficiently load a subset of files in a sample, you can use the
-`select_files` option in WebDataset and `tarfiles_to_samples` to specify which
-files to extract. This approach helps in avoiding the overhead of reading
-unnecessary data. However, note that skipping data by seeking is usually not
-significantly faster than reading the data due to the way hard drives work. The
-most efficient method is to pre-select the files needed during training and
-ensure your tar files contain only those files.
+A: When working with datasets that include a main image and multiple auxiliary
+images, you can optimize the data loading process by selectively reading only
+the required files. This can be achieved by using the `select_files` option in
+WebDataset or similar tools, which allows you to specify which files to extract
+from the dataset. By pre-selecting the files during the dataset preparation
+phase, you ensure that your tar files contain exactly the files needed for
+training, minimizing unnecessary I/O operations and decoding time for unused
+images. Here's a short example of how you might use `select_files`:
 
 ```python
 import webdataset as wds
 
-# Example of using select_files to specify which files to extract
-dataset = wds.WebDataset("path/to/dataset.tar").select_files("main.jpg", "aux0.jpg", "aux1.jpg")
+# Define your selection criteria based on the training configuration
+def select_files(sample):
+    return [sample['main.jpg']] + [sample[f'aux{i}.jpg'] for i in range(number_of_aux_images)]
 
-for sample in dataset:
-    main_image = sample["main.jpg"]
-    aux_image_0 = sample["aux0.jpg"]
-    aux_image_1 = sample["aux1.jpg"]
-    # Process the images as needed
+# Create a dataset and apply the selection
+dataset = wds.WebDataset("dataset.tar").select(select_files)
 ```
 
-By pre-selecting the necessary files, you can optimize your data loading process and improve training efficiency.
+This approach is more efficient than reading all files and discarding the
+unneeded ones, as it avoids the overhead of reading and decoding data that will
+not be used in the training process.
 
 ------------------------------------------------------------------------------
 
 Issue #256
 
-Q: Why does my WebDataset pipeline consume so much memory and crash during training?
+Q: Why does my training program using WebDataset consume so much memory and crash?
 
-A: The high memory consumption in your WebDataset pipeline is likely due to the
-shuffle buffer size. WebDataset keeps a certain number of samples in memory for
-shuffling, which can lead to high memory usage. For instance, if your
-`_SAMPLE_SHUFFLE_SIZE` is set to 5000, it means that 5000 samples are kept in
-memory. Reducing the shuffle buffer size can help mitigate this issue. Try
-adjusting the `_SHARD_SHUFFLE_SIZE` and `_SAMPLE_SHUFFLE_SIZE` parameters to
-smaller values and see if it reduces memory usage.
+A: The memory consumption issue you're experiencing with WebDataset during
+training is likely due to the shuffle buffer size. WebDataset uses in-memory
+buffering to shuffle data, and if the buffer size is too large, it can consume a
+significant amount of memory, especially when dealing with large datasets or
+when running on systems with limited memory. The parameters
+`_SHARD_SHUFFLE_SIZE` and `_SAMPLE_SHUFFLE_SIZE` control the number of shards
+and samples kept in memory for shuffling. Reducing these values can help
+mitigate memory usage issues. For example, you can try setting:
 
 ```python
-_SHARD_SHUFFLE_SIZE = 1000  # Adjust this value
-_SAMPLE_SHUFFLE_SIZE = 2000  # Adjust this value
+_SHARD_SHUFFLE_SIZE = 1000  # Reduced from 2000
+_SAMPLE_SHUFFLE_SIZE = 2500  # Reduced from 5000
 ```
 
-Additionally, ensure that you are not holding onto unnecessary data by using `deepcopy` and `gc.collect()` effectively.
+Adjust these values based on your system's memory capacity and the size of your
+dataset. Keep in mind that reducing the shuffle buffer size may affect the
+randomness of your data shuffling and potentially the training results. It's a
+trade-off between memory usage and shuffle effectiveness.
 
 ------------------------------------------------------------------------------
 
 Issue #249
 
-Q: Should I use WebDataset or TorchData for my data handling needs in PyTorch?
+Q: Should I use WebDataset or TorchData for my data loading in PyTorch?
 
-A: Both WebDataset and TorchData are compatible and can be used for data
-handling in PyTorch. WebDataset is useful for backward compatibility and can
-work without Torch. It also has added features like `extract_keys`,
-`rename_keys`, and `xdecode` to make the transition to TorchData easier. If you
-are starting a new project, TorchData is recommended due to its integration with
-PyTorch. However, if you have existing code using WebDataset, there is no
-urgency to switch, and you can continue using it with minimal changes.
+A: The choice between WebDataset and TorchData depends on your specific needs
+and the context of your project. WebDataset is still a good choice if you
+require backwards compatibility or if you need to work without PyTorch. It is
+also being integrated with other frameworks like Ray, which may be beneficial
+for certain use cases. However, it's important to note that as of July 2023,
+active development on TorchData has been paused to re-evaluate its technical
+design. This means that while TorchData is still usable, it may not receive
+updates or new features in the near future. If you are starting a new project or
+are able to adapt to changes, you might want to consider this factor. Here's a
+simple example of how you might use WebDataset:
 
 ```python
-# Example using WebDataset
 import webdataset as wds
 
-dataset = wds.WebDataset("data.tar").decode("rgb").to_tuple("jpg", "cls")
+# Create a dataset
+dataset = wds.WebDataset("path/to/data-{000000..000999}.tar")
 
-# Example using TorchData
-import torchdata.datapipes as dp
-
-dataset = dp.iter.WebDataset("data.tar").decode("rgb").to_tuple("jpg", "cls")
+# Iterate over the dataset
+for sample in dataset:
+    image, label = sample["image"], sample["label"]
+    # process image and label
 ```
+
+And here's how you might use TorchData:
+
+```python
+from torchdata.datapipes.iter import FileOpener, TarArchiveReader
+
+# Create a data pipeline
+datapipes = FileOpener("path/to/data.tar") \
+    .parse(TarArchiveReader())
+
+# Iterate over the data pipeline
+for file_name, file_stream in datapipes:
+    # process file_stream
+```
+
+Given the pause in TorchData development, you should consider the stability and
+future support of the library when making your decision.
 
 ------------------------------------------------------------------------------
 
 Issue #247
 
-Q: Does WebDataset support loading images from nested tar files?
+Q: How can I load images from nested tar files using webdataset?
 
-A: Yes, WebDataset can support loading images from nested tar files by defining
-a custom decoder using Python's `tarfile` library. You can create a function to
-expand the nested tar files and add the images to the sample as if they were
-part of it all along. This can be achieved using the `map` function in
-WebDataset. Here is an example:
+A: To load images from nested tar files with webdataset, you can create a custom
+decoder that handles `.tar` files using Python's `tarfile` module. This decoder
+can be applied to your dataset with the `.map()` method, which allows you to
+modify each sample in the dataset. The custom decoder will read the nested tar
+file from the sample, extract its contents, and add them to the sample
+dictionary. Here's a short example of how you can implement this:
 
 ```python
-import tarfile
 import io
+import tarfile
+from webdataset import WebDataset
 
 def expand_tar_files(sample):
     stream = tarfile.open(fileobj=io.BytesIO(sample["tar"]))
     for tarinfo in stream:
-        name = tarinfo.name
-        data = stream.extractfile(tarinfo).read()
-        sample[name] = data
+        if tarinfo.isfile():
+            name = tarinfo.name
+            data = stream.extractfile(tarinfo).read()
+            sample[name] = data
+    return sample
 
-ds = WebDataset(...).map(expand_tar_files).decode(...)
+ds = WebDataset("dataset.tar").map(expand_tar_files).decode("...")
 ```
 
-This approach allows you to handle nested tar files and load the images seamlessly into your dataset.
+In this example, `expand_tar_files` is a function that takes a sample from the
+dataset, opens the nested tar file contained within it, and adds each file from
+the nested tar to the sample. The `WebDataset` object is then created with the
+path to the dataset tar file, and the `expand_tar_files` function is applied to
+each sample in the dataset.
 
 ------------------------------------------------------------------------------
 
-Issue #245
+Issue #246
 
-Q: How do I enable caching for lists of shards when using `wds.ResampledShards` in a WebDataset pipeline?
+Q: What is the purpose of `.to_tuple()` in WebDataset and how does it handle missing files?
 
-A: To enable caching for lists of shards when using `wds.ResampledShards`, you
-need to replace `tarfile_to_samples` with `cached_tarfile_to_samples` in your
-pipeline. `ResampledShards` does not inherently support caching, but you can
-achieve caching by modifying the pipeline to use the caching version of the
-tarfile extraction function. Here is an example of how to modify your pipeline:
+A: The `.to_tuple()` method in WebDataset is used to extract specific fields
+from a dataset where each sample is a dictionary with keys corresponding to file
+extensions. This method simplifies the process of preparing data for training by
+converting dictionaries into tuples, which are more convenient to work with in
+many machine learning frameworks. When you specify multiple file extensions
+separated by semicolons, `.to_tuple()` will return the first file that matches
+any of the given extensions. If a file with a specified extension is not present
+in a sample, `.to_tuple()` will raise an error. To handle optional files, you
+can use a custom function with `.map()` that uses the `get` method to return
+`None` if a key is missing, thus avoiding errors and allowing for flexible data
+structures.
+
+Here's an example of using `.to_tuple()` with mandatory and optional files:
 
 ```python
-dataset = wds.DataPipeline(
-    wds.ResampledShards(urls),
-    wds.cached_tarfile_to_samples(cache_dir='./_mycache'),
-    wds.shuffle(shuffle_vals[0]),
-    wds.decode(wds.torch_audio),
-    wds.map(partial(callback, sample_size=sample_size, sample_rate=sample_rate, verbose=verbose, **kwargs)),
-    wds.shuffle(shuffle_vals[1]),
-    wds.to_tuple(audio_file_ext),
-    wds.batched(batch_size),
-).with_epoch(epoch_len)
+# Mandatory jpg and txt, optional npy
+def make_tuple(sample):
+    return sample["jpg"], sample.get("npy"), sample["txt"]
+
+ds = WebDataset(...) ... .map(make_tuple)
 ```
 
-This modification ensures that the extracted samples are cached, improving the efficiency of reloading shards.
+And here's how you might use `.to_tuple()` directly for mandatory files:
+
+```python
+ds = WebDataset(...) ... .to_tuple("jpg", "txt")
+```
 
 ------------------------------------------------------------------------------
 
 Issue #244
 
-Q: What is the recommended way of combining multiple data sources with a specified frequency for sampling from each?
+Q: How can I combine multiple data sources with a specified frequency for sampling from each?
 
-A: To combine multiple data sources with specified sampling frequencies, you can
-use the `RandomMix` function. This allows you to mix datasets at the sample
-level with non-integer weights. For example, if you want to sample from dataset
-`A` 1.45 times more frequently than from dataset `B`, you can specify the
-weights accordingly. Here is an example:
+A: To combine multiple data sources with non-integer sampling frequencies, you
+can use the `RandomMix` function from the WebDataset library. This function
+allows you to specify the relative sampling weights as floating-point numbers,
+which can represent the desired sampling frequency from each dataset. Here's an
+example of how to use `RandomMix` to combine two datasets with a specified
+sampling frequency:
 
 ```python
-ds1 = WebDataset("A/{00..99}.tar")
-ds2 = WebDataset("B/{00..99}.tar")
-mix = RandomMix([ds1, ds2], [1.45, 1.0])
+from webdataset import WebDataset, RandomMix
+
+ds1 = WebDataset('path_to_shards_A/{00..99}.tar')
+ds2 = WebDataset('path_to_shards_B/{00..99}.tar')
+mix = RandomMix([ds1, ds2], [1.45, 1.0])  # Sampling from ds1 1.45 times more frequently than ds2
 ```
 
-This setup ensures that samples are drawn from `ds1` 1.45 times more frequently than from `ds2`.
+This will create a mixed dataset where samples from `ds1` are drawn
+approximately 1.45 times more often than samples from `ds2`.
 
 ------------------------------------------------------------------------------
 
 Issue #239
 
-Q: Is it possible to filter a WebDataset to select only a subset of categories without creating a new dataset?
+Q: Can I filter a WebDataset to select only a subset of categories?
 
-A: Yes, it is possible to filter a WebDataset to select only a subset of
-categories using a simple map function. This approach is efficient as long as
-you don't discard more than 50-80% of the samples. For example, you can use the
-following code to filter samples based on their class:
+A: Yes, you can filter a WebDataset to select only a subset of categories by
+using a map function. This is efficient as long as the subset is not too small;
+otherwise, it can lead to inefficient I/O due to random disk accesses. For very
+small subsets, it's recommended to create a new WebDataset. Here's a simple
+example of how to filter categories:
 
 ```python
 def select(sample):
-    if sample["cls"] in [0, 3, 9]:
+    if sample["cls"] in [0, 3, 9]:  # Replace with desired categories
         return sample
     else:
         return None
@@ -776,736 +678,548 @@ def select(sample):
 dataset = wds.WebDataset(...).decode().map(select)
 ```
 
-However, if you need smaller subsets of your data, it is recommended to create a
-new WebDataset to achieve efficient I/O. This is due to the inherent cost of
-random disk accesses when selecting a small subset without creating a new
-dataset.
-
-------------------------------------------------------------------------------
-
-Issue #238
-
-Q: Why does shard caching with `s3cmd` in the URL create only a single file in the `cache_dir`?
-
-A: When using shard caching with URLs like `pipe:s3cmd get
-s3://bucket/path-{00008..00086}.tar -`, the caching mechanism incorrectly
-identifies the filename as `s3cmd`. This happens because the `pipe_cleaner`
-function in `webdataset/cache.py` tries to guess the actual URL from the "pipe:"
-specification by looking for words that start with "s3". Since "s3cmd" fits this
-pattern, it mistakenly uses "s3cmd" as the filename, leading to only one shard
-being cached. To fix this, you can override the mapping by specifying the
-`url_to_name` option to `cached_url_opener`.
-
-```python
-# Example of overriding the mapping
-dataset = WebDataset(url, url_to_name=lambda url: hashlib.md5(url.encode()).hexdigest())
-```
-
-This ensures that each URL is uniquely identified, preventing filename conflicts in the cache.
+This approach works well when the number of classes is much larger than the
+number of shards, and you're not discarding a significant portion of the data.
+If you find yourself discarding a large percentage of the data, consider
+creating a new WebDataset for efficiency.
 
 ------------------------------------------------------------------------------
 
 Issue #237
 
-Q: How do I handle filenames with multiple periods in WebDataset to avoid issues with key interpretation?
+Q: How does WebDataset handle filenames with multiple periods when extracting keys?
 
-A: In WebDataset, periods in filenames are used to support multiple extensions,
-which can lead to unexpected key interpretations. For example, a filename like
-`./235342 Track 2.0 (Clean Version).mp3` might be interpreted with a key of `0
-(clean version).mp3`. This is by design to facilitate downstream pipeline
-processing. To avoid issues, it's recommended to handle this during dataset
-creation. You can also use "glob" patterns like `*.mp3` to match extensions.
-Here's an example of using glob patterns:
+A: WebDataset uses periods to separate the base filename from the extension,
+which can lead to unexpected keys when multiple periods are present in the base
+filename. This is by design to support filenames with multiple extensions, such
+as `.seg.jpg`. It's important to follow this convention when creating datasets
+to avoid issues in downstream processing. If you have filenames with multiple
+periods, consider renaming them before creating the dataset. For matching files,
+you can use glob patterns like `*.mp3` to ensure you're working with the correct
+file type.
 
 ```python
-import webdataset as wds
-
-dataset = wds.WebDataset("data.tar").decode("torchrgb").to_tuple("*.mp3")
+# Example of using a glob pattern to match files with the .mp3 extension
+dataset = wds.Dataset("dataset.tar").select(lambda x: fnmatch.fnmatch(x, "*.mp3"))
 ```
-
-This approach ensures that your filenames are correctly interpreted and processed.
 
 ------------------------------------------------------------------------------
 
 Issue #236
 
-Q: How does WebDataset convert my local JPG images and text into .npy files?
+Q: How does webdataset handle the conversion of tensors to different file formats like .jpg and .npy?
 
-A: WebDataset does not inherently convert your local JPG images and text into
-.npy files. Instead, it writes data in the format specified by the file
-extension in the sample keys. For example, if you write a sample with
-`{"__key__": "xyz", "image.jpg": some_tensor}`, it will save the tensor as a
-JPEG file named `xyz.image.jpg`. Conversely, if you write the same tensor with
-`{"__key__": "xyz", "image.npy": some_tensor}`, it will save the tensor in NPY
-format as `xyz.image.npy`. The conversion happens based on the file extension
-provided in the sample keys.
+A: In webdataset, the conversion of tensors to specific file formats is
+determined by the file extension you specify in the key when writing the data
+using `ShardWriter`. There is no automatic conversion; the tensor is simply
+saved in the format corresponding to the extension you provide. When reading the
+data, you can decode the files into tensors using the appropriate arguments.
+Here's a short example of how to write a tensor as different file formats:
 
 ```python
+from webdataset import ShardWriter
+
 writer = ShardWriter(...)
-image = rand((256,256,3))
+
+sample = {}
 sample["__key__"] = "dataset/sample00003"
-sample["data.npy"] = image
-sample["jpg"] = image
-sample["something.png"] = image
+sample["image.jpg"] = some_tensor  # Will be saved as a JPEG file
+sample["image.npy"] = some_tensor  # Will be saved as a NPY file
+
 writer.write(sample)
 ```
 
-Upon reading, both ".jpg" and ".npy" files can be turned into tensors if you
-call `.decode` with the appropriate arguments.
+When you write a sample with `{"__key__": "xyz", "image.jpg": some_tensor}`, a
+JPEG file named `xyz.image.jpg` is created. Conversely, if you write
+`{"__key__": "xyz", "image.npy": some_tensor}`, an NPY file named
+`xyz.image.npy` is created.
 
 ------------------------------------------------------------------------------
 
 Issue #233
 
-Q: How can I correctly split WebDataset shards across multiple nodes and workers in a PyTorch XLA setup?
+Q: How do I ensure that WebDataset correctly splits shards across multiple nodes and workers?
 
-A: To correctly split WebDataset shards across multiple nodes and workers in a
-PyTorch XLA setup, you need to use the `split_by_node` and `split_by_worker`
-functions. This ensures that each node and worker processes a unique subset of
-the data. Here is an example of how to set this up:
+A: When using WebDataset for distributed training across multiple nodes and
+workers, it's important to use the `split_by_node` and `split_by_worker`
+functions to ensure that each node and worker processes a unique subset of the
+data. The `detshuffle` function can be used for deterministic shuffling of
+shards before splitting. Here's a minimal example of how to set up the dataset
+pipeline for multi-node training:
 
 ```python
-import os
 import webdataset as wds
-import torch
-import torch.distributed as dist
 
-if __name__ == "__main__":
-    try:
-        rank = int(os.environ["RANK"])
-        world_size = int(os.environ["WORLD_SIZE"])
-        local_rank = int(os.environ["LOCAL_RANK"])
-        dist.init_process_group("nccl")
-    except KeyError:
-        rank = 0
-        world_size = 1
-        local_rank = 0
-        dist.init_process_group(
-            backend="nccl",
-            init_method="tcp://127.0.0.1:12584",
-            rank=rank,
-            world_size=world_size,
-        )
-
-    dataset = wds.DataPipeline(
-        wds.SimpleShardList("source-{000000..000999}.tar"),
-        wds.split_by_node,
-        wds.split_by_worker,
-    )
-
-    for idx, i in enumerate(iter(dataset)):
-        if idx == 2:
-            break
-        print(f"rank: {rank}, world_size: {world_size}, {i}")
-```
-
-To ensure deterministic shuffling across nodes, use `detshuffle`:
-
-```python
 dataset = wds.DataPipeline(
-    wds.SimpleShardList("source-{000000..000016}.tar"),
+    wds.SimpleShardList("source-{000000..000999}.tar"),
     wds.detshuffle(),
     wds.split_by_node,
     wds.split_by_worker,
 )
+
+for idx, item in enumerate(iter(dataset)):
+    if idx < 2:  # Just for demonstration
+        print(f"item: {item}")
 ```
 
-This setup ensures that each node and worker processes a unique subset of the data, avoiding redundant processing.
+Make sure you are using a recent version of WebDataset that supports these
+features. If you encounter any issues, check the version and consider updating
+to the latest release.
 
 ------------------------------------------------------------------------------
 
 Issue #227
 
-Q: How can I leverage Apache Beam to build a WebDataset in Python for a large training set with complex pre-processing?
+Q: How can I use Apache Beam to write data to a WebDataset tar file for large-scale machine learning datasets?
 
-A: To build a WebDataset using Apache Beam, you can process shards in parallel
-and each shard sequentially. Apache Beam allows you to handle large-scale data
-processing efficiently. Below is a sample code snippet to write data to a
-WebDataset tar file via Beam:
+A: Apache Beam is a powerful tool for parallel data processing, which can be
+used to build large datasets for machine learning. When dealing with datasets
+larger than 10TB and requiring complex preprocessing, you can use Apache Beam to
+process and write the data into a WebDataset tar file format. Below is a
+simplified example of how you might set up your Beam pipeline to write to a
+WebDataset. This example assumes you have a function `preprocess_sample` that
+takes a sample and performs the necessary preprocessing:
 
 ```python
 import apache_beam as beam
 from webdataset import ShardWriter
 
-def process_element(element):
-    # Perform your complex pre-processing here
-    processed_sample = ...  # do something with element
-    return processed_sample
+def write_to_webdataset(sample):
+    # Assuming 'preprocess_sample' is a function that preprocesses your data
+    processed_sample = preprocess_sample(sample)
+    # Write the processed sample to a shard using ShardWriter
+    # This is a simplified example; you'll need to manage shards and temp files
+    with ShardWriter("output_shard.tar", maxcount=1000) as sink:
+        sink.write(processed_sample)
 
-def write_to_shard(element, shard_name):
-    with ShardWriter(shard_name) as writer:
-        writer.write(element)
-
-def run_pipeline(input_pattern, output_pattern):
-    with beam.Pipeline() as p:
-        (p
-         | 'ReadInput' >> beam.io.ReadFromText(input_pattern)
-         | 'ProcessElement' >> beam.Map(process_element)
-         | 'WriteToShard' >> beam.Map(write_to_shard, output_pattern))
-
-input_pattern = 'gs://source_bucket/shard-*'
-output_pattern = 'gs://dest_bucket/shard-{shard_id}.tar'
-run_pipeline(input_pattern, output_pattern)
+# Set up your Apache Beam pipeline
+with beam.Pipeline() as pipeline:
+    (
+        pipeline
+        | 'Read Data' >> beam.io.ReadFromSomething(...)  # Replace with your data source
+        | 'Process and Write' >> beam.Map(write_to_webdataset)
+    )
 ```
 
-This example reads input data, processes each element, and writes the processed
-data to a WebDataset shard. Adjust the `process_element` function to fit your
-specific pre-processing needs.
+Remember to manage the sharding and temporary files appropriately, as the
+`ShardWriter` will need to write to different shards based on your dataset's
+partitioning. The `maxcount` parameter controls how many items are in each
+shard. You will also need to handle the copying of the temporary shard files to
+your destination bucket as needed.
 
 ------------------------------------------------------------------------------
 
 Issue #225
 
-Q: How can I ensure that WebLoader-generated batches are different when using
-multi-node training with WebDataset for DDP?
+Q: How can I ensure that Distributed Data Parallel (DDP) training with
+WebDataset doesn't hang due to uneven data distribution across nodes?
 
-A: When using WebDataset for DDP (Distributed Data Parallel) training, you need
-to ensure that each node processes different data to avoid synchronization
-issues. Here are some strategies:
+A: When using WebDataset for DDP training, it's important to ensure that all
+nodes receive the same number of samples to prevent hanging during
+synchronization. One effective method is to create a number of shards that is
+divisible by the total number of workers and ensure each shard contains the same
+number of samples. Assign each worker the same number of shards to achieve exact
+epochs with no resampling, duplication, or missing samples. If the dataset
+cannot be evenly divided, you can use `resampled=True` to generate an infinite
+stream of samples, and set an epoch length using `with_epoch`. This approach
+allows for synchronization across workers even if the dataset size is not
+divisible by the number of workers. Here's an example of setting an epoch
+length:
 
-1. **Use `resampled=True` and `with_epoch`**: This ensures that each worker gets
-an infinite stream of samples, preventing DDP from hanging due to uneven data
-distribution.
-   ```python
-   dataset = WebDataset(..., resampled=True).with_epoch(epoch_length)
-   ```
-
-2. **Equal Shard Distribution**: Ensure shards are evenly distributed across
-nodes and use `.repeat(2).with_epoch(n)` to avoid running out of data.
-   ```python
-   dataset = WebDataset(...).repeat(2).with_epoch(epoch_length)
-   ```
-
-3. **Avoid Shard Splitting**: Have the same set of shuffled shards on all nodes,
-effectively multiplying your epoch size by the number of workers.
-
-4. **Nth Sample Selection**: Select every nth sample on each of the n nodes to ensure even distribution.
-
-For validation, ensure the dataset size is divisible by the number of nodes to avoid hanging:
 ```python
+from webdataset import WebDataset
+
+dataset = WebDataset(urls, resampled=True).with_epoch(epoch_length)
+```
+
+For validation, where you want to avoid arbitrary epoch lengths, you can drop
+samples from the end of the validation set to make its size divisible by the
+world size. This can be done using TorchData as follows:
+
+```python
+from torch.utils.data import DataLoader
+import torch.distributed
+
 dataset = dataset.batch(torch.distributed.get_world_size(), drop_last=True)
 dataset = dataset.unbatch()
 dataset = dataset.sharding_filter()
 ```
 
-These methods help maintain synchronization and prevent DDP from hanging due to uneven data distribution.
-
-------------------------------------------------------------------------------
-
-Issue #220
-
-Q: Why is my `.flac` sub-file with a key starting with `_` being decoded as
-UTF-8 instead of as a FLAC file in WebDataset?
-
-A: In WebDataset, keys that start with an underscore (`_`) are treated as
-metadata and are automatically decoded as UTF-8. This is based on the convention
-that metadata keys start with an underscore and are in UTF-8 format. However,
-the system now checks for keys that start with double underscores (`__`), so
-your case should work if you update your key to start with a double underscore.
-This ensures that the `.flac` extension is recognized and the file is decoded
-correctly.
-
-```python
-# Example key update
-"_gbia0001334b.flac"  # Original key
-"__gbia0001334b.flac"  # Updated key
-```
-
-This change reserves the single underscore for metadata while allowing other
-files to be decoded based on their extensions.
+Remember to use the `sharding_filter` to ensure that each process only sees its own subset of the data.
 
 ------------------------------------------------------------------------------
 
 Issue #219
 
-Q: How do I resolve the `AttributeError: module 'webdataset' has no attribute 'ShardList'` error when using WebDataset?
+Q: What should I use instead of `ShardList` in webdataset v2, and how do I specify a splitter?
 
-A: The `ShardList` class has been renamed to `SimpleShardList` in WebDataset v2.
-Additionally, the `splitter` argument is now called `nodesplitter`. To fix the
-error, update your code to use `SimpleShardList` and `nodesplitter`. Here is an
-example:
+A: In webdataset v2, the `ShardList` class has been renamed to
+`SimpleShardList`. If you encounter an `AttributeError` stating that the module
+`webdataset` has no attribute `ShardList`, you should replace it with
+`SimpleShardList`. Additionally, the `splitter` argument has been changed to
+`nodesplitter`. Here's how you can update your code to reflect these changes:
 
 ```python
 urls = list(braceexpand.braceexpand("dataset-{000000..000999}.tar"))
-dataset = wds.SimpleShardList(urls, nodesplitter=wds.split_by_node, shuffle=False)
+dataset = wds.SimpleShardList(urls, splitter=wds.split_by_worker, nodesplitter=wds.split_by_node, shuffle=False)
 dataset = wds.Processor(dataset, wds.url_opener)
 dataset = wds.Processor(dataset, wds.tar_file_expander)
 dataset = wds.Processor(dataset, wds.group_by_keys)
 ```
 
-This should resolve the `AttributeError` and ensure your code is compatible with WebDataset v2.
+If you are using `WebDataset` and encounter a `TypeError` regarding an
+unexpected keyword argument `splitter`, ensure that you are using the correct
+argument name `nodesplitter` instead.
 
 ------------------------------------------------------------------------------
 
 Issue #216
 
-Q: How can I use ShardWriter to write directly to a gcloud URL without storing shards locally?
+Q: Can I use `ShardWriter` to write directly to a cloud storage URL like Google Cloud Storage?
 
-A: The recommended usage of ShardWriter is to write to local disk and then copy
-to the cloud. However, if your dataset is too large to store locally, you can
-modify the ShardWriter to write directly to a gcloud URL. By changing the line
-in `webdataset/writer.py` from:
+A: The `ShardWriter` from the `webdataset` library is primarily designed to
+write shards to a local disk, and then these shards can be copied to cloud
+storage. Writing directly to cloud storage is not the default behavior because
+it can be less efficient and more error-prone due to network issues. However, if
+you have a large dataset that cannot be stored locally, you can modify the
+`ShardWriter` code to write directly to a cloud URL by changing the line where
+the `TarWriter` is instantiated. Here's a short example of the modification:
 
 ```python
+# Original line in ShardWriter
 self.tarstream = TarWriter(open(self.fname, "wb"), **self.kw)
-```
 
-to:
-
-```python
+# Modified line to write directly to a cloud URL
 self.tarstream = TarWriter(self.fname, **self.kw)
 ```
 
-you can enable direct writing to the cloud. This modification allows the
-`TarWriter` to handle the gcloud URL directly, bypassing the need to store the
-shards locally.
+Please note that this is a workaround and may not be officially supported. It's
+recommended to test thoroughly to ensure data integrity and handle any potential
+exceptions related to network issues.
 
 ------------------------------------------------------------------------------
 
 Issue #212
 
-Q: How does WebDataset handle sharding and caching when downloading data from S3?
+Q: Does WebDataset download all shards at once, and how does caching affect the download behavior?
 
-A: When using WebDataset with S3 and multiple shards, the shards are accessed
-individually and handled in a streaming fashion by default, meaning nothing is
-cached locally. If caching is enabled, each shard is first downloaded completely
-before being used for further reading. This can cause a delay in training start
-time, as the first shard must be fully downloaded before training begins. To
-customize the cache file names, you can override the `url_to_name` argument.
-Here is an example:
+A: WebDataset accesses shards individually and handles data in a streaming
+fashion by default, meaning that shards are not cached locally unless caching is
+explicitly enabled. When caching is enabled, each shard is downloaded completely
+before being used, which can block training until the download is finished. This
+behavior contrasts with the streaming mode, where training can start as soon as
+the first batch is ready. The caching mechanism does not currently download
+shards in parallel with training, which can lead to delays when starting the
+training process. To change the local cache name when using `pipe:s3`, you can
+override the `url_to_name` argument to map shard names to cache file names as
+desired.
+
+Here's an example of how to override the `url_to_name` function:
 
 ```python
-dataset = wds.WebDataset('pipe:s3 http://url/dataset-{001..099}.tar', url_to_name=lambda url: url.split('/')[-1])
-```
+import webdataset as wds
 
-This behavior ensures that the data is processed correctly, but it may introduce delays when caching is enabled.
+def custom_url_to_name(url):
+    # Custom logic to convert URL to a cache filename
+    return url.replace("http://url/dataset-", "").replace(".tar", ".cache")
+
+dataset = wds.WebDataset("pipe:s3 http://url/dataset-{001..099}.tar", url_to_name=custom_url_to_name)
+```
 
 ------------------------------------------------------------------------------
 
 Issue #211
 
-Q: How can I use ShardWriter to write data to remote URLs?
+Q: How can I write to a remote location using ShardWriter?
 
-A: ShardWriter is designed to write data to local paths for simplicity and
-better error handling. However, you can upload the data to a remote URL by using
-a post-processing hook. This hook allows you to define a function that uploads
-the shard to a remote location after it has been written locally. For example,
-you can use the `gsutil` command to upload the shard to a Google Cloud Storage
-bucket and then delete the local file:
+A: ShardWriter is designed to write to local disk for simplicity and
+reliability, but it provides a hook for uploading data to a remote location. You
+can define a function that handles the upload process and then pass this
+function to the `post` parameter of ShardWriter. Here's a short example of how
+to use this feature:
 
-```python
+```Python
 def upload_shard(fname):
     os.system(f"gsutil cp {fname} gs://mybucket")
     os.unlink(fname)
 
 with ShardWriter(..., post=upload_shard) as writer:
+    # Your code to add data to the writer
     ...
 ```
 
-This approach ensures that ShardWriter handles local file operations while you manage the remote upload process.
+This approach allows you to have control over the upload process and handle any
+errors that may occur during the transfer to the remote storage.
 
 ------------------------------------------------------------------------------
 
 Issue #210
 
-Q: How can I handle collation of dictionaries when using `default_collation_fn` in WebDataset?
+Q: How does the `default_collation_fn` work in WebDataset when it seems to
+expect a list or tuple, but the documentation suggests it should handle a
+collection of samples as dictionaries?
 
-A: The `default_collation_fn` in WebDataset expects samples to be a list or
-tuple, not dictionaries. If you need to collate dictionaries, you can use a
-custom collate function. Starting with PyTorch 1.11, you can use
-`torch.utils.data.default_collate` which can handle dictionaries. You can pass
-this function to the `batched` method. Here is an example of how to use a custom
-collate function:
+A: The confusion arises from the mismatch between the documentation and the
+actual implementation of `default_collation_fn`. The function is designed to
+take a batch of samples and collate them into a single batch for processing.
+However, the current implementation of `default_collation_fn` in WebDataset does
+not handle dictionaries directly. Instead, it expects each sample in the batch
+to be a list or tuple. If you have a batch of dictionaries, you would need to
+convert them into a list or tuple format before using `default_collation_fn`.
+Alternatively, you can use `torch.utils.data.default_collate` from PyTorch 1.11
+or later, which can handle dictionaries, or you can provide a custom collate
+function that handles dictionaries. Here's an example of a custom collate
+function that could handle a list of dictionaries:
 
 ```python
-from torch.utils.data import default_collate
-
-def custom_collate_fn(samples):
-    return default_collate(samples)
-
-# Use the custom collate function
-dataset = WebDataset(...).batched(20, collation_fn=custom_collate_fn)
+def custom_collate_fn(batch):
+    # Assuming each element in batch is a dictionary
+    collated_batch = {}
+    for key in batch[0].keys():
+        collated_batch[key] = [d[key] for d in batch]
+    return collated_batch
 ```
 
-This approach allows you to handle dictionaries without manually converting them to tuples.
+You can then pass this `custom_collate_fn` to your data loader.
 
 ------------------------------------------------------------------------------
 
 Issue #209
 
-Q: How can I ensure that each batch contains only one description per image
-while using the entire dataset for training with WebDataset?
+Q: How can I ensure each batch contains only one description per image when using webdatasets?
 
-A: To ensure that each batch contains only one description per image while still
-using the entire dataset for training with WebDataset, you can use a custom
-transformation function. This function can be applied to the dataset to filter
-and collate the samples as needed. Here is an example of how you can achieve
-this:
+A: To ensure that each batch contains only one description per image in
+webdatasets, you can create a custom transformation function that acts as a
+filter or collate function. This function can be composed with your dataset to
+enforce the batching rule. You can use buffers or other conditional logic within
+your transformation to manage the batching process. Here's a simple example of
+how you might start implementing such a transformation:
 
-```python
-def my_transformation(src):
-    seen_images = set()
+```Python
+def unique_image_collate(src):
+    buffer = {}
     for sample in src:
         image_id = sample['image_id']
-        if image_id not in seen_images:
-            seen_images.add(image_id)
-            yield sample
+        if image_id not in buffer:
+            buffer[image_id] = sample
+            if len(buffer) == batch_size:
+                yield list(buffer.values())
+                buffer.clear()
+        # Additional logic to handle leftovers, etc.
+    if buffer:
+        yield list(buffer.values())
 
-dataset = dataset.compose(my_transformation)
+dataset = dataset.compose(unique_image_collate)
 ```
 
-In this example, `my_transformation` ensures that each image is only included
-once per batch by keeping track of seen images. You can further customize this
-function to fit your specific requirements.
+This function collects samples in a buffer until it has a batch's worth of
+unique images, then yields that batch and clears the buffer for the next batch.
+You'll need to add additional logic to handle cases such as the end of an epoch
+where the buffer may not be full.
 
 ------------------------------------------------------------------------------
 
 Issue #201
 
-Q: How can I subsample a large dataset in the web dataset format without significantly slowing down iteration speed?
+Q: How can I efficiently subsample a large dataset without slowing down iteration speed?
 
-A: To subsample a large dataset like LAION 400M efficiently, you should perform
-the `select(...)` operation before any decoding or data augmentation steps, as
-these are typically the slowest parts of the pipeline. If you only need a small
-percentage of the samples, it's best to generate the subset ahead of time as a
-new dataset. You can use a small WebDataset/TarWriter pipeline to create the
-subset, possibly with parallelization tools like `ray`, or use commands like
-`tarp proc ... | tarp split ...`. For dynamic selection, consider splitting your
-dataset into shards based on the categories you want to filter on. This approach
-avoids the performance hit from random file accesses.
+A: When dealing with large datasets, such as LAION 400M, and needing to
+subsample based on metadata, there are several strategies to maintain high I/O
+performance. If the subset is small and static, it's best to create a new
+dataset ahead of time. This can be done using a WebDataset/TarWriter pipeline or
+with `tarp proc ... | tarp split ...` commands, potentially parallelizing the
+process with tools like `ray`. If dynamic selection is necessary, consider
+splitting the dataset into shards by the categories of interest. This approach
+avoids random file accesses, which can significantly slow down data pipelines.
+Here's a simple example of creating a subset using `tarp`:
 
-```python
-def filter(sample):
-    return sample['metadata'] in metadata_list
-
-dataset = wds.WebDataset("path/to/dataset")
-dataset = dataset.select(filter).decode("pil").to_tuple("jpg", "json")
+```bash
+tarp proc mydataset.tar -c 'if sample["metadata"] in metadata_list: yield sample'
+tarp split -o subset-%06d.tar --size=1e9
 ```
 
-By organizing your pipeline efficiently, you can maintain high iteration speeds while subsampling your dataset.
-
-------------------------------------------------------------------------------
-
-Issue #200
-
-Q: How can I skip reading certain files in a tar archive when using the WebDataset library?
-
-A: You cannot avoid reading files in a tar archive when using the WebDataset
-library, especially in large-scale applications where files are streamed from a
-network. However, you can avoid decoding samples that you don't need by using
-the `map` or `select` functions before the `decode` statement. This approach is
-recommended to improve efficiency. If you need fast random access to tar files
-stored on disk, consider using the `wids` library, which provides this
-capability but requires the files to be fully downloaded.
-
-```python
-# Example of using map to filter out unwanted samples before decoding
-dataset = wds.WebDataset("data.tar").map(filter_function).decode("pil")
-```
-
-```python
-# Example of using select to filter out unwanted samples before decoding
-dataset = wds.WebDataset("data.tar").select(filter_function).decode("pil")
-```
-
-------------------------------------------------------------------------------
-
-Issue #199
-
-Q: Why is `wds.Processor` not included in the `v2` or `main` branch of
-WebDataset, and how can I add preprocessing steps to the data?
-
-A: The `wds.Processor` class, along with `wds.Shorthands` and `wds.Composable`,
-has been removed from the `v2` and `main` branches of WebDataset because the
-architecture for pipelines has been updated to align more closely with
-`torchdata`. To add preprocessing steps to your data, you can use the `map`
-function, which allows you to apply a function to each sample in the dataset.
-The function you provide to `map` will receive the complete sample as an
-argument. Additionally, you can write custom pipeline stages as callables. Here
-is an example:
-
-```python
-def process(source):
-    for sample in source:
-        # Your preprocessing code goes here
-        yield sample
-
-ds = WebDataset(...).compose(process)
-```
-
-This approach ensures you have access to all the information in each sample for preprocessing.
+Remember to perform filtering before any heavy operations like decoding or augmentation to avoid unnecessary processing.
 
 ------------------------------------------------------------------------------
 
 Issue #196
 
-Q: How can I speed up the `rsample` function when working with WebDataset tar files?
+Q: How can I speed up subsampling from a tar file when using WebDataset?
 
-A: To speed up the `rsample` function in WebDataset, it's more efficient to
-apply `rsample` on shards rather than individual samples. This approach avoids
-the overhead of sequential reading of the entire tar file, which can be slow. By
-sampling shards, you can reduce I/O operations and improve performance.
-Additionally, using storage servers like AIStore can help perform sampling on
-the server side, leveraging random access capabilities.
+A: When working with WebDataset, it's important to remember that it is optimized
+for streaming data and does not support efficient random access within tar
+files. To speed up subsampling, you should avoid using very small probabilities
+with `rsample` as it requires reading the entire stream. Instead, consider using
+more shards and applying `rsample` to the shards rather than individual samples.
+This approach avoids the overhead of sequential reading. Additionally, some
+storage servers like AIStore can perform server-side sampling, which can be more
+efficient as they can use random access.
 
 ```python
-# Example of using rsample on shards
-import webdataset as wds
-
-dataset = wds.WebDataset("shards-{000000..000099}.tar")
-dataset = dataset.rsample(0.1)  # Apply rsample on shards
+# Example of using rsample with shards
+dataset = WebDataset("dataset-{0000..9999}.tar").rsample(0.1)
 ```
-
-This method ensures efficient data processing without the need for random access on tar files.
 
 ------------------------------------------------------------------------------
 
 Issue #194
 
-Q: How can I use `WebDataset` with `DistributedDataParallel` (DDP) if `ddp_equalize` is not available?
+Q: How should I balance dataset elements across DDP nodes when using WebDataset?
 
-A: The `ddp_equalize` method is no longer available in `WebDataset`. Instead,
-you can use the `.repeat(2).with_epoch(n)` method to ensure each worker
-processes the same number of batches. Here, `n` should be the total number of
-samples divided by the batch size. This approach helps balance the dataset
-across workers, though some batches may be missing or repeated. Alternatively,
-consider using `torchdata` for better sharding and distributed training support.
+A: When using WebDataset with Distributed Data Parallel (DDP) in PyTorch, you
+may encounter situations where the dataset is not evenly distributed across the
+workers. To address this, you can use the `.repeat()` method in combination with
+`.with_epoch()` to ensure that each worker processes the same number of batches.
+The `.repeat(2)` method is used to repeat the dataset twice, which should be
+sufficient for most cases. If the dataset is highly unbalanced, you may need to
+adjust this number. The `.with_epoch(n)` method is used to limit the number of
+samples processed in an epoch to `n`, where `n` is typically set to the total
+number of samples divided by the batch size. This combination ensures that each
+epoch has a consistent size across workers, while also handling any imbalance in
+the number of shards or samples per worker.
 
-Example:
+Here's an example of how to use these methods:
+
 ```python
-urls = "./shards/imagenet-train-{000000..001281}.tar"
-dataset_size, batch_size = 1282000, 64
-dataset = wds.WebDataset(urls).decode("pil").shuffle(5000).batched(batch_size, partial=False)
+batch_size = 64
+epoch_size = 1281237  # Total number of samples in the dataset
 loader = wds.WebLoader(dataset, num_workers=4)
-loader = loader.repeat(2).with_epoch(dataset_size // batch_size)
+loader = loader.repeat(2).with_epoch(epoch_size // batch_size)
 ```
 
-For more robust solutions, consider using PyTorch's synchronization methods or the upcoming `WebIndexedDataset`.
-
-------------------------------------------------------------------------------
-
-Issue #187
-
-Q: Why is it recommended to avoid batching in the `DataLoader` and instead batch
-in the dataset and then rebatch after the loader in PyTorch?
-
-A: It is generally most efficient to avoid batching in the `DataLoader` because
-data transfer between different processes (when using `num_workers` greater than
-zero) is more efficient with larger amounts of data. Batching in the dataset and
-then rebatching after the loader can optimize this process. For example, using
-the WebDataset Dataloader, you can batch/rebatch as follows:
-
-```python
-loader = wds.WebLoader(dataset, num_workers=4, batch_size=8)
-loader = loader.unbatched().shuffle(1000).batched(12)
-```
-
-This approach ensures efficient data transfer and processing.
+This approach allows for a balanced distribution of data across DDP nodes, with
+the caveat that some batches may be missing or repeated. It's a trade-off
+between perfect balance and resource usage.
 
 ------------------------------------------------------------------------------
 
 Issue #185
 
-Q: How can I include the original filename in the metadata when iterating through a WebDataset/WebLoader?
+Q: How can I include the original file name in the metadata dictionary when iterating through a WebDataset?
 
-A: To include the original filename in the metadata when iterating through a
-WebDataset/WebLoader, you can define a function to add the filename to the
-metadata dictionary and then apply this function using `.map()`. Here's how you
-can do it:
-
-1. Define a function `getfname` to add the filename to the metadata:
-    ```python
-    def getfname(sample):
-        sample["metadata"]["filename"] = sample["__key__"]
-        return sample
-    ```
-
-2. Add `.map(getfname)` to your pipeline after the `rename` step:
-    ```python
-    pipeline = [
-        wds.SimpleShardList(input_shards),
-        wds.split_by_worker,
-        wds.tarfile_to_samples(handler=log_and_continue),
-        wds.select(filter_no_caption_or_no_image),
-        wds.decode("pilrgb", handler=log_and_continue),
-        wds.rename(image="jpg;png;jpeg;webp", text="txt", metadata="json"),
-        wds.map(getfname),  # Add this line
-        wds.map_dict(
-            image=preprocess_img,
-            text=lambda text: tokenizer(text),
-            metadata=lambda x: x,
-        ),
-        wds.to_tuple("image", "text", "metadata"),
-        wds.batched(args.batch_size, partial=not is_train),
-    ]
-    ```
-
-This will ensure that the `metadata` dictionary in each sample contains the original filename under the key `filename`.
-
-------------------------------------------------------------------------------
-
-Issue #179
-
-Q: How can I enable writing TIFF images using `TarWriter` in the `webdataset` library?
-
-A: To enable writing TIFF images using `TarWriter` in the `webdataset` library,
-you need to extend the default image encoder to handle TIFF format. This can be
-done by modifying the `make_handlers` and `imageencoder` functions.
-Specifically, you should add a handler for TIFF in `make_handlers` and ensure
-that the quality is not reduced in `imageencoder`. Here are the necessary
-modifications:
+A: When working with WebDataset, you can include the original file name in the
+metadata dictionary by defining a function that extracts the `__key__` from the
+sample and adds it to the metadata. You then apply this function using the
+`.map()` method in your pipeline. Here's a short example of how to define and
+use such a function:
 
 ```python
-# Add this in webdataset.writer.make_handlers
-add_handlers(handlers, "tiff", lambda data: imageencoder(data, "tiff"))
+def add_filename_to_metadata(sample):
+    sample["metadata"]["filename"] = sample["__key__"]
+    return sample
 
-# Modify this in webdataset.writer.imageencoder
-if format in ["JPEG", "tiff"]:
-    opts = dict(quality=100)
+# Add this to your pipeline after renaming the keys
+pipeline.append(wds.map(add_filename_to_metadata))
 ```
 
-These changes will allow you to save TIFF images, which is useful for storing
-binary masks in float32 format that cannot be saved using PNG, JPG, or PPM.
+This function should be added to the pipeline after the renaming step to ensure
+that the `metadata` key is already present in the sample dictionary.
 
 ------------------------------------------------------------------------------
 
 Issue #177
 
-Q: Can we skip some steps when resuming training to avoid loading unused data into memory?
+Q: How can I resume training from a specific step without iterating over unused data when using WebDataset?
 
-A: The recommended way to handle resuming training without reloading unused data
-is to use the `resampled=True` option in WebDataset or the `wds.resampled`
-pipeline stage. This approach ensures consistent training statistics upon
-restarting, eliminating the need to skip samples. Achieving "each sample exactly
-once per epoch" is complex, especially when restarting mid-epoch, and depends on
-your specific environment (single/multiple nodes, worker usage, etc.).
-WebDataset provides primitives like `slice`, `detshuffle`, and `rng=`, but it
-can't automate this due to lack of environment context.
+A: When using WebDataset for training with large datasets, it's common to want
+to resume training from a specific step without loading all the previous data
+into memory. WebDataset provides a feature for this scenario through shard
+resampling. By setting `resampled=True` or using the `wds.resampled` pipeline
+stage, you can ensure that you get the same training statistics when restarting
+your job without the need to skip samples manually. This approach is recommended
+over trying to implement "each sample exactly once per epoch," which can be
+complex and environment-dependent.
+
+Here's a short example of how you might use the `resampled` option:
 
 ```python
-# Example usage of resampled=True
-import webdataset as wds
+from webdataset import WebDataset
 
-dataset = wds.WebDataset("data.tar").resampled(True)
-dataloader = torch.utils.data.DataLoader(dataset, batch_size=32)
+dataset = WebDataset(urls).resampled(rng=my_random_state)
 ```
 
-For more advanced handling, consider using frameworks like torchdata or Ray
-Data, which have native support for WebDataset and their own mechanisms for
-handling restarts.
+And here's how you might use the `wds.resampled` pipeline stage:
+
+```python
+import webdataset as wds
+
+dataset = wds.WebDataset(urls).pipe(wds.resampled)
+```
 
 ------------------------------------------------------------------------------
 
 Issue #172
 
-Q: Why is the epoch count in `detshuffle` not incrementing across epochs in my WebDataset pipeline?
+Q: Why does the `detshuffle` epoch count not increment across epochs when using WebDataset?
 
-A: This issue arises because the default DataLoader setup in PyTorch creates new
-worker processes each epoch when `persistent_workers=False`. This causes the
-`detshuffle` instance to reset its epoch count, starting from -1 each time. To
-maintain the epoch state across epochs, set `persistent_workers=True` in your
-DataLoader. This ensures that the worker processes persist and the epoch state
-is maintained. Alternatively, you can use resampling
+A: The issue with `detshuffle` not incrementing the epoch count across epochs is
+likely due to the interaction between the DataLoader's worker process management
+and the internal state of the `detshuffle`. When `persistent_workers=False`, the
+DataLoader creates new worker processes each epoch, which do not retain the
+state of the `detshuffle` instance. This results in the `detshuffle` epoch count
+resetting each time. To maintain the state across epochs, you can set
+`persistent_workers=True` in the DataLoader. Alternatively, you can manage the
+epoch count externally and pass it to `detshuffle` if needed. Here's a short
+example of how to set `persistent_workers`:
+
+```python
+from torch.utils.data import DataLoader
+
+# Assuming 'dataset' is your WebDataset instance
+loader = DataLoader(dataset, persistent_workers=True)
+```
+
+If you need to manage the epoch count externally, you could use an environment
+variable or another mechanism to pass the epoch count to `detshuffle`. However,
+this approach is less clean and should be used with caution, as it may introduce
+complexity and potential bugs into your code.
 
 ------------------------------------------------------------------------------
 
 Issue #171
 
-Q: Why do I get an `ImportError: cannot import name 'PytorchShardList' from 'webdataset'` and how can I fix it?
+Q: I'm getting an ImportError when trying to import `PytorchShardList` from `webdataset`. What should I do?
 
-A: The `PytorchShardList` class is not available in the version of the
-`webdataset` package you are using. It was present in version 0.1 but has since
-been replaced. To resolve this issue, you should use `SimpleShardList` instead.
-Update your import statement as follows:
+A: The `PytorchShardList` class has been removed in recent versions of the
+`webdataset` package. If you are using version 0.1 of `webdataset`,
+`PytorchShardList` was available, but in later versions, it has likely been
+replaced with `SimpleShardList`. To resolve the ImportError, you should update
+your import statement to use the new class name. Here's how you can import
+`SimpleShardList`:
 
 ```python
 from webdataset import SimpleShardList
 ```
 
-This should resolve the import error and allow you to use the functionality
-provided by `SimpleShardList`. Always refer to the latest documentation for the
-most up-to-date information on the package.
+If `SimpleShardList` does not meet your requirements, you may need to check the
+documentation for the version of `webdataset` you are using to find the
+appropriate replacement or consider downgrading to the version that contains
+`PytorchShardList`.
 
 ------------------------------------------------------------------------------
 
 Issue #170
 
-Q: How can I correctly use glob patterns with WebDataset when my data is stored in Google Cloud Storage (GCS)?
+Q: How do I use glob patterns with WebDataset to read data from Google Cloud Storage (GCS)?
 
-A: When using WebDataset with data stored in GCS, glob patterns like
-`training_*` are not automatically expanded. This can lead to unintended
-behavior, such as treating the pattern as a single shard. To correctly use glob
-patterns, you should manually list the files using a command like `gsutil ls`
-and then pass the resulting list to WebDataset. Here’s an example:
+A: WebDataset does not natively support glob patterns due to the lack of a
+consistent API for globbing across different object stores. To use glob patterns
+with files stored in GCS, you need to manually resolve the glob pattern using
+`gsutil` and then pass the list of shards to WebDataset. Here's an example of
+how to do this in Python:
 
-```python
+```Python
 import os
 import webdataset as wds
 
-shard_list = list(os.popen("gsutil ls gs://BUCKET/PATH/training_*.tar").readlines())
+# Use gsutil to resolve the glob pattern and get the list of shard URLs
+shard_list = [shard.strip() for shard in os.popen("gsutil ls gs://BUCKET/PATH/training_*.tar").readlines()]
+
+# Create the WebDataset with the resolved list of shard URLs
 train_data = wds.WebDataset(shard_list, shardshuffle=True, repeat=True)
 ```
 
-This ensures that all matching files are included in the dataset, providing the
-expected randomness and variety during training.
-
-------------------------------------------------------------------------------
-
-Issue #163
-
-Q: How do I update my WebDataset code to use the new `wds.DataPipeline`
-interface instead of the outdated `.compose(...)` method?
-
-A: The `wds.DataPipeline` interface is the recommended way to work with
-WebDataset as it is easier to use and extend. The `.compose(...)` method is
-outdated and no longer includes the `source_` method. To update your code, you
-can replace the `.compose(...)` method with a custom class that inherits from
-`wds.DataPipeline` and `wds.compat.FluidInterface`. Here is an example of how to
-re-implement `SampleEqually` using the new interface:
-
-```python
-import webdataset as wds
-
-class SampleEqually(wds.DataPipeline, wds.compat.FluidInterface):
-    def __init__(self, datasets):
-        super().__init__()
-        self.datasets = datasets
-
-    def __iter__(self):
-        sources = [iter(ds) for ds in self.datasets]
-        while True:
-            for source in sources:
-                try:
-                    yield next(source)
-                except StopIteration:
-                    return
-```
-
-You can then use this class to sample equally from multiple datasets. This
-approach ensures compatibility with the latest WebDataset API.
-
-------------------------------------------------------------------------------
-
-Issue #154
-
-Q: How can I split a WebDataset into training and evaluation sets based on
-target labels during runtime in PyTorch Lightning?
-
-A: To split a WebDataset into training and evaluation sets based on target
-labels during runtime, you can use the `select` method to filter samples
-according to their labels. This approach allows you to dynamically create
-different datasets for training and evaluation. For instance, you can filter out
-samples with labels 0 and 1 for training and use samples with label 2 for
-evaluation. Here is an example:
-
-```python
-training_ds = WebDataset(...).decode(...).select(lambda sample: sample["kind"] in [0, 1])
-training_dl = WebDataloader(training_ds, ...)
-
-val_ds = WebDataset(...).decode(...).select(lambda sample: sample["kind"] == 2)
-val_dl = WebDataloader(val_ds, ...)
-```
-
-This method ensures that your training and evaluation datasets are correctly
-split based on the target labels during runtime.
+This approach ensures that you get the expected behavior when reading data from
+shards that match a glob pattern in GCS. Remember to install `gsutil` and
+authenticate with GCS before running the code.
 

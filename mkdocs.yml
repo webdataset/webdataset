@@ -14,9 +14,10 @@ plugins:
             heading_level: 3
 
 nav:
-    - README: README.md
+    - README: index.md
     - WebDataset: webdataset.md
     - WIDS: wids.md
+    - FAQ: FAQ.md
     - Examples:
       - generate-text-dataset.md
       - tesseract-wds.md
