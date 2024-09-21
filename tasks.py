@@ -207,23 +207,16 @@ def make_api(fname, title, module):
 
 @task
 def mkdocs(c):
-    c.run(f"cp README.md docsrc/README.md")
-    # make_api("docsrc/webdataset.md", "WebDataset API", "webdataset")
-    # make_api("docsrc/wids.md", "WIDS API", "wids")
-    c.run(f"rm -rf docs")
+    c.run(f"cp README.md docs/README.md")
+    c.run(f"rm -rf site")
     c.run(f"mkdocs build")
-    # c.run(f"pdoc -d google -o docsrc/webdataset webdataset")
-    # c.run(f"pdoc -d google -o docsrc/wids wids")
-    # c.run("git add docs")
 
 @task
 def gendocs(c):
     "Generate docs."
     c.run("jupyter nbconvert --to markdown readme.ipynb && mv readme.md README.md")
-    c.run("rm -rf docsrc")
-    # convert IPython Notebooks
     for nb in glob.glob("examples/*.ipynb"):
-       c.run(f"{ACTIVATE} jupyter nbconvert {nb} --to markdown --output-dir=docsrc/.")
+       c.run(f"{ACTIVATE} jupyter nbconvert {nb} --to markdown --output-dir=docs/.")
     mkdocs(c)
 
 

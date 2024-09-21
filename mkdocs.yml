@@ -1,7 +1,7 @@
 site_name: webdataset
 repo_url: http://github.com/webdataset/webdataset
-docs_dir: docsrc
-site_dir: docs
+docs_dir: docs
+site_dir: site
 theme: readthedocs
 
 plugins:
