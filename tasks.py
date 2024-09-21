@@ -548,24 +548,14 @@ def update_version_numbers_locally(c):
 @task
 def release(c):
     "Tag the current version as a release on Github."
-    result = c.run("git status", hide=True)
-    if "working tree clean" not in result.stdout:
-        print("Working tree is not clean. Please commit or stash your changes.")
-        return
-
-    update_version_numbers_locally(c)
-    version = read_version()
-
-    try:
-        subprocess.check_call(["git", "commit", "-a", "-m", "Incremented version number"])
-        subprocess.check_call(["git", "push", "--set-upstream", "origin", "main"])
-        subprocess.check_call(["git", "tag", version])
-        subprocess.check_call(["git", "push", "origin", version])
-        subprocess.check_call(["gh", "release", "create", version, "-t", version, "-n", f"Release {version}"])
-        subprocess.check_call(["git", "tag", "-f", "last_release", version])
-        subprocess.check_call(["git", "push", "origin", "--tags"])
-    except subprocess.CalledProcessError as e:
-        print(f"An error occurred: {e}")
-        return
+    assert c.run("bump2version patch").ok
+    tag = "v"+open("VERSION").read().strip()
+    print()
+    print(f"Creating release {tag}")
+    changes = get_changes(tag)
+    print()
+    print(changes)
+    print()
+    assert c.run(f"gh release create {tag} -t {tag} --notes-file -", input=changes).ok
 
     print(f"Release {version} created successfully.")
