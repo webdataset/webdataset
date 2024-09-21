@@ -44,12 +44,6 @@ def venv(c):
 
 
 @task
-def virtualenv(c):
-    "Build the virtualenv."
-    venv(c)
-
-
-@task
 def black(c):
     """Run black on the code."""
     c.run(f"{ACTIVATE}{PYTHON3} -m black webdataset wids tests examples")
@@ -78,49 +72,10 @@ def cleanup(c):
 
 
 @task
-def pipx(c):
-    """Install the package using pipx."""
-    c.run(f"{ACTIVATE} pipx install -f .")
-    c.run(f"{ACTIVATE} pipx inject {PACKAGE} torch")
-
-
-@task
-def minenv(c):
-    "Build the virtualenv (minimal)."
-    c.run("git config core.hooksPath .githooks")
-    c.run(f"test -d {VENV} || python3 -m venv {VENV}")
-    c.run(f"{ACTIVATE}{PIP} install -r requirements.txt")
-    print("done")
-
-
-@task
 def test(c):
     "Run the tests."
     # venv(c)
     c.run(f"{ACTIVATE}{PYTHON3} -m pytest -x tests")
-
-
-@task
-def testcov(c):
-    "Run the tests."
-    # venv(c)
-    c.run(
-        f"{ACTIVATE}{PYTHON3} -m pytest ./tests --cov=wids "
-        + "--cov=webdataset --cov-report=term-missing --cov-branch "
-        + "--cov-report=json:coverage.json --cov-report=lcov:coverage.lcov"
-    )
-
-
-@task
-def debugtest(c):
-    "Run the tests with --pdb."
-    c.run(f"{ACTIVATE}{PYTHON3} -m pytest -x --pdb tests")
-
-
-@task
-def tests(c):
-    "Run the tests."
-    test(c)
 
 
 @task
@@ -130,25 +85,26 @@ def testwids(c):
 
 
 @task
-def nbstrip(c):
-    "Strip outputs from notebooks."
-    for nb in glob.glob("examples/*.ipynb"):
-        print("stripping", nb, file=sys.stderr)
-        c.run(f"{ACTIVATE}jupyter nbconvert --ClearOutputPreprocessor.enabled=True --inplace {nb}")
+def debugtest(c):
+    "Run the tests with --pdb."
+    c.run(f"{ACTIVATE}{PYTHON3} -m pytest -x --pdb tests")
 
 
 @task
-def nbexecute(c):
-    print("executing notebooks, this will take a while")
-    for nb in glob.glob("examples/*.ipynb"):
-        print("executing", nb, file=sys.stderr)
-        c.run(f"{ACTIVATE}jupyter nbconvert --execute --inplace {nb}")
+def testcov(c):
+    "Run the tests and generate coverage.json and coverage.lcov."
+    # venv(c)
+    c.run(
+        f"{ACTIVATE}{PYTHON3} -m pytest ./tests --cov=wids "
+        + "--cov=webdataset --cov-report=term-missing --cov-branch "
+        + "--cov-report=json:coverage.json --cov-report=lcov:coverage.lcov"
+    )
 
 
-@task
-def coverage(c):
-    """Run tests and test coverage."""
-    c.run("coverage run -m pytest && coveragepy-lcov")
+# @task
+# def coverage(c):
+#     """Run tests and test coverage."""
+#     c.run("coverage run -m pytest && coveragepy-lcov")
 
 
 pydoc_template = """
@@ -169,7 +125,15 @@ command_template = """
 
 
 @task
+def nbstrip(c):
+    "Strip outputs from notebooks."
+    for nb in glob.glob("examples/*.ipynb"):
+        print("stripping", nb, file=sys.stderr)
+        c.run(f"{ACTIVATE}jupyter nbconvert --ClearOutputPreprocessor.enabled=True --inplace {nb}")
+
+
 def nbprocess(c, nb, *args, **kwargs):
+    """Process one notebook."""
     out_file = f"out/{nb}"
     if not os.path.exists(out_file) or os.path.getmtime(nb) > os.path.getmtime(out_file):
         c.run(f"../venv/bin/python -m papermill -l python {' '.join(args)} {nb} out/_{nb}")
@@ -178,6 +142,7 @@ def nbprocess(c, nb, *args, **kwargs):
 
 @task
 def nbrun(c):
+    """Run a number of notebooks with papermill and appropriate parameters, putting the output into out/."""
     with c.cd("examples"):  # Change directory to 'examples'
         c.run("rm -f *.log *.out.ipynb *.stripped.ipynb _temp.ipynb", pty=True)
         c.run("mkdir -p out", pty=True)
@@ -191,33 +156,30 @@ def nbrun(c):
         nbprocess(c, "tesseract-wds.ipynb")
 
 
-def make_api(fname, title, module):
-    raise Exception("not implemented")
-    result = f"# {title}\n\n"
-    module = __import__(module)
-    for name in sorted(list(dir(module))):
-        if name.startswith("_"):
-            continue
-        # skip anything that is a module
-        if isinstance(getattr(module, name), type(module)):
-            continue
-        result += f"::: {module.__name__}.{name}\n\n"
-    with open(fname, "w") as stream:
-        stream.write(result)
-
-@task
-def mkdocs(c):
-    c.run(f"cp README.md docs/README.md")
-    c.run(f"rm -rf site")
-    c.run(f"mkdocs build")
-
 @task
 def gendocs(c):
     "Generate docs."
     c.run("jupyter nbconvert --to markdown readme.ipynb && mv readme.md README.md")
+    c.run(f"cp README.md docs/README.md")
     for nb in glob.glob("examples/*.ipynb"):
-       c.run(f"{ACTIVATE} jupyter nbconvert {nb} --to markdown --output-dir=docs/.")
-    mkdocs(c)
+        output = nb.replace(".ipynb", ".md")
+        if os.path.exists(output) and os.path.getmtime(nb) < os.path.getmtime(output):
+            continue
+        c.run(f"{ACTIVATE} jupyter nbconvert {nb} --to markdown --output-dir=docs/.")
+    c.run(f"rm -rf site")
+    c.run(f"mkdocs build")
+
+
+@task
+def servedocs(c):
+    "Serve docs."
+    c.run(f"mkdocs serve")
+
+
+@task
+def pushdocs(c):
+    "Push docs to Github pages."
+    c.run(f"mkdocs gh-deploy")
 
 
 @task
@@ -430,7 +392,6 @@ summarize_issue_instructions = """
 """
 
 
-@task
 def summarize_issue(c, content):
     result = subprocess.run(
         [
@@ -445,8 +406,8 @@ def summarize_issue(c, content):
     return result.stdout.decode()
 
 
-@task
 def faqs(c):
+    """Create FAQ entries from issues."""
     assert os.path.isdir("faqs"), "Please create a directory named 'faqs' before running this task."
 
     # Fetch all issues (open and closed) from the repository
@@ -540,7 +501,8 @@ def summarize_version(commit, prev_commit):
 
 
 @task
-def versions(ctx, n=1000):
+def versions(ctx, n=200):
+    """Summarize the changes in the last n commits."""
     commits = subprocess.run(
         f"git log --pretty=format:'%ai %h %d' -n{n}", shell=True, capture_output=True, text=True
     ).stdout
