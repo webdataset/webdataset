@@ -19,14 +19,14 @@ nav:
     - WIDS: wids.md
     - FAQ: FAQ.md
     - Examples:
-      - generate-text-dataset.md
-      - tesseract-wds.md
-      - train-resnet50-wds.md
-      - train-resnet50-wids.md
-      - train-resnet50-multiray-wds.md
-      - train-resnet50-multiray-wids.md
-      - train-ocr-errors-hf.md
-      - mi-images.md
-      - mi-prompts.md
-      - wds-notes.md
-      - column-store.md
+      - examples/generate-text-dataset.md
+      - examples/tesseract-wds.md
+      - examples/train-resnet50-wds.md
+      - examples/train-resnet50-wids.md
+      - examples/train-resnet50-multiray-wds.md
+      - examples/train-resnet50-multiray-wids.md
+      - examples/train-ocr-errors-hf.md
+      - examples/mi-images.md
+      - examples/mi-prompts.md
+      - examples/wds-notes.md
+      - examples/column-store.md

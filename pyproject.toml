@@ -5,7 +5,7 @@ description = "High performance storage and I/O for deep learning and data proce
 authors = [
     {name = "Thomas Breuel", email = "tmbdev+removeme@gmail.com"},
 ]
-license = "MIT"
+license = {text="MIT"}
 readme = "README.md"
 classifiers = [
     "Development Status :: 3 - Alpha",
@@ -34,10 +34,6 @@ build-backend = "setuptools.build_meta"
 [project.scripts]
 widsindex = "wids.wids_index:main"
 
-[tool.pdm]
-venv.location = "./venv"
-python_version = "3.12"
-
 [tool.setuptools]
 packages = ["webdataset", "wids"]
 
@@ -46,12 +42,24 @@ packages = ["webdataset", "wids"]
 
 [tool.pytest.ini_options]
 minversion = "6.0"
-testpaths = ["webdataset/tests"]
+# addopts = "-ra -q"
+testpaths = ["tests"]
+python_files = ["test_*.py", "*_test.py"]
+#python_classes = ["Test*"]
+#python_functions = ["test_*"]
+filterwarnings = [
+    "ignore::DeprecationWarning",
+]
+markers = [
+    "quick: marks tests as quick",
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "integration: marks integration tests",
+]
 
 [tool.black]
 target-version = ['py310', 'py311', 'py312']
 include = '\.pyi?$'
-extend-exclude = """
+extend-exclude = '''
 /(
   # directories
   \.eggs
@@ -59,7 +67,7 @@ extend-exclude = """
   | build
   | dist
 )/
-"""
+'''
 
 [tool.isort]
 profile = "black"
@@ -84,14 +92,14 @@ exclude_lines = [
 ]
 ignore_errors = true
 
-# Replaced legacy_tox_ini with the standard tox configuration
-[tox]
-isolated_build = True
-envlist = py310, py311, py312
-
-[testenv]
-deps = pytest
-commands = pytest
+[tool.pre-commit]
+repos = [
+    { repo = "local", hooks = [
+        { id = "black", name = "black", entry = "black .", language = "system", pass_filenames = false },
+        { id = "isort", name = "isort", entry = "isort .", language = "system", pass_filenames = false },
+        { id = "pytest-quick", name = "pytest-quick", entry = "pytest -v -m quick", language = "system", pass_filenames = false },
+    ] },
+]
 
 [project.optional-dependencies]
 dev = [
@@ -102,7 +110,6 @@ dev = [
     "bump2version",
     "flake8",
     "imageio",
-    "invoke",
     "isort",
     "jupyter",
     "jupyterlab",
@@ -122,6 +129,7 @@ dev = [
     "papermill",
     "pdm",
     "Pillow",
+    "pre-commit",
     "pydocstyle",
     "pytest",
     "pytest-cov",
@@ -134,6 +142,7 @@ dev = [
     "setuptools",
     "torch",
     "torchvision",
+    "transformers",
     "twine",
     "typer",
     "wheel",

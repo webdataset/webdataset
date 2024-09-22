@@ -16,11 +16,12 @@ import textwrap
 
 from invoke import task
 
-ACTIVATE = ". ./venv/bin/activate;"
-PACKAGE = "webdataset"
 VENV = "venv"
-PYTHON3 = f"{VENV}/bin/python3"
-PIP = f"{VENV}/bin/pip"
+BIN = f"{VENV}/bin"
+PYTHON3 = f"{BIN}/python3"
+ACTIVATE = f". {BIN}/activate;"
+PIP = f"{BIN}/pip"
+PACKAGE = "webdataset"
 TEMP = "webdataset.yml"
 DOCKER = "wdstest"
 
@@ -34,41 +35,54 @@ def venv(c):
     "Build the virtualenv."
     c.run("git config core.hooksPath .githooks")
     c.run(f"test -d {VENV} || python3 -m venv {VENV}")
-    # c.run(f"{ACTIVATE}{PIP} install torch torchvision")
-    # c.run(f"{ACTIVATE}{PIP} install torch==1.10.0+cu113 torchvision==0.11.1+cu113 -f https://download.pytorch.org/whl/cu113/torch_stable.html")
-    # c.run(f"{ACTIVATE}{PIP} install torch==1.8.2+cu102 torchvision==0.9.2+cu102 -f https://download.pytorch.org/whl/lts/1.8/torch_lts.html")
-    c.run(f"{ACTIVATE}{PIP} install -r requirements.txt")
-    c.run(f"{ACTIVATE}{PIP} install -r requirements.dev.txt")
-    c.run(f"{ACTIVATE}{PIP} install -e .")
+    c.run(f"{BIN}/pip install '.[dev]'")
     print("done")
 
+@task
+def docs(c):
+    "Serve the documentation locally in a browser."
+    c.run(f"{BIN}/mkdocs serve -o")
 
 @task
-def fmtblack(c):
-    """Run black on the code."""
-    c.run(f"{ACTIVATE}{PYTHON3} -m black webdataset wids tests examples")
-
-
-@task
-def fmtautoflake(c):
-    """Run autoflake on the code."""
-    c.run(
-        f"{ACTIVATE}{PYTHON3} -m autoflake --in-place --remove-all-unused-imports examples/[a-z]*.py webdataset/[a-z]*.py tests/[a-z]*.py wids/[a-z]*.py tasks.py"
-    )
-
+def mkdocs(c):
+    """Generate the documentation and push it to Github pages."""
+    c.run("rm -rf site")
+    c.run("mkdocs build")
+    c.run("ghp-import -n -p site")
+    c.run("rm -rf site")
 
 @task
-def fmtisort(c):
-    """Run isort on the code."""
-    c.run(f"{ACTIVATE}{PYTHON3} -m isort --atomic --float-to-top webdataset examples wids tests tasks.py")
-
+def nbgen(c):
+    """Generate markdown for all example notebooks."""
+    c.run("jupyter nbconvert --to markdown readme.ipynb && mv readme.md README.md")
+    c.run(f"cp README.md docs/index.md")
+    c.run("mkdir -p docs/examples")
+    for nb in glob.glob("examples/*.ipynb"):
+        output = nb.replace(".ipynb", ".md")
+        if os.path.exists(output) and os.path.getmtime(nb) < os.path.getmtime(output):
+            continue
+        c.run(f"{ACTIVATE}jupyter nbconvert --ClearOutputPreprocessor.enabled=True --inplace {nb}")
+        c.run(f"{ACTIVATE}jupyter nbconvert {nb} --to markdown --output-dir=docs/examples")
 
 @task
-def fmtall(c):
-    """Run black, autoflake, and isort on the code."""
-    autoflake(c)
-    isort(c)
-    black(c)
+def nbrun(c):
+    """Run selected notebooks with papermill+parameters; put into ./out."""
+    def nbprocess(c, nb, *args, **kwargs):
+        """Process one notebook."""
+        out_file = f"docs/output/{nb}"
+        if not os.path.exists(out_file) or os.path.getmtime(nb) > os.path.getmtime(out_file):
+            c.run(f"../venv/bin/python -m papermill -l python {' '.join(args)} {nb} docs/output/_{nb}")
+            c.run(f"mv docs/output/_{nb} {out_file}")
+    with c.cd("examples"):  # Change directory to 'examples'
+        c.run("rm -f *.log *.out.ipynb *.stripped.ipynb _temp.ipynb", pty=True)
+        c.run("mkdir -p docs/output", pty=True)
+        nbprocess(c, "generate-text-dataset.ipynb")
+        nbprocess(c, "train-ocr-errors-hf.ipynb", "-p", "max_steps", "100")
+        nbprocess(c, "train-resnet50-wds.ipynb", "-p", "max_steps", "10000")
+        nbprocess(c, "train-resnet50-wids.ipynb", "-p", "max_steps", "10000")
+        nbprocess(c, "train-resnet50-multiray-wds.ipynb", "-p", "max_steps", "1000")
+        nbprocess(c, "train-resnet50-multiray-wids.ipynb", "-p", "max_steps", "1000")
+        nbprocess(c, "tesseract-wds.ipynb")
 
 
 @task
@@ -105,53 +119,6 @@ def testcov(c):
 # def coverage(c):
 #     """Run tests and test coverage."""
 #     c.run("coverage run -m pytest && coveragepy-lcov")
-
-
-@task
-def nbstrip(c):
-    "Strip outputs from notebooks."
-    for nb in glob.glob("examples/*.ipynb"):
-        print("stripping", nb, file=sys.stderr)
-        c.run(f"{ACTIVATE}jupyter nbconvert --ClearOutputPreprocessor.enabled=True --inplace {nb}")
-
-
-def nbprocess(c, nb, *args, **kwargs):
-    """Process one notebook."""
-    out_file = f"out/{nb}"
-    if not os.path.exists(out_file) or os.path.getmtime(nb) > os.path.getmtime(out_file):
-        c.run(f"../venv/bin/python -m papermill -l python {' '.join(args)} {nb} out/_{nb}")
-        c.run(f"mv out/_{nb} {out_file}")
-
-
-@task
-def nbrun(c):
-    """Run selected notebooks with papermill, parameters; put into ./out."""
-    with c.cd("examples"):  # Change directory to 'examples'
-        c.run("rm -f *.log *.out.ipynb *.stripped.ipynb _temp.ipynb", pty=True)
-        c.run("mkdir -p out", pty=True)
-
-        nbprocess(c, "generate-text-dataset.ipynb")
-        nbprocess(c, "train-ocr-errors-hf.ipynb", "-p", "max_steps", "100")
-        nbprocess(c, "train-resnet50-wds.ipynb", "-p", "max_steps", "10000")
-        nbprocess(c, "train-resnet50-wids.ipynb", "-p", "max_steps", "10000")
-        nbprocess(c, "train-resnet50-multiray-wds.ipynb", "-p", "max_steps", "1000")
-        nbprocess(c, "train-resnet50-multiray-wids.ipynb", "-p", "max_steps", "1000")
-        nbprocess(c, "tesseract-wds.ipynb")
-
-
-@task
-def docsgen(c):
-    "Generate docs."
-    c.run("jupyter nbconvert --to markdown readme.ipynb && mv readme.md README.md")
-    c.run(f"cp README.md docs/index.md")
-    c.run(f"cp FAQ.md docs/FAQ.md")
-    for nb in glob.glob("examples/*.ipynb"):
-        output = nb.replace(".ipynb", ".md")
-        if os.path.exists(output) and os.path.getmtime(nb) < os.path.getmtime(output):
-            continue
-        c.run(f"{ACTIVATE} jupyter nbconvert {nb} --to markdown --output-dir=docs/.")
-    c.run(f"rm -rf site")
-    c.run(f"mkdocs build")
 
 
 @task
