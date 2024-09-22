@@ -77,6 +77,25 @@ force_grid_wrap = 0
 use_parentheses = true
 ensure_newline_before_comments = true
 
+[tool.pydocstyle]
+convention = "google"
+match = '(?!test_).*\.py'
+# match webdataset and wids only
+match_dir = '(webdataset|wids)'
+add_ignore = ["D100", "D104", "D203", "D213", "D406", "D407", "D413", "D205", "D107"]
+# add_select = ["D402", "D417"]
+
+# Explanation of ignored rules:
+# D100: Missing docstring in public module
+# D104: Missing docstring in public package
+# D203: 1 blank line required before class docstring
+# D213: Multi-line docstring summary should start at the second line
+# D406: Section name should end with a newline
+# D407: Missing dashed underline after section
+# D413: Missing blank line after last section
+# D402: First line should not be the function's "signature"
+# D417: Missing argument descriptions in the docstring
+
 [tool.coverage.run]
 source = ["webdataset"]
 branch = true
