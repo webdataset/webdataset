@@ -1,9 +1,11 @@
 from torchvision import transforms
 
-preproc = transforms.Compose([
-    lambda image: image.convert("RGB"),
-    transforms.CenterCrop(224),
-])
+preproc = transforms.Compose(
+    [
+        lambda image: image.convert("RGB"),
+        transforms.CenterCrop(224),
+    ]
+)
 
 
 def transform(sample):

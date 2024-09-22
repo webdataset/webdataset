@@ -1,10 +1,12 @@
 from torchvision import transforms
 
-preproc = transforms.Compose([
-    lambda image: image.convert("RGB"),
-    transforms.RandomResizedCrop(224),
-    transforms.RandomHorizontalFlip(),
-])
+preproc = transforms.Compose(
+    [
+        lambda image: image.convert("RGB"),
+        transforms.RandomResizedCrop(224),
+        transforms.RandomHorizontalFlip(),
+    ]
+)
 
 
 def transform(sample):

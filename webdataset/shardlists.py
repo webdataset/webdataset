@@ -207,6 +207,8 @@ class SimpleShardList(IterableDataset):
             random.Random(self.seed).shuffle(urls)
         for url in urls:
             yield dict(url=url)
+
+
 def resampled_(src, n=sys.maxsize):
     """Resample items from the source with replacement.
 
@@ -313,7 +315,9 @@ class ResampledShards(IterableDataset):
         self.urls = expand_source(urls, max_urls)
         if empty_check:
             if len(self.urls) == 0:
-                raise ValueError("empty_check=True, but no shards found in ResampledShards")
+                raise ValueError(
+                    "empty_check=True, but no shards found in ResampledShards"
+                )
         assert isinstance(self.urls[0], str)
         self.nshards = nshards
         self.worker_seed = (
@@ -394,6 +398,7 @@ def get_pid_from_filename(fname):
     if not match:
         return None
     return int(match.group(2))
+
 
 class DirectoryShardList(IterableDataset):
     """An iterable dataset that yields shards from a directory."""

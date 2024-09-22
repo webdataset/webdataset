@@ -148,6 +148,7 @@ def lookup_sym(sym: str, modules: list):
             return result
     return None
 
+
 def repeatedly0(
     loader: Iterator, nepochs: int = sys.maxsize, nbatches: int = sys.maxsize
 ):
@@ -268,6 +269,7 @@ def pytorch_worker_seed(group=None):
     """
     rank, world_size, worker, num_workers = pytorch_worker_info(group=group)
     return rank * 1000 + worker
+
 
 def deprecated(arg=None):
     if callable(arg):

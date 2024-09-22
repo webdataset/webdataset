@@ -13,7 +13,7 @@ import pickle
 import re
 import tarfile
 import time
-from typing import Any, Callable, Optional, Union, Dict
+from typing import Any, Callable, Dict, Optional, Union
 
 import numpy as np
 
@@ -235,6 +235,7 @@ def make_handlers():
 
 default_handlers = make_handlers()
 
+
 def encode_based_on_extension1(data: Any, tname: str, handlers: dict):
     """Encode data based on its extension and a dict of handlers.
 
@@ -360,13 +361,13 @@ class TarWriter:
     The following code will add two file to the tar archive: `a/b.png` and
     `a/b.output.png`.
 
-    
+
         tarwriter = TarWriter(stream)
         image = imread("b.jpg")
         image2 = imread("b.out.jpg")
         sample = {"__key__": "a/b", "png": image, "output.png": image2}
         tarwriter.write(sample)
-    
+
     """
 
     def __init__(
@@ -483,6 +484,8 @@ class TarWriter:
             total += ti.size
 
         return total
+
+
 class ShardWriter:
     """Like TarWriter but splits into multiple shards.
 

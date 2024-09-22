@@ -1,8 +1,8 @@
 import os
 import random
+import warnings
 from types import SimpleNamespace
 from urllib.parse import urlparse
-import warnings
 
 import yaml
 
@@ -304,7 +304,7 @@ class FluidInterface:
             FluidInterface: Updated pipeline with LMDB caching.
         """
         return self.compose(filters.LMDBCached(*args, **kw))
-    
+
 
 def check_empty(source):
     """Check if the dataset is empty and yield samples.
@@ -323,8 +323,10 @@ def check_empty(source):
         yield sample
         count += 1
     if count == 0:
-        raise ValueError("No samples found in dataset; perhaps you have fewer shards than workers.\n" +
-                         "Turn off using empty_check=False in the WebDataset constructor.")
+        raise ValueError(
+            "No samples found in dataset; perhaps you have fewer shards than workers.\n"
+            + "Turn off using empty_check=False in the WebDataset constructor."
+        )
 
 
 class WebDataset(DataPipeline, FluidInterface):
@@ -380,11 +382,17 @@ class WebDataset(DataPipeline, FluidInterface):
         if resampled:
             mode = "resampled"
         if mode == "resampled" and shardshuffle not in (False, None):
-            warnings.warn("WebDataset(shardshuffle=...) is ignored for resampled datasets")
+            warnings.warn(
+                "WebDataset(shardshuffle=...) is ignored for resampled datasets"
+            )
         elif shardshuffle is None:
-            warnings.warn("WebDataset(shardshuffle=...) is None; set explicitly to False or a number")
+            warnings.warn(
+                "WebDataset(shardshuffle=...) is None; set explicitly to False or a number"
+            )
         if shardshuffle is True:
-            warnings.warn("set WebDataset(shardshuffle=...) to a positive integer or 0 or False")
+            warnings.warn(
+                "set WebDataset(shardshuffle=...) to a positive integer or 0 or False"
+            )
             shardshuffle = 100
         args = SimpleNamespace(**locals())
         self.seed = seed or os.environ.get("WDS_SEED", random.randint(0, 1000000))
@@ -527,5 +535,6 @@ class FluidWrapper(DataPipeline, FluidInterface):
 
 class WebLoader(DataPipeline, FluidInterface):
     """A wrapper for DataLoader that adds a fluid interface."""
+
     def __init__(self, *args, **kw):
         super().__init__(DataLoader(*args, **kw))

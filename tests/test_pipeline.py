@@ -10,7 +10,8 @@ import pytest
 import yaml
 
 import webdataset as wds
-from tests.testconfig import *
+
+# from tests.testconfig import *
 from webdataset import autodecode, handlers, shardlists
 
 

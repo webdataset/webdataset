@@ -2,14 +2,16 @@ import io
 
 import numpy as np
 import PIL
+import pytest
 import torch
 from imageio.v3 import imread
 
 import webdataset as wds
-from tests.testconfig import *
+from tests.testconfig import remote_loc, remote_shard
 from webdataset import autodecode
 
 
+@pytest.mark.quick
 def test_xdecode():
     dataset = wds.DataPipeline(
         wds.shardspec("testdata/imagenet-000000.tgz"),
@@ -67,6 +69,7 @@ def test_decoders():
                     assert x[:2] == y[:2], (x, y, spec)
 
 
+@pytest.mark.quick
 def test_handlers():
     def mydecoder(data):
         return PIL.Image.open(io.BytesIO(data)).resize((128, 128))

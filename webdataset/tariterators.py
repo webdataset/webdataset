@@ -241,7 +241,7 @@ def group_by_keys(
                     yield current_sample
                 current_sample = None
                 continue
-            fname, value = filesample["fname"], filesample["data"]            
+            fname, value = filesample["fname"], filesample["data"]
             prefix, suffix = keys(fname)
             if trace:
                 print(

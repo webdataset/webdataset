@@ -498,6 +498,7 @@ def _decode(data, *args, handler=reraise_exception, **kw):
 
 decode = pipelinefilter(_decode)
 
+
 def _map(data, f, handler=reraise_exception):
     """
     Map samples through a function.
@@ -599,6 +600,7 @@ def _associate(data, associator, **kw):
 
 
 associate = pipelinefilter(_associate)
+
 
 def _map_dict(data, handler=reraise_exception, **kw):
     """
@@ -712,6 +714,7 @@ def _map_tuple(data, *args, handler=reraise_exception):
 
 map_tuple = pipelinefilter(_map_tuple)
 
+
 def default_collation_fn(samples, combine_tensors=True, combine_scalars=True):
     """
     Take a collection of samples (dictionaries) and create a batch.
@@ -734,6 +737,7 @@ def default_collation_fn(samples, combine_tensors=True, combine_scalars=True):
         elif isinstance(b[0], TorchTensor):
             if combine_tensors:
                 import torch
+
                 b = torch.stack(list(b))
         elif isinstance(b[0], np.ndarray):
             if combine_tensors:
@@ -818,6 +822,7 @@ def _unbatched(data):
 
 unbatched = pipelinefilter(_unbatched)
 
+
 def _rsample(data, p=0.5):
     """
     Randomly subsample a stream of data.
@@ -881,6 +886,7 @@ def _extract_keys(source, *patterns, duplicate_is_error=True, ignore_missing=Fal
 
 
 extract_keys = pipelinefilter(_extract_keys)
+
 
 def _rename_keys(
     source, *args, keep_unselected=False, must_match=True, duplicate_is_error=True, **kw
@@ -1003,6 +1009,7 @@ def find_decoder(decoders, path):
         if fnmatch(fname.lower(), pattern) or fnmatch("." + fname.lower(), pattern):
             return fun
     return None
+
 
 def _xdecode(
     source,

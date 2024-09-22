@@ -6,6 +6,7 @@
 #
 
 import sys
+
 import setuptools
 
 version = "0.2.101"

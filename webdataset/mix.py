@@ -7,8 +7,11 @@
 """Classes for mixing samples from multiple sources."""
 
 import random
+
 import numpy as np
+
 from .pytorch import IterableDataset
+
 
 def round_robin_shortest(*sources):
     """Yield samples from multiple sources in a round-robin fashion until the shortest source is exhausted.
@@ -27,6 +30,7 @@ def round_robin_shortest(*sources):
         except StopIteration:
             break
         i += 1
+
 
 def round_robin_longest(*sources):
     """Yield samples from multiple sources in a round-robin fashion until all sources are exhausted.
@@ -47,6 +51,7 @@ def round_robin_longest(*sources):
             yield sample
         except StopIteration:
             del sources[i]
+
 
 class RoundRobin(IterableDataset):
     """Iterate over multiple datasets in a round-robin fashion."""
@@ -72,6 +77,7 @@ class RoundRobin(IterableDataset):
             return round_robin_longest(*sources)
         else:
             return round_robin_shortest(*sources)
+
 
 def random_samples(sources, probs=None, longest=False):
     """Yield samples randomly from multiple sources based on given probabilities.
@@ -100,6 +106,7 @@ def random_samples(sources, probs=None, longest=False):
                 del probs[i]
             else:
                 break
+
 
 class RandomMix(IterableDataset):
     """Iterate over multiple datasets by randomly selecting samples based on given probabilities."""

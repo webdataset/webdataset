@@ -263,7 +263,8 @@ class FileCache:
                         data = f.read(200)
                     os.remove(dest)
                     raise ValueError(
-                        "%s (%s) is not a tar archive, but a %s, contains %s" % (dest, url, ftype, repr(data))
+                        "%s (%s) is not a tar archive, but a %s, contains %s"
+                        % (dest, url, ftype, repr(data))
                     )
         return dest
 
@@ -293,7 +294,6 @@ class FileCache:
                         break
                 yield dict(url=url, stream=stream, local_path=dest)
                 break
-
 
 
 @obsolete
@@ -354,7 +354,8 @@ def cached_url_opener(
                     data = f.read(200)
                 os.remove(dest)
                 raise ValueError(
-                    "%s (%s) is not a tar archive, but a %s, contains %s" % (dest, url, ftype, repr(data))
+                    "%s (%s) is not a tar archive, but a %s, contains %s"
+                    % (dest, url, ftype, repr(data))
                 )
             try:
                 stream = open(dest, "rb")
@@ -415,7 +416,9 @@ def cached_tarfile_samples(
         url_to_name=url_to_name,
         always=always,
     )
-    files = tar_file_expander(streams, handler=handler, select_files=select_files, rename_files=rename_files)
+    files = tar_file_expander(
+        streams, handler=handler, select_files=select_files, rename_files=rename_files
+    )
     samples = group_by_keys(files, handler=handler)
     return samples
 

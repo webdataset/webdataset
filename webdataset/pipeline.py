@@ -1,6 +1,6 @@
-import warnings
 import copy
 import sys
+import warnings
 from itertools import islice
 
 from .pytorch import DataLoader, IterableDataset
@@ -16,6 +16,7 @@ def add_length_method(obj):
     Returns:
         The modified object with a new length method.
     """
+
     def length(self):
         return self.size
 
@@ -100,7 +101,7 @@ class DataPipeline(IterableDataset, PipelineStage):
             Samples from the dataset.
         """
         for _ in range(self.repetitions):
-            count = 0            
+            count = 0
             for sample in self.iterator1():
                 yield sample
                 count += 1
@@ -172,7 +173,9 @@ class DataPipeline(IterableDataset, PipelineStage):
             The modified DataPipeline object with a __len__ method.
         """
         if not silent:
-            warnings.warn(".with_length() only sets the value of __len__ for compatibility with some training environments. It does not change the number of samples in an epoch.")
+            warnings.warn(
+                ".with_length() only sets the value of __len__ for compatibility with some training environments. It does not change the number of samples in an epoch."
+            )
         self.size = n
         return add_length_method(self)
 

@@ -1,8 +1,11 @@
 import tempfile
 
+import pytest
+
 from webdataset import gopen
 
 
+@pytest.mark.quick
 def test_file():
     with tempfile.TemporaryDirectory() as work:
         with gopen(f"{work}/temp1", "wb") as stream:
@@ -11,6 +14,7 @@ def test_file():
             assert stream.read() == b"abc"
 
 
+@pytest.mark.quick
 def test_pipe():
     with tempfile.TemporaryDirectory() as work:
         with gopen(f"pipe:cat > {work}/temp2", "wb") as stream:

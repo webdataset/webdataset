@@ -19,7 +19,6 @@ from torchvision.models import resnet50
 import wids
 
 
-
 def enumerate_report(seq, delta, growth=1.0):
     last = 0
     count = 0

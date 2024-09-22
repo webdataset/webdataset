@@ -5,6 +5,7 @@ import pytest
 import webdataset as wds
 
 
+@pytest.mark.quick
 def test_missing_throws(tmp_path):
     path = os.path.join(tmp_path, "missing.tar")
     ds = wds.WebDataset(path, shardshuffle=False)

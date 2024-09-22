@@ -144,6 +144,7 @@ def npy_loads(data):
     stream = io.BytesIO(data)
     return numpy.lib.format.read_array(stream)
 
+
 def npz_loads(data):
     """Load data from npz format. Imports numpy only if necessary."""
     import numpy.lib.format

@@ -12,6 +12,7 @@ from wids import DistributedChunkedSampler, wids, wids_specs
 from wids.wids import ChunkedSampler, ShardedSampler, ShardListDataset
 
 
+@pytest.mark.quick
 class TestIndexedTarSamples:
     def setup_class(self):
         tar_file = "testdata/ixtest.tar"
@@ -332,10 +333,11 @@ def mock_distributed_env():
 # Context manager for mocking the distributed environment
 @contextmanager
 def mock_distributed_env(rank, world_size):
-    with patch("torch.distributed.init_process_group"), patch(
-        "torch.distributed.get_rank", return_value=rank
-    ), patch("torch.distributed.get_world_size", return_value=world_size), patch(
-        "torch.distributed.is_initialized", return_value=True
+    with (
+        patch("torch.distributed.init_process_group"),
+        patch("torch.distributed.get_rank", return_value=rank),
+        patch("torch.distributed.get_world_size", return_value=world_size),
+        patch("torch.distributed.is_initialized", return_value=True),
     ):
         yield
 

@@ -1,8 +1,9 @@
 import argparse
 import json
 
-from . import wids
 from webdataset import WebDataset
+
+from . import wids
 
 
 def main_wids(args):

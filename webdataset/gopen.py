@@ -442,6 +442,7 @@ def rewrite_url(url):
             return nurl
     return url
 
+
 def gopen(url, mode="rb", bufsize=8192, **kw):
     """Open the URL using various schemes and protocols.
 

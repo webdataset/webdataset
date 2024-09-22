@@ -12,18 +12,20 @@ def getkeys(sample):
 
 def test_writer(tmpdir):
     with writer.TarWriter(f"{tmpdir}/writer.tar") as sink:
-        sink.write({
-            "__key__": "a",
-            "txt": "hello",
-            "cls": "3",
-            "json": {"a": 1},
-            "mp": {"a": 1},
-            "npy": np.zeros((3, 3)),
-            "npz": dict(a=np.zeros((3, 3))),
-            "ppm": np.zeros((3, 3, 3)),
-            "jpg": np.zeros((3, 3, 3)),
-            "png": np.zeros((3, 3, 3)),
-        })
+        sink.write(
+            {
+                "__key__": "a",
+                "txt": "hello",
+                "cls": "3",
+                "json": {"a": 1},
+                "mp": {"a": 1},
+                "npy": np.zeros((3, 3)),
+                "npz": dict(a=np.zeros((3, 3))),
+                "ppm": np.zeros((3, 3, 3)),
+                "jpg": np.zeros((3, 3, 3)),
+                "png": np.zeros((3, 3, 3)),
+            }
+        )
     os.system(f"ls -l {tmpdir}")
     ftype = os.popen(f"file {tmpdir}/writer.tar").read()
     assert "compress" not in ftype, ftype
@@ -34,7 +36,9 @@ def test_writer(tmpdir):
         wds.decode("rgb"),
     )
     for sample in ds:
-        assert getkeys(sample) == set("txt cls json mp npy npz ppm jpg png".split()), getkeys(sample)
+        assert getkeys(sample) == set(
+            "txt cls json mp npy npz ppm jpg png".split()
+        ), getkeys(sample)
         assert isinstance(sample["json"], dict)
         assert sample["json"] == dict(a=1)
         assert isinstance(sample["mp"], dict)

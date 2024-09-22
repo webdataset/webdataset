@@ -14,10 +14,10 @@ from .autodecode import (
     gzfilter,
     handle_extension,
     imagehandler,
+    pytorch_weights_only,
     torch_audio,
     torch_loads,
     torch_video,
-    pytorch_weights_only,
 )
 from .cache import (
     LRUCleanup,
@@ -25,7 +25,7 @@ from .cache import (
     cached_tarfile_to_samples,
     pipe_cleaner,
 )
-from .compat import FluidWrapper, WebDataset, WebLoader, FluidInterface
+from .compat import FluidInterface, FluidWrapper, WebDataset, WebLoader
 from .extradatasets import MockDataset, with_epoch, with_length
 from .filters import (
     Cached,

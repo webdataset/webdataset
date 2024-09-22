@@ -106,6 +106,7 @@ dev = [
     "autoflake",
     "bandit",
     "black",
+    "black[jupyter]",
     "build",
     "bump2version",
     "flake8",

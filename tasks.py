@@ -1,18 +1,13 @@
 import glob
+import json
 import os
 import re
 import shutil
+import subprocess
 import sys
 import tempfile
 import textwrap
-from invoke import task
-import subprocess
-import json
 import time
-from invoke import task
-import subprocess
-import textwrap
-
 
 from invoke import task
 
@@ -38,10 +33,12 @@ def venv(c):
     c.run(f"{BIN}/pip install '.[dev]'")
     print("done")
 
+
 @task
 def docs(c):
     "Serve the documentation locally in a browser."
     c.run(f"{BIN}/mkdocs serve -o")
+
 
 @task
 def mkdocs(c):
@@ -50,6 +47,7 @@ def mkdocs(c):
     c.run("mkdocs build")
     c.run("ghp-import -n -p site")
     c.run("rm -rf site")
+
 
 @task
 def nbgen(c):
@@ -61,18 +59,29 @@ def nbgen(c):
         output = nb.replace(".ipynb", ".md")
         if os.path.exists(output) and os.path.getmtime(nb) < os.path.getmtime(output):
             continue
-        c.run(f"{ACTIVATE}jupyter nbconvert --ClearOutputPreprocessor.enabled=True --inplace {nb}")
-        c.run(f"{ACTIVATE}jupyter nbconvert {nb} --to markdown --output-dir=docs/examples")
+        c.run(
+            f"{ACTIVATE}jupyter nbconvert --ClearOutputPreprocessor.enabled=True --inplace {nb}"
+        )
+        c.run(
+            f"{ACTIVATE}jupyter nbconvert {nb} --to markdown --output-dir=docs/examples"
+        )
+
 
 @task
 def nbrun(c):
     """Run selected notebooks with papermill+parameters; put into ./out."""
+
     def nbprocess(c, nb, *args, **kwargs):
         """Process one notebook."""
         out_file = f"docs/output/{nb}"
-        if not os.path.exists(out_file) or os.path.getmtime(nb) > os.path.getmtime(out_file):
-            c.run(f"../venv/bin/python -m papermill -l python {' '.join(args)} {nb} docs/output/_{nb}")
+        if not os.path.exists(out_file) or os.path.getmtime(nb) > os.path.getmtime(
+            out_file
+        ):
+            c.run(
+                f"../venv/bin/python -m papermill -l python {' '.join(args)} {nb} docs/output/_{nb}"
+            )
             c.run(f"mv docs/output/_{nb} {out_file}")
+
     with c.cd("examples"):  # Change directory to 'examples'
         c.run("rm -f *.log *.out.ipynb *.stripped.ipynb _temp.ipynb", pty=True)
         c.run("mkdir -p docs/output", pty=True)
@@ -362,7 +371,9 @@ def summarize_issue(c, content):
 @task
 def faqgen(c):
     """Create FAQ entries from issues."""
-    assert os.path.isdir("faqs"), "Please create a directory named 'faqs' before running this task."
+    assert os.path.isdir(
+        "faqs"
+    ), "Please create a directory named 'faqs' before running this task."
 
     # Fetch all issues (open and closed) from the repository
     s = subprocess.run(
@@ -389,7 +400,9 @@ def faqgen(c):
 
         # Fetch the issue details and comments
         issue_details = subprocess.run(
-            "gh issue view {} --repo webdataset/webdataset --json body,title,comments".format(issue_number),
+            "gh issue view {} --repo webdataset/webdataset --json body,title,comments".format(
+                issue_number
+            ),
             stdout=subprocess.PIPE,
             shell=True,
         ).stdout.decode()
@@ -403,7 +416,9 @@ def faqgen(c):
         comments = "\n\n".join(comment["body"] for comment in issue_details["comments"])
 
         # Combine the issue title, body, and comments
-        combined_content = f"# {issue_title}\n\n{issue_body}\n\n## Comments\n\n{comments}"
+        combined_content = (
+            f"# {issue_title}\n\n{issue_body}\n\n## Comments\n\n{comments}"
+        )
 
         # Pipe the combined content to the summarize function and write the output to a file
         summarized_content = summarize_issue(c, combined_content)
@@ -443,12 +458,18 @@ def summarize_version(commit, prev_commit):
     ).stdout
 
     if len(diff) > maxsize:
-        print(f"WARNING: diff too large ({len(diff)} bytes), truncating to {maxsize} bytes", file=sys.stderr)
+        print(
+            f"WARNING: diff too large ({len(diff)} bytes), truncating to {maxsize} bytes",
+            file=sys.stderr,
+        )
 
     diff = diff[:maxsize]
 
     result = subprocess.run(
-        ["sgpt", "--no-md", summarize_version_instructions], input=diff, capture_output=True, text=True
+        ["sgpt", "--no-md", summarize_version_instructions],
+        input=diff,
+        capture_output=True,
+        text=True,
     ).stdout
 
     return result
@@ -458,7 +479,10 @@ def summarize_version(commit, prev_commit):
 def versions(ctx, n=200):
     """Summarize the changes in the last n commits."""
     commits = subprocess.run(
-        f"git log --pretty=format:'%ai %h %d' -n{n}", shell=True, capture_output=True, text=True
+        f"git log --pretty=format:'%ai %h %d' -n{n}",
+        shell=True,
+        capture_output=True,
+        text=True,
     ).stdout
 
     print("# Commit Summaries\n")
@@ -472,17 +496,26 @@ def versions(ctx, n=200):
             parts = line.split()
             prev_d, prev_t, prev_z, prev_commit = parts[0], parts[1], parts[2], parts[3]
             message = subprocess.run(
-                "git log --format=%B -n 1 {}".format(prev_commit), capture_output=True, text=True, shell=True
+                "git log --format=%B -n 1 {}".format(prev_commit),
+                capture_output=True,
+                text=True,
+                shell=True,
             ).stdout.strip()
 
             summary = summarize_version(commit, prev_commit)
 
             tag = subprocess.run(
-                "git describe --tags {}".format(commit), capture_output=True, text=True, shell=True
+                "git describe --tags {}".format(commit),
+                capture_output=True,
+                text=True,
+                shell=True,
             ).stdout.strip()
 
             prev_tag = subprocess.run(
-                "git describe --tags {}".format(prev_commit), capture_output=True, text=True, shell=True
+                "git describe --tags {}".format(prev_commit),
+                capture_output=True,
+                text=True,
+                shell=True,
             ).stdout.strip()
             result = f"## Commit: {prev_tag} -> {tag}\n\n"
             result += f"{prev_commit} -> {commit} @ {prev_d} {prev_t} {prev_z}\n\n"
@@ -504,7 +537,10 @@ def get_changes(version):
     except:
         print("summarize_changes failed, just using git log")
         return subprocess.run(
-            f"git log last_release..{version} --oneline", shell=True, capture_output=True, text=True
+            f"git log last_release..{version} --oneline",
+            shell=True,
+            capture_output=True,
+            text=True,
         ).stdout
 
 
@@ -516,7 +552,7 @@ def update_version_numbers_locally(c):
 def release(c):
     "Tag the current version as a release on Github."
     assert c.run("bump2version patch").ok
-    tag = "v"+open("VERSION").read().strip()
+    tag = "v" + open("VERSION").read().strip()
     print()
     print(f"Creating release {tag}")
     changes = get_changes(tag)
