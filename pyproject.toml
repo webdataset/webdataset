@@ -5,31 +5,31 @@ description = "High performance storage and I/O for deep learning and data proce
 authors = [
     {name = "Thomas Breuel", email = "tmbdev+removeme@gmail.com"},
 ]
-license = {text = "BSD"}
+license = "MIT"
 readme = "README.md"
 classifiers = [
     "Development Status :: 3 - Alpha",
-    "License :: OSI Approved :: BSD License",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
 ]
-requires-python = ">=3.10,<=3.13"
+requires-python = ">=3.10"
+
 dependencies = [
     "braceexpand",
     "numpy",
     "pyyaml",
-    "dataclasses",
 ]
 
 [project.urls]
 homepage = "http://github.com/webdataset/webdataset"
 repository = "http://github.com/webdataset/webdataset"
 
+# The build system is using setuptools which is traditional and widely used.
+# Alternatives include flit and poetry which are more modern and can simplify the packaging process.
 [build-system]
-requires = ["setuptools>=45", "setuptools_scm[toml]>=6.2"]
+requires = ["setuptools>=45"]
 build-backend = "setuptools.build_meta"
-Homepage = "http://github.com/webdataset/webdataset"
 
 [project.scripts]
 widsindex = "wids.wids_index:main"
@@ -41,8 +41,8 @@ python_version = "3.12"
 [tool.setuptools]
 packages = ["webdataset", "wids"]
 
-[tool.setuptools_scm]
-write_to = "webdataset/__version__.py"
+# [tool.setuptools_scm]
+# write_to = "webdataset/__version__.py"
 
 [tool.pytest.ini_options]
 minversion = "6.0"
@@ -51,7 +51,7 @@ testpaths = ["webdataset/tests"]
 [tool.black]
 target-version = ['py310', 'py311', 'py312']
 include = '\.pyi?$'
-extend-exclude = '''
+extend-exclude = """
 /(
   # directories
   \.eggs
@@ -59,7 +59,7 @@ extend-exclude = '''
   | build
   | dist
 )/
-'''
+"""
 
 [tool.isort]
 profile = "black"
@@ -84,45 +84,27 @@ exclude_lines = [
 ]
 ignore_errors = true
 
-[tool.tox]
-legacy_tox_ini = """
+# Replaced legacy_tox_ini with the standard tox configuration
 [tox]
-envlist = py36, py37, py38, py39
 isolated_build = True
+envlist = py310, py311, py312
 
 [testenv]
 deps = pytest
 commands = pytest
-"""
-
-# [tool.nox]
-# sessions = ["tests", "lint"]
-
-# [tool.nox.sessions.tests]
-# python = ["3.10", "3.11", "3.12"]
-# deps = ["pytest"]
-# commands = ["pytest"]
-
-# [tool.nox.sessions.lint]
-# deps = ["flake8"]
-# commands = ["flake8 webdataset tests"]
 
 [project.optional-dependencies]
 dev = [
-    # "adapter-transformers",
     "autoflake",
     "bandit",
     "black",
     "build",
     "bump2version",
-    # "cbor",
     "flake8",
     "imageio",
     "invoke",
-    # "ipywidgets",
     "isort",
     "jupyter",
-    # "jupyter_contrib_nbextensions",
     "jupyterlab",
     "lmdb",
     "matplotlib",
@@ -137,21 +119,18 @@ dev = [
     "mypy",
     "nbconvert",
     "notebook",
-    "numpy",
     "papermill",
     "pdm",
     "Pillow",
     "pydocstyle",
-    # "pyphen",
     "pytest",
     "pytest-cov",
-    " pytorch_lightning",
-    # "ray",
-    # "ray[default]",
-    # "ray[sgd]",
-    # "ray[tune]",
+    "pytorch_lightning",
+    "ray",
+    "ray[default]",
+    "ray[sgd]",
+    "ray[tune]",
     "scipy",
-    # "sentencepiece",
     "setuptools",
     "torch",
     "torchvision",
