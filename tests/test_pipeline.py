@@ -10,15 +10,13 @@ import pytest
 import yaml
 
 import webdataset as wds
-from tests.testconfig import (
+from tests.conftest import (
     compressed,
     count_samples_tuple,
     local_data,
     remote_loc,
     remote_shards,
 )
-
-# from tests.testconfig import *
 from webdataset import autodecode, handlers, shardlists
 
 

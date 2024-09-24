@@ -2,7 +2,7 @@ import pytest
 from torch.utils.data import DataLoader
 
 import webdataset as wds
-from tests.testconfig import count_samples_tuple, local_data, remote_loc, remote_shards
+from tests.conftest import count_samples_tuple, local_data, remote_loc, remote_shards
 
 
 def test_webloader():

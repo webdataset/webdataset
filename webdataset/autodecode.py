@@ -575,3 +575,6 @@ class Decoder:
         """
         assert isinstance(sample, dict), (len(sample), sample)
         return self.decode(sample)
+
+
+default_decoder = Decoder(default_pre_handlers + default_post_handlers)

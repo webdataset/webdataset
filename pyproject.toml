@@ -65,11 +65,12 @@ python_files = ["test_*.py", "*_test.py"]
 filterwarnings = [
     "ignore::DeprecationWarning",
 ]
-markers = [
-    "quick: marks tests as quick",
-    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
-    "integration: marks integration tests",
-]
+# defined in conftest.py instead
+# markers = [
+#     "quick: marks tests as quick",
+#     "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+#     "integration: marks integration tests",
+# ]
 
 [tool.coverage.run]
 source = ["webdataset"]

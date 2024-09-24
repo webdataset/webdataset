@@ -9,14 +9,15 @@ import torch
 import yaml
 
 import webdataset as wds
-
-local_data = "testdata/imagenet-000000.tgz"
-compressed = "testdata/compressed.tar"
-remote_sample = "http://storage.googleapis.com/webdataset/testdata/sample.tgz"
-remote_loc = "http://storage.googleapis.com/webdataset/openimages/"
-remote_shards = "openimages-train-0000{00..99}.tar"
-remote_shard = "openimages-train-000321.tar"
-remote_pattern = "openimages-train-{}.tar"
+from tests.conftest import (
+    compressed,
+    local_data,
+    remote_loc,
+    remote_pattern,
+    remote_sample,
+    remote_shard,
+    remote_shards,
+)
 
 
 def identity(x):

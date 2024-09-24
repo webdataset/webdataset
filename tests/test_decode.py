@@ -7,7 +7,7 @@ import torch
 from imageio.v3 import imread
 
 import webdataset as wds
-from tests.testconfig import remote_loc, remote_shard
+from tests.conftest import remote_loc, remote_shard
 from webdataset import autodecode
 
 
