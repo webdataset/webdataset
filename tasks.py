@@ -40,9 +40,16 @@ def cleanall(c):
 def venv(c):
     "Build the virtualenv."
     c.run(f"test -d {VENV} || python3 -m venv {VENV}")
+    c.run(f"{BIN}/pip install --upgrade pip")
     c.run(f"{BIN}/pip install '.[dev]'")
     c.run(f"pre-commit install || true")
     print("done")
+
+
+@task
+def ruff(c):
+    "Run the ruff linter."
+    c.run(f"{BIN}/ruff check .")
 
 
 @task

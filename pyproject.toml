@@ -1,3 +1,7 @@
+################################################################
+### Project definition
+################################################################
+
 [project]
 name = "webdataset"
 version = "0.2.101"
@@ -25,8 +29,6 @@ dependencies = [
 homepage = "http://github.com/webdataset/webdataset"
 repository = "http://github.com/webdataset/webdataset"
 
-# The build system is using setuptools which is traditional and widely used.
-# Alternatives include flit and poetry which are more modern and can simplify the packaging process.
 [build-system]
 requires = ["setuptools>=45"]
 build-backend = "setuptools.build_meta"
@@ -39,6 +41,19 @@ packages = ["webdataset", "wids"]
 
 # [tool.setuptools_scm]
 # write_to = "webdataset/__version__.py"
+
+[tool.pre-commit]
+repos = [
+    { repo = "local", hooks = [
+        { id = "black", name = "black", entry = "black .", language = "system", pass_filenames = false },
+        { id = "isort", name = "isort", entry = "isort .", language = "system", pass_filenames = false },
+        { id = "pytest-quick", name = "pytest-quick", entry = "pytest -v -m quick", language = "system", pass_filenames = false },
+    ] },
+]
+
+################################################################
+### PyTest Testing
+################################################################
 
 [tool.pytest.ini_options]
 minversion = "6.0"
@@ -55,6 +70,65 @@ markers = [
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",
     "integration: marks integration tests",
 ]
+
+[tool.coverage.run]
+source = ["webdataset"]
+branch = true
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "if self.debug:",
+    "if __name__ == .__main__.:",
+    "raise NotImplementedError",
+    "pass",
+]
+ignore_errors = true
+
+################################################################
+### Tox Testing
+################################################################
+
+[tool.tox]
+legacy_tox_ini = """
+[tox]
+#envlist = py{310,311,312}-{full,notorch}
+envlist = py{310,311,312}-full
+isolated_build = True
+
+[testenv]
+deps =
+    pytest
+    pytest-cov
+    full: .[dev]
+    notorch: .
+commands =
+    full: pytest --cov=your_package_name --cov-report=xml
+    notorch: pytest -m notorch --cov=your_package_name --cov-report=xml
+
+[testenv:py310-full]
+basepython = python3.10
+
+[testenv:py311-full]
+basepython = python3.11
+
+[testenv:py312-full]
+basepython = python3.12
+
+[testenv:py310-notorch]
+basepython = python3.10
+
+[testenv:py311-notorch]
+basepython = python3.11
+
+[testenv:py312-notorch]
+basepython = python3.12
+"""
+
+################################################################
+### Formatting
+################################################################
 
 [tool.black]
 target-version = ['py310', 'py311', 'py312']
@@ -96,29 +170,39 @@ add_ignore = ["D100", "D104", "D203", "D213", "D406", "D407", "D413", "D205", "D
 # D402: First line should not be the function's "signature"
 # D417: Missing argument descriptions in the docstring
 
-[tool.coverage.run]
-source = ["webdataset"]
-branch = true
+[tool.ruff]
+# Enable flake8-bugbear ('B'), mccabe ('C90'), isort ('I'), and pycodestyle ('E', 'W')
+select = ["B", "C90", "I", "E", "W"]
 
-[tool.coverage.report]
-exclude_lines = [
-    "pragma: no cover",
-    "def __repr__",
-    "if self.debug:",
-    "if __name__ == .__main__.:",
-    "raise NotImplementedError",
-    "pass",
-]
-ignore_errors = true
+# Never try to fix automatically
+fixable = []
 
-[tool.pre-commit]
-repos = [
-    { repo = "local", hooks = [
-        { id = "black", name = "black", entry = "black .", language = "system", pass_filenames = false },
-        { id = "isort", name = "isort", entry = "isort .", language = "system", pass_filenames = false },
-        { id = "pytest-quick", name = "pytest-quick", entry = "pytest -v -m quick", language = "system", pass_filenames = false },
-    ] },
+# Exclude a variety of commonly ignored directories.
+exclude = [
+    ".git",
+    ".mypy_cache",
+    ".ruff_cache",
+    ".venv",
+    "venv",
+    "__pypackages__",
+    "build",
+    "dist",
 ]
+
+# Same as Black.
+line-length = 120
+
+# Assume Python 3.10.
+target-version = "py310"
+
+[tool.ruff.mccabe]
+# Unlike Flake8, default to a complexity level of 10.
+max-complexity = 10
+
+[tool.ruff.isort]
+force-single-line = true
+lines-after-imports = 2
+
 
 [project.optional-dependencies]
 dev = [
