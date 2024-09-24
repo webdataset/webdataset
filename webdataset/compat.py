@@ -495,7 +495,7 @@ class WebDataset(DataPipeline, FluidInterface):
 
         # any URL ending in "/" is assumed to be a directory
         if isinstance(urls, str) and urlparse(urls).path.endswith("/"):
-            self.append(shardlists.DirectoryShardlist(urls, mode=args.mode))
+            self.append(shardlists.DirectoryShardList(urls, mode=args.mode))
             return
 
         # the rest is either a shard list or a resampled shard list
