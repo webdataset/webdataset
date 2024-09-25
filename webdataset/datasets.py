@@ -14,6 +14,16 @@ from .tariterators import group_by_keys, tar_file_expander
 
 
 def run_pipeline(pipeline):
+    """Run a list of iterators as a pipeline.
+
+    This can be so much shorter than the Pipeline class
+    because for these classes, the pipelines are fixed
+    and only created once inside the constructor. Users
+    never use it.
+
+    Args:
+        pipeline (list): List of callables returning iterators.
+    """
     source = pipeline[0]
     for filter in pipeline[1:]:
         source = filter(source)
@@ -22,12 +32,28 @@ def run_pipeline(pipeline):
 
 
 def set_pipeline_epochs(pipeline, epoch):
+    """Set the epoch for all stages in the pipeline.
+
+    For any stage that has a set_epoch method, call it with the epoch number.
+
+    Args:
+        pipeline (list): List of callables.
+        epoch (int): Epoch number.
+    """
     for stage in pipeline:
         if hasattr(stage, "set_epoch"):
             stage.set_epoch(epoch)
 
 
 def apply_transformations(transformations, x):
+    """Apply a list of transformations to a sample.
+
+    Args:
+        transformations (list): List of callables.
+        x (dict): Sample.
+    """
+    if not isinstance(transformations, list):
+        transformations = [transformations]
     for transformation in transformations:
         x = transformation(x)
     return x
@@ -134,6 +160,7 @@ class IterableWebDataset(IterableDataset):
             )
 
     def __iter__(self):
+        """Iterate over the dataset."""
         self.epoch += 1
         set_pipeline_epochs(self.pipeline, self.epoch)
 
@@ -141,8 +168,23 @@ class IterableWebDataset(IterableDataset):
             transformed = apply_transformations(self.transformations, sample)
             yield transformed
 
+    def set_size(self, n):
+        """Set the size of the dataset."""
+        self.total_size = n
+
     def size(self):
+        """Return the number of samples in the dataset.
+
+        This is not called __len__ because some PyTorch code checks for the presence
+        of that method to determine if the dataset is indexable. Furthermore, the length
+        need not be accurate, and for some datasets, we do not know the length.
+        """
         return self.total_size
 
     def close(self):
+        """ "Close the dataset."""
+        for stage in self.pipeline[::-1]:
+            if hasattr(stage, "close"):
+                stage.close()
+            del stage
         self.cache.clear()
