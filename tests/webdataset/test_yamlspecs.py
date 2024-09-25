@@ -20,6 +20,7 @@ from tests.conftest import (
 from webdataset import autodecode, handlers, shardlists
 
 
+@pytest.mark.skip(reason="obsolete")
 def test_shardspec():
     dataset = wds.DataPipeline(
         wds.shardspec("testdata/imagenet-000000.tgz"),

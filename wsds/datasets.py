@@ -1,12 +1,20 @@
 import os
 import random
 import warnings
+from functools import partial
 from types import SimpleNamespace
 from urllib.parse import urlparse
 
 import yaml
 
 from webdataset import autodecode, cache, shardlists, tariterators
+
+try:
+    from torch.utils.data import IterableDataset
+except ImportError:
+
+    class IterableDataset:
+        pass
 
 
 def run_pipeline(pipeline):
@@ -73,7 +81,11 @@ def interpret_transformations(transformations):
     return result
 
 
-class IterableWebDataset(IterableDataset):
+def default_handler(exn):
+    raise exn
+
+
+class SimpleDataset(IterableDataset):
     def __init__(
         self,
         shards,
@@ -83,18 +95,20 @@ class IterableWebDataset(IterableDataset):
         lru_size=10,
         dataset_name=None,
         localname=None,
-        transformations="PIL",
+        transformations=[],
         keep=False,
         base=None,
         options=None,
         select_files=None,
         rename_files=None,
+        handler=default_handler,
     ):
+        self.args = SimpleNamespace(**locals())
         if options is None:
             options = {}
         self.total_size = -1
         self.transformations = interpret_transformations(transformations)
-        source = self.create_url_iterator(shars)
+        source = self.create_url_iterator(shards)
         self.init_pipeline(source)
         self.epoch = -1
 
@@ -110,26 +124,28 @@ class IterableWebDataset(IterableDataset):
     def init_pipeline(self, source):
         # FIXME: check for multinode here
         self.pipeline = [source, shardlists.split_by_worker]
-        if cache_dir is None:
-            self.pipeline.append(cache.StreamingOpen(handler=handler))
+        if self.args.cache_dir is None:
+            self.pipeline.append(cache.StreamingOpen(handler=self.args.handler))
         else:
             self.pipeline.append(
                 cache.FileCache(
-                    cache_dir=cache_dir, cache_size=cache_size, handler=handler
+                    cache_dir=cache_dir,
+                    cache_size=cache_size,
+                    handler=self.args.handler,
                 )
             )
         tar_file_expander = partial(
             tariterators.tar_file_expander,
-            select_files=select_files,
-            rename_files=rename_files,
-            handler=handler,
+            select_files=self.args.select_files,
+            rename_files=self.args.rename_files,
+            handler=self.args.handler,
         )
         self.pipeline.append(tar_file_expander)
         group_by_keys = partial(
-            tariterators.group_by_keys, handler=handler, keep=self.keep
+            tariterators.group_by_keys, handler=self.args.handler, keep=self.args.keep
         )
         self.pipeline.append(group_by_keys)
-        self.pipeline.append(check_empty)
+        # self.pipeline.append(check_empty)
 
     def add_transform(self, transform):
         """Add a transformation to the dataset."""
