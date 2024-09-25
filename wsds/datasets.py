@@ -6,11 +6,7 @@ from urllib.parse import urlparse
 
 import yaml
 
-from . import autodecode, cache, filters, shardlists, utils
-from .filters import pipelinefilter, reraise_exception
-from .pipeline import DataPipeline
-from .pytorch import DataLoader
-from .tariterators import group_by_keys, tar_file_expander
+from webdataset import autodecode, cache, shardlists, tariterators
 
 
 def run_pipeline(pipeline):
@@ -71,12 +67,7 @@ def interpret_transformations(transformations):
     result = []
 
     for transformation in transformations:
-        if transformation == "PIL":
-            transformation = autodecode.Decoder("PIL")
-        elif transformation == "numpy":
-            transformation = autodecode.Decoder("numpy")
-        else:
-            assert callable(transformation)
+        assert callable(transformation)
         result.append(transformation)
 
     return result
@@ -127,15 +118,17 @@ class IterableWebDataset(IterableDataset):
                     cache_dir=cache_dir, cache_size=cache_size, handler=handler
                 )
             )
-        self.pipeline.append(
-            partial(
-                tariterators.tar_file_expander,
-                select_files=select_files,
-                rename_files=rename_files,
-                handler=handler,
-            )
+        tar_file_expander = partial(
+            tariterators.tar_file_expander,
+            select_files=select_files,
+            rename_files=rename_files,
+            handler=handler,
         )
-        self.pipeline.append(partial(group_by_keys, handler=handler))
+        self.pipeline.append(tar_file_expander)
+        group_by_keys = partial(
+            tariterators.group_by_keys, handler=handler, keep=self.keep
+        )
+        self.pipeline.append(group_by_keys)
         self.pipeline.append(check_empty)
 
     def add_transform(self, transform):

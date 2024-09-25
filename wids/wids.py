@@ -16,6 +16,7 @@ from urllib.parse import quote, urlparse
 import numpy as np
 import torch.distributed as dist
 
+from .wids_decode import default_decoder
 from .wids_dl import download_and_open
 from .wids_lru import LRUCache
 from .wids_mmtar import MMIndexedTar
@@ -124,74 +125,6 @@ def group_by_key(names):
     if current:
         groups.append(current)
     return groups
-
-
-def default_decoder(sample: Dict[str, Any], format: Optional[Union[bool, str]] = True):
-    """A default decoder for webdataset.
-
-    This handles common file extensions: .txt, .cls, .cls2,
-        .jpg, .png, .json, .npy, .mp, .pt, .pth, .pickle, .pkl.
-    These are the most common extensions used in webdataset.
-    For other extensions, users can provide their own decoder.
-
-    Args:
-        sample: sample, modified in place
-    """
-    sample = dict(sample)
-    for key, stream in sample.items():
-        extensions = key.split(".")
-        if len(extensions) < 1:
-            continue
-        extension = extensions[-1]
-        if extension in ["gz"]:
-            decompressed = gzip.decompress(stream.read())
-            stream = io.BytesIO(decompressed)
-            if len(extensions) < 2:
-                sample[key] = stream
-                continue
-            extension = extensions[-2]
-        if key.startswith("__"):
-            continue
-        elif extension in ["txt", "text"]:
-            value = stream.read()
-            sample[key] = value.decode("utf-8")
-        elif extension in ["cls", "cls2"]:
-            value = stream.read()
-            sample[key] = int(value.decode("utf-8"))
-        elif extension in ["jpg", "png", "ppm", "pgm", "pbm", "pnm"]:
-            if format == "PIL":
-                import PIL.Image
-
-                sample[key] = PIL.Image.open(stream)
-            elif format == "numpy":
-                import numpy as np
-
-                sample[key] = np.asarray(PIL.Image.open(stream))
-            else:
-                raise ValueError(f"Unknown format: {format}")
-        elif extension == "json":
-            import json
-
-            value = stream.read()
-            sample[key] = json.loads(value)
-        elif extension == "npy":
-            import numpy as np
-
-            sample[key] = np.load(stream)
-        elif extension == "mp":
-            import msgpack
-
-            value = stream.read()
-            sample[key] = msgpack.unpackb(value, raw=False)
-        elif extension in ["pt", "pth"]:
-            import torch
-
-            sample[key] = torch.load(stream)
-        elif extension in ["pickle", "pkl"]:
-            import pickle
-
-            sample[key] = pickle.load(stream)
-    return sample
 
 
 open_itfs = {}
@@ -402,8 +335,14 @@ def interpret_transformations(transformations):
 
     for transformation in transformations:
         if transformation == "PIL":
+            warnings.warn(
+                "String specifications for transformations are deprecated. Use functions instead."
+            )
             transformation = partial(default_decoder, format="PIL")
         elif transformation == "numpy":
+            warnings.warn(
+                "String specifications for transformations are deprecated. Use functions instead."
+            )
             transformation = partial(default_decoder, format="numpy")
         else:
             assert callable(transformation)

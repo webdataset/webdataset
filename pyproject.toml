@@ -37,7 +37,7 @@ build-backend = "setuptools.build_meta"
 widsindex = "wids.wids_index:main"
 
 [tool.setuptools]
-packages = ["webdataset", "wids"]
+packages = ["webdataset", "wids", "wsds"]
 
 # [tool.setuptools_scm]
 # write_to = "webdataset/__version__.py"
