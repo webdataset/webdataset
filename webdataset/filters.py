@@ -867,7 +867,9 @@ def _extract_keys(source, *patterns, duplicate_is_error=True, ignore_missing=Fal
         for pattern in patterns:
             pattern = pattern.split(";") if isinstance(pattern, str) else pattern
             matches = [
-                x for x in sample.keys() if any(fnmatch("." + x, p) for p in pattern)
+                x
+                for x in sample.keys()
+                if any((fnmatch("." + x, p) or fnmatch(x, p)) for p in pattern)
             ]
             if len(matches) == 0:
                 if ignore_missing:

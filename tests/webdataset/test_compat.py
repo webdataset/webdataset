@@ -18,6 +18,7 @@ from tests.conftest import (
     remote_shard,
     remote_shards,
 )
+from webdataset import compat
 
 
 def identity(x):
