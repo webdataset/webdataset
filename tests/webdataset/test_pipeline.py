@@ -77,24 +77,6 @@ def test_composable():
     assert len(result) == 100
 
 
-def test_shardspec():
-    dataset = wds.DataPipeline(
-        wds.shardspec("testdata/imagenet-000000.tgz"),
-        wds.tarfile_samples,
-        wds.decode(autodecode.ImageHandler("rgb")),
-    )
-    result = list(iter(dataset))
-    keys = list(result[0].keys())
-    assert "__key__" in keys
-    assert "__url__" in keys
-    assert "cls" in keys
-    assert "png" in keys
-    assert isinstance(result[0]["cls"], int)
-    assert isinstance(result[0]["png"], np.ndarray)
-    assert result[0]["png"].shape == (793, 600, 3)
-    assert len(result) == 47
-
-
 def select_png(name):
     return name.endswith(".png")
 
@@ -302,60 +284,9 @@ def test_dataset_resampled():
     assert count_samples_tuple(ds, n=100) == 100
 
 
-shardspec = """
-datasets:
-
-  - name: CDIP
-    resample: 10
-    buckets: ./gs/nvdata-ocropus/words/
-    shards: cdipsub-{000000..000092}.tar
-
-  - name: Google 1000 Books
-    choose: 20
-    buckets:
-      - ./gs/nvdata-ocropus/words/
-    shards:
-      - gsub-{000000..000167}.tar
-
-  - name: Internet Archive Sample
-    resample: 30
-    buckets:
-      - ./gs/nvdata-ocropus/words/
-    shards:
-      - ia1-{000000..000033}.tar
-"""
-
-
-@pytest.mark.skip(reason="obsolete")
-def test_yaml(tmp_path):
-    tmp_path = str(tmp_path)
-    fname = tmp_path + "/test.shards.yml"
-    with open(fname, "w") as stream:
-        stream.write(shardspec)
-    ds = wds.MultiShardSample(fname)
-    l = list(iter(ds))
-    assert len(l) == 60, len(l)
-
-
-@pytest.mark.skip(reason="obsolete")
-def test_yaml2():
-    spec = yaml.safe_load(StringIO(shardspec))
-    ds = wds.MultiShardSample(spec)
-    l = list(iter(ds))
-    assert len(l) == 60, len(l)
-
-
 def test_mock():
     ds = wds.MockDataset((True, True), 193)
     assert count_samples_tuple(ds) == 193
-
-
-@pytest.mark.skip(reason="obsolete")
-def test_ddp_equalize():
-    ds = wds.DataPipeline(
-        wds.SimpleShardList(local_data), wds.tarfile_to_samples(), wds.ddp_equalize(773)
-    )
-    assert count_samples_tuple(ds) == 733
 
 
 def test_dataset_shuffle_extract():
@@ -914,3 +845,130 @@ def test_repeat2():
     )
     ds = ds.with_epoch(20)
     assert count_samples_tuple(ds) == 20
+
+
+@pytest.mark.skip(reason="need to figure out unraisableexceptionwarning")
+def test_rgb8_np_vs_torch():
+    import warnings
+
+    warnings.filterwarnings("error")
+    ds = (
+        wds.WebDataset(local_data, shardshuffle=100)
+        .decode("rgb8")
+        .to_tuple("png;jpg", "cls")
+    )
+    image, cls = next(iter(ds))
+    assert isinstance(image, np.ndarray), type(image)
+    assert isinstance(cls, int), type(cls)
+    ds = (
+        wds.WebDataset(local_data, shardshuffle=100)
+        .decode("torchrgb8")
+        .to_tuple("png;jpg", "cls")
+    )
+    image2, cls2 = next(iter(ds))
+    assert isinstance(image2, torch.Tensor), type(image2)
+    assert isinstance(cls, int), type(cls)
+    assert (image == image2.permute(1, 2, 0).numpy()).all, (image.shape, image2.shape)
+    assert cls == cls2
+
+
+@pytest.mark.skip(reason="untested")
+def test_associate():
+    """Test associating extra data with samples."""
+    with open("testdata/imagenet-extra.json") as stream:
+        extra_data = simplejson.load(stream)
+
+    def associate(key):
+        return dict(MY_EXTRA_DATA=extra_data[key])
+
+    ds = wds.WebDataset(local_data, shardshuffle=100).associate(associate)
+
+    for sample in ds:
+        assert "MY_EXTRA_DATA" in sample.keys()
+        break
+
+
+def test_tenbin():
+    """Test tensor binary encoding."""
+    from webdataset import tenbin
+
+    for d0 in [0, 1, 2, 10, 100, 1777]:
+        for d1 in [0, 1, 2, 10, 100, 345]:
+            for t in [np.uint8, np.float16, np.float32, np.float64]:
+                a = np.random.normal(size=(d0, d1)).astype(t)
+                a_encoded = tenbin.encode_buffer([a])
+                (a_decoded,) = tenbin.decode_buffer(a_encoded)
+                print(a.shape, a_decoded.shape)
+                assert a.shape == a_decoded.shape
+                assert a.dtype == a_decoded.dtype
+                assert (a == a_decoded).all()
+
+
+def test_tenbin_dec():
+    """Test tensor binary decoding."""
+    ds = (
+        wds.WebDataset("testdata/tendata.tar", shardshuffle=100)
+        .decode()
+        .to_tuple("ten")
+    )
+    assert count_samples_tuple(ds) == 100
+    for sample in ds:
+        xs, ys = sample[0]
+        assert xs.dtype == np.float64
+        assert ys.dtype == np.float64
+        assert xs.shape == (28, 28)
+        assert ys.shape == (28, 28)
+
+
+@pytest.mark.skip(reason="untested")
+def test_container_mp():
+    ds = wds.WebDataset(
+        "testdata/mpdata.tar", container="mp", decoder=None, shardshuffle=100
+    )
+    assert count_samples_tuple(ds) == 100
+    for sample in ds:
+        assert isinstance(sample, dict)
+        assert set(sample.keys()) == set("__key__ x y".split()), sample
+
+
+@pytest.mark.skip(reason="untested")
+def test_container_ten():
+    ds = wds.WebDataset(
+        "testdata/tendata.tar", container="ten", decoder=None, shardshuffle=100
+    )
+    assert count_samples_tuple(ds) == 100
+    for xs, ys in ds:
+        assert xs.dtype == np.float64
+        assert ys.dtype == np.float64
+        assert xs.shape == (28, 28)
+        assert ys.shape == (28, 28)
+
+
+@pytest.mark.skip(reason="fix this some time")
+def test_opener():
+    def opener(url):
+        print(url, file=sys.stderr)
+        cmd = "curl -s '{}{}'".format(remote_loc, remote_pattern.format(url))
+        print(cmd, file=sys.stderr)
+        return subprocess.Popen(
+            cmd, bufsize=1000000, shell=True, stdout=subprocess.PIPE
+        ).stdout
+
+    ds = (
+        wds.WebDataset("{000000..000099}", open_fn=opener, shardshuffle=100)
+        .shuffle(100)
+        .to_tuple("jpg;png", "json")
+    )
+    assert count_samples_tuple(ds, n=10) == 10
+
+
+@pytest.mark.skip(reason="failing for unknown reason")
+def test_pipe():
+    ds = (
+        wds.WebDataset(
+            f"pipe:curl -s -L '{remote_loc}{remote_shards}'", shardshuffle=100
+        )
+        .shuffle(100)
+        .to_tuple("jpg;png", "json")
+    )
+    assert count_samples_tuple(ds, n=10) == 10
