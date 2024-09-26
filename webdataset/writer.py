@@ -376,7 +376,7 @@ class TarWriter:
         user: str = "bigdata",
         group: str = "bigdata",
         mode: int = 0o0444,
-        compress: Optional[bool] = None,
+        compress: Optional[Union[bool, str]] = None,
         encoder: Union[None, bool, Callable] = True,
         keep_meta: bool = False,
         mtime: Optional[float] = None,
@@ -397,17 +397,11 @@ class TarWriter:
         """
         format = getattr(tarfile, format, format) if format else tarfile.USTAR_FORMAT
         self.mtime = mtime
+        tarmode = self.tarmode(fileobj, compress)
         if isinstance(fileobj, str):
-            if compress is False:
-                tarmode = "w|"
-            elif compress is True:
-                tarmode = "w|gz"
-            else:
-                tarmode = "w|gz" if fileobj.endswith("gz") else "w|"
             fileobj = gopen(fileobj, "wb")
             self.own_fileobj = fileobj
         else:
-            tarmode = "w|gz" if compress is True else "w|"
             self.own_fileobj = None
         self.encoder = make_encoder(encoder)
         self.keep_meta = keep_meta
@@ -484,6 +478,25 @@ class TarWriter:
             total += ti.size
 
         return total
+
+    @staticmethod
+    def tarmode(fileobj, compress: Optional[Union[bool, str]] = None):
+        if compress is False:
+            return "w|"
+        elif (
+            compress is True
+            or compress == "gz"
+            or (isinstance(fileobj, str) and fileobj.endswith("gz"))
+        ):
+            return "w|gz"
+        elif compress == "bz2" or (
+            isinstance(fileobj, str) and fileobj.endswith("bz2")
+        ):
+            return "w|bz2"
+        elif compress == "xz" or (isinstance(fileobj, str) and fileobj.endswith("xz")):
+            return "w|xz"
+        else:
+            return "w|"
 
 
 class ShardWriter:
