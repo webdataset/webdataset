@@ -10,6 +10,7 @@ import re
 import sys
 from subprocess import PIPE, Popen
 from urllib.parse import urlparse
+from urllib.request import url2pathname
 
 # global used for printing additional node information during verbose output
 info = {}
@@ -503,7 +504,7 @@ def gopen(url, mode="rb", bufsize=8192, **kw):
         return open(url, mode, buffering=bufsize)
     if pr.scheme == "file":
         bufsize = int(os.environ.get("GOPEN_BUFFER", -1))
-        return open(pr.path, mode, buffering=bufsize)
+        return open(url2pathname(pr.path), mode, buffering=bufsize)
     handler = gopen_schemes["__default__"]
     handler = gopen_schemes.get(pr.scheme, handler)
     return handler(url, mode, bufsize, **kw)
