@@ -71,20 +71,6 @@ def compute_file_md5sum(fname: Union[str, BinaryIO], chunksize: int = 1000000) -
     return md5.hexdigest()
 
 
-def compute_file_md5sum(fname: Union[str, BinaryIO], chunksize: int = 1000000) -> str:
-    """Compute the md5sum of a file in chunks."""
-    md5 = hashlib.md5()
-    if isinstance(fname, str):
-        with open(fname, "rb") as f:
-            for chunk in iter(lambda: f.read(chunksize), b""):
-                md5.update(chunk)
-    else:
-        fname.seek(0)
-        for chunk in iter(lambda: fname.read(chunksize), b""):
-            md5.update(chunk)
-    return md5.hexdigest()
-
-
 def compute_num_samples(fname):
     ds = IndexedTarSamples(path=fname)
     return len(ds)
