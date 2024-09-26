@@ -72,10 +72,10 @@ class DataPipeline(IterableDataset, PipelineStage):
         Raises:
             ValueError: If the pipeline stage is not valid.
         """
-        if isinstance(f, PipelineStage):
-            return f.run(*args, **kwargs)
         if isinstance(f, (IterableDataset, DataLoader)) and len(args) == 0:
             return iter(f)
+        if isinstance(f, PipelineStage):
+            return f.run(*args, **kwargs)
         if isinstance(f, list):
             return iter(f)
         if callable(f):

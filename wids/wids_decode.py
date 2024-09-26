@@ -22,7 +22,7 @@ def decode_all_gz(
         extensions = key.split(".")
         if len(extensions) < 1:
             continue
-        if len(extensions) < 2:
+        if len(extensions) < 2 and extensions[-1] == "gz":
             warnings.warn("Plain .gz extension in sample; not decompressed.")
             continue
         extension = extensions[-1]
@@ -65,6 +65,8 @@ def decode_basic(sample: Dict[str, Any], format: Optional[Union[bool, str]] = Tr
         if len(extensions) < 1:
             continue
         extension = extensions[-1]
+        if isinstance(stream, bytes):
+            stream = io.BytesIO(stream)
         if extension in ["gz"] and len(extensions) >= 2:
             # we're assuming that .gz extensions are already decoded
             extension = extensions[-2]
@@ -113,10 +115,14 @@ def decode_images_to_pil(
     check_keys(sample)
 
     for key, stream in sample.items():
+        if key.startswith("__"):
+            continue
         extensions = key.split(".")
         if len(extensions) < 1:
             continue
         extension = extensions[-1]
+        if isinstance(stream, bytes):
+            stream = io.BytesIO(stream)
         if extension in ["jpg", "png", "ppm", "pgm", "pbm", "pnm"]:
             sample[key] = PIL.Image.open(stream)
 
@@ -127,15 +133,19 @@ def decode_images_to_numpy(
     sample: Dict[str, Any], format: Optional[Union[bool, str]] = True
 ):
     import numpy as np
+    import PIL.Image
 
     check_keys(sample)
 
-    sample = dict(sample)
     for key, stream in sample.items():
+        if key.startswith("__"):
+            continue
         extensions = key.split(".")
         if len(extensions) < 1:
             continue
         extension = extensions[-1]
+        if isinstance(stream, bytes):
+            stream = io.BytesIO(stream)
         if extension in ["jpg", "png", "ppm", "pgm", "pbm", "pnm"]:
             sample[key] = np.asarray(PIL.Image.open(stream))
 

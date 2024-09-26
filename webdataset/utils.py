@@ -15,7 +15,7 @@ import os
 import re
 import sys
 import warnings
-from typing import Any, Callable, Iterator, Iterable, Union
+from typing import Any, Callable, Iterable, Iterator, Union
 
 import numpy as np
 
@@ -81,6 +81,8 @@ def is_iterable(obj):
     if isinstance(obj, list):
         return True
     if isinstance(obj, Iterable):
+        return True
+    if isinstance(obj, Iterator):
         return True
     return False
 

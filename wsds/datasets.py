@@ -81,6 +81,14 @@ def interpret_transformations(transformations):
     return result
 
 
+def fix_dots(sample):
+    for k in list(sample.keys()):
+        if k.startswith("__") or k.startswith("."):
+            continue
+        sample["." + k] = sample[k]
+        del sample[k]
+
+
 def default_handler(exn):
     raise exn
 
@@ -102,6 +110,8 @@ class SimpleDataset(IterableDataset):
         select_files=None,
         rename_files=None,
         handler=default_handler,
+        check_empty=False,
+        force_size=None,
     ):
         self.args = SimpleNamespace(**locals())
         if options is None:
@@ -111,6 +121,8 @@ class SimpleDataset(IterableDataset):
         source = self.create_url_iterator(shards)
         self.init_pipeline(source)
         self.epoch = -1
+        self.force_size = force_size
+        self.keep = keep
 
     def create_url_iterator(self, shards):
         """Create an iterator over the shards."""
@@ -141,11 +153,10 @@ class SimpleDataset(IterableDataset):
             handler=self.args.handler,
         )
         self.pipeline.append(tar_file_expander)
-        group_by_keys = partial(
-            tariterators.group_by_keys, handler=self.args.handler, keep=self.args.keep
-        )
+        group_by_keys = partial(tariterators.group_by_keys, handler=self.args.handler)
         self.pipeline.append(group_by_keys)
-        # self.pipeline.append(check_empty)
+        if self.args.check_empty:
+            self.pipeline.append(check_empty)
 
     def add_transform(self, transform):
         """Add a transformation to the dataset."""
@@ -173,9 +184,21 @@ class SimpleDataset(IterableDataset):
         self.epoch += 1
         set_pipeline_epochs(self.pipeline, self.epoch)
 
-        for sample in run_pipeline(self.pipeline):
-            transformed = apply_transformations(self.transformations, sample)
-            yield transformed
+        if self.force_size is not None:
+            count = 0
+            while True:
+                for sample in run_pipeline(self.pipeline):
+                    if count >= self.force_size:
+                        return
+                    fix_dots(sample)
+                    transformed = apply_transformations(self.transformations, sample)
+                    yield transformed
+                    count += 1
+        else:
+            for sample in run_pipeline(self.pipeline):
+                fix_dots(sample)
+                transformed = apply_transformations(self.transformations, sample)
+                yield transformed
 
     def set_size(self, n):
         """Set the size of the dataset."""
