@@ -408,7 +408,7 @@ class WebDataset(DataPipeline, FluidInterface):
 
         # split by worker (for DataLoader)
         if workersplitter:
-            self.append(shardlists.split_by_worker)
+            self.append(workersplitter)
 
         # add a shard shuffler
         if args.shardshuffle is not None:
