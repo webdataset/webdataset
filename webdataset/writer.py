@@ -566,7 +566,7 @@ class ShardWriter:
             )
         self.shard += 1
         if self.opener:
-            self.tarstream = TarWriter(opener(self.fname), **self.kw)
+            self.tarstream = TarWriter(self.opener(self.fname), **self.kw)
         else:
             self.tarstream = TarWriter(self.fname, **self.kw)
         self.count = 0
