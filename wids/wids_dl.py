@@ -70,12 +70,12 @@ default_cmds = {
     "posixpath": copy_file,
     "file": copy_file,
     "pipe": pipe_download,
-    "http": "curl " + vcmd("-s") + " -L {url} -o {local}",
-    "https": "curl " + vcmd("-s") + " -L {url} -o {local}",
-    "ftp": "curl " + vcmd("-s") + " -L {url} -o {local}",
-    "ftps": "curl " + vcmd("-s") + " -L {url} -o {local}",
-    "gs": "gsutil " + vcmd("-q") + " cp {url} {local}",
-    "s3": "aws s3 cp {url} {local}",
+    "http": "curl " + vcmd("-s") + " -L '{url}' -o '{local}'",
+    "https": "curl " + vcmd("-s") + " -L '{url}' -o '{local}'",
+    "ftp": "curl " + vcmd("-s") + " -L '{url}' -o '{local}'",
+    "ftps": "curl " + vcmd("-s") + " -L '{url}' -o '{local}'",
+    "gs": "gsutil " + vcmd("-q") + " cp '{url}' '{local}'",
+    "s3": "aws s3 cp '{url}' '{local}'",
 }
 
 
