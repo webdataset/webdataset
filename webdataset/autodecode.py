@@ -310,7 +310,7 @@ class ImageHandler:
         if imagespec not in list(imagespecs.keys()):
             raise ValueError("Unknown imagespec: %s" % imagespec)
         self.imagespec = imagespec.lower()
-        self.extensions = extensions
+        self.extensions = set(extensions)
 
     def __call__(self, key, data):
         """Perform image decoding.
