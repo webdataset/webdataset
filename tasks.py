@@ -206,12 +206,23 @@ def releasenotes(c):
         stream.write(notes)
 
 
+def read_version():
+    # open the pyproject.toml file and read the version number
+    with open("pyproject.toml") as stream:
+        for line in stream:
+            if "version" in line:
+                version = line.split("=")[1].strip()
+                version = version.replace('"', "")
+                return version
+
+
 @task
 def release(c):
     "Tag the current version as a release on Github."
     assert os.path.exists("RELEASE_NOTES.md")
     assert c.run("bump2version patch").ok
-    tag = "v" + open("VERSION").read().strip()
+    version = read_version()
+    tag = "v" + version
     assert c.run(
         f"gh release create {tag} -t {tag} --notes-file RELEASE_NOTES.md", input=changes
     ).ok
