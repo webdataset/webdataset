@@ -395,7 +395,11 @@ class WebDataset(DataPipeline, FluidInterface):
             )
             shardshuffle = 100
         args = SimpleNamespace(**locals())
-        self.seed = seed or os.environ.get("WDS_SEED", random.randint(0, 1000000))
+        self.seed = (
+            os.environ.get("WDS_SEED", random.randint(0, 1000000))
+            if seed is None
+            else seed
+        )
         self.update_cache_info(args)
 
         # first, we add a generator for the urls to used
