@@ -492,6 +492,16 @@ default_pre_handlers = [gzfilter]
 default_post_handlers = [basichandlers]
 
 
+class DecodingError(Exception):
+    """Exception class for decoding errors."""
+
+    def __init__(self, url=None, key=None, k=None, sample=None):
+        self.url = url
+        self.key = key
+        self.k = k
+        self.sample = sample
+
+
 class Decoder:
     """Decode samples using a list of handlers.
 
@@ -546,26 +556,31 @@ class Decoder:
         result = {}
         assert isinstance(sample, dict), sample
         for k, v in list(sample.items()):
-            if k[:2] == "__":
-                if isinstance(v, bytes):
-                    try:
-                        v = v.decode("utf-8")
-                    except Exception:
-                        print(f"Can't decode v of k = {k} as utf-8: v = {v}")
-                result[k] = v
-                continue
-            if self.only is not None and k not in self.only:
-                result[k] = v
-                continue
-            assert v is not None
-            if self.partial:
-                if isinstance(v, bytes):
-                    result[k] = self.decode1(k, v)
-                else:
+            try:
+                if k[:2] == "__":
+                    if isinstance(v, bytes):
+                        try:
+                            v = v.decode("utf-8")
+                        except Exception:
+                            print(f"Can't decode v of k = {k} as utf-8: v = {v}")
                     result[k] = v
-            else:
-                assert isinstance(v, bytes), f"k,v = {k}, {v}"
-                result[k] = self.decode1(k, v)
+                    continue
+                if self.only is not None and k not in self.only:
+                    result[k] = v
+                    continue
+                assert v is not None
+                if self.partial:
+                    if isinstance(v, bytes):
+                        result[k] = self.decode1(k, v)
+                    else:
+                        result[k] = v
+                else:
+                    assert isinstance(v, bytes), f"k,v = {k}, {v}"
+                    result[k] = self.decode1(k, v)
+            except Exception as exn:
+                key = sample.get("__key__", None)
+                url = sample.get("__url__", None)
+                raise DecodingError(key=key, url=url, k=k, sample=sample) from exn
         return result
 
     def __call__(self, sample):

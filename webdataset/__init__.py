@@ -11,6 +11,7 @@ from . import tenbin
 from .autodecode import (
     Continue,
     Decoder,
+    DecodingError,
     gzfilter,
     handle_extension,
     imagehandler,

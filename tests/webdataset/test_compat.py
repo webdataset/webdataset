@@ -217,7 +217,7 @@ def test_dataset_decode_nohandler():
             return data
         count[0] += 1
 
-    with pytest.raises(ValueError):
+    with pytest.raises(wds.DecodingError):
         ds = wds.WebDataset(local_data, shardshuffle=100).decode(faulty_decoder)
         count_samples_tuple(ds)
 

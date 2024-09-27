@@ -356,7 +356,7 @@ def test_dataset_decode_nohandler():
             return data
         count[0] += 1
 
-    with pytest.raises(ValueError):
+    with pytest.raises(wds.DecodingError):
         ds = wds.DataPipeline(
             wds.SimpleShardList(local_data),
             wds.tarfile_to_samples(),
