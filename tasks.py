@@ -221,6 +221,7 @@ def release(c):
     "Tag the current version as a release on Github."
     assert os.path.exists("RELEASE_NOTES.md")
     assert c.run("bump2version patch").ok
+    assert c.run("git push").ok
     version = read_version()
     tag = "v" + version
     assert c.run(f"gh release create {tag} -t {tag} --notes-file RELEASE_NOTES.md").ok
