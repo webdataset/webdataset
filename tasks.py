@@ -193,14 +193,27 @@ def update_version_numbers_locally(c):
 
 
 @task
+def releasenotes(c):
+    # get the last release tag using gh
+    last_tag = c.run("gh release list --limit 1 | cut -f1").stdout.strip()
+    print("Last tag:", last_tag)
+    # compute a diff between the last tag and the current state
+    diff = c.run(f"gh release view {last_tag}").stdout
+    cmd = "git log --since={last_tag} | "
+    cmd += "sgpt --no-md 'summarize these commit messages into Python/github release notes'"
+    notes = c.run(cmd).stdout
+    with open("RELEASE_NOTES.md", "w") as stream:
+        stream.write(notes)
+
+
+@task
 def release(c):
     "Tag the current version as a release on Github."
-    from helpers import get_changes
-
+    assert os.path.exists("RELEASE_NOTES.md")
     assert c.run("bump2version patch").ok
     tag = "v" + open("VERSION").read().strip()
-    print(f"Summarizing the changes for {tag}:")
-    changes = get_changes(tag)
-    print("\n---\n" + changes + "\n---\n")
-    assert c.run(f"gh release create {tag} -t {tag} --notes-file -", input=changes).ok
+    assert c.run(
+        f"gh release create {tag} -t {tag} --notes-file RELEASE_NOTES.md", input=changes
+    ).ok
+    assert c.run(f"rm RELEASE_NOTES.md").ok
     print(f"Release {version} created successfully.")
