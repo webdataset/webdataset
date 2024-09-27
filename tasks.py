@@ -223,8 +223,6 @@ def release(c):
     assert c.run("bump2version patch").ok
     version = read_version()
     tag = "v" + version
-    assert c.run(
-        f"gh release create {tag} -t {tag} --notes-file RELEASE_NOTES.md", input=changes
-    ).ok
+    assert c.run(f"gh release create {tag} -t {tag} --notes-file RELEASE_NOTES.md").ok
     assert c.run(f"rm RELEASE_NOTES.md").ok
     print(f"Release {version} created successfully.")
