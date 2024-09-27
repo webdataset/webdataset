@@ -2,6 +2,7 @@ import base64
 import gzip
 import hashlib
 import io
+import math
 import os
 import random
 import re
@@ -605,6 +606,7 @@ class ChunkedSampler(Sampler):
         self,
         dataset,
         *,
+        dslength_per_replica=-1,
         num_samples=None,
         chunksize=2000,
         seed=0,
@@ -617,6 +619,11 @@ class ChunkedSampler(Sampler):
             lo, hi = 0, len(dataset)
         else:
             lo, hi = num_samples
+
+        self.dslength_per_replica = (
+            dslength_per_replica if dslength_per_replica > 0 else (hi - lo)
+        )
+
         self.ranges = [(i, min(i + chunksize, hi)) for i in range(lo, hi, chunksize)]
         self.seed = seed
         self.shuffle = shuffle
@@ -636,6 +643,9 @@ class ChunkedSampler(Sampler):
             shardshuffle=(self.shuffle and shardshuffle),
         )
         self.epoch += 1
+
+    def __len__(self) -> int:
+        return self.dslength_per_replica
 
 
 def DistributedChunkedSampler(
@@ -673,12 +683,18 @@ def DistributedChunkedSampler(
         rank = rank or dist.get_rank()
     assert rank >= 0 and rank < num_replicas
 
+    # From https://github.com/pytorch/pytorch/blob/13fa59580e4dd695817ccf2f24922fd211667fc8/torch/utils/data/distributed.py#L93
+    dslength_per_replica = (
+        math.ceil(len(dataset) / num_replicas) if num_replicas > 1 else len(dataset)
+    )
+
     num_samples = num_samples or len(dataset)
     worker_chunk = (num_samples + num_replicas - 1) // num_replicas
     worker_start = rank * worker_chunk
     worker_end = min(worker_start + worker_chunk, num_samples)
     return ChunkedSampler(
         dataset,
+        dslength_per_replica=dslength_per_replica,
         num_samples=(worker_start, worker_end),
         chunksize=chunksize,
         seed=seed,
