@@ -186,27 +186,39 @@
               </ul>
               <p class="caption"><span class="caption-text">Examples</span></p>
               <ul>
-                  <li class="toctree-l1"><a class="reference internal" href="../generate-text-dataset/">Dataset Generation</a>
+                  <li class="toctree-l1"><a class="reference internal" >webdataset</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../examples/webdataset/">Index</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../examples/webdataset/wds-notes/">Wds notes</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../examples/webdataset/generate-text-dataset/">Dataset Generation</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../examples/webdataset/tesseract-wds/">Tesseract wds</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../examples/webdataset/train-resnet50-wds/">Resnet 50 Training on (Fake)Imagenet with WebDataset</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../examples/webdataset/train-resnet50-multiray-wds/">WebDataset + Distributed PyTorch Training</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../examples/webdataset/train-ocr-errors-hf/">Fine Tuning LLM with Huggingface and WebDataset</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../examples/webdataset/mi-images/">Mini Imagenet Generation</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../examples/webdataset/mi-prompts/">Mini Imagenet Generation</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../examples/webdataset/column-store/">Using WebDataset as a Column Store</a>
+                </li>
+    </ul>
                   </li>
-                  <li class="toctree-l1"><a class="reference internal" href="../tesseract-wds/">Tesseract wds</a>
-                  </li>
-                  <li class="toctree-l1"><a class="reference internal" href="../train-resnet50-wds/">Resnet 50 Training on (Fake)Imagenet with WebDataset</a>
-                  </li>
-                  <li class="toctree-l1"><a class="reference internal" href="../train-resnet50-wids/">Train resnet50 wids</a>
-                  </li>
-                  <li class="toctree-l1"><a class="reference internal" href="../train-resnet50-multiray-wds/">WebDataset + Distributed PyTorch Training</a>
-                  </li>
-                  <li class="toctree-l1"><a class="reference internal" href="../train-resnet50-multiray-wids/">WebIndexedDataset + Distributed PyTorch Training</a>
-                  </li>
-                  <li class="toctree-l1"><a class="reference internal" href="../train-ocr-errors-hf/">Fine Tuning LLM with Huggingface and WebDataset</a>
-                  </li>
-                  <li class="toctree-l1"><a class="reference internal" href="../mi-images/">Mini Imagenet Generation</a>
-                  </li>
-                  <li class="toctree-l1"><a class="reference internal" href="../mi-prompts/">Mini Imagenet Generation</a>
-                  </li>
-                  <li class="toctree-l1"><a class="reference internal" href="../wds-notes/">Wds notes</a>
-                  </li>
-                  <li class="toctree-l1"><a class="reference internal" href="../column-store/">Using WebDataset as a Column Store</a>
+                  <li class="toctree-l1"><a class="reference internal" >wids</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../examples/wids/">Index</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../examples/wids/train-resnet50-wids/">Train resnet50 wids</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../examples/wids/train-resnet50-multiray-wids/">WebIndexedDataset + Distributed PyTorch Training</a>
+                </li>
+    </ul>
                   </li>
               </ul>
       </div>
@@ -255,7 +267,7 @@ an <code>itertools.islice</code> over the dataset.</p>
 
     <div class="doc doc-contents first">
             <p class="doc doc-class-bases">
-              Bases: <code><a class="autorefs autorefs-internal" title="webdataset.pipeline.DataPipeline" href="../webdataset2/#webdataset.pipeline.DataPipeline">DataPipeline</a></code>, <code><a class="autorefs autorefs-internal" title="webdataset.compat.FluidInterface" href="../webdataset2/#webdataset.compat.FluidInterface">FluidInterface</a></code></p>
+              Bases: <code><span title="webdataset.pipeline.DataPipeline">DataPipeline</span></code>, <code><a class="autorefs autorefs-internal" title="webdataset.compat.FluidInterface" href="#webdataset.FluidInterface">FluidInterface</a></code></p>
 
 
         <p>Create a WebDataset pipeline for efficient data loading.</p>
@@ -422,9 +434,7 @@ It handles URL generation, shard shuffling, caching, and sample grouping.</p>
 </table>
               <details class="quote">
                 <summary>Source code in <code>webdataset/compat.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">330</span>
-<span class="normal">331</span>
-<span class="normal">332</span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">332</span>
 <span class="normal">333</span>
 <span class="normal">334</span>
 <span class="normal">335</span>
@@ -609,7 +619,19 @@ It handles URL generation, shard shuffling, caching, and sample grouping.</p>
 <span class="normal">514</span>
 <span class="normal">515</span>
 <span class="normal">516</span>
-<span class="normal">517</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">WebDataset</span><span class="p">(</span><span class="n">DataPipeline</span><span class="p">,</span> <span class="n">FluidInterface</span><span class="p">):</span>
+<span class="normal">517</span>
+<span class="normal">518</span>
+<span class="normal">519</span>
+<span class="normal">520</span>
+<span class="normal">521</span>
+<span class="normal">522</span>
+<span class="normal">523</span>
+<span class="normal">524</span>
+<span class="normal">525</span>
+<span class="normal">526</span>
+<span class="normal">527</span>
+<span class="normal">528</span>
+<span class="normal">529</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">WebDataset</span><span class="p">(</span><span class="n">DataPipeline</span><span class="p">,</span> <span class="n">FluidInterface</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Create a WebDataset pipeline for efficient data loading.</span>
 
 <span class="sd">    This class sets up a data pipeline for loading and processing WebDataset-format data.</span>
@@ -662,14 +684,24 @@ It handles URL generation, shard shuffling, caching, and sample grouping.</p>
         <span class="k">if</span> <span class="n">resampled</span><span class="p">:</span>
             <span class="n">mode</span> <span class="o">=</span> <span class="s2">&quot;resampled&quot;</span>
         <span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="s2">&quot;resampled&quot;</span> <span class="ow">and</span> <span class="n">shardshuffle</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="kc">False</span><span class="p">,</span> <span class="kc">None</span><span class="p">):</span>
-            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;WebDataset(shardshuffle=...) is ignored for resampled datasets&quot;</span><span class="p">)</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+                <span class="s2">&quot;WebDataset(shardshuffle=...) is ignored for resampled datasets&quot;</span>
+            <span class="p">)</span>
         <span class="k">elif</span> <span class="n">shardshuffle</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;WebDataset(shardshuffle=...) is None; set explicitly to False or a number&quot;</span><span class="p">)</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+                <span class="s2">&quot;WebDataset(shardshuffle=...) is None; set explicitly to False or a number&quot;</span>
+            <span class="p">)</span>
         <span class="k">if</span> <span class="n">shardshuffle</span> <span class="ow">is</span> <span class="kc">True</span><span class="p">:</span>
-            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;set WebDataset(shardshuffle=...) to a positive integer or 0 or False&quot;</span><span class="p">)</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+                <span class="s2">&quot;set WebDataset(shardshuffle=...) to a positive integer or 0 or False&quot;</span>
+            <span class="p">)</span>
             <span class="n">shardshuffle</span> <span class="o">=</span> <span class="mi">100</span>
         <span class="n">args</span> <span class="o">=</span> <span class="n">SimpleNamespace</span><span class="p">(</span><span class="o">**</span><span class="nb">locals</span><span class="p">())</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">seed</span> <span class="o">=</span> <span class="n">seed</span> <span class="ow">or</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;WDS_SEED&quot;</span><span class="p">,</span> <span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1000000</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">seed</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;WDS_SEED&quot;</span><span class="p">,</span> <span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1000000</span><span class="p">))</span>
+            <span class="k">if</span> <span class="n">seed</span> <span class="ow">is</span> <span class="kc">None</span>
+            <span class="k">else</span> <span class="n">seed</span>
+        <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">update_cache_info</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
 
         <span class="c1"># first, we add a generator for the urls to used</span>
@@ -682,14 +714,14 @@ It handles URL generation, shard shuffling, caching, and sample grouping.</p>
 
         <span class="c1"># split by worker (for DataLoader)</span>
         <span class="k">if</span> <span class="n">workersplitter</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">shardlists</span><span class="o">.</span><span class="n">split_by_worker</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">workersplitter</span><span class="p">)</span>
 
         <span class="c1"># add a shard shuffler</span>
         <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">shardshuffle</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">detshuffle</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">filters</span><span class="o">.</span><span class="n">detshuffle</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">shardshuffle</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">seed</span><span class="p">))</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">filters</span><span class="o">.</span><span class="n">detshuffle</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">shardshuffle</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">seed</span><span class="p">))</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">filters</span><span class="o">.</span><span class="n">shuffle</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">shardshuffle</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">seed</span><span class="p">))</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">filters</span><span class="o">.</span><span class="n">shuffle</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">shardshuffle</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">seed</span><span class="p">))</span>
 
         <span class="c1"># next, we select a URL opener, either with or without caching</span>
         <span class="c1"># this generates a stream of dict(url=..., stream=...)</span>
@@ -769,7 +801,7 @@ It handles URL generation, shard shuffling, caching, and sample grouping.</p>
 
         <span class="c1"># any URL ending in &quot;/&quot; is assumed to be a directory</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">urls</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">and</span> <span class="n">urlparse</span><span class="p">(</span><span class="n">urls</span><span class="p">)</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">):</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">shardlists</span><span class="o">.</span><span class="n">DirectoryShardlist</span><span class="p">(</span><span class="n">urls</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">mode</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">shardlists</span><span class="o">.</span><span class="n">DirectoryShardList</span><span class="p">(</span><span class="n">urls</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">mode</span><span class="p">))</span>
             <span class="k">return</span>
 
         <span class="c1"># the rest is either a shard list or a resampled shard list</span>
@@ -849,13 +881,13 @@ It handles URL generation, shard shuffling, caching, and sample grouping.</p>
 </table>
             <details class="quote">
               <summary>Source code in <code>webdataset/compat.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">503</span>
-<span class="normal">504</span>
-<span class="normal">505</span>
-<span class="normal">506</span>
-<span class="normal">507</span>
-<span class="normal">508</span>
-<span class="normal">509</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="fm">__enter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">515</span>
+<span class="normal">516</span>
+<span class="normal">517</span>
+<span class="normal">518</span>
+<span class="normal">519</span>
+<span class="normal">520</span>
+<span class="normal">521</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="fm">__enter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Enter the runtime context for the WebDataset.</span>
 
 <span class="sd">    Returns:</span>
@@ -906,13 +938,13 @@ It handles URL generation, shard shuffling, caching, and sample grouping.</p>
 </table>
             <details class="quote">
               <summary>Source code in <code>webdataset/compat.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">511</span>
-<span class="normal">512</span>
-<span class="normal">513</span>
-<span class="normal">514</span>
-<span class="normal">515</span>
-<span class="normal">516</span>
-<span class="normal">517</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="fm">__exit__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">523</span>
+<span class="normal">524</span>
+<span class="normal">525</span>
+<span class="normal">526</span>
+<span class="normal">527</span>
+<span class="normal">528</span>
+<span class="normal">529</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="fm">__exit__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Exit the runtime context for the WebDataset.</span>
 
 <span class="sd">    Args:</span>
@@ -988,19 +1020,7 @@ iterator for the dataset.</p>
 </table>
             <details class="quote">
               <summary>Source code in <code>webdataset/compat.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">456</span>
-<span class="normal">457</span>
-<span class="normal">458</span>
-<span class="normal">459</span>
-<span class="normal">460</span>
-<span class="normal">461</span>
-<span class="normal">462</span>
-<span class="normal">463</span>
-<span class="normal">464</span>
-<span class="normal">465</span>
-<span class="normal">466</span>
-<span class="normal">467</span>
-<span class="normal">468</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">468</span>
 <span class="normal">469</span>
 <span class="normal">470</span>
 <span class="normal">471</span>
@@ -1033,7 +1053,19 @@ iterator for the dataset.</p>
 <span class="normal">498</span>
 <span class="normal">499</span>
 <span class="normal">500</span>
-<span class="normal">501</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">create_url_iterator</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">):</span>
+<span class="normal">501</span>
+<span class="normal">502</span>
+<span class="normal">503</span>
+<span class="normal">504</span>
+<span class="normal">505</span>
+<span class="normal">506</span>
+<span class="normal">507</span>
+<span class="normal">508</span>
+<span class="normal">509</span>
+<span class="normal">510</span>
+<span class="normal">511</span>
+<span class="normal">512</span>
+<span class="normal">513</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">create_url_iterator</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Create an appropriate URL iterator based on the input type.</span>
 
 <span class="sd">    This method determines the type of URL input and creates the corresponding</span>
@@ -1067,7 +1099,7 @@ iterator for the dataset.</p>
 
     <span class="c1"># any URL ending in &quot;/&quot; is assumed to be a directory</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">urls</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">and</span> <span class="n">urlparse</span><span class="p">(</span><span class="n">urls</span><span class="p">)</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">shardlists</span><span class="o">.</span><span class="n">DirectoryShardlist</span><span class="p">(</span><span class="n">urls</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">mode</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">shardlists</span><span class="o">.</span><span class="n">DirectoryShardList</span><span class="p">(</span><span class="n">urls</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">mode</span><span class="p">))</span>
         <span class="k">return</span>
 
     <span class="c1"># the rest is either a shard list or a resampled shard list</span>
@@ -1146,21 +1178,21 @@ iterator for the dataset.</p>
 </table>
             <details class="quote">
               <summary>Source code in <code>webdataset/compat.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">440</span>
-<span class="normal">441</span>
-<span class="normal">442</span>
-<span class="normal">443</span>
-<span class="normal">444</span>
-<span class="normal">445</span>
-<span class="normal">446</span>
-<span class="normal">447</span>
-<span class="normal">448</span>
-<span class="normal">449</span>
-<span class="normal">450</span>
-<span class="normal">451</span>
-<span class="normal">452</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">452</span>
 <span class="normal">453</span>
-<span class="normal">454</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">update_cache_info</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">):</span>
+<span class="normal">454</span>
+<span class="normal">455</span>
+<span class="normal">456</span>
+<span class="normal">457</span>
+<span class="normal">458</span>
+<span class="normal">459</span>
+<span class="normal">460</span>
+<span class="normal">461</span>
+<span class="normal">462</span>
+<span class="normal">463</span>
+<span class="normal">464</span>
+<span class="normal">465</span>
+<span class="normal">466</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">update_cache_info</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Update cache information based on arguments and environment variables.</span>
 
 <span class="sd">    Args:</span>
@@ -1202,18 +1234,20 @@ iterator for the dataset.</p>
 
     <div class="doc doc-contents first">
             <p class="doc doc-class-bases">
-              Bases: <code><a class="autorefs autorefs-internal" title="webdataset.pipeline.DataPipeline" href="../webdataset2/#webdataset.pipeline.DataPipeline">DataPipeline</a></code>, <code><a class="autorefs autorefs-internal" title="webdataset.compat.FluidInterface" href="../webdataset2/#webdataset.compat.FluidInterface">FluidInterface</a></code></p>
+              Bases: <code><span title="webdataset.pipeline.DataPipeline">DataPipeline</span></code>, <code><a class="autorefs autorefs-internal" title="webdataset.compat.FluidInterface" href="#webdataset.FluidInterface">FluidInterface</a></code></p>
 
 
         <p>A wrapper for DataLoader that adds a fluid interface.</p>
 
               <details class="quote">
                 <summary>Source code in <code>webdataset/compat.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">528</span>
-<span class="normal">529</span>
-<span class="normal">530</span>
-<span class="normal">531</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">WebLoader</span><span class="p">(</span><span class="n">DataPipeline</span><span class="p">,</span> <span class="n">FluidInterface</span><span class="p">):</span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">540</span>
+<span class="normal">541</span>
+<span class="normal">542</span>
+<span class="normal">543</span>
+<span class="normal">544</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">WebLoader</span><span class="p">(</span><span class="n">DataPipeline</span><span class="p">,</span> <span class="n">FluidInterface</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;A wrapper for DataLoader that adds a fluid interface.&quot;&quot;&quot;</span>
+
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">DataLoader</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">))</span>
 </code></pre></div></td></tr></table></div>
@@ -1887,7 +1921,7 @@ iterator for the dataset.</p>
             <li>
               <b><code>collation_fn</code></b>
                   (<code>callable</code>, default:
-                      <code><a class="autorefs autorefs-internal" title="webdataset.filters.default_collation_fn" href="../webdataset2/#webdataset.filters.default_collation_fn">default_collation_fn</a></code>
+                      <code><span title="webdataset.filters.default_collation_fn">default_collation_fn</span></code>
 )
               –
               <div class="doc-md-description">
@@ -2052,7 +2086,7 @@ Defaults to filters.default_collation_fn.</p>
             <li>
               <b><code>handler</code></b>
                   (<code>callable</code>, default:
-                      <code><a class="autorefs autorefs-internal" title="webdataset.filters.reraise_exception" href="../webdataset2/#webdataset.filters.reraise_exception">reraise_exception</a></code>
+                      <code><span title="webdataset.filters.reraise_exception">reraise_exception</span></code>
 )
               –
               <div class="doc-md-description">
@@ -2585,7 +2619,7 @@ Defaults to filters.default_collation_fn.</p>
             <li>
               <b><code>handler</code></b>
                   (<code>callable</code>, default:
-                      <code><a class="autorefs autorefs-internal" title="webdataset.filters.reraise_exception" href="../webdataset2/#webdataset.filters.reraise_exception">reraise_exception</a></code>
+                      <code><span title="webdataset.filters.reraise_exception">reraise_exception</span></code>
 )
               –
               <div class="doc-md-description">
@@ -2680,7 +2714,7 @@ Defaults to filters.default_collation_fn.</p>
             <li>
               <b><code>handler</code></b>
                   (<code>callable</code>, default:
-                      <code><a class="autorefs autorefs-internal" title="webdataset.filters.reraise_exception" href="../webdataset2/#webdataset.filters.reraise_exception">reraise_exception</a></code>
+                      <code><span title="webdataset.filters.reraise_exception">reraise_exception</span></code>
 )
               –
               <div class="doc-md-description">
@@ -2789,7 +2823,7 @@ Defaults to filters.default_collation_fn.</p>
             <li>
               <b><code>handler</code></b>
                   (<code>callable</code>, default:
-                      <code><a class="autorefs autorefs-internal" title="webdataset.filters.reraise_exception" href="../webdataset2/#webdataset.filters.reraise_exception">reraise_exception</a></code>
+                      <code><span title="webdataset.filters.reraise_exception">reraise_exception</span></code>
 )
               –
               <div class="doc-md-description">
@@ -4300,23 +4334,7 @@ very large datasets.</p>
 </table>
               <details class="quote">
                 <summary>Source code in <code>webdataset/writer.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">486</span>
-<span class="normal">487</span>
-<span class="normal">488</span>
-<span class="normal">489</span>
-<span class="normal">490</span>
-<span class="normal">491</span>
-<span class="normal">492</span>
-<span class="normal">493</span>
-<span class="normal">494</span>
-<span class="normal">495</span>
-<span class="normal">496</span>
-<span class="normal">497</span>
-<span class="normal">498</span>
-<span class="normal">499</span>
-<span class="normal">500</span>
-<span class="normal">501</span>
-<span class="normal">502</span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">502</span>
 <span class="normal">503</span>
 <span class="normal">504</span>
 <span class="normal">505</span>
@@ -4417,7 +4435,23 @@ very large datasets.</p>
 <span class="normal">600</span>
 <span class="normal">601</span>
 <span class="normal">602</span>
-<span class="normal">603</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">ShardWriter</span><span class="p">:</span>
+<span class="normal">603</span>
+<span class="normal">604</span>
+<span class="normal">605</span>
+<span class="normal">606</span>
+<span class="normal">607</span>
+<span class="normal">608</span>
+<span class="normal">609</span>
+<span class="normal">610</span>
+<span class="normal">611</span>
+<span class="normal">612</span>
+<span class="normal">613</span>
+<span class="normal">614</span>
+<span class="normal">615</span>
+<span class="normal">616</span>
+<span class="normal">617</span>
+<span class="normal">618</span>
+<span class="normal">619</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">ShardWriter</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Like TarWriter but splits into multiple shards.</span>
 
 <span class="sd">    Args:</span>
@@ -4484,7 +4518,7 @@ very large datasets.</p>
             <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">shard</span> <span class="o">+=</span> <span class="mi">1</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">opener</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">tarstream</span> <span class="o">=</span> <span class="n">TarWriter</span><span class="p">(</span><span class="n">opener</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fname</span><span class="p">),</span> <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">kw</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">tarstream</span> <span class="o">=</span> <span class="n">TarWriter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">opener</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fname</span><span class="p">),</span> <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">kw</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">tarstream</span> <span class="o">=</span> <span class="n">TarWriter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fname</span><span class="p">,</span> <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">kw</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">count</span> <span class="o">=</span> <span class="mi">0</span>
@@ -4587,13 +4621,13 @@ very large datasets.</p>
 </table>
             <details class="quote">
               <summary>Source code in <code>webdataset/writer.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">593</span>
-<span class="normal">594</span>
-<span class="normal">595</span>
-<span class="normal">596</span>
-<span class="normal">597</span>
-<span class="normal">598</span>
-<span class="normal">599</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="fm">__enter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">609</span>
+<span class="normal">610</span>
+<span class="normal">611</span>
+<span class="normal">612</span>
+<span class="normal">613</span>
+<span class="normal">614</span>
+<span class="normal">615</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="fm">__enter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Enter context.</span>
 
 <span class="sd">    Returns:</span>
@@ -4621,9 +4655,9 @@ very large datasets.</p>
 
             <details class="quote">
               <summary>Source code in <code>webdataset/writer.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">601</span>
-<span class="normal">602</span>
-<span class="normal">603</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="fm">__exit__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">617</span>
+<span class="normal">618</span>
+<span class="normal">619</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="fm">__exit__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Exit context.&quot;&quot;&quot;</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
 </code></pre></div></td></tr></table></div>
@@ -4738,23 +4772,7 @@ very large datasets.</p>
 </table>
             <details class="quote">
               <summary>Source code in <code>webdataset/writer.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">500</span>
-<span class="normal">501</span>
-<span class="normal">502</span>
-<span class="normal">503</span>
-<span class="normal">504</span>
-<span class="normal">505</span>
-<span class="normal">506</span>
-<span class="normal">507</span>
-<span class="normal">508</span>
-<span class="normal">509</span>
-<span class="normal">510</span>
-<span class="normal">511</span>
-<span class="normal">512</span>
-<span class="normal">513</span>
-<span class="normal">514</span>
-<span class="normal">515</span>
-<span class="normal">516</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">516</span>
 <span class="normal">517</span>
 <span class="normal">518</span>
 <span class="normal">519</span>
@@ -4775,7 +4793,23 @@ very large datasets.</p>
 <span class="normal">534</span>
 <span class="normal">535</span>
 <span class="normal">536</span>
-<span class="normal">537</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+<span class="normal">537</span>
+<span class="normal">538</span>
+<span class="normal">539</span>
+<span class="normal">540</span>
+<span class="normal">541</span>
+<span class="normal">542</span>
+<span class="normal">543</span>
+<span class="normal">544</span>
+<span class="normal">545</span>
+<span class="normal">546</span>
+<span class="normal">547</span>
+<span class="normal">548</span>
+<span class="normal">549</span>
+<span class="normal">550</span>
+<span class="normal">551</span>
+<span class="normal">552</span>
+<span class="normal">553</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">pattern</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">maxcount</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">100000</span><span class="p">,</span>
@@ -4834,13 +4868,13 @@ very large datasets.</p>
 
             <details class="quote">
               <summary>Source code in <code>webdataset/writer.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">585</span>
-<span class="normal">586</span>
-<span class="normal">587</span>
-<span class="normal">588</span>
-<span class="normal">589</span>
-<span class="normal">590</span>
-<span class="normal">591</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">601</span>
+<span class="normal">602</span>
+<span class="normal">603</span>
+<span class="normal">604</span>
+<span class="normal">605</span>
+<span class="normal">606</span>
+<span class="normal">607</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Close the stream.&quot;&quot;&quot;</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">finish</span><span class="p">()</span>
     <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">tarstream</span>
@@ -4868,14 +4902,14 @@ very large datasets.</p>
 
             <details class="quote">
               <summary>Source code in <code>webdataset/writer.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">576</span>
-<span class="normal">577</span>
-<span class="normal">578</span>
-<span class="normal">579</span>
-<span class="normal">580</span>
-<span class="normal">581</span>
-<span class="normal">582</span>
-<span class="normal">583</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">finish</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">592</span>
+<span class="normal">593</span>
+<span class="normal">594</span>
+<span class="normal">595</span>
+<span class="normal">596</span>
+<span class="normal">597</span>
+<span class="normal">598</span>
+<span class="normal">599</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">finish</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Finish all writing (use close instead).&quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">tarstream</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">tarstream</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
@@ -4904,25 +4938,25 @@ very large datasets.</p>
 
             <details class="quote">
               <summary>Source code in <code>webdataset/writer.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">539</span>
-<span class="normal">540</span>
-<span class="normal">541</span>
-<span class="normal">542</span>
-<span class="normal">543</span>
-<span class="normal">544</span>
-<span class="normal">545</span>
-<span class="normal">546</span>
-<span class="normal">547</span>
-<span class="normal">548</span>
-<span class="normal">549</span>
-<span class="normal">550</span>
-<span class="normal">551</span>
-<span class="normal">552</span>
-<span class="normal">553</span>
-<span class="normal">554</span>
-<span class="normal">555</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">555</span>
 <span class="normal">556</span>
-<span class="normal">557</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">next_stream</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="normal">557</span>
+<span class="normal">558</span>
+<span class="normal">559</span>
+<span class="normal">560</span>
+<span class="normal">561</span>
+<span class="normal">562</span>
+<span class="normal">563</span>
+<span class="normal">564</span>
+<span class="normal">565</span>
+<span class="normal">566</span>
+<span class="normal">567</span>
+<span class="normal">568</span>
+<span class="normal">569</span>
+<span class="normal">570</span>
+<span class="normal">571</span>
+<span class="normal">572</span>
+<span class="normal">573</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">next_stream</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Close the current stream and move to the next.&quot;&quot;&quot;</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">finish</span><span class="p">()</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">fname</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pattern</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">shard</span>
@@ -4936,7 +4970,7 @@ very large datasets.</p>
         <span class="p">)</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">shard</span> <span class="o">+=</span> <span class="mi">1</span>
     <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">opener</span><span class="p">:</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">tarstream</span> <span class="o">=</span> <span class="n">TarWriter</span><span class="p">(</span><span class="n">opener</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fname</span><span class="p">),</span> <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">kw</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tarstream</span> <span class="o">=</span> <span class="n">TarWriter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">opener</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fname</span><span class="p">),</span> <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">kw</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">tarstream</span> <span class="o">=</span> <span class="n">TarWriter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fname</span><span class="p">,</span> <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">kw</span><span class="p">)</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">count</span> <span class="o">=</span> <span class="mi">0</span>
@@ -4985,22 +5019,22 @@ very large datasets.</p>
 </table>
             <details class="quote">
               <summary>Source code in <code>webdataset/writer.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">559</span>
-<span class="normal">560</span>
-<span class="normal">561</span>
-<span class="normal">562</span>
-<span class="normal">563</span>
-<span class="normal">564</span>
-<span class="normal">565</span>
-<span class="normal">566</span>
-<span class="normal">567</span>
-<span class="normal">568</span>
-<span class="normal">569</span>
-<span class="normal">570</span>
-<span class="normal">571</span>
-<span class="normal">572</span>
-<span class="normal">573</span>
-<span class="normal">574</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">write</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">):</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">575</span>
+<span class="normal">576</span>
+<span class="normal">577</span>
+<span class="normal">578</span>
+<span class="normal">579</span>
+<span class="normal">580</span>
+<span class="normal">581</span>
+<span class="normal">582</span>
+<span class="normal">583</span>
+<span class="normal">584</span>
+<span class="normal">585</span>
+<span class="normal">586</span>
+<span class="normal">587</span>
+<span class="normal">588</span>
+<span class="normal">589</span>
+<span class="normal">590</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">write</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Write a sample.</span>
 
 <span class="sd">    Args:</span>
@@ -5076,7 +5110,7 @@ very large datasets.</p>
             </li>
             <li>
               <b><code>compress</code></b>
-                  (<code><span title="typing.Optional">Optional</span>[bool]</code>, default:
+                  (<code><span title="typing.Optional">Optional</span>[<span title="typing.Union">Union</span>[bool, str]]</code>, default:
                       <code>None</code>
 )
               –
@@ -5208,8 +5242,7 @@ tarwriter.write(sample)
 
               <details class="quote">
                 <summary>Source code in <code>webdataset/writer.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">335</span>
-<span class="normal">336</span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">336</span>
 <span class="normal">337</span>
 <span class="normal">338</span>
 <span class="normal">339</span>
@@ -5358,7 +5391,21 @@ tarwriter.write(sample)
 <span class="normal">482</span>
 <span class="normal">483</span>
 <span class="normal">484</span>
-<span class="normal">485</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">TarWriter</span><span class="p">:</span>
+<span class="normal">485</span>
+<span class="normal">486</span>
+<span class="normal">487</span>
+<span class="normal">488</span>
+<span class="normal">489</span>
+<span class="normal">490</span>
+<span class="normal">491</span>
+<span class="normal">492</span>
+<span class="normal">493</span>
+<span class="normal">494</span>
+<span class="normal">495</span>
+<span class="normal">496</span>
+<span class="normal">497</span>
+<span class="normal">498</span>
+<span class="normal">499</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">TarWriter</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;A class for writing dictionaries to tar files.</span>
 
 <span class="sd">    Args:</span>
@@ -5401,7 +5448,7 @@ tarwriter.write(sample)
         <span class="n">user</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;bigdata&quot;</span><span class="p">,</span>
         <span class="n">group</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;bigdata&quot;</span><span class="p">,</span>
         <span class="n">mode</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mo">0o0444</span><span class="p">,</span>
-        <span class="n">compress</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">compress</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">encoder</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="nb">bool</span><span class="p">,</span> <span class="n">Callable</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
         <span class="n">keep_meta</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
         <span class="n">mtime</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -5422,17 +5469,11 @@ tarwriter.write(sample)
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">format</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">tarfile</span><span class="p">,</span> <span class="nb">format</span><span class="p">,</span> <span class="nb">format</span><span class="p">)</span> <span class="k">if</span> <span class="nb">format</span> <span class="k">else</span> <span class="n">tarfile</span><span class="o">.</span><span class="n">USTAR_FORMAT</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">mtime</span> <span class="o">=</span> <span class="n">mtime</span>
+        <span class="n">tarmode</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tarmode</span><span class="p">(</span><span class="n">fileobj</span><span class="p">,</span> <span class="n">compress</span><span class="p">)</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">fileobj</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
-            <span class="k">if</span> <span class="n">compress</span> <span class="ow">is</span> <span class="kc">False</span><span class="p">:</span>
-                <span class="n">tarmode</span> <span class="o">=</span> <span class="s2">&quot;w|&quot;</span>
-            <span class="k">elif</span> <span class="n">compress</span> <span class="ow">is</span> <span class="kc">True</span><span class="p">:</span>
-                <span class="n">tarmode</span> <span class="o">=</span> <span class="s2">&quot;w|gz&quot;</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="n">tarmode</span> <span class="o">=</span> <span class="s2">&quot;w|gz&quot;</span> <span class="k">if</span> <span class="n">fileobj</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;gz&quot;</span><span class="p">)</span> <span class="k">else</span> <span class="s2">&quot;w|&quot;</span>
             <span class="n">fileobj</span> <span class="o">=</span> <span class="n">gopen</span><span class="p">(</span><span class="n">fileobj</span><span class="p">,</span> <span class="s2">&quot;wb&quot;</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">own_fileobj</span> <span class="o">=</span> <span class="n">fileobj</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="n">tarmode</span> <span class="o">=</span> <span class="s2">&quot;w|gz&quot;</span> <span class="k">if</span> <span class="n">compress</span> <span class="ow">is</span> <span class="kc">True</span> <span class="k">else</span> <span class="s2">&quot;w|&quot;</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">own_fileobj</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">encoder</span> <span class="o">=</span> <span class="n">make_encoder</span><span class="p">(</span><span class="n">encoder</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">keep_meta</span> <span class="o">=</span> <span class="n">keep_meta</span>
@@ -5509,6 +5550,25 @@ tarwriter.write(sample)
             <span class="n">total</span> <span class="o">+=</span> <span class="n">ti</span><span class="o">.</span><span class="n">size</span>
 
         <span class="k">return</span> <span class="n">total</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">tarmode</span><span class="p">(</span><span class="n">fileobj</span><span class="p">,</span> <span class="n">compress</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">compress</span> <span class="ow">is</span> <span class="kc">False</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s2">&quot;w|&quot;</span>
+        <span class="k">elif</span> <span class="p">(</span>
+            <span class="n">compress</span> <span class="ow">is</span> <span class="kc">True</span>
+            <span class="ow">or</span> <span class="n">compress</span> <span class="o">==</span> <span class="s2">&quot;gz&quot;</span>
+            <span class="ow">or</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">fileobj</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">and</span> <span class="n">fileobj</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;gz&quot;</span><span class="p">))</span>
+        <span class="p">):</span>
+            <span class="k">return</span> <span class="s2">&quot;w|gz&quot;</span>
+        <span class="k">elif</span> <span class="n">compress</span> <span class="o">==</span> <span class="s2">&quot;bz2&quot;</span> <span class="ow">or</span> <span class="p">(</span>
+            <span class="nb">isinstance</span><span class="p">(</span><span class="n">fileobj</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">and</span> <span class="n">fileobj</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;bz2&quot;</span><span class="p">)</span>
+        <span class="p">):</span>
+            <span class="k">return</span> <span class="s2">&quot;w|bz2&quot;</span>
+        <span class="k">elif</span> <span class="n">compress</span> <span class="o">==</span> <span class="s2">&quot;xz&quot;</span> <span class="ow">or</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">fileobj</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">and</span> <span class="n">fileobj</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;xz&quot;</span><span class="p">)):</span>
+            <span class="k">return</span> <span class="s2">&quot;w|xz&quot;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s2">&quot;w|&quot;</span>
 </code></pre></div></td></tr></table></div>
               </details>
 
@@ -5561,13 +5621,13 @@ tarwriter.write(sample)
 </table>
             <details class="quote">
               <summary>Source code in <code>webdataset/writer.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">421</span>
-<span class="normal">422</span>
-<span class="normal">423</span>
-<span class="normal">424</span>
-<span class="normal">425</span>
-<span class="normal">426</span>
-<span class="normal">427</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="fm">__enter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">416</span>
+<span class="normal">417</span>
+<span class="normal">418</span>
+<span class="normal">419</span>
+<span class="normal">420</span>
+<span class="normal">421</span>
+<span class="normal">422</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="fm">__enter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Enter context.</span>
 
 <span class="sd">    Returns:</span>
@@ -5595,9 +5655,9 @@ tarwriter.write(sample)
 
             <details class="quote">
               <summary>Source code in <code>webdataset/writer.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">429</span>
-<span class="normal">430</span>
-<span class="normal">431</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="fm">__exit__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">exc_type</span><span class="p">,</span> <span class="n">exc_val</span><span class="p">,</span> <span class="n">exc_tb</span><span class="p">):</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">424</span>
+<span class="normal">425</span>
+<span class="normal">426</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="fm">__exit__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">exc_type</span><span class="p">,</span> <span class="n">exc_val</span><span class="p">,</span> <span class="n">exc_tb</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Exit context.&quot;&quot;&quot;</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
 </code></pre></div></td></tr></table></div>
@@ -5669,7 +5729,7 @@ tarwriter.write(sample)
             </li>
             <li>
               <b><code>compress</code></b>
-                  (<code><span title="typing.Optional">Optional</span>[bool]</code>, default:
+                  (<code><span title="typing.Optional">Optional</span>[<span title="typing.Union">Union</span>[bool, str]]</code>, default:
                       <code>None</code>
 )
               –
@@ -5724,8 +5784,7 @@ tarwriter.write(sample)
 </table>
             <details class="quote">
               <summary>Source code in <code>webdataset/writer.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">372</span>
-<span class="normal">373</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">373</span>
 <span class="normal">374</span>
 <span class="normal">375</span>
 <span class="normal">376</span>
@@ -5766,18 +5825,13 @@ tarwriter.write(sample)
 <span class="normal">411</span>
 <span class="normal">412</span>
 <span class="normal">413</span>
-<span class="normal">414</span>
-<span class="normal">415</span>
-<span class="normal">416</span>
-<span class="normal">417</span>
-<span class="normal">418</span>
-<span class="normal">419</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+<span class="normal">414</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">fileobj</span><span class="p">,</span>
     <span class="n">user</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;bigdata&quot;</span><span class="p">,</span>
     <span class="n">group</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;bigdata&quot;</span><span class="p">,</span>
     <span class="n">mode</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mo">0o0444</span><span class="p">,</span>
-    <span class="n">compress</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">compress</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">encoder</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="nb">bool</span><span class="p">,</span> <span class="n">Callable</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="n">keep_meta</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="n">mtime</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -5798,17 +5852,11 @@ tarwriter.write(sample)
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="nb">format</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">tarfile</span><span class="p">,</span> <span class="nb">format</span><span class="p">,</span> <span class="nb">format</span><span class="p">)</span> <span class="k">if</span> <span class="nb">format</span> <span class="k">else</span> <span class="n">tarfile</span><span class="o">.</span><span class="n">USTAR_FORMAT</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">mtime</span> <span class="o">=</span> <span class="n">mtime</span>
+    <span class="n">tarmode</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tarmode</span><span class="p">(</span><span class="n">fileobj</span><span class="p">,</span> <span class="n">compress</span><span class="p">)</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">fileobj</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
-        <span class="k">if</span> <span class="n">compress</span> <span class="ow">is</span> <span class="kc">False</span><span class="p">:</span>
-            <span class="n">tarmode</span> <span class="o">=</span> <span class="s2">&quot;w|&quot;</span>
-        <span class="k">elif</span> <span class="n">compress</span> <span class="ow">is</span> <span class="kc">True</span><span class="p">:</span>
-            <span class="n">tarmode</span> <span class="o">=</span> <span class="s2">&quot;w|gz&quot;</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">tarmode</span> <span class="o">=</span> <span class="s2">&quot;w|gz&quot;</span> <span class="k">if</span> <span class="n">fileobj</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;gz&quot;</span><span class="p">)</span> <span class="k">else</span> <span class="s2">&quot;w|&quot;</span>
         <span class="n">fileobj</span> <span class="o">=</span> <span class="n">gopen</span><span class="p">(</span><span class="n">fileobj</span><span class="p">,</span> <span class="s2">&quot;wb&quot;</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">own_fileobj</span> <span class="o">=</span> <span class="n">fileobj</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="n">tarmode</span> <span class="o">=</span> <span class="s2">&quot;w|gz&quot;</span> <span class="k">if</span> <span class="n">compress</span> <span class="ow">is</span> <span class="kc">True</span> <span class="k">else</span> <span class="s2">&quot;w|&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">own_fileobj</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">encoder</span> <span class="o">=</span> <span class="n">make_encoder</span><span class="p">(</span><span class="n">encoder</span><span class="p">)</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">keep_meta</span> <span class="o">=</span> <span class="n">keep_meta</span>
@@ -5840,12 +5888,12 @@ tarwriter.write(sample)
 
             <details class="quote">
               <summary>Source code in <code>webdataset/writer.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">433</span>
-<span class="normal">434</span>
-<span class="normal">435</span>
-<span class="normal">436</span>
-<span class="normal">437</span>
-<span class="normal">438</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">428</span>
+<span class="normal">429</span>
+<span class="normal">430</span>
+<span class="normal">431</span>
+<span class="normal">432</span>
+<span class="normal">433</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Close the tar file.&quot;&quot;&quot;</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">tarstream</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
     <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">own_fileobj</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
@@ -5940,7 +5988,12 @@ tarwriter.write(sample)
 </table>
             <details class="quote">
               <summary>Source code in <code>webdataset/writer.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">440</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">435</span>
+<span class="normal">436</span>
+<span class="normal">437</span>
+<span class="normal">438</span>
+<span class="normal">439</span>
+<span class="normal">440</span>
 <span class="normal">441</span>
 <span class="normal">442</span>
 <span class="normal">443</span>
@@ -5980,12 +6033,7 @@ tarwriter.write(sample)
 <span class="normal">477</span>
 <span class="normal">478</span>
 <span class="normal">479</span>
-<span class="normal">480</span>
-<span class="normal">481</span>
-<span class="normal">482</span>
-<span class="normal">483</span>
-<span class="normal">484</span>
-<span class="normal">485</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">write</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">):</span>
+<span class="normal">480</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">write</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Write a dictionary to the tar file.</span>
 
 <span class="sd">    Args:</span>
@@ -6177,9 +6225,7 @@ to handle different URL schemes.</p>
 
             <details class="quote">
               <summary>Source code in <code>webdataset/gopen.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">445</span>
-<span class="normal">446</span>
-<span class="normal">447</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">447</span>
 <span class="normal">448</span>
 <span class="normal">449</span>
 <span class="normal">450</span>
@@ -6240,7 +6286,9 @@ to handle different URL schemes.</p>
 <span class="normal">505</span>
 <span class="normal">506</span>
 <span class="normal">507</span>
-<span class="normal">508</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">gopen</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;rb&quot;</span><span class="p">,</span> <span class="n">bufsize</span><span class="o">=</span><span class="mi">8192</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
+<span class="normal">508</span>
+<span class="normal">509</span>
+<span class="normal">510</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">gopen</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;rb&quot;</span><span class="p">,</span> <span class="n">bufsize</span><span class="o">=</span><span class="mi">8192</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Open the URL using various schemes and protocols.</span>
 
 <span class="sd">    This function provides a unified interface for opening resources specified by URLs,</span>
@@ -6300,7 +6348,7 @@ to handle different URL schemes.</p>
         <span class="k">return</span> <span class="nb">open</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">mode</span><span class="p">,</span> <span class="n">buffering</span><span class="o">=</span><span class="n">bufsize</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">pr</span><span class="o">.</span><span class="n">scheme</span> <span class="o">==</span> <span class="s2">&quot;file&quot;</span><span class="p">:</span>
         <span class="n">bufsize</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;GOPEN_BUFFER&quot;</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">))</span>
-        <span class="k">return</span> <span class="nb">open</span><span class="p">(</span><span class="n">pr</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="n">mode</span><span class="p">,</span> <span class="n">buffering</span><span class="o">=</span><span class="n">bufsize</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">open</span><span class="p">(</span><span class="n">url2pathname</span><span class="p">(</span><span class="n">pr</span><span class="o">.</span><span class="n">path</span><span class="p">),</span> <span class="n">mode</span><span class="p">,</span> <span class="n">buffering</span><span class="o">=</span><span class="n">bufsize</span><span class="p">)</span>
     <span class="n">handler</span> <span class="o">=</span> <span class="n">gopen_schemes</span><span class="p">[</span><span class="s2">&quot;__default__&quot;</span><span class="p">]</span>
     <span class="n">handler</span> <span class="o">=</span> <span class="n">gopen_schemes</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">pr</span><span class="o">.</span><span class="n">scheme</span><span class="p">,</span> <span class="n">handler</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">handler</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">mode</span><span class="p">,</span> <span class="n">bufsize</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">)</span>

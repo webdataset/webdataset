@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <link rel="shortcut icon" href="../../../img/favicon.ico" />
+    <title>Mini Imagenet Generation - webdataset</title>
+    <link rel="stylesheet" href="../../../css/theme.css" />
+    <link rel="stylesheet" href="../../../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+        <link href="../../../assets/_mkdocstrings.css" rel="stylesheet" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "Mini Imagenet Generation";
+        var mkdocs_page_input_path = "examples/webdataset/mi-images.md";
+        var mkdocs_page_url = null;
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../../../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href="../../.." class="icon icon-home"> webdataset
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../../..">README</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../../../webdataset/">WebDataset</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../../../wids/">WIDS</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../../../FAQ/">FAQ</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Examples</span></p>
+              <ul class="current">
+                  <li class="toctree-l1 current"><a class="reference internal current" >webdataset</a>
+    <ul class="current">
+                <li class="toctree-l2"><a class="reference internal" href="../">Index</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../wds-notes/">Wds notes</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../generate-text-dataset/">Dataset Generation</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../tesseract-wds/">Tesseract wds</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../train-resnet50-wds/">Resnet 50 Training on (Fake)Imagenet with WebDataset</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../train-resnet50-multiray-wds/">WebDataset + Distributed PyTorch Training</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../train-ocr-errors-hf/">Fine Tuning LLM with Huggingface and WebDataset</a>
+                </li>
+                <li class="toctree-l2 current"><a class="reference internal current" href="#">Mini Imagenet Generation</a>
+    <ul class="current">
+    </ul>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../mi-prompts/">Mini Imagenet Generation</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../column-store/">Using WebDataset as a Column Store</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" >wids</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../wids/">Index</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../wids/train-resnet50-wids/">Train resnet50 wids</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../wids/train-resnet50-multiray-wids/">WebIndexedDataset + Distributed PyTorch Training</a>
+                </li>
+    </ul>
+                  </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../..">webdataset</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../.." class="icon icon-home" aria-label="Docs"></a></li>
+          <li class="breadcrumb-item">Examples</li>
+          <li class="breadcrumb-item">webdataset</li>
+      <li class="breadcrumb-item active">Mini Imagenet Generation</li>
+    <li class="wy-breadcrumbs-aside">
+          <a href="http://github.com/webdataset/webdataset/edit/master/docs/examples/webdataset/mi-images.md" class="icon icon-github"> Edit on GitHub</a>
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="mini-imagenet-generation">Mini Imagenet Generation</h1>
+<p>This is one of a pair of notebooks used for generating an ImageNet-like dataset of training
+data using stable diffusion models. The difficulty of such artificial datasets can be
+easily tuned, and they are useful for debugging and testing deep learning applications.</p>
+<p>The first notebook uses Mistral-7B for taking class labels and generating descriptive prompts
+for image generation. The prompts are written out as shards to disk and shuffled. The process
+is parallelized using Ray.</p>
+<p>The second notebook uses Stable Diffustion to take descriptive prompts/image captions
+and renders them as image. This is a straightfowrard shard-to-shard transformation.</p>
+<p>Note that we are using explicit parallelization over shard files in the initial generation
+and the image generation, while we are using ray.data for the actual shuffling. That is
+because using explicit parallelization over shards makes it easier to restart jobs that have
+failed halfway through for some reason.</p>
+<pre><code class="language-python">%matplotlib inline
+import matplotlib.pyplot as plt
+from pprint import pprint
+import webdataset as wds
+from diffusers import AutoPipelineForText2Image
+import torch
+import warnings
+import logging
+import logging
+import tqdm
+from IPython.display import display, clear_output
+from PIL import Image as PILImage
+from itertools import islice
+import glob
+import os
+import io
+from contextlib import contextmanager
+import sys
+
+
+class SuppressWarning:
+    def __enter__(self):
+        logging.disable(logging.WARNING)
+
+    def __exit__(self, type, value, traceback):
+        logging.disable(logging.NOTSET)
+
+
+tqdm.tqdm.disable = True
+
+def get_num_gpus():
+    cluster_resources = ray.cluster_resources()
+    return cluster_resources[&quot;GPU&quot;]
+
+@contextmanager
+def suppress_outputs(redirect):
+    old_stdout = sys.stdout
+    old_stderr = sys.stderr
+
+    sys.stdout = redirect
+    sys.stderr = redirect
+
+    try: 
+        yield
+    finally:
+        sys.stdout = old_stdout
+        sys.stderr = old_stderr
+</code></pre>
+<pre><code class="language-python"># parameters
+
+odir = &quot;./mini-imagenet-10&quot;
+
+nactors = -1
+check_sufficient = True
+actor_startup_wait = 10
+</code></pre>
+<h1 id="transformation-class">Transformation Class</h1>
+<p>We encapsulate the rendering into a <code>RenderPrompts</code> class. This class is instantiated once per GPU, loads the model, and then is ready to transform shards.</p>
+<pre><code class="language-python">&quot;&quot;&quot;
+class ShardTransformer:
+    def __init__(self):
+        self.pipe = AutoPipelineForText2Image.from_pretrained(
+            &quot;stabilityai/sdxl-turbo&quot;, 
+            torch_dtype=torch.float16, variant=&quot;fp16&quot;
+        ).to(&quot;cuda&quot;)
+
+    def transform_shard(self, input_shard, output_shard, display_in_notebook=False):
+        ds = wds.WebDataset(input_shard).decode()
+        output = wds.TarWriter(output_shard)
+
+        for sample in ds:
+            sample = dict(sample)
+            text = sample[&quot;json&quot;][&quot;response&quot;]
+            with SuppressWarning():
+                image = self.pipe(prompt=text, num_inference_steps=4, guidance_scale=0.1).images[0]
+
+            sample[&quot;jpg&quot;] = image
+            output.write(sample)
+
+            if display_in_notebook:
+                clear_output(wait=True)
+                display(image)
+                pprint(text)
+
+        output.close()
+&quot;&quot;&quot;
+</code></pre>
+<pre><code class="language-python">def maybe_clear_output():
+    try:
+        clear_output(wait=True)
+    except:
+        pass
+
+class RenderPrompts:
+    def __init__(self, display_in_notebook=False):
+        self.display_in_notebook = display_in_notebook
+
+    def gpu_is_sufficient(self):
+        return torch.cuda.get_device_properties(0).total_memory &gt; 10**10
+
+    def load_model(self):
+        self.pipe = AutoPipelineForText2Image.from_pretrained(
+            &quot;stabilityai/sdxl-turbo&quot;, 
+            torch_dtype=torch.float16, variant=&quot;fp16&quot;
+        ).to(&quot;cuda&quot;)
+
+    def transform_sample(self, sample):
+        text = sample[&quot;json&quot;][&quot;response&quot;]
+        with SuppressWarning():
+            image = self.pipe(prompt=text, num_inference_steps=4, guidance_scale=0.1).images[0]
+        sample[&quot;jpg&quot;] = image
+        return sample
+
+    def transform_sample_with_redirect(self, sample):
+        stdout = io.StringIO()
+        with suppress_outputs(stdout):
+            sample = self.transform_sample(sample)
+        sample[&quot;stdout&quot;] = stdout.getvalue()
+        return sample
+
+    def transform_shard(self, input_shard, output_shard, maxcount=999999999):
+        ds = wds.WebDataset(input_shard).decode()
+        output = wds.TarWriter(output_shard+&quot;.temp&quot;)
+
+        for sample in islice(ds, maxcount):
+            transformed_sample = self.transform_sample_with_redirect(dict(sample))
+            del transformed_sample[&quot;stdout&quot;]
+            maybe_clear_output()
+            output.write(transformed_sample)
+
+            if self.display_in_notebook:
+                clear_output(wait=True)
+                display(transformed_sample['jpg'])
+                pprint(transformed_sample[&quot;json&quot;][&quot;response&quot;])
+
+        output.close()
+
+        os.rename(output_shard+&quot;.temp&quot;, output_shard)
+
+
+</code></pre>
+<pre><code class="language-python">transformer = RenderPrompts(display_in_notebook=True)
+transformer.load_model()
+shards = glob.glob(f&quot;{odir}/shuffled/*.tar&quot;)
+transformer.transform_shard(shards[0], &quot;temp.tar&quot;, maxcount=10)
+del transformer
+</code></pre>
+<h1 id="parallelization-with-ray">Parallelization with Ray</h1>
+<p>For parallel rendering, we use a Ray cluster. This will also work on a single machine with just one GPU.</p>
+<pre><code class="language-python">import ray
+
+if not ray.is_initialized():
+    ray.init(log_to_driver=False)
+
+@ray.remote(num_gpus=1)
+class RayRenderPrompts(RenderPrompts):
+    def __init__(self):
+        super().__init__()
+</code></pre>
+<pre><code class="language-python"># Start up and create the actor pool.
+# This tries to adapt to the number of GPUs available.
+# It also checks that each actor has sufficient memory.
+# If not, set up your cluster differently by excluding GPUs that are too small.
+# (Ray's facilities for heterogenous clusters are somewhat limited)
+
+ngpus = get_num_gpus() if nactors == -1 else nactors
+
+print(f&quot;using {ngpus} actors&quot;)
+actors = [RayRenderPrompts.remote() for i in range(int(ngpus))]
+
+print(&quot;loading the models&quot;)
+for actor in actors:
+    assert ray.get(actor.gpu_is_sufficient.remote()), &quot;GPU memory insufficient&quot;
+    ray.get(actor.load_model.remote())
+
+print(&quot;creating the pool&quot;)
+pool = ray.util.ActorPool(actors)
+</code></pre>
+<pre><code class="language-python">import glob
+import os
+
+def apply_actor(actor, action):
+    src, dst = action
+    print(f&quot;START {src} -&gt; {dst}&quot;)
+    result = actor.transform_shard.remote(src, dst)
+    print(f&quot;DONE  {src} -&gt; {dst}&quot;)
+    return result
+
+!mkdir -p $odir/images
+shards = [os.path.basename(p) for p in  sorted(glob.glob(f&quot;{odir}/shuffled/*.tar&quot;))]
+actions = [(f&quot;{odir}/shuffled/{shard}&quot;, f&quot;{odir}/images/{shard}&quot;) for shard in shards]
+result = list(pool.map(apply_actor, actions))
+</code></pre>
+<pre><code class="language-python">
+</code></pre>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../train-ocr-errors-hf/" class="btn btn-neutral float-left" title="Fine Tuning LLM with Huggingface and WebDataset"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../mi-prompts/" class="btn btn-neutral float-right" title="Mini Imagenet Generation">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+        <span>
+          <a href="http://github.com/webdataset/webdataset" class="fa fa-github" style="color: #fcfcfc"> GitHub</a>
+        </span>
+    
+    
+      <span><a href="../train-ocr-errors-hf/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../mi-prompts/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script src="../../../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "../../..";</script>
+    <script src="../../../js/theme_extra.js"></script>
+    <script src="../../../js/theme.js"></script>
+      <script src="../../../search/main.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>
