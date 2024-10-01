@@ -9,6 +9,7 @@ import tempfile
 import textwrap
 import time
 
+import yaml
 from invoke import task
 
 VENV = "venv"
@@ -53,13 +54,13 @@ def ruff(c):
 
 
 @task
-def docs(c):
+def docsserve(c):
     "Serve the documentation locally in a browser."
     c.run(f"{BIN}/mkdocs serve -o")
 
 
 @task
-def mkdocs(c):
+def docspush(c):
     """Generate the documentation and push it to Github pages."""
     c.run("rm -rf site")
     c.run("mkdocs build")
@@ -67,22 +68,99 @@ def mkdocs(c):
     c.run("rm -rf site")
 
 
+def summarize_notebook(nb):
+    """Summarize a notebook."""
+    import textwrap
+
+    prompt = textwrap.dedent(
+        """
+    Here is a notebook in markdown format. Please summarize the purpose and contents
+    of the notebook in a few sentences. The only markup you may use is `...` for
+    quoting identifiers. Except for quoted identifiers, do not include any code 
+    or output in the summary. Do not use any other markup or markdown, just plain text.
+    In your summary, focus on the use of webdataset, wids, or wsds libraries (note:
+    these are different libraries and be sure to talk only about the library that
+    is being used in the notebook) in the notebooks and what
+    the notebook illustrates about the use of those libraries,
+    rather than the deep learning problem or processing problem used to illustrate
+    the library usage. Mention the primary classes in those libraries used/exemplified
+    by each notebook.
+    Keep your summary brief, 1-3 sentences at most. Do not describe the contents
+    of the notebook step-by-step.
+    """
+    )
+    summary = os.popen(f"sgpt --no-md '{prompt}' < {nb}").read().strip()
+    summary = textwrap.fill(summary, 80)
+    return summary
+
+
+def find_with_key(d, key):
+    if isinstance(d, dict):
+        if key in d:
+            return d[key]
+        for k, v in d.items():
+            result = find_with_key(v, key)
+            if result is not None:
+                return result
+    if isinstance(d, list):
+        for v in d:
+            result = find_with_key(v, key)
+            if result is not None:
+                return result
+    return None
+
+
 @task
-def nbgen(c):
-    """Generate markdown for all example notebooks."""
-    c.run("jupyter nbconvert --to markdown readme.ipynb && mv readme.md README.md")
-    c.run(f"cp README.md docs/index.md")
-    c.run("mkdir -p docs/examples")
-    for nb in glob.glob("examples/*.ipynb"):
-        output = nb.replace(".ipynb", ".md")
-        if os.path.exists(output) and os.path.getmtime(nb) < os.path.getmtime(output):
+def docsnbgen(c):
+    assert os.path.exists("./mkdocs.yml")
+    assert os.path.exists("./docs")
+    assert os.path.exists("./examples")
+    structure = yaml.safe_load(open("mkdocs.yml"))
+    structure = find_with_key(structure, "Examples")
+    for item in structure:
+        if not isinstance(item, dict):
             continue
-        c.run(
-            f"{ACTIVATE}jupyter nbconvert --ClearOutputPreprocessor.enabled=True --inplace {nb}"
-        )
-        c.run(
-            f"{ACTIVATE}jupyter nbconvert {nb} --to markdown --output-dir=docs/examples"
-        )
+        k = list(item.keys())[0]
+        v = item[k]
+        odir = f"./docs/examples/{k}"
+        os.makedirs(odir, exist_ok=True)
+        for onav in v:
+            if "index.md" in onav:
+                continue
+            output = f"./docs/{onav}"
+            nb = "./examples/" + os.path.basename(output).replace(".md", ".ipynb")
+            print(nb, "-->", output)
+            # continue
+            if os.path.exists(output) and os.path.getmtime(nb) < os.path.getmtime(
+                output
+            ):
+                continue
+            c.run(
+                f"{ACTIVATE}jupyter nbconvert --ClearOutputPreprocessor.enabled=True --inplace {nb}"
+            )
+            c.run(
+                f"{ACTIVATE}jupyter nbconvert {nb} --to markdown --output-dir=docs/examples/{k}"
+            )
+            summary = summarize_notebook(output)
+            summary_fname = output.replace(".md", ".summary.md")
+            with open(summary_fname, "w") as stream:
+                stream.write(summary)
+            print()
+
+        def mksection(summary_fname):
+            with open(summary_fname) as stream:
+                summary = stream.read().strip()
+            section_name = os.path.basename(summary_fname).replace(".summary.md", "")
+            capitalized_name = section_name.replace("-", " ").title()
+            link = f"[{capitalized_name}](./{section_name})"
+            return f"### {capitalized_name}\n\n{link}\n\n{summary}\n\n"
+
+        summaries = [
+            mksection(fname) for fname in glob.glob(f"docs/examples/{k}/*.summary.md")
+        ]
+        with open(f"docs/examples/{k}/index.md", "w") as stream:
+            print("Writing", f"docs/examples/{k}/index.md")
+            stream.write("\n\n".join(summaries))
 
 
 @task

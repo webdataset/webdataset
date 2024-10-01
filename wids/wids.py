@@ -374,9 +374,9 @@ class ShardListDataset(Dataset[T]):
         dataset_name=None,
         localname=None,
         transformations="PIL",
-        keep=False,
-        base=None,
-        options=None,
+        keep=False,  # keep downloaded files
+        base=None,  # base URL for resolving relative URLs
+        options=None,  # override JSON options
     ):
         """Create a ShardListDataset.
 

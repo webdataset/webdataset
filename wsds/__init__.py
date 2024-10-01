@@ -6,4 +6,4 @@ from wids.wids_decode import (
     default_decoder,
 )
 
-from .datasets import SimpleDataset
+from .datasets import SequentialDataset
