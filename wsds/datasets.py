@@ -3,6 +3,7 @@ import os
 import random
 import warnings
 from functools import partial
+from itertools import islice
 from types import SimpleNamespace
 from typing import Any, Callable, Dict, Iterator, List, Optional
 from urllib.parse import urlparse
@@ -108,6 +109,7 @@ class DatasetSpec:
     handler: Callable = default_handler
     check_empty: bool = False
     file_fn: Optional[Callable] = None
+    repeats: int = 1
     force_size: Optional[int] = None
 
     # shard splitting
@@ -128,15 +130,15 @@ class DatasetSpec:
     override_options: Optional[Dict[str, Any]] = None
 
     # caching related options
-    localname: Optional[str] = None
     cache_size: int = int(1e12)
     cache_dir: Optional[str] = None
+    localname_fn: Optional[Callable] = None
     lru_size: int = 10
     keep_downloaded: bool = False
 
     # debugging
-    verbose_urls: bool = False
-    verbose_keys: bool = False
+    log_shards: Optional[str] = None
+    log_keys: Optional[str] = None
 
 
 def add_len_method(obj):
@@ -166,6 +168,8 @@ class SequentialDataset(IterableDataset):
         self.total_size = -1
         self.epoch = -1
         self.shardlist = None
+        self.log_shards_stream = None
+        self.log_keys_stream = None
         self.init_pipeline(args)
         if self.args.cache_dir is not None:
             self.cache = cache.FileCache(
@@ -177,29 +181,53 @@ class SequentialDataset(IterableDataset):
             self.cache = None
         self.read_shardlist()
 
-    def debug_print(self, msg):
-        def printer(source):
-            for x in source:
-                print(msg, repr(x)[:100])
-                yield x
+    def open_log(self, dest):
+        if dest is None:
+            stream = None
+        elif dest == "-":
+            stream = sys.stderr
+        elif isinstance(dest, str):
+            stream = open(dest, "w")
+        else:
+            stream = dest
+        return stream
 
-        return printer
+    def log_shards(self, source):
+        if self.log_shards_stream is None:
+            self.log_shards_stream = self.open_log(self.args.log_shards)
+        for x in source:
+            if self.log_shards_stream is not None:
+                self.log_shards_stream.write(x["__url__"])
+            yield x
+
+    def log_keys(self, source):
+        if self.log_keys_stream is None:
+            self.log_keys_stream = self.open_log(self.args.log_keys)
+        for x in source:
+            if self.log_keys_stream is not None:
+                self.log_keys_stream.write(x["__key__"])
+            yield x
 
     def init_pipeline(self, args):
         self.pipeline = [
             self.iterate_shards,
             self.split_shards,
+            self.repeat_shards,
             self.shuffle_shards,
             self.open_shards,
+            self.log_shards,
             self.iterate_tar_files,
             self.rename_files,
             self.group_by_keys,
+            self.log_keys,
             self.shuffle_samples,
             self.transform_samples,
+            self.limit_size,
             self.batch_samples,
         ]
 
     def read_shardlist(self):
+        """Get a list of shards from a string, list, or JSON file."""
         shards = self.args.shards
         if isinstance(shards, str) and shard.endswith(".json"):
             shards, total_size = read_shards_from_json(shards, args)
@@ -215,54 +243,92 @@ class SequentialDataset(IterableDataset):
         assert len(self.shardlist) > 0
 
     def iterate_shards(self):
+        """Iterate over the shardlist."""
         for i, shard in enumerate(self.shardlist):
             yield dict(url=shard, shard_num=i)
 
     def split_shards(self, source):
+        """Split the shardlist according to a custom function.
+
+        This is used for multiple workers and/or multiple nodes.
+        """
         if self.args.shard_split_fn:
             yield from self.args.shard_split_fn(source)
         else:
             yield from source
 
+    def repeat_shards(self, source):
+        """Repeat the shards according to the repeats parameter.
+
+        This takes place after splitting the shards, so the repeats
+        are per worker or per node.
+        """
+        shards = list(source)
+        for i in range(self.args.repeats):
+            for shard in shards:
+                yield shard
+
     def shuffle_shards(self, source):
+        """Shuffle the shards."""
         n = self.args.shard_shuffle_size
         yield from filters.shuffle(bufsize=n, initial=n)(source)
 
-    def shuffle_samples(self, source):
-        n = self.args.shuffle_size
-        yield from filters.shuffle(n)(source)
-
     def open_shards(self, source):
+        """Open the shards and yield url+stream dicts.
+
+        This optionally uses a cache to store the shards if a
+        cache_dir is provided.
+        """
         if self.args.cache_dir is None:
             yield from tariterators.url_opener(source)
         else:
             yield from self.cache(source)
 
     def iterate_tar_files(self, source):
+        """Iterate over the files in the tar archives."""
         yield from tariterators.tar_file_expander(source)
 
     def rename_files(self, source):
+        """Rename files according to a custom function."""
         if self.args.file_fn:
             yield from map_expand(source, self.args.file_fn)
         else:
             yield from source
 
     def group_by_keys(self, source):
+        """Group samples by keys using WebDataset conventions."""
         for i, sample in enumerate(tariterators.group_by_keys(source)):
             fix_dots(sample)
             sample["__epoch__"] = self.epoch
             sample["__count__"] = i
-            if self.args.verbose_keys:
-                print(sample["__key__"])
             yield sample
 
+    def shuffle_samples(self, source):
+        """Shuffle the samples within the stream using shuffle_size."""
+        n = self.args.shuffle_size
+        yield from filters.shuffle(n)(source)
+
     def transform_sample(self, sample):
+        """Apply the given transformations to the sample."""
         return apply_transformations(self.args.transformations, sample)
 
     def transform_samples(self, source):
+        """Apply the transformations to the stream of samples.
+
+        This can add samples (by returning an iterator) or
+        remove samples (by returning None).
+        """
         yield from map_expand(source, self.transform_sample)
 
+    def limit_size(self, source):
+        """Limit the size of the dataset to args.force_size."""
+        if self.args.force_size is not None:
+            yield from islice(source, self.args.force_size)
+        else:
+            yield from source
+
     def batch_samples(self, source):
+        """Batch the samples if a batch_size is given."""
         if self.args.batch_size is None:
             yield from source
             return
