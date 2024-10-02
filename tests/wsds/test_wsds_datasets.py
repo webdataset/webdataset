@@ -47,6 +47,40 @@ def test_simple():
     assert len(keys) == 47
 
 
+def test_repeats():
+    ds = wsds.SequentialDataset(shards=[local_data], repeats=2)
+    ds.read_shardlist()
+    assert ds.size() == -1
+    count = 0
+    # required_keys = "__key__ __url__ __local_path__ .cls .png .wnid .xml".split()
+    required_keys = "__key__ __url__ .cls .png .wnid .xml".split()
+    keys = set()
+    for sample in ds:
+        assert set(sample.keys()) >= set(required_keys)
+        keys.add(sample["__key__"])
+        assert isinstance(sample[".png"], bytes)
+        count += 1
+    assert count == 47 * 2
+    assert len(keys) == 47
+
+
+def test_force_size():
+    ds = wsds.SequentialDataset(shards=[local_data], repeats=2, force_size=70)
+    ds.read_shardlist()
+    assert ds.size() == -1
+    count = 0
+    # required_keys = "__key__ __url__ __local_path__ .cls .png .wnid .xml".split()
+    required_keys = "__key__ __url__ .cls .png .wnid .xml".split()
+    keys = set()
+    for sample in ds:
+        assert set(sample.keys()) >= set(required_keys)
+        keys.add(sample["__key__"])
+        assert isinstance(sample[".png"], bytes)
+        count += 1
+    assert count == 70
+    assert len(keys) == 47
+
+
 def test_transforms():
     import numpy as np
 
