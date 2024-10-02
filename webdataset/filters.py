@@ -715,9 +715,36 @@ def _map_tuple(data, *args, handler=reraise_exception):
 map_tuple = pipelinefilter(_map_tuple)
 
 
+def combine_values(b, combine_tensors=True, combine_scalars=True):
+    if isinstance(b[0], (int, float)):
+        if combine_scalars:
+            b = np.array(list(b))
+    elif isinstance(b[0], TorchTensor):
+        if combine_tensors:
+            import torch
+
+            b = torch.stack(list(b))
+    elif isinstance(b[0], np.ndarray):
+        if combine_tensors:
+            b = np.array(list(b))
+    else:
+        b = list(b)
+    return b
+
+
+def tuple2dict(l):
+    if isinstance(l, dict):
+        return l
+    return {i: d for i, d in enumerate(l)}
+
+
+def dict2tuple(d):
+    return tuple(d[i] for i in range(1 + max(d.keys())))
+
+
 def default_collation_fn(samples, combine_tensors=True, combine_scalars=True):
     """
-    Take a collection of samples (dictionaries) and create a batch.
+    Take a collection of samples (dictionaries or tuples) and create a batch.
 
     Args:
         samples (list): List of samples to be batched.
@@ -727,25 +754,18 @@ def default_collation_fn(samples, combine_tensors=True, combine_scalars=True):
     Returns:
         list: A batch of samples.
     """
-    assert isinstance(samples[0], (list, tuple)), type(samples[0])
-    batched = list(zip(*samples))
-    result = []
-    for b in batched:
-        if isinstance(b[0], (int, float)):
-            if combine_scalars:
-                b = np.array(list(b))
-        elif isinstance(b[0], TorchTensor):
-            if combine_tensors:
-                import torch
-
-                b = torch.stack(list(b))
-        elif isinstance(b[0], np.ndarray):
-            if combine_tensors:
-                b = np.array(list(b))
-        else:
-            b = list(b)
-        result.append(b)
-    return result
+    rows = [tuple2dict(x) for x in samples]
+    keys = set(rows[0].keys())
+    for row in rows[1:]:
+        assert set(row.keys()) == keys, "keys don't match in different samples"
+    result = {
+        k: combine_values([row[k] for row in rows], combine_tensors, combine_scalars)
+        for k in keys
+    }
+    if isinstance(samples[0], (list, tuple)):
+        return dict2tuple(result)
+    else:
+        return result
 
 
 def _batched(

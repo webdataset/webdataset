@@ -151,5 +151,6 @@ def test_batch_samples():
     dataset = SequentialDataset(shards=["dummy.tar"], batch_size=3)
     batches = list(dataset.batch_samples(samples))
     assert len(batches) == 4
-    assert all(len(batch) == 3 for batch in batches[:3])
-    assert len(batches[-1]) == 1
+    shapes = [batch["value"].shape for batch in batches]
+    assert all(shape == (3,) for shape in shapes[:-1]), shapes
+    assert batches[-1]["value"].shape == (1,)

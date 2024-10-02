@@ -120,7 +120,7 @@ class DatasetSpec:
     # batching options
     batch_size: Optional[int] = None
     batch_partial: bool = True
-    collation_fn: Optional[Callable] = None
+    collation_fn: Optional[Callable] = filters.default_collation_fn
 
     # JSON specification files
     dataset_name: Optional[str] = None
@@ -137,6 +137,21 @@ class DatasetSpec:
     # debugging
     verbose_urls: bool = False
     verbose_keys: bool = False
+
+
+def add_len_method(obj):
+    """Add a fake __len__ method to an object.
+
+    This is useful for frameworks that happen to work with
+    IterableDataset but still use __len__ to determine the
+    length of the dataset. This is not usually recommended
+    because PyTorch does not expect __len__ on IterableDataset.
+    """
+
+    def fake_len(self):
+        return self.total_size
+
+    obj.__len__ = fake_len
 
 
 class SequentialDataset(IterableDataset):
@@ -162,10 +177,13 @@ class SequentialDataset(IterableDataset):
             self.cache = None
         self.read_shardlist()
 
-    def debug_print(self, source):
-        for x in source:
-            print(repr(x)[:200])
-            yield x
+    def debug_print(self, msg):
+        def printer(source):
+            for x in source:
+                print(msg, repr(x)[:100])
+                yield x
+
+        return printer
 
     def init_pipeline(self, args):
         self.pipeline = [
@@ -177,9 +195,8 @@ class SequentialDataset(IterableDataset):
             self.rename_files,
             self.group_by_keys,
             self.shuffle_samples,
-            self.debug_print,
             self.transform_samples,
-            # self.batch_samples,
+            self.batch_samples,
         ]
 
     def read_shardlist(self):
@@ -246,6 +263,9 @@ class SequentialDataset(IterableDataset):
         yield from map_expand(source, self.transform_sample)
 
     def batch_samples(self, source):
+        if self.args.batch_size is None:
+            yield from source
+            return
         batcher = filters.batched(
             self.args.batch_size, collation_fn=self.args.collation_fn
         )
@@ -295,3 +315,4 @@ class SequentialDataset(IterableDataset):
                 stage.close()
             del stage
         self.cache.clear()
+        del self.cache

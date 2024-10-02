@@ -1,4 +1,5 @@
 import random
+from functools import partial
 
 import pytest
 
@@ -12,6 +13,7 @@ from webdataset.filters import (
     _shuffle,
     _to_tuple,
     _xdecode,
+    default_collation_fn,
 )
 
 
@@ -183,3 +185,63 @@ def test_xdecode_custom_decoder():
     input_data = [{"file.custom": b"hello"}]
     result = list(_xdecode(input_data, ("*.custom", custom_decode)))
     assert result == [{"file.custom": "HELLO"}]
+
+
+def test_default_collation_fn_dict():
+    data = [{"a": 1}, {"a": 2}, {"a": 3}]
+    f = partial(default_collation_fn, combine_scalars=False, combine_tensors=False)
+    result = _batched(iter(data), batchsize=2, collation_fn=f)
+    assert list(result) == [{"a": [1, 2]}, {"a": [3]}]
+
+
+def test_default_collation_fn_tuple():
+    data = [(1,), (2,), (3,)]
+    f = partial(default_collation_fn, combine_scalars=False, combine_tensors=False)
+    result = _batched(iter(data), batchsize=2, collation_fn=f)
+    assert list(result) == [([1, 2],), ([3],)]
+
+
+def test_default_collation_fn_scalars():
+    data = [{"a": 1}, {"a": 2}, {"a": 3}, {"a": 4}]
+    f = partial(default_collation_fn, combine_scalars=True, combine_tensors=False)
+    result = _batched(iter(data), batchsize=2, collation_fn=f)
+    for r in result:
+        assert set(r.keys()) == {"a"}
+        assert len(r["a"]) == 2
+        assert list(r["a"]) == [1, 2] or list(r["a"]) == [3, 4]
+
+
+def test_default_collation_fn_np():
+    import numpy as np
+
+    data = [
+        {"a": np.array([1])},
+        {"a": np.array([1])},
+        {"a": np.array([1])},
+        {"a": np.array([1])},
+    ]
+    f = partial(default_collation_fn, combine_scalars=True, combine_tensors=True)
+    result = _batched(iter(data), batchsize=2, collation_fn=f)
+    for r in result:
+        assert set(r.keys()) == {"a"}
+        assert isinstance(r["a"], np.ndarray)
+        assert r["a"].shape == (2, 1)
+        assert list(r["a"][:, 0]) == [1, 1]
+
+
+def test_default_collation_fn_torch():
+    import torch
+
+    data = [
+        {"a": torch.tensor([1])},
+        {"a": torch.tensor([1])},
+        {"a": torch.tensor([1])},
+        {"a": torch.tensor([1])},
+    ]
+    f = partial(default_collation_fn, combine_scalars=True, combine_tensors=True)
+    result = _batched(iter(data), batchsize=2, collation_fn=f)
+    for r in result:
+        assert set(r.keys()) == {"a"}
+        assert isinstance(r["a"], torch.Tensor)
+        assert r["a"].shape == (2, 1)
+        assert list(r["a"][:, 0]) == [1, 1]
