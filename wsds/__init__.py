@@ -6,4 +6,5 @@ from wids.wids_decode import (
     default_decoder,
 )
 
-from .datasets import SequentialDataset
+from .dataloader import DataloaderSpec, SingleNodeLoader, make_loader
+from .datasets import DatasetSpec, SequentialDataset

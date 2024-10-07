@@ -834,10 +834,17 @@ def _unbatched(data):
         Individual samples from the batches.
     """
     for sample in data:
-        assert isinstance(sample, (tuple, list)), sample
-        assert len(sample) > 0
-        for i in range(len(sample[0])):
-            yield tuple(x[i] for x in sample)
+        if isinstance(sample, (list, tuple)):
+            for i in range(len(sample[0])):
+                yield tuple(x[i] for x in sample)
+        elif isinstance(sample, dict):
+            lengths = {len(v) for v in sample.values()}
+            assert len(lengths) == 1, lengths
+            n = list(lengths)[0]
+            for i in range(n):
+                yield {k: v[i] for k, v in sample.items()}
+        else:
+            raise ValueError(f"unknown sample type: {type(sample)}")
 
 
 unbatched = pipelinefilter(_unbatched)

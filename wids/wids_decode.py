@@ -38,6 +38,8 @@ def decode_all_gz(
 
     check_keys(sample)
 
+    return sample
+
 
 def decode_basic(sample: Dict[str, Any], format: Optional[Union[bool, str]] = True):
     """Decode basic types in a sample.
@@ -105,6 +107,8 @@ def decode_basic(sample: Dict[str, Any], format: Optional[Union[bool, str]] = Tr
 
     check_keys(sample)
 
+    return sample
+
 
 def decode_images_to_pil(
     sample: Dict[str, Any], format: Optional[Union[bool, str]] = True
@@ -128,6 +132,8 @@ def decode_images_to_pil(
 
     check_keys(sample)
 
+    return sample
+
 
 def decode_images_to_numpy(
     sample: Dict[str, Any], format: Optional[Union[bool, str]] = True
@@ -150,6 +156,8 @@ def decode_images_to_numpy(
             sample[key] = np.asarray(PIL.Image.open(stream))
 
     check_keys(sample)
+
+    return sample
 
 
 def default_decoder(
