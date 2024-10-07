@@ -7,6 +7,8 @@ from urllib.parse import urlparse
 import pytest
 from icecream import ic
 
+ic.configureOutput(argToStringFunction=lambda obj: repr(obj)[:100])
+
 import wsds
 from tests.conftest import local_data, remote_loc, remote_shards
 from wsds.datasets import DatasetSpec, SequentialDataset
@@ -18,6 +20,7 @@ def summarize_sample(sample):
 
 
 spec = f"""---
+__kind__: "webdataset-spec-v1"
 train:
     sequential:
         shards: {local_data}
@@ -32,5 +35,4 @@ train:
 def test_smoke():
     loader = wsds.make_loader(spec)
     sample = next(iter(loader))
-    ic(sample)
-    raise Exception("test_smoke")
+    assert set(".wnid __url__ .cls .xml .png".split()) <= set(sample.keys())

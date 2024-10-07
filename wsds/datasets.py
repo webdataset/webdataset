@@ -231,8 +231,10 @@ def read_shards_from_json(filename, base_url=None, check=True):
     if base_url is not None:
         urls = [urljoin(base_url, url) for url in urls]
     if check:
-        assert shard_info["__kind__"] == "wids-shard-index-v1"
-        assert shard_info["wids_version"] == 1
+        assert (
+            shard_info["__kind__"] == "wids-shard-index-v1"
+            or shard_info["wids_version"] == 1
+        )
         assert "shardlist" in shard_info
     total_size = sum(x["nsamples"] for x in shard_info["shardlist"])
     return urls, total_size
@@ -244,6 +246,7 @@ def read_yaml_spec(spec, which):
     else:
         with gopen(spec) as stream:
             spec_data = yaml.safe_load(stream)
+    assert spec_data is not None, "spec is None"
     if which is None:
         spec_data = spec_data.get("train") or spec_data.get("default")
         assert spec_data is not None, "spec does not contain train or default"

@@ -30,6 +30,7 @@ def read_yaml_spec(spec, which):
     else:
         with gopen(spec) as stream:
             spec_data = yaml.safe_load(stream)
+    assert spec_data["__kind__"] == "webdataset-spec-v1"
     if which is None:
         spec_data = spec_data.get("train") or spec_data.get("default")
         assert spec_data is not None, "spec does not contain train or default"
@@ -84,9 +85,7 @@ class MultiNodeSplitShardsLoader:
 def make_loader(spec, which="train"):
     spec = read_yaml_spec(spec, which)
     dataset_spec = datasets.DatasetSpec(**spec["sequential"])
-    ic(dataset_spec)
     loader_spec = DataloaderSpec(**spec["loader"])
-    ic(loader_spec)
     loader_class = getattr(sys.modules[__name__], loader_spec.loader_class)
     assert isinstance(loader_class, type)
     return loader_class(dataset_spec=dataset_spec, loader_spec=loader_spec)
