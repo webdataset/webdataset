@@ -25,6 +25,13 @@ train:
     sequential:
         shards: {local_data}
         batch_size: 4
+        transformations:
+        - wsds.decode_all_gz
+        - wsds.decode_basic
+        - wsds.decode_images_to_pil
+        - fn: wsds.pil_resize 
+          key: .png
+          shape: [224, 224]
     loader:
         reshuffle_size: 1000
         batch_size: 5
@@ -36,3 +43,6 @@ def test_smoke():
     loader = wsds.make_loader(spec)
     sample = next(iter(loader))
     assert set(".wnid __url__ .cls .xml .png".split()) <= set(sample.keys())
+    assert len(sample["__url__"]) == 5
+    assert len(sample[".png"]) == 5
+    assert sample[".png"][0].size == (224, 224)

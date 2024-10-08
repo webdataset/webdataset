@@ -1,4 +1,5 @@
 import dataclasses
+import importlib
 import io
 import sys
 import warnings
@@ -82,10 +83,23 @@ class MultiNodeSplitShardsLoader:
         raise NotImplementedError("MultiNodeResamplingLoader is not implemented yet")
 
 
+def make_dataset(spec, which="train"):
+    if isinstance(spec, str):
+        spec = read_yaml_spec(spec, which)
+    if isinstance(spec, dict):
+        spec = datasets.DatasetSpec(**spec["sequential"])
+    return datasets.SequentialDataset(spec)
+
+
 def make_loader(spec, which="train"):
-    spec = read_yaml_spec(spec, which)
-    dataset_spec = datasets.DatasetSpec(**spec["sequential"])
-    loader_spec = DataloaderSpec(**spec["loader"])
+    if isinstance(spec, str):
+        spec = read_yaml_spec(spec, which)
+    if isinstance(spec, dict):
+        spec = (
+            datasets.DatasetSpec(**spec["sequential"]),
+            DataloaderSpec(**spec["loader"]),
+        )
+    dataset_spec, loader_spec = spec
     loader_class = getattr(sys.modules[__name__], loader_spec.loader_class)
     assert isinstance(loader_class, type)
     return loader_class(dataset_spec=dataset_spec, loader_spec=loader_spec)

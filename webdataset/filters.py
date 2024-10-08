@@ -723,9 +723,17 @@ def combine_values(b, combine_tensors=True, combine_scalars=True):
         if combine_tensors:
             import torch
 
+            shapes = set(x.shape for x in b)
+            assert (
+                len(shapes) == 1
+            ), f"all shapes must be equal in collation, got {shapes}"
             b = torch.stack(list(b))
     elif isinstance(b[0], np.ndarray):
         if combine_tensors:
+            shapes = set(x.shape for x in b)
+            assert (
+                len(shapes) == 1
+            ), f"all shapes must be equal in collation, got {shapes}"
             b = np.array(list(b))
     else:
         b = list(b)

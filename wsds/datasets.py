@@ -1,5 +1,6 @@
 import dataclasses
 import fnmatch
+import importlib
 import io
 import json
 import os
@@ -176,10 +177,18 @@ def get_callable(x):
 
 
 def lookup_qualified_python_symbols(sym: str):
+    args = None
+    if isinstance(sym, dict):
+        args = dict(sym)
+        del args["fn"]
+        sym = sym["fn"]
     symbol_name = sym.split(".")[-1]
     module_path = sym.split(".")[:-1]
     symbol_value = getattr(importlib.import_module(".".join(module_path)), symbol_name)
-    return symbol_value
+    if args is not None:
+        return partial(symbol_value, **args)
+    else:
+        return symbol_value
 
 
 def interpret_transformations(transformations):
@@ -202,6 +211,8 @@ def interpret_transformations(transformations):
                 t = wids_decode.decode_image_to_numpy
             else:
                 t = lookup_qualified_python_symbols(t)
+        elif isinstance(t, dict):
+            t = lookup_qualified_python_symbols(t)
         assert callable(t), t
         result.append(t)
     return result
