@@ -135,6 +135,7 @@ class DatasetSpec:
     total_size: int = -1
 
     # shard splitting
+    resampling: bool = False
     shard_split_fn: Optional[callable] = None
 
     # renaming
@@ -355,8 +356,17 @@ class SequentialDataset(IterableDataset):
         self.pipeline = [
             self.iterate_shards,
             self.split_shards,
-            self.repeat_shards,
-            self.shuffle_shards,
+        ]
+        if self.args.resampling:
+            self.pipeline += [
+                self.resample_shards,
+            ]
+        else:
+            self.pipeline += [
+                self.repeat_shards,
+                self.shuffle_shards,
+            ]
+        self.pipeline += [
             self.open_shards,
             self.log_shards,
             self.iterate_tar_files,
@@ -413,6 +423,16 @@ class SequentialDataset(IterableDataset):
         for i in range(self.args.repeats):
             for shard in shards:
                 yield shard
+
+    def resample_shards(self, source):
+        """Return an endless stream of shard samples from the source.
+
+        This takes place after splitting the shards, so the repeats
+        are per worker or per node.
+        """
+        shards = list(source)
+        while True:
+            yield random.choice(shards)
 
     def shuffle_shards(self, source):
         """Shuffle the shards."""

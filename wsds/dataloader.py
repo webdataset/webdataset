@@ -15,6 +15,72 @@ from webdataset import filters, shardlists
 from . import datasets
 
 
+def single_node_only(src, group=None):
+    """Ensure the input sequence is not split for multi-node training.
+
+    Args:
+        src: The input sequence.
+        group: The process group for distributed training.
+
+    Yields:
+        Elements from the input sequence.
+
+    Raises:
+        ValueError: If multi-node training is detected.
+    """
+    rank, world_size, worker, num_workers = utils.pytorch_worker_info(group=group)
+    if world_size > 1:
+        raise ValueError(
+            "you need to add an explicit nodesplitter to your input pipeline for multi-node training"
+        )
+    yield from src
+
+
+def split_by_worker(src):
+    """Split the input sequence by PyTorch DataLoader worker.
+
+    When used with multinode training, this will use all shards on each node.
+    The result is that each epoch will be num_workers times larger than
+    the dataset. It also guarantees that epochs are the same size on all workers.
+
+    Args:
+        src: The input sequence to be split.
+
+    Yields:
+        Elements from the input sequence based on the worker's ID.
+    """
+    rank, world_size, worker, num_workers = utils.pytorch_worker_info()
+    if num_workers > 1:
+        yield from islice(src, worker, None, num_workers)
+    else:
+        yield from src
+
+
+def split_by_node_and_worker(src, group=None):
+    """Split the input sequence by PyTorch distributed rank.
+
+    When used with multinode training, this will split shards by node and by
+    worker. This often means that different nodes will get different numbers
+    of samples.
+
+    Args:
+        src: The input sequence to be split.
+        group: The process group for distributed training.
+
+    Yields:
+        Elements from the input sequence based on the node's rank.
+    """
+    rank, world_size, worker, num_workers = utils.pytorch_worker_info(group=group)
+    assert num_workers >= 1
+    assert world_size >= 1
+    if world_size > 1 or num_workers > 1:
+        yield from islice(
+            src, rank + world_size * worker, None, world_size * num_workers
+        )
+    else:
+        yield from src
+
+
 @dataclasses.dataclass
 class DataloaderSpec:
     loader_class: str = "SingleNodeLoader"
@@ -41,9 +107,9 @@ def read_yaml_spec(spec, which):
     return spec_data
 
 
-class SingleNodeLoader:
+class GenericLoader:
     def __init__(self, *, dataset_spec=None, loader_spec=None):
-        loader_spec.shard_split_fn = shardlists.single_node_only
+        loader_spec.shard_split_fn = datasets.get_callable(loader_spec.shard_split_fn)
         self.dataset = datasets.SequentialDataset(dataset_spec)
         self.loader = DataLoader(
             self.dataset, batch_size=None, num_workers=loader_spec.num_workers
@@ -68,22 +134,46 @@ class SingleNodeLoader:
         return datasets.run_pipeline(self.pipeline)
 
 
-class MultiNodeResamplingLoader:
+class SingleNodeLoader(GenericLoader):
     def __init__(self, *, dataset_spec=None, loader_spec=None):
-        raise NotImplementedError("MultiNodeResamplingLoader is not implemented yet")
+        dataset_spec = dataset_spec.copy()
+        dataset_spec.shard_split_fn = single_node_only
+        super().__init__(dataset_spec=dataset_spec, loader_spec=loader_spec)
+
+
+class ResamplingLoaderNoSplit(GenericLoader):
+    def __init__(self, *, dataset_spec=None, loader_spec=None):
+        dataset_spec = dataset_spec.copy()
+        dataset_spec.resampling = True
+        dataset_spec.shard_split_fn = split_by_worker
+        super().__init__(dataset_spec=dataset_spec, loader_spec=loader_spec)
+
+
+class ResamplingLoaderSplit:
+    def __init__(self, *, dataset_spec=None, loader_spec=None):
+        dataset_spec = dataset_spec.copy()
+        dataset_spec.resampling = True
+        dataset_spec.shard_split_fn = split_by_node_and_worker
+        super().__init__(dataset_spec=dataset_spec, loader_spec=loader_spec)
 
 
 class MultiNodeAllShardsLoader:
     def __init__(self, *, dataset_spec=None, loader_spec=None):
-        raise NotImplementedError("MultiNodeResamplingLoader is not implemented yet")
+        dataset_spec = dataset_spec.copy()
+        dataset_spec.resampling = False
+        dataset_spec.shard_split_fn = split_by_worker
+        super().__init__(dataset_spec=dataset_spec, loader_spec=loader_spec)
 
 
 class MultiNodeSplitShardsLoader:
     def __init__(self, *, dataset_spec=None, loader_spec=None):
-        raise NotImplementedError("MultiNodeResamplingLoader is not implemented yet")
+        dataset_spec = dataset_spec.copy()
+        dataset_spec.resampling = False
+        dataset_spec.shard_split_fn = split_by_node_and_worker
+        super().__init__(dataset_spec=dataset_spec, loader_spec=loader_spec)
 
 
-def make_dataset(spec, which="train"):
+def make_dataset(spec, which="train", **kw):
     if isinstance(spec, str):
         spec = read_yaml_spec(spec, which)
     if isinstance(spec, dict):
@@ -100,6 +190,8 @@ def make_loader(spec, which="train"):
             DataloaderSpec(**spec["loader"]),
         )
     dataset_spec, loader_spec = spec
+    if loader_spec.num_workers == -1:
+        return datasets.SequentialDataset(dataset_spec)
     loader_class = getattr(sys.modules[__name__], loader_spec.loader_class)
     assert isinstance(loader_class, type)
     return loader_class(dataset_spec=dataset_spec, loader_spec=loader_spec)
