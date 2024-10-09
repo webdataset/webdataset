@@ -120,7 +120,7 @@ def torch_loads(data: bytes):
     import torch
 
     stream = io.BytesIO(data)
-    return torch.load(stream, weights_only=pytorch_weights_only)
+    return torch.load(stream, weights_only=pytorch_weights_only, map_location='cpu')
 
 
 def tenbin_loads(data):
