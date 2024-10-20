@@ -1,16 +1,23 @@
 import dataclasses
+import fnmatch
+import importlib
+import io
+import json
 import os
 import random
+import re
 import warnings
 from functools import partial
 from itertools import islice
 from types import SimpleNamespace
-from typing import Any, Callable, Dict, Iterator, List, Optional
-from urllib.parse import urlparse
+from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple, Union
+from urllib.parse import urljoin, urlparse
 
+import braceexpand
 import yaml
 
-from webdataset import autodecode, cache, filters, shardlists, tariterators
+from webdataset import autodecode, cache, filters, gopen, shardlists, tariterators
+from wids import wids_decode
 
 try:
     from torch.utils.data import IterableDataset
@@ -18,6 +25,14 @@ except ImportError:
 
     class IterableDataset:
         pass
+
+
+def apply_regex_list(patterns, s):
+    if patterns is None:
+        return s
+    for k, v in patterns:
+        s = re.sub(k, v, s)
+    return s
 
 
 def run_pipeline(pipeline):
@@ -101,19 +116,30 @@ def default_handler(exn):
     raise exn
 
 
+def default_transformations():
+    return ["gz", "basic"]
+
+
 @dataclasses.dataclass
 class DatasetSpec:
     # basic dataset info
     shards: List[str] = dataclasses.field(default_factory=list)
-    transformations: List[Callable] = dataclasses.field(default_factory=list)
+    transformations: List[Union[str, Callable]] = dataclasses.field(
+        default_factory=default_transformations
+    )
     handler: Callable = default_handler
     check_empty: bool = False
     file_fn: Optional[Callable] = None
     repeats: int = 1
     force_size: Optional[int] = None
+    total_size: int = -1
 
     # shard splitting
+    resampling: bool = False
     shard_split_fn: Optional[callable] = None
+
+    # renaming
+    rename_fields: List[Tuple[str, str]] = dataclasses.field(default_factory=list)
 
     # shuffle options
     shuffle_size: int = -1
@@ -122,7 +148,7 @@ class DatasetSpec:
     # batching options
     batch_size: Optional[int] = None
     batch_partial: bool = True
-    collation_fn: Optional[Callable] = filters.default_collation_fn
+    collation_fn: Optional[Union[Callable, str]] = filters.default_collation_fn
 
     # JSON specification files
     dataset_name: Optional[str] = None
@@ -141,6 +167,58 @@ class DatasetSpec:
     log_keys: Optional[str] = None
 
 
+def get_callable(x):
+    if callable(x):
+        return x
+    if isinstance(x, str):
+        result = lookup_qualified_python_symbols(x)
+        assert callable(result), f"lookup of {x} did not result in a callable"
+        return result
+    raise ValueError(f"bad transformations: {x}")
+
+
+def lookup_qualified_python_symbols(sym: str):
+    args = None
+    if isinstance(sym, dict):
+        args = dict(sym)
+        del args["fn"]
+        sym = sym["fn"]
+    symbol_name = sym.split(".")[-1]
+    module_path = sym.split(".")[:-1]
+    symbol_value = getattr(importlib.import_module(".".join(module_path)), symbol_name)
+    if args is not None:
+        return partial(symbol_value, **args)
+    else:
+        return symbol_value
+
+
+def interpret_transformations(transformations):
+    """Interpret a list of transformations.
+
+    This resolves strings into functions.
+    """
+    result = []
+    if not isinstance(transformations, list):
+        transformations = [transformations]
+    for t in transformations:
+        if isinstance(t, str):
+            if t.lower() in ["gz"]:
+                t = wids_decode.decode_all_gz
+            elif t.lower() in ["", "basic"]:
+                t = wids_decode.decode_basic
+            elif t.lower() == "pil":
+                t = wids_decode.decode_images_to_pil
+            elif t.lower() == "rgb":
+                t = wids_decode.decode_image_to_numpy
+            else:
+                t = lookup_qualified_python_symbols(t)
+        elif isinstance(t, dict):
+            t = lookup_qualified_python_symbols(t)
+        assert callable(t), t
+        result.append(t)
+    return result
+
+
 def add_len_method(obj):
     """Add a fake __len__ method to an object.
 
@@ -156,30 +234,83 @@ def add_len_method(obj):
     obj.__len__ = fake_len
 
 
+def read_shards_from_json(filename, base_url=None, check=True):
+    with gopen(filename) as stream:
+        shard_info = json.load(stream)
+    if base_url is None:
+        base_url = filename
+    urls = [x["url"] for x in shard_info["shardlist"]]
+    if base_url is not None:
+        urls = [urljoin(base_url, url) for url in urls]
+    if check:
+        assert (
+            shard_info["__kind__"] == "wids-shard-index-v1"
+            or shard_info["wids_version"] == 1
+        )
+        assert "shardlist" in shard_info
+    total_size = sum(x["nsamples"] for x in shard_info["shardlist"])
+    return urls, total_size
+
+
+def read_yaml_spec(spec, which):
+    if spec.startswith("---\n"):
+        spec_data = yaml.safe_load(io.StringIO(spec))
+    else:
+        with gopen(spec) as stream:
+            spec_data = yaml.safe_load(stream)
+    assert spec_data is not None, "spec is None"
+    if which is None:
+        spec_data = spec_data.get("train") or spec_data.get("default")
+        assert spec_data is not None, "spec does not contain train or default"
+    else:
+        spec_data = spec_data.get(which)
+        assert spec_data is not None, f"spec does not contain {which}"
+    assert "sequential" in spec_data, spec_data
+    args = DatasetSpec()
+    result = dataclasses.replace(args, **spec_data["sequential"])
+    return result
+
+
 class SequentialDataset(IterableDataset):
     def __init__(
         self,
-        *,
-        args=None,
+        spec=None,
+        which=None,
         **kw,
     ):
-        self.args = DatasetSpec(args) if args is not None else DatasetSpec()
+        if isinstance(spec, str):
+            self.args = read_yaml_spec(spec, which)
+        elif isinstance(spec, dict):
+            self.args = DatasetSpec(**spec)
+        elif isinstance(spec, DatasetSpec):
+            self.args = spec
+        else:
+            self.args = DatasetSpec()
         self.args = dataclasses.replace(self.args, **kw)
-        self.total_size = -1
+        self.total_size = self.args.total_size
         self.epoch = -1
         self.shardlist = None
         self.log_shards_stream = None
         self.log_keys_stream = None
-        self.init_pipeline(args)
+        self.init_pipeline()
         if self.args.cache_dir is not None:
             self.cache = cache.FileCache(
-                cache_dir=cache_dir,
-                cache_size=cache_size,
-                handler=args.handler,
+                cache_dir=self.args.cache_dir,
+                cache_size=self.args.cache_size,
             )
         else:
             self.cache = None
         self.read_shardlist()
+        self.transformations = interpret_transformations(
+            self.args.transformations or []
+        )
+        if not isinstance(self.transformations, list):
+            assert callable(self.transformations)
+            self.transformations = [self.transformations]
+
+    def add_transform(self, transformation):
+        self.transformations.append(transformation)
+        return self
 
     def open_log(self, dest):
         if dest is None:
@@ -208,17 +339,40 @@ class SequentialDataset(IterableDataset):
                 self.log_keys_stream.write(x["__key__"])
             yield x
 
-    def init_pipeline(self, args):
+    def rename_fields(self, source):
+        for x in source:
+            if self.args.rename_fields is not None:
+                keys = list(x.keys())
+                for k in keys:
+                    if k.startswith("_"):
+                        continue
+                    k_new = apply_regex_list(self.args.rename_fields, k)
+                    if k_new != k:
+                        x[k_new] = x[k]
+                        del x[k]
+            yield x
+
+    def init_pipeline(self):
         self.pipeline = [
             self.iterate_shards,
             self.split_shards,
-            self.repeat_shards,
-            self.shuffle_shards,
+        ]
+        if self.args.resampling:
+            self.pipeline += [
+                self.resample_shards,
+            ]
+        else:
+            self.pipeline += [
+                self.repeat_shards,
+                self.shuffle_shards,
+            ]
+        self.pipeline += [
             self.open_shards,
             self.log_shards,
             self.iterate_tar_files,
             self.rename_files,
             self.group_by_keys,
+            self.rename_fields,
             self.log_keys,
             self.shuffle_samples,
             self.transform_samples,
@@ -229,8 +383,10 @@ class SequentialDataset(IterableDataset):
     def read_shardlist(self):
         """Get a list of shards from a string, list, or JSON file."""
         shards = self.args.shards
-        if isinstance(shards, str) and shard.endswith(".json"):
-            shards, total_size = read_shards_from_json(shards, args)
+        if isinstance(shards, str) and shards.endswith(".json"):
+            shards, total_size = read_shards_from_json(
+                shards, base_url=self.args.base_url
+            )
             self.shardlist = shards
             self.total_size = total_size
         elif isinstance(shards, str):
@@ -238,9 +394,9 @@ class SequentialDataset(IterableDataset):
         elif isinstance(shards, list):
             self.shardlist = shards
         else:
-            raise ValueError("unknown shard list type")
+            raise ValueError(f"unknown shard list type {shards}")
         assert self.shardlist is not None
-        assert len(self.shardlist) > 0
+        assert len(self.shardlist) > 0, f"{self.args.shards = }"
 
     def iterate_shards(self):
         """Iterate over the shardlist."""
@@ -267,6 +423,16 @@ class SequentialDataset(IterableDataset):
         for i in range(self.args.repeats):
             for shard in shards:
                 yield shard
+
+    def resample_shards(self, source):
+        """Return an endless stream of shard samples from the source.
+
+        This takes place after splitting the shards, so the repeats
+        are per worker or per node.
+        """
+        shards = list(source)
+        while True:
+            yield random.choice(shards)
 
     def shuffle_shards(self, source):
         """Shuffle the shards."""
@@ -310,7 +476,7 @@ class SequentialDataset(IterableDataset):
 
     def transform_sample(self, sample):
         """Apply the given transformations to the sample."""
-        return apply_transformations(self.args.transformations, sample)
+        return apply_transformations(self.transformations, sample)
 
     def transform_samples(self, source):
         """Apply the transformations to the stream of samples.
@@ -333,7 +499,7 @@ class SequentialDataset(IterableDataset):
             yield from source
             return
         batcher = filters.batched(
-            self.args.batch_size, collation_fn=self.args.collation_fn
+            self.args.batch_size, collation_fn=get_callable(self.args.collation_fn)
         )
         yield from batcher(source)
 
@@ -354,6 +520,10 @@ class SequentialDataset(IterableDataset):
                     misses * 100.0 / accesses
                 )
             )
+
+    def add_transform(self, transformation):
+        """Add a transformation to the dataset."""
+        self.transformations.append(transformation)
 
     def __iter__(self):
         """Iterate over the dataset."""

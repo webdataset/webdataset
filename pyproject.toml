@@ -251,4 +251,5 @@ dev = [
     "twine",
     "typer",
     "wheel",
+    "icecream",
 ]
