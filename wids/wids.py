@@ -241,29 +241,27 @@ def hash_localname(dldir="/tmp/_wids_cache"):
 
     return f
 
+class CacheLocalname:
+    def __init__(self, cachedir: str) -> None:
+        self._cachedir = cachedir
+        os.makedirs(cachedir, exist_ok=True)
 
-def cache_localname(cachedir):
-    os.makedirs(cachedir, exist_ok=True)
-
-    def f(shard):
+    def __call__(self, shard: str) -> str:
         """Given a URL, return a local name for the shard."""
         path = urlparse(shard).path
         fname = os.path.basename(path)
-        return os.path.join(cachedir, fname)
+        return os.path.join(self._cachedir, fname)
+    
 
-    return f
+class DefaultLocalname:
+    def __init__(self, dldir: str = "/tmp/_wids_cache") -> None:
+        self._dldir = dldir
+        os.makedirs(dldir, exist_ok=True)
 
-
-def default_localname(dldir="/tmp/_wids_cache"):
-    os.makedirs(dldir, exist_ok=True)
-
-    def f(shard):
+    def __call__(self, shard: str) -> str:
         """Given a URL, return a local name for the shard."""
         cachename = quote(shard, safe="+-")
-        return os.path.join(dldir, cachename)
-
-    return f
-
+        return os.path.join(self._dldir, cachename)
 
 class LRUShards:
     """A class that manages a cache of shards. The cache is a LRU cache that
@@ -274,7 +272,7 @@ class LRUShards:
     are not deleted when they are no longer needed.
     """
 
-    def __init__(self, lru_size, keep=False, localname=default_localname()):
+    def __init__(self, lru_size, keep=False, localname=DefaultLocalname()):
         self.localname = localname
         # the cache contains the local name as the key and the downloaded path as the value
         self.lru = LRUCache(lru_size, release_handler=self.release_handler)
@@ -415,7 +413,7 @@ class ShardListDataset(Dataset[T]):
             # when a cache dir is explicitly given, we download files into
             # that directory without any changes
             self.cache_dir = cache_dir
-            self.localname = cache_localname(cache_dir)
+            self.localname = CacheLocalname(cache_dir)
         elif localname is not None:
             # when a localname function is given, we use that
             self.cache_dir = None
@@ -423,7 +421,7 @@ class ShardListDataset(Dataset[T]):
         else:
             # when no cache dir or localname are given, use the cache from the environment
             self.cache_dir = os.environ.get("WIDS_CACHE", "/tmp/_wids_cache")
-            self.localname = default_localname(self.cache_dir)
+            self.localname = DefaultLocalname(self.cache_dir)
 
         if True or int(os.environ.get("WIDS_VERBOSE", 0)):
             nbytes = sum(shard.get("filesize", 0) for shard in self.shards)
