@@ -12,6 +12,7 @@ import re
 import sys
 from subprocess import PIPE, Popen
 from urllib.parse import urlparse
+from huggingface_hub import HfFolder
 
 # global used for printing additional node information during verbose output
 info = {}
@@ -190,8 +191,13 @@ def gopen_curl(url, mode="rb", bufsize=8192):
     :param mode: file mode
     :param bufsize: buffer size
     """
+     # Retrieve Hugging Face token
+    hf_token = HfFolder().get_token()
+    if not hf_token:
+        raise RuntimeError("Hugging Face token not found. Please log in using `huggingface-cli login`.")
+
     if mode[0] == "r":
-        cmd = f"curl --connect-timeout 30 --retry 30 --retry-delay 2 -f -s -L '{url}'"
+        cmd = f"curl --connect-timeout 30 --retry 30 --retry-delay 2 -f -s -L '{url}' -H 'Authorization: Bearer {hf_token}'"
         return Pipe(
             cmd,
             mode=mode,
@@ -200,7 +206,7 @@ def gopen_curl(url, mode="rb", bufsize=8192):
             ignore_status=[141, 23],
         )  # skipcq: BAN-B604
     elif mode[0] == "w":
-        cmd = f"curl -f -s -X PUT -L -T - '{url}'"
+        cmd = f"curl -f -s -X PUT -L -T - '{url}' -H 'Authorization: Bearer {hf_token}'"
         return Pipe(
             cmd,
             mode=mode,
