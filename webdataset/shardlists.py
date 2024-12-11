@@ -160,7 +160,7 @@ def expand_source(source, max_urls=int(1e9)):
         return expand_urls(source)
     elif isinstance(source, list):
         return source
-    elif is_iterable(source):
+    elif utils.is_iterable(source):
         return list(islice(source, max_urls))
     else:
         raise ValueError(f"cannot handle {type(source)}")
