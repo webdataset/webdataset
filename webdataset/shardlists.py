@@ -27,7 +27,7 @@ import yaml
 from . import utils
 from .filters import pipelinefilter
 from .pytorch import IterableDataset
-from .utils import obsolete
+from .utils import is_iterable, obsolete
 
 
 def envlookup(m):
