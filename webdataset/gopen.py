@@ -362,6 +362,19 @@ def gopen_ais(url, mode="rb", bufsize=8192):
         raise ValueError(f"{mode}: unknown mode")
 
 
+def gopen_msc(url, mode, bufsize, **kw):
+    """Open a URL with Multi-Storage Client (MSC).
+
+    This function provides an interface for opening files stored in object storage
+    systems via MSC using a URL-based format.
+
+    :param url: The MSC URL in the format `msc://<profile>/<path>`.
+    :param mode: The file access mode, similar to Python's built-in `open()` function.
+    """
+    import multistorageclient as msc
+    return msc.open(url, mode)
+
+
 def gopen_error(url, *args, **kw):
     """Raise a value error.
 
@@ -388,6 +401,7 @@ gopen_schemes = dict(
     scp=gopen_curl,
     gs=gopen_gsutil,
     htgs=gopen_htgs,
+    msc=gopen_msc,
 )
 
 if "USE_AIS_FOR" in os.environ:
