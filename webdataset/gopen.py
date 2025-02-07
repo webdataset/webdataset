@@ -290,6 +290,45 @@ def gopen_htgs(url, mode="rb", bufsize=8192):
         raise ValueError(f"{mode}: unknown mode")
 
 
+def gopen_hf(url, mode="rb", bufsize=8192):
+    """Open a URL with `curl`.
+
+    Args:
+        url: URL (usually, hf:// etc.)
+        mode: File mode
+        bufsize: Buffer size
+
+    Returns:
+        A Pipe object
+
+    Raises:
+        ValueError: If the mode is write or unknown
+    """
+    from huggingface_hub import HfFileSystem, get_token, hf_hub_url
+
+    if mode[0] == "r":
+        resolved_path = HfFileSystem().resolve_path(url)
+        http_url = hf_hub_url(
+            repo_id=resolved_path.repo_id,
+            filename=resolved_path.path_in_repo,
+            repo_type=resolved_path.repo_type,
+            revision=resolved_path.revision,
+        )
+        auth = f"-H 'Authorization:Bearer {get_token()}'"
+        cmd = f"curl --connect-timeout 30 --retry 30 --retry-delay 2 -f -s -L {auth} '{http_url}'"
+        return Pipe(
+            cmd,
+            mode=mode,
+            shell=True,
+            bufsize=bufsize,
+            ignore_status=[141, 23],
+        )  # skipcq: BAN-B604
+    elif mode[0] == "w":
+        raise ValueError(f"{mode}: cannot write")
+    else:
+        raise ValueError(f"{mode}: unknown mode")
+
+
 def gopen_gsutil(url, mode="rb", bufsize=8192):
     """Open a URL with `curl`.
 
@@ -388,6 +427,7 @@ gopen_schemes = dict(
     scp=gopen_curl,
     gs=gopen_gsutil,
     htgs=gopen_htgs,
+    hf=gopen_hf,
 )
 
 if "USE_AIS_FOR" in os.environ:
