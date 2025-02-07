@@ -20,12 +20,12 @@ def decode_all_gz(
 
     for key, stream in list(sample.items()):
         extensions = key.split(".")
-        if len(extensions) < 1:
+        if len(extensions) == 1:
             continue
-        if len(extensions) < 2 and extensions[-1] == "gz":
+        if len(extensions) == 2 and extensions[-1] == "gz":
             warnings.warn("Plain .gz extension in sample; not decompressed.")
             continue
-        extension = extensions[-1]
+        extension = extensions[-1].lower()
         if extension in ["gz"]:
             decompressed = gzip.decompress(stream.read())
             new_key = ".".join(extensions[:-1])
@@ -64,14 +64,14 @@ def decode_basic(sample: Dict[str, Any], format: Optional[Union[bool, str]] = Tr
         if key.startswith("__"):
             continue
         extensions = key.split(".")
-        if len(extensions) < 1:
+        if len(extensions) == 1:
             continue
-        extension = extensions[-1]
+        extension = extensions[-1].lower()
         if isinstance(stream, bytes):
             stream = io.BytesIO(stream)
         if extension in ["gz"] and len(extensions) >= 2:
             # we're assuming that .gz extensions are already decoded
-            extension = extensions[-2]
+            extension = extensions[-2].lower()
         if extension in ["txt", "text"]:
             value = stream.read()
             sample[key] = value.decode("utf-8")
@@ -122,9 +122,9 @@ def decode_images_to_pil(
         if key.startswith("__"):
             continue
         extensions = key.split(".")
-        if len(extensions) < 1:
+        if len(extensions) == 1:
             continue
-        extension = extensions[-1]
+        extension = extensions[-1].lower()
         if isinstance(stream, bytes):
             stream = io.BytesIO(stream)
         if extension in ["jpg", "png", "ppm", "pgm", "pbm", "pnm"]:
@@ -147,9 +147,9 @@ def decode_images_to_numpy(
         if key.startswith("__"):
             continue
         extensions = key.split(".")
-        if len(extensions) < 1:
+        if len(extensions) == 1:
             continue
-        extension = extensions[-1]
+        extension = extensions[-1].lower()
         if isinstance(stream, bytes):
             stream = io.BytesIO(stream)
         if extension in ["jpg", "png", "ppm", "pgm", "pbm", "pnm"]:
