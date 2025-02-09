@@ -8,8 +8,15 @@ nav:
   - Home: index.md
   - API: api.md
   - Examples:
-      - "Train Resnet50": examples/train-resnet50-wids.ipynb
-      - "Train Resnet50 Multiray": examples/train-resnet50-multiray-wids.ipynb
+      - "Train resnet50 Multiray": examples/train-resnet50-multiray-wds.ipynb
+      - "Train resnet50": examples/train-resnet50-wds.ipynb
+      - "Column Store": examples/column-store.ipynb
+      - "Generate Text Dataset": examples/generate-text-dataset.ipynb
+      - "MI Images": examples/mi-images.ipynb
+      - "MI Prompts": examples/mi-prompts.ipynb
+      - "Run Tesseract": examples/tesseract-wds.ipynb
+      - "Train OCR Errors": examples/train-ocr-errors-hf.ipynb
+      - "Webdataset Notes": examples/wds-notes.ipynb
 
 theme:
   name: material
