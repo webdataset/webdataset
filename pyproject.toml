@@ -53,6 +53,7 @@ pytest = "*"
 pytest-cov = "*"
 pytorch_lightning = "*"
 ray = { version = "*", extras = ["default", "tune"] }
+ruff = "*"
 scipy = "*"
 setuptools = "*"
 torch = "*"

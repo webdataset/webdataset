@@ -6,6 +6,9 @@ lint:
 	poetry run isort .
 	poetry run ruff check .
 
+rufffix:
+	poetry run ruff fix .
+
 # Create virtual environment and install dependencies (using Poetry)
 venv:
 	poetry install
