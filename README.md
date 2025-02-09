@@ -22,9 +22,9 @@ WebDataset format files are tar files, with two conventions:
 
 You can find a longer, more detailed specification of the WebDataset format in the [WebDataset Format Specification](https://docs.google.com/document/d/18OdLjruFNX74ILmgrdiCI9J1fQZuhzzRBCHV9URWto0/edit?usp=sharing)
 
-WebDataset can read files from a local disk or from any pipe, allowing it to access files using common cloud object stores. WebDataset can also read concatenated MsgPack and CBORs sources.
+WebDataset can read files from local disk or from any pipe, which allows it to access files using common cloud object stores. WebDataset can also read concatenated MsgPack and CBORs sources.
 
-The WebDataset representation allows writing purely sequential I/O pipelines for large-scale deep learning. This is important for achieving high I/O rates from local storage (3x-10x for local drives compared to random access) and for using object stores and cloud storage for training.
+The WebDataset representation allows writing purely sequential I/O pipelines for large scale deep learning. This is important for achieving high I/O rates from local storage (3x-10x for local drives compared to random access) and for using object stores and cloud storage for training.
 
 The WebDataset format represents images, movies, audio, etc. in their native file formats, making the creation of WebDataset format data as easy as just creating a tar archive. Because of the way data is aligned, WebDataset works well with block deduplication as well and aligns data on predictable boundaries.
 
@@ -62,21 +62,20 @@ There are several libraries supporting the WebDataset format:
 - [Webdataset.jl](https://github.com/webdataset/WebDataset.jl) a Julia implementation
 - [tarp](https://github.com/webdataset/tarp), a Golang implementation and command line tool
 - Ray Data sources and sinks
-- Hugging Face [datasets](https://github.com/huggingface/datasets) library
 
 The `webdataset` library can be used with PyTorch, Tensorflow, and Jax.
 
 # The `webdataset` Library
 
-The `webdataset` library is an implementation of PyTorch `IterableDataset` (or a mock implementation thereof if you aren't using PyTorch). It implements a form of stream processing. Some of its features are:
+The `webdataset` library is an implementation of PyTorch `IterableDataset` (or a mock implementation thereof if you aren't using PyTorch). It implements as form of stream processing. Some of its features are:
 
-- large-scale parallel data access through sharding
-- high-performance disk I/O due to purely sequential reads
+- large scale parallel data access through sharding
+- high performance disk I/O due to purely sequential reads
 - latency insensitive due to big fat pipes
 - no local storage required
 - instant startup for training jobs
 - only requires reading from file descriptors/network streams, no special APIs
-- its API encourages high-performance I/O pipelines
+- its API encourages high performance I/O pipelines
 - scalable from tiny desktop datasets to petascale datasets
 - provides local caching if desired
 - requires no dataset metadata; any collection of shards can be read and used instantly
@@ -121,7 +120,7 @@ plt.imshow(image)
 
 
     
-![png](readme_files/readme_11_1.png)
+![png](README_files/README_11_1.png)
     
 
 
@@ -162,11 +161,11 @@ plt.imshow(image.numpy().transpose(1, 2, 0))
 
 
     
-![png](readme_files/readme_13_1.png)
+![png](README_files/README_13_1.png)
     
 
 
-`WebDataset` is just an instance of a standard `IterableDataset`. It's a single-threaded way of iterating over a dataset. Since image decompression and data augmentation can be compute-intensive, PyTorch usually uses the `DataLoader` class to parallelize data loading and preprocessing. `WebDataset` is fully compatible with the standard `DataLoader`.
+`WebDataset` is just an instance of a standard `IterableDataset`. It's a single-threaded way of iterating over a dataset. Since image decompression and data augmentation can be compute intensive, PyTorch usually uses the `DataLoader` class to parallelize data loading and preprocessing. `WebDataset` is fully compatible with the standard `DataLoader`.
 
 Here are a number of notebooks showing how to use WebDataset for image classification and LLM training:
 
@@ -222,13 +221,13 @@ batch[0].shape, batch[1].shape
 
 Installing the `webdataset` library installs a second library called `wids`. This library provides fully indexed/random access to the same datasets that `webdataset` accesses using iterators/streaming.
 
-Like the `webdataset` library, `wids` is highly scalable and provides efficient access to very large datasets. Being indexed, it is easily backward-compatible with existing data pipelines based on indexed datasets, including precise epochs for multinode training. The library comes with its own `ChunkedSampler` and `DistributedChunkedSampler` classes, which provide shuffling across nodes while still preserving enough locality of reference for efficient training.
+Like the `webdataset` library, `wids` is high scalable and provides efficient access to very large datasets. Being indexed, it is easily backwards compatible with existing data pipelines based on indexed dataset, including precise epochs for multinode training. The library comes with its own `ChunkedSampler` and `DistributedChunkedSampler` classes, which provided shuffling accross nodes while still preserving enough locality of reference for efficient training.
 
-Internally, the library uses a `mmap`-based `tar` file reader implementation; this allows very fast access without precomputed indexes, and it also means that shard and the equivalent of "shuffle buffers" are shared in memory between workers on the same machine.
+Internally, the library uses a `mmap`-based `tar` file reader implementation; this allows very fast access without precomputed indexes, and it also means that shard and the equivalet of "shuffle buffers" are shared in memory between workers on the same machine.
 
 This additional power comes at some cost: the library requires a small metadata file that lists all the shards in a dataset and the number of samples contained in each, the library requires local storage for as many shards as there are I/O workers on a node, it uses shared memory and `mmap`, and the availability of indexing makes it easy to accidentally use inefficient access patterns.
 
-Generally, the recommendation is to use `webdataset` for all data generation, data transformation, and training code, and to use `wids` only if you need fully random access to datasets (e.g., for browsing or sparse sampling), need an indexed-based sampler, or are converting tricky legacy code.
+Generally, the recommendation is to use `webdataset` for all data generation, data transformation, and training code, and to use `wids` only if you need fully random access to datasets (e.g., for browing or sparse sampling), need an indexed-based sampler, or are converting tricky legacy code.
 
 
 
@@ -262,7 +261,7 @@ plt.imshow(sample[".jpg"])
 
 
     
-![png](readme_files/readme_19_3.png)
+![png](README_files/README_19_3.png)
     
 
 
@@ -285,7 +284,7 @@ For the Github version:
 
     $ pip install git+https://github.com/tmbdev/webdataset.git
 
-Here are some videos talking about WebDataset and large-scale deep learning:
+Here are some videos talking about WebDataset and large scale deep learning:
 
 - [Introduction to Large Scale Deep Learning](https://www.youtube.com/watch?v=kNuA2wflygM)
 - [Loading Training Data with WebDataset](https://www.youtube.com/watch?v=mTv_ePYeBhs)
@@ -305,3 +304,5 @@ WebDataset loads a few additional libraries dynamically only when they are actua
 - the Google/Amazon/Azure command line tools for accessing cloud storage buckets
 
 Loading of one of these libraries is triggered by configuring a decoder that attempts to decode content in the given format and encountering a file in that format during decoding. (Eventually, the torch... dependencies will be refactored into those libraries.)
+
+

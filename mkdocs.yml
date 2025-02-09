@@ -1,36 +1,27 @@
-site_name: webdataset
-repo_url: http://github.com/webdataset/webdataset
+site_name: "wids Documentation"
+site_description: "Documentation for the wids Python library."
+site_author: "Your Name"
+
 docs_dir: docs
-site_dir: site
-theme: readthedocs
+
+nav:
+  - Home: index.md
+  - API: api.md
+  - Examples:
+      - "Train Resnet50": examples/train-resnet50-wids.ipynb
+      - "Train Resnet50 Multiray": examples/train-resnet50-multiray-wids.ipynb
+
+theme:
+  name: material
 
 plugins:
   - search
   - mkdocstrings:
+      default_handler: python
       handlers:
         python:
-          options:
-            show_root_heading: true
-            heading_level: 3
-
-nav:
-    - README: index.md
-    - WebDataset: webdataset.md
-    - WIDS: wids.md
-    - FAQ: FAQ.md
-    - Examples:
-      - webdataset:
-        - examples/webdataset/index.md
-        - examples/webdataset/wds-notes.md
-        - examples/webdataset/generate-text-dataset.md
-        - examples/webdataset/tesseract-wds.md
-        - examples/webdataset/train-resnet50-wds.md
-        - examples/webdataset/train-resnet50-multiray-wds.md
-        - examples/webdataset/train-ocr-errors-hf.md
-        - examples/webdataset/mi-images.md
-        - examples/webdataset/mi-prompts.md
-        - examples/webdataset/column-store.md
-      - wids:
-        - examples/wids/index.md
-        - examples/wids/train-resnet50-wids.md
-        - examples/wids/train-resnet50-multiray-wids.md
+          setup_commands:
+            - >
+              import os, sys;
+              sys.path.insert(0, os.path.join(os.path.abspath('.'), 'src'))
+  - mkdocs-jupyter

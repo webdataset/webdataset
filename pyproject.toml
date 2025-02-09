@@ -1,255 +1,95 @@
-################################################################
-### Project definition
-################################################################
-
-[project]
+[tool.poetry]
 name = "webdataset"
-version = "0.2.107"
-description = "High performance storage and I/O for deep learning and data processing."
-authors = [
-    {name = "Thomas Breuel", email = "tmbdev+removeme@gmail.com"},
-]
-license = {text="MIT"}
+version = "0.3.0"
+description = "A Python library for managing and processing dataset archives."
+authors = ["Thomas Breuel <tmbdev@gmail.com>"]
+license = "BSD-3-Clause"
 readme = "README.md"
-classifiers = [
-    "Development Status :: 3 - Alpha",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: 3.12",
-]
-requires-python = ">=3.10"
-
-dependencies = [
-    "braceexpand",
-    "numpy",
-    "pyyaml",
+homepage = "https://github.com/webdataset/webdataset"
+repository = "https://github.com/webdataset/webdataset"
+# requires-python = ">=3.10"
+# Use the src layout for editable installs.
+packages = [
+    { include = "webdataset", from = "src" }
 ]
 
-[project.urls]
-homepage = "http://github.com/webdataset/webdataset"
-repository = "http://github.com/webdataset/webdataset"
+[tool.poetry.dependencies]
+python = ">=3.10"
+braceexpand = "*"
+numpy = "*"
+pyyaml = "*"
 
-[build-system]
-requires = ["setuptools>=45"]
-build-backend = "setuptools.build_meta"
-
-[project.scripts]
-widsindex = "wids.wids_index:main"
-
-[tool.setuptools]
-packages = ["webdataset", "wids", "wsds"]
-
-# [tool.setuptools_scm]
-# write_to = "webdataset/__version__.py"
-
-[tool.pre-commit]
-repos = [
-    { repo = "local", hooks = [
-        { id = "black", name = "black", entry = "black .", language = "system", pass_filenames = false },
-        { id = "isort", name = "isort", entry = "isort .", language = "system", pass_filenames = false },
-        { id = "pytest-quick", name = "pytest-quick", entry = "pytest -v -m quick", language = "system", pass_filenames = false },
-    ] },
-]
-
-################################################################
-### PyTest Testing
-################################################################
-
-[tool.pytest.ini_options]
-minversion = "6.0"
-# addopts = "-ra -q"
-testpaths = ["tests"]
-python_files = ["test_*.py", "*_test.py"]
-#python_classes = ["Test*"]
-#python_functions = ["test_*"]
-filterwarnings = [
-    "ignore::DeprecationWarning",
-]
-# defined in conftest.py instead
-# markers = [
-#     "quick: marks tests as quick",
-#     "slow: marks tests as slow (deselect with '-m \"not slow\"')",
-#     "integration: marks integration tests",
-# ]
-
-[tool.coverage.run]
-source = ["webdataset"]
-branch = true
-
-[tool.coverage.report]
-exclude_lines = [
-    "pragma: no cover",
-    "def __repr__",
-    "if self.debug:",
-    "if __name__ == .__main__.:",
-    "raise NotImplementedError",
-    "pass",
-]
-ignore_errors = true
-
-################################################################
-### Tox Testing
-################################################################
-
-[tool.tox]
-legacy_tox_ini = """
-[tox]
-#envlist = py{310,311,312}-{full,notorch}
-envlist = py{310,311,312}-full
-isolated_build = True
-
-[testenv]
-deps =
-    pytest
-    pytest-cov
-    full: .[dev]
-    notorch: .
-commands =
-    full: pytest --cov=your_package_name --cov-report=xml
-    notorch: pytest -m notorch --cov=your_package_name --cov-report=xml
-
-[testenv:py310-full]
-basepython = python3.10
-
-[testenv:py311-full]
-basepython = python3.11
-
-[testenv:py312-full]
-basepython = python3.12
-
-[testenv:py310-notorch]
-basepython = python3.10
-
-[testenv:py311-notorch]
-basepython = python3.11
-
-[testenv:py312-notorch]
-basepython = python3.12
-"""
-
-################################################################
-### Formatting
-################################################################
+[tool.poetry.dev-dependencies]
+autoflake = "*"
+bandit = "*"
+black = { version = "*", extras = ["jupyter"] }
+build = "*"
+bump2version = "*"
+flake8 = "*"
+imageio = "*"
+isort = "*"
+jupyter = "*"
+jupyterlab = "*"
+lmdb = "*"
+matplotlib = "*"
+mkdocs = "*"
+mkdocs-autorefs = "*"
+mkdocs-jupyter = "*"
+mkdocs-material = "*"
+mkdocs-material-extensions = "*"
+mkdocs-minify-plugin = "*"
+mkdocstrings = "*"
+mkdocstrings-python = "*"
+msgpack = "*"
+mypy = "*"
+nbconvert = "*"
+notebook = "*"
+papermill = "*"
+pdm = "*"
+Pillow = "*"
+pre-commit = "*"
+pydocstyle = "*"
+pytest = "*"
+pytest-cov = "*"
+pytorch_lightning = "*"
+ray = { version = "*", extras = ["default", "tune"] }
+scipy = "*"
+setuptools = "*"
+torch = "*"
+torchvision = "*"
+transformers = "*"
+twine = "*"
+typer = "*"
+wheel = "*"
+icecream = "*"
 
 [tool.black]
-target-version = ['py310', 'py311', 'py312']
-include = '\.pyi?$'
-extend-exclude = '''
-/(
-  # directories
-  \.eggs
-  | \.git
-  | build
-  | dist
-)/
-'''
-
-[tool.isort]
-profile = "black"
-multi_line_output = 3
-include_trailing_comma = true
-force_grid_wrap = 0
-use_parentheses = true
-ensure_newline_before_comments = true
-
-[tool.pydocstyle]
-convention = "google"
-match = '(?!test_).*\.py'
-# match webdataset and wids only
-match_dir = '(webdataset|wids)'
-add_ignore = ["D100", "D104", "D203", "D213", "D406", "D407", "D413", "D205", "D107"]
-# add_select = ["D402", "D417"]
-
-# Explanation of ignored rules:
-# D100: Missing docstring in public module
-# D104: Missing docstring in public package
-# D203: 1 blank line required before class docstring
-# D213: Multi-line docstring summary should start at the second line
-# D406: Section name should end with a newline
-# D407: Missing dashed underline after section
-# D413: Missing blank line after last section
-# D402: First line should not be the function's "signature"
-# D417: Missing argument descriptions in the docstring
+line-length = 88
+target-version = ["py310"]
 
 [tool.ruff]
-# Enable flake8-bugbear ('B'), mccabe ('C90'), isort ('I'), and pycodestyle ('E', 'W')
-select = ["B", "C90", "I", "E", "W"]
+line-length = 88
+select = ["E", "F", "W", "C90"]
+ignore = ["E712", "F541"]
 
-# Never try to fix automatically
-fixable = []
+[tool.bumpversion]
+current_version = "0.1.0"
+commit = true
+tag = true
 
-# Exclude a variety of commonly ignored directories.
-exclude = [
-    ".git",
-    ".mypy_cache",
-    ".ruff_cache",
-    ".venv",
-    "venv",
-    "__pypackages__",
-    "build",
-    "dist",
-]
+[tool.bumpversion.files]
+pyproject.toml = 'version = "{current_version}"'
+# src/webdataset/__init__.py = '__version__ = "{current_version}"'
 
-# Same as Black.
-line-length = 120
+# [tool.pre-commit]
+# repos = [
+#     { repo = "local", hooks = [
+#         { id = "black", name = "black", entry = "black .", language = "system", pass_filenames = false },
+#         { id = "isort", name = "isort", entry = "isort .", language = "system", pass_filenames = false },
+#         { id = "pytest-quick", name = "pytest-quick", entry = "pytest -v -m quick", language = "system", pass_filenames = false }
+#     ] }
+# ]
 
-# Assume Python 3.10.
-target-version = "py310"
-
-[tool.ruff.mccabe]
-# Unlike Flake8, default to a complexity level of 10.
-max-complexity = 10
-
-[tool.ruff.isort]
-force-single-line = true
-lines-after-imports = 2
-
-
-[project.optional-dependencies]
-dev = [
-    "autoflake",
-    "bandit",
-    "black",
-    "black[jupyter]",
-    "build",
-    "bump2version",
-    "flake8",
-    "imageio",
-    "isort",
-    "jupyter",
-    "jupyterlab",
-    "lmdb",
-    "matplotlib",
-    "mkdocs",
-    "mkdocs-autorefs",
-    "mkdocs-material",
-    "mkdocs-material-extensions",
-    "mkdocs-minify-plugin",
-    "mkdocstrings",
-    "mkdocstrings-python",
-    "msgpack",
-    "mypy",
-    "nbconvert",
-    "notebook",
-    "papermill",
-    "pdm",
-    "Pillow",
-    "pre-commit",
-    "pydocstyle",
-    "pytest",
-    "pytest-cov",
-    "pytorch_lightning",
-    "ray",
-    "ray[default]",
-    "ray[sgd]",
-    "ray[tune]",
-    "scipy",
-    "setuptools",
-    "torch",
-    "torchvision",
-    "transformers",
-    "twine",
-    "typer",
-    "wheel",
-    "icecream",
-]
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"

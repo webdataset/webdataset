@@ -31,6 +31,11 @@ def clean(c):
     c.run(f"rm -rf build site dist __pycache__ */__pycache__ *.pyc */*.pyc")
 
 
+@task()
+def uv(c):
+    c.run("uv pip install -r pyproject.toml --all-extras")
+
+
 @task(clean)
 def cleanall(c):
     "Remove temporary files and virtualenv."
@@ -230,7 +235,8 @@ def testcov(c):
 @task
 def faqmake(c):
     "Create the FAQ.md file from github issues."
-    from helpers.faq import faq_intro, generate_faq_entries_from_issues, wrap_long_lines
+    from helpers.faq import (faq_intro, generate_faq_entries_from_issues,
+                             wrap_long_lines)
 
     generate_faq_entries_from_issues()
     output = open("FAQ.md", "w")
