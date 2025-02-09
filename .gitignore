@@ -13,11 +13,13 @@ dist
 docs
 docsrc/*.md
 docs/webdataset
+*.egg-info
 EXTRA
 *_files
 !.gitignore
 !__init__.py
 .ipynb_checkpoints
+log
 *.mdb
 models
 notebooks/openimages.py
@@ -25,6 +27,8 @@ notebooks/wordtrain.ipynb
 OLD
 openimages.py
 out*
+pdm.lock
+poetry.lock
 *.pyc
 __pycache___
 rust-test.ipynb
@@ -38,7 +42,3 @@ test.py
 try-*.ipynb
 Untitled*.ipynb
 venv
-webdataset.egg-info
-webdataset/tests/test_pipeline.log
-pdm.lock
-log
