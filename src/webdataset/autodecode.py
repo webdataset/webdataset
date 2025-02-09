@@ -147,7 +147,6 @@ def npy_loads(data):
 
 def npz_loads(data):
     """Load data from npz format. Imports numpy only if necessary."""
-    import numpy.lib.format
 
     stream = io.BytesIO(data)
     return dict(np.load(stream))
@@ -155,7 +154,7 @@ def npz_loads(data):
 
 def cbor_loads(data):
     """Load data from cbor format. Imports cbor only if necessary."""
-    import cbor
+    import cbor  # type: ignore
 
     return cbor.loads(data)
 
@@ -433,7 +432,7 @@ def torch_audio(key, data):
     if extension not in ["flac", "mp3", "sox", "wav", "m4a", "ogg", "wma"]:
         return None
 
-    import torchaudio
+    import torchaudio  # type: ignore
 
     with tempfile.TemporaryDirectory() as dirname:
         fname = os.path.join(dirname, f"file.{extension}")

@@ -481,7 +481,7 @@ class DirectoryShardList(IterableDataset):
             activename = candidate + f"._{os.getpid()}_"
             try:
                 os.rename(candidate, activename)
-            except FileNotFoundError as exn:
+            except FileNotFoundError:
                 time.sleep(self.poll)
                 continue
 

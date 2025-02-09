@@ -69,7 +69,7 @@ line-length = 88
 target-version = ["py310"]
 
 [tool.ruff]
-line-length = 88
+line-length = 120
 select = ["E", "F", "W", "C90"]
 ignore = ["E712", "F541"]
 

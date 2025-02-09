@@ -1,4 +1,3 @@
-import webdataset.typecheck  # isort:skip
 
 import os
 import tempfile

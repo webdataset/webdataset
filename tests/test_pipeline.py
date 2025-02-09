@@ -1,13 +1,11 @@
 import io
 import os
 import pickle
-from io import StringIO
 from itertools import islice
 
 import numpy as np
 import PIL
 import pytest
-import yaml
 
 import webdataset as wds
 from tests.conftest import (compressed, count_samples_tuple, local_data,

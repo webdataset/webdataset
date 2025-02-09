@@ -1,13 +1,7 @@
 import glob
-import json
 import os
 import re
-import shutil
-import subprocess
-import sys
-import tempfile
 import textwrap
-import time
 
 import yaml
 from invoke import task
@@ -75,7 +69,6 @@ def docspush(c):
 
 def summarize_notebook(nb):
     """Summarize a notebook."""
-    import textwrap
 
     prompt = textwrap.dedent(
         """

@@ -1,16 +1,13 @@
 import os
 import pickle
-from io import StringIO
 
 import numpy as np
 import PIL
 import pytest
 import torch
-import yaml
 
 import webdataset as wds
-from tests.conftest import (compressed, local_data, remote_loc, remote_pattern,
-                            remote_sample, remote_shard, remote_shards)
+from tests.conftest import (compressed, local_data, remote_loc, remote_sample, remote_shard, remote_shards)
 from webdataset import compat
 
 
@@ -481,7 +478,6 @@ def test_shard_syntax():
 
 def test_torchvision():
     """Test that torchvision transforms work correctly when used with WebDataset and map_tuple."""
-    import torch
     from torchvision import transforms
 
     normalize = transforms.Normalize(
@@ -510,7 +506,6 @@ def test_torchvision():
 
 def test_batched():
     """Test batching with WebDataset and batched(n) method."""
-    import torch
     from torchvision import transforms
 
     normalize = transforms.Normalize(
@@ -541,7 +536,6 @@ def test_batched():
 
 def test_unbatched():
     """Test unbatching with WebDataset and unbatched() method."""
-    import torch
     from torchvision import transforms
 
     normalize = transforms.Normalize(

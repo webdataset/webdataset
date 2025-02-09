@@ -7,7 +7,7 @@ lint:
 	poetry run ruff check .
 
 rufffix:
-	poetry run ruff fix .
+	poetry run ruff check --fix .
 
 # Create virtual environment and install dependencies (using Poetry)
 venv:
