@@ -3,6 +3,7 @@ import os
 import random
 import sys
 import time
+import subprocess
 from typing import List, Optional
 
 import braceexpand
@@ -12,11 +13,6 @@ from . import gopen
 from .utils import fnmatch_with_braces, glob_with_braces
 
 app = typer.Typer()
-
-
-def download_file(url, filename):
-    """Download a file from a URL."""
-    return wids_dl.download_file(url, filename)
 
 
 def download_file(url, filename):

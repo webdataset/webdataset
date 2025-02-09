@@ -4,7 +4,7 @@ import re
 import textwrap
 
 import yaml
-from invoke import task
+from invoke import task  # type: ignore
 
 VENV = "venv"
 BIN = f"{VENV}/bin"
@@ -74,7 +74,7 @@ def summarize_notebook(nb):
         """
     Here is a notebook in markdown format. Please summarize the purpose and contents
     of the notebook in a few sentences. The only markup you may use is `...` for
-    quoting identifiers. Except for quoted identifiers, do not include any code 
+    quoting identifiers. Except for quoted identifiers, do not include any code
     or output in the summary. Do not use any other markup or markdown, just plain text.
     In your summary, focus on the use of webdataset, wids, or wsds libraries (note:
     these are different libraries and be sure to talk only about the library that
@@ -232,27 +232,26 @@ def faqmake(c):
                              wrap_long_lines)
 
     generate_faq_entries_from_issues()
-    output = open("FAQ.md", "w")
-    output.write(faq_intro)
-    entries = sorted(glob.glob("faqs/[a-zA-Z]*.md"))
-    entries = sorted(glob.glob("faqs/[0-9]*.md"), reverse=True)
-    for fname in entries:
-        with open(fname) as stream:
-            text = stream.read()
-        if "N/A" in text[:20]:
-            continue
-        text = text.strip()
-        text = re.sub(r"[ \t]+$", "", text, flags=re.MULTILINE)
-        text = wrap_long_lines(text)
-        if len(text) < 10:
-            continue
-        text += "\n\n"
-        if match := re.match(r"faqs/([0-9]+)\.md", fname):
-            issue_number = int(match.group(1))
-            text = f"Issue #{issue_number}\n\n{text}"
-        output.write("-" * 78 + "\n\n")
-        output.write(text.strip() + "\n\n")
-    output.close()
+    with open("FAQ.md", "w") as output:
+        output.write(faq_intro)
+        entries = sorted(glob.glob("faqs/[a-zA-Z]*.md"))
+        entries = sorted(glob.glob("faqs/[0-9]*.md"), reverse=True)
+        for fname in entries:
+            with open(fname) as stream:
+                text = stream.read()
+            if "N/A" in text[:20]:
+                continue
+            text = text.strip()
+            text = re.sub(r"[ \t]+$", "", text, flags=re.MULTILINE)
+            text = wrap_long_lines(text)
+            if len(text) < 10:
+                continue
+            text += "\n\n"
+            if match := re.match(r"faqs/([0-9]+)\.md", fname):
+                issue_number = int(match[1])
+                text = f"Issue #{issue_number}\n\n{text}"
+            output.write("-" * 78 + "\n\n")
+            output.write(text.strip() + "\n\n")
     c.run("cp FAQ.md docs/FAQ.md")
 
 
@@ -275,7 +274,7 @@ def releasenotes(c):
     last_tag = c.run("gh release list --limit 1 | cut -f1").stdout.strip()
     print("Last tag:", last_tag)
     # compute a diff between the last tag and the current state
-    diff = c.run(f"gh release view {last_tag}").stdout
+    # diff = c.run(f"gh release view {last_tag}").stdout
     cmd = "git log --since={last_tag} | "
     cmd += "sgpt --no-md 'summarize these commit messages into Python/github release notes'"
     notes = c.run(cmd).stdout

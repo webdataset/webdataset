@@ -20,7 +20,7 @@ import numpy as np
 from . import gopen
 
 
-def imageencoder(image: Any, format: str = "PNG"):  # skipcq: PYL-W0622
+def imageencoder(image: Any, format: str = "PNG"):    # skipcq: PYL-W0622
     """Compress an image using PIL and return it as a string.
 
     Can handle float or uint8 images.
@@ -42,7 +42,7 @@ def imageencoder(image: Any, format: str = "PNG"):  # skipcq: PYL-W0622
 
     if isinstance(image, np.ndarray):
         if image.dtype in [np.dtype("f"), np.dtype("d")]:
-            if not (np.amin(image) > -0.001 and np.amax(image) < 1.001):
+            if np.amin(image) <= -0.001 or np.amax(image) >= 1.001:
                 raise ValueError(
                     f"image values out of range {np.amin(image)} {np.amax(image)}"
                 )
@@ -171,7 +171,7 @@ def cbor_dumps(x):
     Returns:
         bytes: Dumped data as bytestring
     """
-    import cbor
+    import cbor  # type: ignore
 
     return cbor.dumps(x)
 

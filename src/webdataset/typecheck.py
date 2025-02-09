@@ -17,7 +17,7 @@ modules = [
 ]
 
 try:
-    from typeguard.importhook import install_import_hook
+    from typeguard.importhook import install_import_hook  # type: ignore
 
     for module in modules:
         install_import_hook("webdataset." + module)

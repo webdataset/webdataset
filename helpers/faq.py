@@ -44,7 +44,7 @@ summarize_issue_instructions = """
 """
 
 
-def summarize_issue(c, content):
+def summarize_issue(content):
     result = subprocess.run(
         [
             "sgpt",
@@ -89,9 +89,7 @@ def generate_faq_entries_from_issues():
 
         # Fetch the issue details and comments
         issue_details = subprocess.run(
-            "gh issue view {} --repo webdataset/webdataset --json body,title,comments".format(
-                issue_number
-            ),
+            f"gh issue view {issue_number} --repo webdataset/webdataset --json body,title,comments",
             stdout=subprocess.PIPE,
             shell=True,
         ).stdout.decode()
@@ -110,7 +108,7 @@ def generate_faq_entries_from_issues():
         )
 
         # Pipe the combined content to the summarize function and write the output to a file
-        summarized_content = summarize_issue(c, combined_content)
+        summarized_content = summarize_issue(combined_content)
         with open(output, "w") as f:
             f.write(summarized_content)
         print(summarized_content)

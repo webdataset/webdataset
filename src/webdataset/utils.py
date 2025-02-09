@@ -7,6 +7,7 @@
 """Miscellaneous utility functions."""
 
 import fnmatch
+import braceexpand
 import functools
 import glob
 import importlib
@@ -306,19 +307,20 @@ def deprecated(arg=None):
         return decorator(func)
 
 
+class ObsoleteException(Exception):
+    pass
+
 def obsolete(func=None, *, reason=None):
     if func is None:
         return functools.partial(obsolete, reason=reason)
 
     @functools.wraps(func)
     def new_func(*args, **kwargs):
-        if int(os.environ.get("ALLOW_OBSOLETE", "0")):
-            pass
-        else:
+        if not int(os.environ.get("ALLOW_OBSOLETE", "0")):
             msg = f"Call to obsolete function {func.__name__}. Set env ALLOW_OBSOLETE=1 to permit."
             if reason is not None:
                 msg += " Reason: " + reason
-            raise Exception(msg)
+            raise ObsoleteException(msg)
         return func(*args, **kwargs)
 
     return new_func
