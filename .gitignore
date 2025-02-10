@@ -18,6 +18,8 @@ EXTRA
 !.gitignore
 !__init__.py
 .ipynb_checkpoints
+*.log
+log
 *.mdb
 models
 notebooks/openimages.py
@@ -25,6 +27,7 @@ notebooks/wordtrain.ipynb
 OLD
 openimages.py
 out*
+pdm.lock
 *.pyc
 __pycache___
 rust-test.ipynb
@@ -37,8 +40,7 @@ test-*.ipynb
 test.py
 try-*.ipynb
 Untitled*.ipynb
+uv.lock
 venv
 webdataset.egg-info
 webdataset/tests/test_pipeline.log
-pdm.lock
-log

@@ -9,6 +9,272 @@ be correct.  When in doubt, check the original issue.
 
 ------------------------------------------------------------------------------
 
+Issue #442
+
+Q: How can I ensure diverse batches in an imbalanced dataset using a weighted shard sampler?
+
+A: To handle imbalanced datasets and ensure diverse batches, you can use a
+strategy involving a "weighted shard sampler." This approach involves splitting
+your dataset into common and rare samples and using two separate WebDataset
+readers. You can then mix these datasets with different probabilities to balance
+the representation of classes. Here's a basic example:
+
+```python
+ds1 = wds.WebDataset("common-{000000..000999}.tar").shuffle()...
+ds2 = wds.WebDataset("rare-{000000..000099}.tar").shuffle().repeat(9999)...
+ds = wds.RandomMix([ds1, ds2], probs=[0.1, 0.9])
+```
+
+If splitting datasets isn't feasible, consider maintaining a buffer of rare
+samples and resampling from it. This can be implemented with a custom class like
+`BufferedResampler`:
+
+```python
+class BufferedResampler(IterableDataset):
+    ...
+    def __iter__(self):
+        for sample in self.source:
+            if is_rare(sample):
+                if len(self.buffer) < 1000:
+                    self.buffer.append(sample)
+                else:
+                    self.buffer[random.randrange(len(self.buffer))] = sample
+                yield sample
+                continue
+            if random.uniform() < 0.9:
+                yield self.buffer[random.randrange(len(self.buffer))]
+                continue
+            yield sample
+```
+
+This method helps ensure that rare classes are adequately represented in each batch, promoting diversity and balance.
+
+------------------------------------------------------------------------------
+
+Issue #440
+
+Q: How do I resolve the `ValueError: you need to add an explicit nodesplitter to
+your input pipeline for multi-node training` when using FSDP with WebDataset?
+
+A: This error occurs because WebDataset requires an explicit `nodesplitter` to
+manage how data shards are distributed across multiple nodes during training.
+Without specifying a `nodesplitter`, the library cannot automatically determine
+the best way to split the data, leading to the error. To resolve this, you can
+use the `nodesplitter` argument in the `WebDataset` class. For example, you can
+use `wds.split_by_node` to split shards by node:
+
+```python
+dataset = (
+    wds.WebDataset(shard_urls, resampled=True, cache_dir=data_args.local_cache_path, nodesplitter=wds.split_by_node)
+    .shuffle(training_args.seed)
+    .map(decode_text)
+    .map(TokenizeDataset(tokenizer, max_seq_len=data_args.max_seq_length))
+)
+```
+
+This ensures that each node receives a distinct subset of the data, facilitating efficient multi-node training.
+
+------------------------------------------------------------------------------
+
+Issue #439
+
+Q: What happens if I swap `.shuffle()` and `.decode()` in a WebDataset pipeline?
+
+A: Swapping `.shuffle()` and `.decode()` in a WebDataset pipeline affects memory
+usage. When you shuffle before decoding, the samples are stored in a shuffle
+buffer in their encoded form, which is typically smaller. This results in lower
+memory usage. Conversely, if you decode before shuffling, the samples are stored
+in their decoded form, which is larger, leading to higher memory usage.
+Therefore, it's generally more efficient to shuffle before decoding to optimize
+memory usage.
+
+```python
+# Shuffle before decode (more memory efficient)
+dataset = wds.WebDataset(urls).shuffle(1000).decode()
+
+# Decode before shuffle (less memory efficient)
+dataset = wds.WebDataset(urls).decode().shuffle(1000)
+```
+
+------------------------------------------------------------------------------
+
+Issue #438
+
+Q: How can I combine two WebDatasets where each sample is split across different tar files?
+
+A: Combining two WebDatasets where each sample is split across different tar
+files is not directly supported by WebDataset. However, you can achieve this by
+manually synchronizing the datasets. One approach is to use two separate
+WebDataset instances and synchronize them in your data loading loop. You can use
+PyTorch's `CombinedLoader` to load batches from each dataset and then
+concatenate them. Alternatively, you can manually iterate over both datasets and
+pair the corresponding samples. Here's a basic example:
+
+```python
+import webdataset as wds
+
+dataset1 = wds.WebDataset("images_{000..100}.tar")
+dataset2 = wds.WebDataset("glbs_{000..100}.tar")
+
+for (img_sample, glb_sample) in zip(iter(dataset1), iter(dataset2)):
+    # Combine img_sample and glb_sample as needed
+    pass
+```
+
+This approach allows you to maintain separate datasets while processing them together.
+
+------------------------------------------------------------------------------
+
+Issue #436
+
+Q: How can I convert an Arrow-formatted dataset to WebDataset's TAR format for offline use?
+
+A: To convert an Arrow-formatted dataset to WebDataset's TAR format offline, you
+can use a custom script to read the dataset and write it into a TAR file. The
+`tar` command alone won't suffice as it doesn't handle the specific data
+structure required by WebDataset. Instead, you can iterate over your dataset and
+use a library like `shutil` to create TAR files. Here's a basic example:
+
+```python
+import os
+import tarfile
+from datasets import load_from_disk
+
+dataset = load_from_disk("./cc3m_1")
+output_dir = "./cc3m_webdataset"
+
+os.makedirs(output_dir, exist_ok=True)
+
+for idx, sample in enumerate(dataset):
+    tar_path = os.path.join(output_dir, f"sample_{idx}.tar")
+    with tarfile.open(tar_path, "w") as tar:
+        for key, value in sample.items():
+            # Assuming value is a file path or needs to be serialized
+            tar.add(value, arcname=f"{key}.jpg")
+```
+
+This script assumes each sample in your dataset can be serialized into a file.
+Adjust the serialization logic as needed for your dataset's structure.
+
+------------------------------------------------------------------------------
+
+Issue #434
+
+Q: How can I efficiently use WebDataset with Distributed Data Parallel (DDP) in PyTorch?
+
+A: To efficiently use WebDataset with DDP, you have two main options. First, you
+can use the `wids` class, which functions similarly to other indexed datasets
+and handles distribution automatically. Alternatively, you can use the
+`WebDataset` class with `resampled=True`, which resamples shards across nodes
+rather than splitting them, ensuring balanced data distribution. If you opt for
+`WebDataset` without `resampled=True`, you need to manage shard distribution
+using `split_by_node` and `split_by_worker`, which can be complex due to uneven
+shard distribution. Here's a simple example using `resampled=True`:
+
+```python
+trainset = (
+    wds.WebDataset(tar_files, resampled=True)
+    .shuffle(64)
+    .decode()
+    .map(make_sample)
+    .batched(batch_size_per_gpu)
+)
+```
+
+This approach simplifies distributed training by ensuring each node processes a balanced dataset.
+
+------------------------------------------------------------------------------
+
+Issue #417
+
+Q: Why does `wds.filters._unbatched` fail with nested dictionaries in
+WebDataset, and how should batched data be structured?
+
+A: The `wds.filters._unbatched` function in WebDataset is designed to reverse
+the batching process, but it struggles with nested dictionaries that don't match
+the expected batch size. This issue arises when the `meta` field in a sample
+contains multiple keys or elements that don't align with the batch size. To
+avoid this, ensure that batched data is structured such that nested dictionaries
+are converted into lists of dictionaries, each corresponding to a single batch
+element. For example:
+
+```python
+sample = {
+    'image': torch.rand(2, 3, 64, 64),
+    'cls': torch.rand(2, 100),
+    'meta': [{'paths': '/sdf/1.jpg', 'field2': torch.rand(512), 'field3': '123'},
+             {'paths': '/sdf/2.jpg', 'field2': torch.rand(512), 'field3': '23423'}],
+}
+```
+
+This structure ensures that each element in `meta` corresponds to a single batch
+item, allowing `unbatched` to process it correctly.
+
+------------------------------------------------------------------------------
+
+Issue #414
+
+Q: How should I handle data sharding and sampling in multi-node environments using WebDataset for distributed training?
+
+A: When using WebDataset for distributed training, especially in multi-node
+environments, it's crucial to manage data sharding and sampling effectively. If
+you want every shard to be available on every node, avoid using
+`nodesplitter=wds.split_by_node`. This ensures that all nodes have access to the
+complete dataset, but you must handle potential sample duplication. To avoid
+duplicates, you can use a combination of shuffling and resampling strategies.
+WebDataset's `WebLoader` doesn't require a `DistributedSampler` because it
+operates on iterable datasets, which inherently manage data distribution across
+nodes. In contrast, `wids` (WebIndexedDataset) requires
+`wids.DistributedChunkedSampler` to ensure balanced data distribution across
+nodes, as it deals with indexable datasets. Here's a basic example:
+
+```python
+import webdataset as wds
+
+# Example of using WebLoader without DistributedSampler
+dataset = wds.WebDataset("shards/{0000..9999}.tar")
+loader = wds.WebLoader(dataset, batch_size=32, shuffle=True)
+
+# Example of using WebIndexedDataset with DistributedChunkedSampler
+from wids import WebIndexedDataset, DistributedChunkedSampler
+
+dataset = WebIndexedDataset("index_file.idx")
+sampler = DistributedChunkedSampler(dataset)
+loader = DataLoader(dataset, batch_size=32, sampler=sampler)
+```
+
+This approach helps maintain efficient data handling and training performance across distributed systems.
+
+------------------------------------------------------------------------------
+
+Issue #410
+
+Q: How can I decode numpy arrays with `allow_pickle=True` when using WebDataset?
+
+A: By default, WebDataset uses `allow_pickle=False` for `.npy` and `.npz` files
+for safety reasons. If you need to decode numpy arrays with `allow_pickle=True`,
+you can create a custom decoder. This can be done by passing a callable to
+`.decode(customCallable)` that uses `numpy.load` with `allow_pickle=True`.
+Alternatively, you can handle the decoding in a `.map(sample)` function before
+the default decoders. For objects requiring pickling, consider using `.pyd`
+files instead.
+
+```python
+import numpy as np
+
+def custom_decoder(key, value):
+    if key.endswith('.npy') or key.endswith('.npz'):
+        return np.load(value, allow_pickle=True)
+    return value
+
+# Usage with WebDataset
+dataset = WebDataset("path/to/dataset").decode(custom_decoder)
+```
+
+This approach ensures that you explicitly handle the security implications of using `allow_pickle=True`.
+
+------------------------------------------------------------------------------
+
 Issue #367
 
 Q: How can I sample sequences of frames from large video datasets using WebDataset?
@@ -1114,6 +1380,39 @@ pipeline.append(wds.map(add_filename_to_metadata))
 
 This function should be added to the pipeline after the renaming step to ensure
 that the `metadata` key is already present in the sample dictionary.
+
+------------------------------------------------------------------------------
+
+Issue #182
+
+Q: How can I implement multi-processing with WebDataset's ShardWriter for efficient data processing?
+
+A: To implement multi-processing with WebDataset's ShardWriter, you can use
+Python's `concurrent.futures.ProcessPoolExecutor` to parallelize the processing
+of data items while writing them sequentially to shards. This approach involves
+creating a pool of worker processes that handle data processing tasks, and then
+writing the processed data to shards using `ShardWriter`. Here's a basic
+example:
+
+```python
+from concurrent.futures import ProcessPoolExecutor, as_completed
+import webdataset as wds
+
+def process_item(item):
+    # Process the item and return the result
+    return processed_item
+
+with wds.ShardWriter("shards-%05d.tar", maxcount=1000) as sink:
+    with ProcessPoolExecutor(max_workers=16) as executor:
+        futures = {executor.submit(process_item, item): item for item in items}
+        for future in as_completed(futures):
+            result = future.result()
+            sink.write(result)
+```
+
+This setup allows you to efficiently process and write large datasets by
+leveraging multiple CPU cores. Adjust the `max_workers` parameter based on your
+system's capabilities for optimal performance.
 
 ------------------------------------------------------------------------------
 
