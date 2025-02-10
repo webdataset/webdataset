@@ -2,21 +2,19 @@
 
 # Lint code using Black and Ruff
 lint:
-	! test -z "$$VIRTUAL_ENV" # must have sourced .venv/bin/activate
-	black .
-	isort .
-	ruff check .
+	uv run black .
+	uv run isort .
+	uv run ruff check .
 
 autofix:
-	test -d "$$VIRTUAL_ENV" # must have sourced .venv/bin/activate
-	ruff check --fix .
+	uv run ruff check --fix .
 
 # Create virtual environment and install dependencies using uv
 venv:
 	type uv  # uv must be installed
 	python -m venv .venv
 	uv sync --all-extras
-	. .venv/bin/activate && pip install -e .
+	uv pip install -e .
 
 # Clean up virtual environment and cache
 clean:
@@ -28,66 +26,49 @@ clean:
 
 # Run tests using pytest
 test:
-	! test -z "$$VIRTUAL_ENV" # must have sourced .venv/bin/activate
 	uv run pytest
 
 # Generate documentation using MkDocs
 docs:
-	! test -z "$$VIRTUAL_ENV" # must have sourced .venv/bin/activate
 	# jupyter-nbconvert readme.ipynb --to markdown && mv readme.md README.md
 	uv run mkdocs build
 
 # Serve documentation locally (for preview)
 serve:
-	! test -z "$$VIRTUAL_ENV" # must have sourced .venv/bin/activate
 	uv run mkdocs serve
 
 # Stage, commit, and push changes to GitHub
 push:
-	git add .
+	test -z "$$(git status --porcelain)"
+	$(MAKE) lint
+	$(MAKE) test
 	git push
 
 # Build and upload to TestPyPI
 testpypi:
-	! test -z "$$VIRTUAL_ENV" # must have sourced .venv/bin/activate
-	$(MAKE) lint
-	$(MAKE) test
+	$(MAKE) push
 	uv run python -m build
 	uv run twine upload --repository testpypi dist/*
 	@echo "Install with: pip install --index-url https://test.pypi.org/simple/ --no-deps PACKAGE"
 
 # Rebuild and reupload current version
 release:
-	! test -z "$$VIRTUAL_ENV" # must have sourced .venv/bin/activate
-	test -z "$$(git status --porcelain)"
-	git push
+	$(MAKE) push
 	uv run python -m build
 	uv run twine upload "$$(ls -t dist/*.whl | sed 1q)"
 	uv run twine upload "$$(ls -t dist/*.tar.gz | sed 1q)"
 
-# Patch release (0.0.x)
 patch:
-	test -z "$$(git status --porcelain)"
-	$(MAKE) lint
-	$(MAKE) test
-	bumpversion patch
-	git push && git push --tags
+	$(MAKE) push
+	uv run bumpversion patch
 	$(MAKE) release
 
-# Minor release (0.x.0)
 minorrelease:
-	test -z "$$(git status --porcelain)"
-	$(MAKE) lint
-	$(MAKE) test
-	bumpversion minor
-	git push && git push --tags
+	$(MAKE) push
+	uv run bumpversion minor
 	$(MAKE) release
 
-# Major release (x.0.0)
 majorrelease:
-	test -z "$$(git status --porcelain)"
-	$(MAKE) lint
-	$(MAKE) test
-	bumpversion major
-	git push && git push --tags
+	$(MAKE) push
+	uv run bumpversion major
 	$(MAKE) release
