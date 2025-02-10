@@ -30,6 +30,7 @@ versions:
 
 # Run tests using pytest
 test:
+	$(MAKE) venv
 	uv run pytest
 
 # Generate documentation using MkDocs
