@@ -1,10 +1,11 @@
+import glob
 import json
 import os
+import re
 import subprocess
 import textwrap
 import time
-import glob
-import re
+
 import typer
 
 app = typer.Typer()

@@ -32,7 +32,7 @@ build-backend = "setuptools.build_meta"
 widsindex = "wids.wids_index:main"
 
 [tool.setuptools]
-packages = ["webdataset", "wids", "wsds"]
+packages = ["webdataset", "wids"]
 
 # Development-only dependencies (as a “dev” extra).
 [project.optional-dependencies]
