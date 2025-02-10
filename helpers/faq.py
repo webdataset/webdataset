@@ -1,8 +1,14 @@
+import glob
 import json
 import os
+import re
 import subprocess
 import textwrap
 import time
+
+import typer
+
+app = typer.Typer()
 
 
 def wrap_long_lines(text, width=80, threshold=120):
@@ -16,7 +22,7 @@ def wrap_long_lines(text, width=80, threshold=120):
     return "\n".join(wrapped_lines)
 
 
-faq_intro = """
+FAQ_INTRO = """
 # WebDataset FAQ
 
 This is a Frequently Asked Questions file for WebDataset.  It is
@@ -28,7 +34,7 @@ be correct.  When in doubt, check the original issue.
 """
 
 
-summarize_issue_instructions = """
+SUMMARIZE = """
     - turn this issue report into an FAQ entry if and only if it contains some useful information for users
     - if it does not contain useful information, ONLY return the string N/A
     - the FAQ entry should focus on the single most important part of the issue
@@ -49,7 +55,7 @@ def summarize_issue(content):
         [
             "sgpt",
             "--no-md",
-            summarize_issue_instructions,
+            SUMMARIZE,
         ],
         input=content.encode(),
         stdout=subprocess.PIPE,
@@ -60,7 +66,9 @@ def summarize_issue(content):
 
 def generate_faq_entries_from_issues():
     """Create FAQ entries from issues."""
-    assert os.path.isdir("faqs"), "Please create a directory named 'faqs' before running this task."
+    assert os.path.isdir(
+        "faqs"
+    ), "Please create a directory named 'faqs' before running this task."
 
     # Fetch all issues (open and closed) from the repository
     s = subprocess.run(
@@ -87,7 +95,9 @@ def generate_faq_entries_from_issues():
 
         # Fetch the issue details and comments
         issue_details = subprocess.run(
-            f"gh issue view {issue_number} --repo webdataset/webdataset --json body,title,comments",
+            "gh issue view {} --repo webdataset/webdataset --json body,title,comments".format(
+                issue_number
+            ),
             stdout=subprocess.PIPE,
             shell=True,
         ).stdout.decode()
@@ -101,7 +111,9 @@ def generate_faq_entries_from_issues():
         comments = "\n\n".join(comment["body"] for comment in issue_details["comments"])
 
         # Combine the issue title, body, and comments
-        combined_content = f"# {issue_title}\n\n{issue_body}\n\n## Comments\n\n{comments}"
+        combined_content = (
+            f"# {issue_title}\n\n{issue_body}\n\n## Comments\n\n{comments}"
+        )
 
         # Pipe the combined content to the summarize function and write the output to a file
         summarized_content = summarize_issue(combined_content)
@@ -110,3 +122,33 @@ def generate_faq_entries_from_issues():
         print(summarized_content)
         time.sleep(3)
         print("\n\n")
+
+
+@app.command()
+def genfaq():
+    generate_faq_entries_from_issues()
+    output = open("FAQ.md", "w")
+    output.write(FAQ_INTRO)
+    entries = sorted(glob.glob("faqs/[a-zA-Z]*.md"))
+    entries = sorted(glob.glob("faqs/[0-9]*.md"), reverse=True)
+    for fname in entries:
+        with open(fname) as stream:
+            text = stream.read()
+        if "N/A" in text[:20]:
+            continue
+        text = text.strip()
+        text = re.sub(r"[ \t]+$", "", text, flags=re.MULTILINE)
+        text = wrap_long_lines(text)
+        if len(text) < 10:
+            continue
+        text += "\n\n"
+        if match := re.match(r"faqs/([0-9]+)\.md", fname):
+            issue_number = int(match.group(1))
+            text = f"Issue #{issue_number}\n\n{text}"
+        output.write("-" * 78 + "\n\n")
+        output.write(text.strip() + "\n\n")
+    output.close()
+    os.system("cp FAQ.md docs/FAQ.md")
+
+if __name__ == "__main__":
+    app()

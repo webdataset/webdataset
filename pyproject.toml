@@ -1,20 +1,39 @@
 [project]
 name = "webdatasetng"
 version = "0.3.2"
-description = "A Python library for managing and processing dataset archives."
-readme = "README.md"
-requires-python = ">=3.10"
-license = { text = "BSD-3-Clause" }
+description = "High performance storage and I/O for deep learning and data processing."
 authors = [
-  { name = "Thomas Breuel", email = "tmbdev@gmail.com" }
+    {name = "Thomas Breuel", email = "tmbdev+removeme@gmail.com"},
 ]
-
-# Main runtime dependencies.
+license = {text="BSD-3-Clause"}
+readme = "README.md"
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+requires-python = ">=3.10"
 dependencies = [
   "braceexpand",
   "numpy",
-  "pyyaml"
+  "pyyaml",
 ]
+
+[project.urls]
+homepage = "http://github.com/webdataset/webdataset"
+repository = "http://github.com/webdataset/webdataset"
+
+[build-system]
+requires = ["setuptools>=45"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["webdataset"]
+package-dir = {"" = "src"}
+
+[project.scripts]
+widsindex = "wids.wids_index:main"
 
 # Development-only dependencies (as a “dev” extra).
 [project.optional-dependencies]
@@ -64,17 +83,43 @@ dev = [
   "icecream"
 ]
 
-# Tool-specific settings (these remain unchanged)
 [tool.black]
 line-length = 120
 target-version = ["py310"]
 include = '^src/.*'
 
+[tool.isort]
+profile = "black"
+multi_line_output = 3
+include_trailing_comma = true
+force_grid_wrap = 0
+use_parentheses = true
+ensure_newline_before_comments = true
+
+[tool.pydocstyle]
+convention = "google"
+match = '(?!test_).*\.py'
+# match webdataset and wids only
+match_dir = '(webdataset|wids)'
+add_ignore = ["D100", "D104", "D203", "D213", "D406", "D407", "D413", "D205", "D107"]
+# add_select = ["D402", "D417"]
+
+# Explanation of ignored rules:
+# D100: Missing docstring in public module
+# D104: Missing docstring in public package
+# D203: 1 blank line required before class docstring
+# D213: Multi-line docstring summary should start at the second line
+# D406: Section name should end with a newline
+# D407: Missing dashed underline after section
+# D413: Missing blank line after last section
+# D402: First line should not be the function's "signature"
+# D417: Missing argument descriptions in the docstring
+
 [tool.ruff]
 line-length = 120
 select = ["E", "F", "W", "C90"]
 ignore = ["E712", "F541", "C901", "E741"]
-exclude = ["examples"]
+exclude = ["examples", "tasks.py", "readme.ipynb", "helpers"]
 
 [tool.pre-commit]
 repos = [
@@ -84,4 +129,21 @@ repos = [
       { id = "pytest-quick", name = "pytest-quick", entry = "pytest -v -m quick", language = "system", pass_filenames = false }
   ] }
 ]
+
+[tool.coverage.run]
+source = ["webdataset"]
+branch = true
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "if self.debug:",
+    "if __name__ == .__main__.:",
+    "raise NotImplementedError",
+    "pass",
+]
+ignore_errors = true
+
+
 
