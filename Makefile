@@ -33,9 +33,14 @@ test:
 	$(MAKE) venv
 	uv run pytest
 
-# Generate documentation using MkDocs
-docs:
+readme:
 	uv run jupyter-nbconvert readme.ipynb --to markdown && mv readme.md README.md
+	uv run python3 helpers/faq.py
+	uv run python3 helpers/versions.py
+	git add README.md FAQ.md VERSIONS.md && git commit -a -m "updated README.md FAQ.md VERSIONS.md"
+
+docs:
+	$(MAKE) readme
 	uv run mkdocs build
 
 # Serve documentation locally (for preview)

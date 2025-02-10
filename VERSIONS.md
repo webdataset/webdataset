@@ -1,42 +1,38 @@
-## Commit: v0.2.108 -> v0.2.108
+## Commit: v0.2.109 -> v0.2.109-1-g79e9e62
 
-6abb239 -> HEAD @ 2025-02-10 16:56:50 -0500
+4c6a74e -> HEAD @ 2025-02-10 17:04:08 -0500
 
-- **Feature Enhancements:**
-  - Implemented a new caching mechanism in the `data_processor` module to improve data retrieval speed.
-  - Enhanced the user authentication process by integrating OAuth2 support.
+- Updated the workflow badge in `readme.ipynb` to reflect the latest status or changes in the project's continuous integration process.
 
-- **Bug Fixes:**
-  - Resolved a memory leak issue in the `image_handler` function that caused performance degradation.
-  - Fixed a concurrency bug in the `task_scheduler` that occasionally led to task duplication.
+## Commit: v0.2.108 -> v0.2.109
 
-- **Performance Improvements:**
-  - Optimized database queries in the `report_generator` to reduce execution time by 30%.
+6abb239 -> 4c6a74e @ 2025-02-10 16:56:50 -0500
 
-- **Security Updates:**
-  - Patched a vulnerability in the `session_manager` to prevent session hijacking.
-
-- **Deprecations:**
-  - Deprecated the `legacy_api` module in favor of the new `v2_api`.
+- Updated the `webdataset/__init__.py` file to reflect the latest changes in the codebase.
+- Adjusted configuration and documentation files to align with the latest code updates.
+- Improved consistency across the project files by synchronizing changes in `pyproject.toml` and `.bumpversion.cfg`.
+- Enhanced the `VERSIONS.md` file with additional details and clarifications, ensuring comprehensive documentation of changes.
 
 ## Commit: v0.2.107 -> v0.2.108
 
 e41fa8c -> 6abb239 @ 2024-09-27 13:08:27 -0400
 
-- **Enhancements and Features:**
-  - Added support for Hugging Face in `gopen` via `curl`.
-  - Improved `SequentialDataset` with new features like `repeats`, `log_shards`, and `log_keys`.
-  - Enhanced `WebDataset` filters to support batching for both tuples and dictionaries.
-  - Introduced new tests for `SequentialDataset` and `WebDataset` functionalities.
-  - Updated `autodecode.py` to load data using `torch.load` with `map_location="cpu"`.
+- **Enhancements and Refactoring:**
+  - Improved the `SequentialDataset` class with new features like `repeats` and logging capabilities.
+  - Enhanced WebDataset filters and test suites to support batching for both tuples and dictionaries.
+  - Updated data loading and validation in the `wsds` package, including new configuration outputs and improved assertions.
+  - Refactored code for clarity and functionality, including updates to dependencies and error handling.
+  - Added Hugging Face support in `gopen` via `curl`.
 
-- **Refactoring and Cleanup:**
-  - Removed obsolete and untested functions and files, including `docker.py`, `tasks.py`, and several test files.
-  - Refactored `helpers/faq.py` and `helpers/versions.py` for better functionality and clarity.
-  - Simplified and improved the `default_collation_fn` in `filters.py`.
+- **Code Cleanup and Removal:**
+  - Removed obsolete functions and tests, including `cached_tarfile_samples` and `test_obsolete.py`.
+  - Deleted unused files and directories, such as `helpers/docker.py` and `old/setup.py`.
+  - Simplified and restructured the codebase by removing deprecated features and redundant code.
 
-- **Bug Fixes:**
-  - Fixed issues with `decode_all_gz`, `decode_basic`, `decode_images_to_pil`, and `decode_images_to_numpy` functions to ensure proper handling of extensions and return values.
+- **Documentation and Task Management:**
+  - Updated `mkdocs.yml` to organize example documents under new categories.
+  - Enhanced task management scripts for generating documentation and managing releases.
+  - Improved the FAQ generation process with new helper functions and command-line interface using `typer`.
 
 ## Commit: v0.2.106 -> v0.2.107
 
