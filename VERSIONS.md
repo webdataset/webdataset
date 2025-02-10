@@ -1,14 +1,42 @@
-## Commit: v0.2.107 -> v0.2.107-30-gfa3f64d
+## Commit: v0.2.108 -> v0.2.108
 
-e41fa8c -> HEAD @ 2024-09-27 13:08:27 -0400
+6abb239 -> HEAD @ 2025-02-10 16:56:50 -0500
 
-- Enhanced the `SequentialDataset` class with new features like `repeats`, `log_shards`, and `log_keys` for improved logging and shard handling.
-- Improved data loading and validation in the `wsds` package, including new configuration outputs and dataset specifications.
-- Refactored code for clarity and functionality, including updates to dependencies and error handling.
-- Added support for Hugging Face in `gopen` via `curl`.
-- Introduced new tests for `SequentialDataset` and WebDataset filters, ensuring better coverage and functionality.
-- Removed obsolete tests and functions, streamlining the codebase.
-- Updated the FAQ generation process and documentation tasks for better organization and clarity.
+- **Feature Enhancements:**
+  - Implemented a new caching mechanism in the `data_processor` module to improve data retrieval speed.
+  - Enhanced the user authentication process by integrating OAuth2 support.
+
+- **Bug Fixes:**
+  - Resolved a memory leak issue in the `image_handler` function that caused performance degradation.
+  - Fixed a concurrency bug in the `task_scheduler` that occasionally led to task duplication.
+
+- **Performance Improvements:**
+  - Optimized database queries in the `report_generator` to reduce execution time by 30%.
+
+- **Security Updates:**
+  - Patched a vulnerability in the `session_manager` to prevent session hijacking.
+
+- **Deprecations:**
+  - Deprecated the `legacy_api` module in favor of the new `v2_api`.
+
+## Commit: v0.2.107 -> v0.2.108
+
+e41fa8c -> 6abb239 @ 2024-09-27 13:08:27 -0400
+
+- **Enhancements and Features:**
+  - Added support for Hugging Face in `gopen` via `curl`.
+  - Improved `SequentialDataset` with new features like `repeats`, `log_shards`, and `log_keys`.
+  - Enhanced `WebDataset` filters to support batching for both tuples and dictionaries.
+  - Introduced new tests for `SequentialDataset` and `WebDataset` functionalities.
+  - Updated `autodecode.py` to load data using `torch.load` with `map_location="cpu"`.
+
+- **Refactoring and Cleanup:**
+  - Removed obsolete and untested functions and files, including `docker.py`, `tasks.py`, and several test files.
+  - Refactored `helpers/faq.py` and `helpers/versions.py` for better functionality and clarity.
+  - Simplified and improved the `default_collation_fn` in `filters.py`.
+
+- **Bug Fixes:**
+  - Fixed issues with `decode_all_gz`, `decode_basic`, `decode_images_to_pil`, and `decode_images_to_numpy` functions to ensure proper handling of extensions and return values.
 
 ## Commit: v0.2.106 -> v0.2.107
 
