@@ -46,7 +46,9 @@ push:
 
 # Build and upload to TestPyPI
 testpypi:
-	$(MAKE) push
+	test -z "$$(git status --porcelain)"
+	$(MAKE) lint
+	$(MAKE) test
 	uv run python -m build
 	uv run twine upload --repository testpypi dist/*
 	@echo "Install with: pip install --index-url https://test.pypi.org/simple/ --no-deps PACKAGE"
