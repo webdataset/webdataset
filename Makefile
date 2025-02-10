@@ -18,11 +18,15 @@ venv:
 
 # Clean up virtual environment and cache
 clean:
-	rm -rf .venv
-	rm -rf *.egg-info
-	rm -rf dist
-	rm -rf build
+	rm -rf .venv venv dist uv.lock *.egg-info build site readme_files
+	rm -rf .pytest_cache .mypy_cache .coverage
 	find . -type d -name __pycache__ -exec rm -rf {} +
+
+faq:
+	uv run python3 helpers/faq.py
+
+versions:
+	uv run python3 helpers/versions.py
 
 # Run tests using pytest
 test:
@@ -30,7 +34,7 @@ test:
 
 # Generate documentation using MkDocs
 docs:
-	# jupyter-nbconvert readme.ipynb --to markdown && mv readme.md README.md
+	uv run jupyter-nbconvert readme.ipynb --to markdown && mv readme.md README.md
 	uv run mkdocs build
 
 # Serve documentation locally (for preview)
