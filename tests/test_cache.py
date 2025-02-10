@@ -5,8 +5,7 @@ from urllib.parse import urlparse
 
 import pytest
 
-from webdataset.cache import (FileCache, LRUCleanup, StreamingOpen,
-                              url_to_cache_name)
+from webdataset.cache import FileCache, LRUCleanup, StreamingOpen, url_to_cache_name
 
 
 def test_url_to_cache_name():

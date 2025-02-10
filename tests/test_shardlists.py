@@ -6,8 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from webdataset.shardlists import (DirectoryShardList, ResampledShards,
-                                   SimpleShardList)
+from webdataset.shardlists import DirectoryShardList, ResampledShards, SimpleShardList
 
 
 class TestSimpleShardList:

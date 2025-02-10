@@ -7,8 +7,14 @@ import pytest
 import torch
 
 import webdataset as wds
-from tests.conftest import (compressed, local_data, remote_loc, remote_sample,
-                            remote_shard, remote_shards)
+from tests.conftest import (
+    compressed,
+    local_data,
+    remote_loc,
+    remote_sample,
+    remote_shard,
+    remote_shards,
+)
 from webdataset import compat
 
 

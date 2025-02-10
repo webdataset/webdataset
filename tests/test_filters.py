@@ -3,9 +3,18 @@ from functools import partial
 
 import pytest
 
-from webdataset.filters import (_batched, _extract_keys, _map, _rename_keys,
-                                _rsample, _select, _shuffle, _to_tuple,
-                                _xdecode, default_collation_fn)
+from webdataset.filters import (
+    _batched,
+    _extract_keys,
+    _map,
+    _rename_keys,
+    _rsample,
+    _select,
+    _shuffle,
+    _to_tuple,
+    _xdecode,
+    default_collation_fn,
+)
 
 
 def test_shuffle():

@@ -216,8 +216,7 @@ def testcov(c):
 @task
 def faqmake(c):
     "Create the FAQ.md file from github issues."
-    from helpers.faq import (faq_intro, generate_faq_entries_from_issues,
-                             wrap_long_lines)
+    from helpers.faq import faq_intro, generate_faq_entries_from_issues, wrap_long_lines
 
     generate_faq_entries_from_issues()
     with open("FAQ.md", "w") as output:
