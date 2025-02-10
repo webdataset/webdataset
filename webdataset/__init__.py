@@ -22,8 +22,6 @@ from .autodecode import (
 )
 from .cache import (
     LRUCleanup,
-    cached_tarfile_samples,
-    cached_tarfile_to_samples,
     pipe_cleaner,
 )
 from .compat import FluidInterface, FluidWrapper, WebDataset, WebLoader

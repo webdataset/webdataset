@@ -34,7 +34,7 @@ class TestIndexedTarSamples:
 
 class TestLRUShards:
     def test_add(self, tmpdir: str):
-        lru_shards = wids.LRUShards(2, localname=wids.default_localname(tmpdir))
+        lru_shards = wids.LRUShards(2, localname=wids.hash_localname(tmpdir))
         assert len(lru_shards) == 0
         shard = lru_shards.get_shard("testdata/ixtest.tar")
         assert len(shard) == 10
@@ -74,7 +74,7 @@ class TestShardListDataset:
         ]
 
         dataset = wids.ShardListDataset(
-            shards, lru_size=2, localname=wids.default_localname(str(tmpdir))
+            shards, lru_size=2, localname=wids.hash_localname(str(tmpdir))
         )
         dataset.tmpdir = str(tmpdir)
 
