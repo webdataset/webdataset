@@ -34,6 +34,8 @@ test:
 	uv run pytest
 
 readme:
+	# execute readme.ipynb notebook in place
+	uv run jupyter nbconvert --execute --to notebook --inplace readme.ipynb
 	uv run jupyter-nbconvert readme.ipynb --to markdown && mv readme.md README.md
 	uv run python3 helpers/faq.py
 	uv run python3 helpers/versions.py

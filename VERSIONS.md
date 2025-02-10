@@ -1,11 +1,11 @@
-## Commit: v0.2.109 -> v0.2.109-2-g9869af7
+## Commit: v0.2.109 -> v0.2.109-3-g5921dad
 
 4c6a74e -> HEAD @ 2025-02-10 17:04:08 -0500
 
-- **Makefile**: Enhanced with additional logic, resulting in improved build processes.
-- **README.md**: Minor adjustments to improve clarity and accuracy.
-- **VERSIONS.md**: Comprehensive updates to reflect recent changes and enhancements.
-- **readme.ipynb**: Small correction to ensure consistency with other documentation.
+- **Makefile**: Enhanced with additional logic, resulting in 9 lines of changes, including 7 insertions and 2 deletions.
+- **README.md**: Minor update with 1 insertion and 1 deletion.
+- **VERSIONS.md**: Significant restructuring with 57 lines modified, including 24 insertions and 33 deletions.
+- **readme.ipynb**: Minor update with 1 insertion and 1 deletion.
 
 ## Commit: v0.2.108 -> v0.2.109
 
