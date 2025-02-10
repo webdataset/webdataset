@@ -50,12 +50,13 @@ push:
 	git push
 
 # Build and upload to TestPyPI
-testpypi:
+testpatch:
 	test -z "$$(git status --porcelain)"
 	$(MAKE) lint
-	$(MAKE) test
+	uv run bumpversion patch
 	uv run python -m build
-	uv run twine upload --repository testpypi dist/*
+	uv run twine upload --verbose --repository testpypi "$$(ls -t dist/*.whl | sed 1q)"
+	uv run twine upload --verbose --repository testpypi "$$(ls -t dist/*.tar.gz | sed 1q)"
 	@echo "Install with: pip install --index-url https://test.pypi.org/simple/ --no-deps PACKAGE"
 
 # Rebuild and reupload current version
