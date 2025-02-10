@@ -129,16 +129,10 @@ def docsnbgen(c):
             nb = "./examples/" + os.path.basename(output).replace(".md", ".ipynb")
             print(nb, "-->", output)
             # continue
-            if os.path.exists(output) and os.path.getmtime(nb) < os.path.getmtime(
-                output
-            ):
+            if os.path.exists(output) and os.path.getmtime(nb) < os.path.getmtime(output):
                 continue
-            c.run(
-                f"{ACTIVATE}jupyter nbconvert --ClearOutputPreprocessor.enabled=True --inplace {nb}"
-            )
-            c.run(
-                f"{ACTIVATE}jupyter nbconvert {nb} --to markdown --output-dir=docs/examples/{k}"
-            )
+            c.run(f"{ACTIVATE}jupyter nbconvert --ClearOutputPreprocessor.enabled=True --inplace {nb}")
+            c.run(f"{ACTIVATE}jupyter nbconvert {nb} --to markdown --output-dir=docs/examples/{k}")
             summary = summarize_notebook(output)
             summary_fname = output.replace(".md", ".summary.md")
             with open(summary_fname, "w") as stream:
@@ -153,9 +147,7 @@ def docsnbgen(c):
             link = f"[{capitalized_name}](./{section_name})"
             return f"### {capitalized_name}\n\n{link}\n\n{summary}\n\n"
 
-        summaries = [
-            mksection(fname) for fname in glob.glob(f"docs/examples/{k}/*.summary.md")
-        ]
+        summaries = [mksection(fname) for fname in glob.glob(f"docs/examples/{k}/*.summary.md")]
         with open(f"docs/examples/{k}/index.md", "w") as stream:
             print("Writing", f"docs/examples/{k}/index.md")
             stream.write("\n\n".join(summaries))
@@ -168,12 +160,8 @@ def nbrun(c):
     def nbprocess(c, nb, *args, **kwargs):
         """Process one notebook."""
         out_file = f"docs/output/{nb}"
-        if not os.path.exists(out_file) or os.path.getmtime(nb) > os.path.getmtime(
-            out_file
-        ):
-            c.run(
-                f"../venv/bin/python -m papermill -l python {' '.join(args)} {nb} docs/output/_{nb}"
-            )
+        if not os.path.exists(out_file) or os.path.getmtime(nb) > os.path.getmtime(out_file):
+            c.run(f"../venv/bin/python -m papermill -l python {' '.join(args)} {nb} docs/output/_{nb}")
             c.run(f"mv docs/output/_{nb} {out_file}")
 
     with c.cd("examples"):  # Change directory to 'examples'

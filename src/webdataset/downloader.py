@@ -1,9 +1,9 @@
 import multiprocessing
 import os
 import random
+import subprocess
 import sys
 import time
-import subprocess
 from typing import List, Optional
 
 import braceexpand
@@ -45,9 +45,7 @@ def download_with(command):
     """
 
     def download(url, filename):
-        return subprocess.check_call(
-            command.format(url=url, output=filename), shell=True
-        )
+        return subprocess.check_call(command.format(url=url, output=filename), shell=True)
 
     return download
 
@@ -183,10 +181,7 @@ class RandomShardDownloader:
         for _ in range(10 * self.nshards):
             files = self.list_files()
             total_size = total_file_size(files)
-            if (
-                len(files) >= min(self.nshards, start + self.increment)
-                or total_size > self.maxsize
-            ):
+            if len(files) >= min(self.nshards, start + self.increment) or total_size > self.maxsize:
                 return
             shard = random.choice(self.shards)
             filename = os.path.basename(shard)

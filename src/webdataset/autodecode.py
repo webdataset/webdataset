@@ -103,7 +103,8 @@ def torch_loads(data: bytes):
     """Function: torch_loads
 
     Description:
-    This function loads data using torch.loads. It first imports torch only if necessary. Then it decodes the input data using torch.load.
+    This function loads data using torch.loads. It first imports torch
+    only if necessary. Then it decodes the input data using torch.load.
 
     Parameters:
     - data (bytes): The data to be decoded.
@@ -363,9 +364,7 @@ class ImageHandler:
                 result = np.repeat(result[:, :, np.newaxis], 4, axis=2)
                 result[:, :, 3] = 255
             elif result.shape[2] == 3:
-                result = np.concatenate(
-                    [result, 255 * np.ones(result.shape[:2])], axis=2
-                )
+                result = np.concatenate([result, 255 * np.ones(result.shape[:2])], axis=2)
 
         assert atype in ["numpy", "torch"], atype
 

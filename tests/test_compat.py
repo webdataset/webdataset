@@ -7,7 +7,8 @@ import pytest
 import torch
 
 import webdataset as wds
-from tests.conftest import (compressed, local_data, remote_loc, remote_sample, remote_shard, remote_shards)
+from tests.conftest import (compressed, local_data, remote_loc, remote_sample,
+                            remote_shard, remote_shards)
 from webdataset import compat
 
 
@@ -138,33 +139,21 @@ def test_mock():
 
 def test_dataset_shuffle_extract():
     """Basic WebDataset usage: shuffle, extract, and count samples."""
-    ds = (
-        wds.WebDataset(local_data, shardshuffle=False)
-        .shuffle(5)
-        .to_tuple("png;jpg cls")
-    )
+    ds = wds.WebDataset(local_data, shardshuffle=False).shuffle(5).to_tuple("png;jpg cls")
     assert count_samples_tuple(ds) == 47
 
 
 @pytest.mark.quick
 def test_dataset_context():
     """Basic WebDataset usage: shuffle, extract, and count samples."""
-    with (
-        wds.WebDataset(local_data, shardshuffle=100)
-        .shuffle(5)
-        .to_tuple("png;jpg cls") as ds
-    ):
+    with wds.WebDataset(local_data, shardshuffle=100).shuffle(5).to_tuple("png;jpg cls") as ds:
         assert count_samples_tuple(ds) == 47
 
 
 @pytest.mark.quick
 def test_dataset_pipe_cat():
     """Test that WebDataset can read from a pipe."""
-    ds = (
-        wds.WebDataset(f"pipe:cat {local_data}", shardshuffle=100)
-        .shuffle(5)
-        .to_tuple("png;jpg cls")
-    )
+    ds = wds.WebDataset(f"pipe:cat {local_data}", shardshuffle=100).shuffle(5).to_tuple("png;jpg cls")
     assert count_samples_tuple(ds) == 47
 
 
@@ -180,9 +169,7 @@ def test_dataset_eof():
     import tarfile
 
     with pytest.raises(tarfile.ReadError):
-        ds = wds.WebDataset(
-            f"pipe:dd if={local_data} bs=1024 count=10", shardshuffle=100
-        ).shuffle(5)
+        ds = wds.WebDataset(f"pipe:dd if={local_data} bs=1024 count=10", shardshuffle=100).shuffle(5)
         assert count_samples(ds) == 47
 
 
@@ -270,9 +257,7 @@ def test_dataset_decode_handler():
             good[0] += 1
             return data
 
-    ds = wds.WebDataset(local_data, shardshuffle=100).decode(
-        faulty_decoder, handler=wds.ignore_and_continue
-    )
+    ds = wds.WebDataset(local_data, shardshuffle=100).decode(faulty_decoder, handler=wds.ignore_and_continue)
     result = count_samples_tuple(ds)
     assert count[0] == 47
     assert good[0] == 24
@@ -286,9 +271,7 @@ def test_dataset_rename_handler():
     count_samples_tuple(ds)
 
     with pytest.raises(ValueError):
-        ds = wds.WebDataset(local_data, shardshuffle=100).rename(
-            image="missing", cls="cls"
-        )
+        ds = wds.WebDataset(local_data, shardshuffle=100).rename(image="missing", cls="cls")
         count_samples_tuple(ds)
 
 
@@ -313,15 +296,11 @@ def test_dataset_map_handler():
 def test_dataset_map_dict_handler():
     """Test the map_dict method on a dataset, including error handling."""
 
-    ds = wds.WebDataset(local_data, shardshuffle=100).map_dict(
-        png=identity, cls=identity
-    )
+    ds = wds.WebDataset(local_data, shardshuffle=100).map_dict(png=identity, cls=identity)
     count_samples_tuple(ds)
 
     with pytest.raises(KeyError):
-        ds = wds.WebDataset(local_data, shardshuffle=100).map_dict(
-            png=identity, cls2=identity
-        )
+        ds = wds.WebDataset(local_data, shardshuffle=100).map_dict(png=identity, cls2=identity)
         count_samples_tuple(ds)
 
     def g(x):
@@ -349,11 +328,7 @@ def test_dataset_shuffle_decode_rename_extract():
 
 def test_rgb8():
     """Test decoding to RGB8 numpy arrays."""
-    ds = (
-        wds.WebDataset(local_data, shardshuffle=100)
-        .decode("rgb8")
-        .to_tuple("png;jpg", "cls")
-    )
+    ds = wds.WebDataset(local_data, shardshuffle=100).decode("rgb8").to_tuple("png;jpg", "cls")
     assert count_samples_tuple(ds) == 47
     image, cls = next(iter(ds))
     assert isinstance(image, np.ndarray), type(image)
@@ -363,11 +338,7 @@ def test_rgb8():
 
 def test_pil():
     """Test decoding to PIL images."""
-    ds = (
-        wds.WebDataset(local_data, shardshuffle=100)
-        .decode("pil")
-        .to_tuple("jpg;png", "cls")
-    )
+    ds = wds.WebDataset(local_data, shardshuffle=100).decode("pil").to_tuple("jpg;png", "cls")
     assert count_samples_tuple(ds) == 47
     image, cls = next(iter(ds))
     assert isinstance(image, PIL.Image.Image)
@@ -384,21 +355,13 @@ def test_raw():
 
 def test_only1():
     """Test partial decoding using the only option to decode."""
-    ds = (
-        wds.WebDataset(local_data, shardshuffle=100)
-        .decode(only="cls")
-        .to_tuple("jpg;png", "cls")
-    )
+    ds = wds.WebDataset(local_data, shardshuffle=100).decode(only="cls").to_tuple("jpg;png", "cls")
     assert count_samples_tuple(ds) == 47
     image, cls = next(iter(ds))
     assert isinstance(image, bytes)
     assert isinstance(cls, int)
 
-    ds = (
-        wds.WebDataset(local_data, shardshuffle=100)
-        .decode("l", only=["jpg", "png"])
-        .to_tuple("jpg;png", "cls")
-    )
+    ds = wds.WebDataset(local_data, shardshuffle=100).decode("l", only=["jpg", "png"]).to_tuple("jpg;png", "cls")
     assert count_samples_tuple(ds) == 47
     image, cls = next(iter(ds))
     assert isinstance(image, np.ndarray)
@@ -415,17 +378,9 @@ def test_gz():
 
 def test_float_np_vs_torch():
     """Compare decoding to numpy and to torch and ensure that they give the same results."""
-    ds = (
-        wds.WebDataset(local_data, shardshuffle=100)
-        .decode("rgb")
-        .to_tuple("png;jpg", "cls")
-    )
+    ds = wds.WebDataset(local_data, shardshuffle=100).decode("rgb").to_tuple("png;jpg", "cls")
     image, cls = next(iter(ds))
-    ds = (
-        wds.WebDataset(local_data, shardshuffle=100)
-        .decode("torchrgb")
-        .to_tuple("png;jpg", "cls")
-    )
+    ds = wds.WebDataset(local_data, shardshuffle=100).decode("torchrgb").to_tuple("png;jpg", "cls")
     image2, cls2 = next(iter(ds))
     assert (image == image2.permute(1, 2, 0).numpy()).all(), (image.shape, image2.shape)
     assert cls == cls2
@@ -437,11 +392,7 @@ def test_decoder():
     def mydecoder(key, sample):
         return len(sample)
 
-    ds = (
-        wds.WebDataset(remote_loc + remote_shard, shardshuffle=100)
-        .decode(mydecoder)
-        .to_tuple("jpg;png", "json")
-    )
+    ds = wds.WebDataset(remote_loc + remote_shard, shardshuffle=100).decode(mydecoder).to_tuple("jpg;png", "json")
     for sample in ds:
         assert isinstance(sample[0], int)
         break
@@ -452,12 +403,9 @@ def test_cache_dir(tmp_path):
 
     ds = wds.WebDataset(remote_sample, cache_dir=tmp_path, shardshuffle=100)
 
-    count = 0
     for epoch in range(3):
         for sample in ds:
-            assert set(sample.keys()) == set(
-                "__key__ __url__ cls __local_path__ png".split()
-            )
+            assert set(sample.keys()) == set("__key__ __url__ cls __local_path__ png".split())
             assert sample["__key__"] == "10"
             assert sample["cls"] == b"0"
             assert sample["png"].startswith(b"\x89PNG\r\n\x1a\n\x00\x00\x00")
@@ -468,11 +416,7 @@ def test_cache_dir(tmp_path):
 def test_shard_syntax():
     """Test that remote shards are correctly handled."""
     print(remote_loc, remote_shards)
-    ds = (
-        wds.WebDataset(remote_loc + remote_shards, shardshuffle=100)
-        .decode()
-        .to_tuple("jpg;png", "json")
-    )
+    ds = wds.WebDataset(remote_loc + remote_shards, shardshuffle=100).decode().to_tuple("jpg;png", "json")
     assert count_samples_tuple(ds, n=10) == 10
 
 
@@ -480,9 +424,7 @@ def test_torchvision():
     """Test that torchvision transforms work correctly when used with WebDataset and map_tuple."""
     from torchvision import transforms
 
-    normalize = transforms.Normalize(
-        mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
-    )
+    normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
     preproc = transforms.Compose(
         [
             transforms.RandomResizedCrop(224),
@@ -508,9 +450,7 @@ def test_batched():
     """Test batching with WebDataset and batched(n) method."""
     from torchvision import transforms
 
-    normalize = transforms.Normalize(
-        mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
-    )
+    normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
     preproc = transforms.Compose(
         [
             transforms.RandomResizedCrop(224),
@@ -520,12 +460,7 @@ def test_batched():
         ]
     )
     raw = wds.WebDataset(remote_loc + remote_shards, shardshuffle=100)
-    ds = (
-        raw.decode("pil")
-        .to_tuple("jpg;png", "json")
-        .map_tuple(preproc, identity)
-        .batched(7)
-    )
+    ds = raw.decode("pil").to_tuple("jpg;png", "json").map_tuple(preproc, identity).batched(7)
     for sample in ds:
         assert isinstance(sample[0], torch.Tensor), type(sample[0])
         assert tuple(sample[0].size()) == (7, 3, 224, 224), sample[0].size()
@@ -538,9 +473,7 @@ def test_unbatched():
     """Test unbatching with WebDataset and unbatched() method."""
     from torchvision import transforms
 
-    normalize = transforms.Normalize(
-        mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
-    )
+    normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
     preproc = transforms.Compose(
         [
             transforms.RandomResizedCrop(224),
@@ -630,9 +563,7 @@ def test_shuffle_seed():
     """Test that shuffle is deterministic for a given seed."""
 
     def make_shuffle_only_ds(seed=0):
-        ds = compat.WebDataset(
-            "shard-{000000..000999}.tar", shardshuffle=True, seed=seed
-        )
+        ds = compat.WebDataset("shard-{000000..000999}.tar", shardshuffle=True, seed=seed)
         index = ["shuffle" in str(stage) for stage in ds.pipeline].index(True)
         del ds.pipeline[index + 1 :]
         return ds

@@ -14,9 +14,7 @@ from .tariterators import group_by_keys, tar_file_expander
 
 
 class FluidInterface:
-    def batched(
-        self, batchsize, collation_fn=filters.default_collation_fn, partial=True
-    ):
+    def batched(self, batchsize, collation_fn=filters.default_collation_fn, partial=True):
         """Create batches of the given size.
 
         This method forwards to the filters.batched function.
@@ -30,9 +28,7 @@ class FluidInterface:
         Returns:
             FluidInterface: Updated pipeline with batched filter.
         """
-        return self.compose(
-            filters.batched(batchsize, collation_fn=collation_fn, partial=partial)
-        )
+        return self.compose(filters.batched(batchsize, collation_fn=collation_fn, partial=partial))
 
     def unbatched(self):
         """Turn batched data back into unbatched data.
@@ -136,12 +132,8 @@ class FluidInterface:
         Returns:
             FluidInterface: Updated pipeline with decode filter.
         """
-        handlers = [
-            autodecode.ImageHandler(x) if isinstance(x, str) else x for x in args
-        ]
-        decoder = autodecode.Decoder(
-            handlers, pre=pre, post=post, only=only, partial=partial
-        )
+        handlers = [autodecode.ImageHandler(x) if isinstance(x, str) else x for x in args]
+        decoder = autodecode.Decoder(handlers, pre=pre, post=post, only=only, partial=partial)
         return self.map(decoder, handler=handler)
 
     def map_dict(self, handler=reraise_exception, **kw):
@@ -382,24 +374,14 @@ class WebDataset(DataPipeline, FluidInterface):
         if resampled:
             mode = "resampled"
         if mode == "resampled" and shardshuffle not in (False, None):
-            warnings.warn(
-                "WebDataset(shardshuffle=...) is ignored for resampled datasets"
-            )
+            warnings.warn("WebDataset(shardshuffle=...) is ignored for resampled datasets")
         elif shardshuffle is None:
-            warnings.warn(
-                "WebDataset(shardshuffle=...) is None; set explicitly to False or a number"
-            )
+            warnings.warn("WebDataset(shardshuffle=...) is None; set explicitly to False or a number")
         if shardshuffle is True:
-            warnings.warn(
-                "set WebDataset(shardshuffle=...) to a positive integer or 0 or False"
-            )
+            warnings.warn("set WebDataset(shardshuffle=...) to a positive integer or 0 or False")
             shardshuffle = 100
         args = SimpleNamespace(**locals())
-        self.seed = (
-            os.environ.get("WDS_SEED", random.randint(0, 1000000))
-            if seed is None
-            else seed
-        )
+        self.seed = os.environ.get("WDS_SEED", random.randint(0, 1000000)) if seed is None else seed
         self.update_cache_info(args)
 
         # first, we add a generator for the urls to used
@@ -426,19 +408,13 @@ class WebDataset(DataPipeline, FluidInterface):
         if cache_dir is None or cache_size == 0:
             opener = cache.StreamingOpen(handler=handler)
         else:
-            opener = cache.FileCache(
-                cache_dir=cache_dir, cache_size=cache_size, handler=handler
-            )
+            opener = cache.FileCache(cache_dir=cache_dir, cache_size=cache_size, handler=handler)
         self.append(opener)
 
         # now we need to open each stream and read the tar files contained in it
         # this generates a stream of dict(fname=..., data=...) objects
         expander = pipelinefilter(tar_file_expander)
-        self.append(
-            expander(
-                handler=handler, select_files=select_files, rename_files=rename_files
-            )
-        )
+        self.append(expander(handler=handler, select_files=select_files, rename_files=rename_files))
 
         # finally, the files need to be groups into samples
         # this generates a stream of dict(__key__=..., ...=...) objects

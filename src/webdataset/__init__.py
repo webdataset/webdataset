@@ -11,8 +11,7 @@ from . import tenbin
 from .autodecode import (Continue, Decoder, DecodingError, gzfilter,
                          handle_extension, imagehandler, pytorch_weights_only,
                          torch_audio, torch_loads, torch_video)
-from .cache import (LRUCleanup, cached_tarfile_samples,
-                    cached_tarfile_to_samples, pipe_cleaner)
+from .cache import LRUCleanup, pipe_cleaner
 from .compat import FluidInterface, FluidWrapper, WebDataset, WebLoader
 from .extradatasets import MockDataset, with_epoch, with_length
 from .filters import (Cached, LMDBCached, associate, batched, decode,

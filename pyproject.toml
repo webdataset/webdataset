@@ -1,97 +1,87 @@
-[tool.poetry]
+[project]
 name = "webdataset"
-version = "0.3.0"
+version = "0.1.4"
 description = "A Python library for managing and processing dataset archives."
-authors = ["Thomas Breuel <tmbdev@gmail.com>"]
-license = "BSD-3-Clause"
 readme = "README.md"
-homepage = "https://github.com/webdataset/webdataset"
-repository = "https://github.com/webdataset/webdataset"
-# requires-python = ">=3.10"
-# Use the src layout for editable installs.
-packages = [
-    { include = "webdataset", from = "src" }
+requires-python = ">=3.10"
+license = { text = "BSD-3-Clause" }
+authors = [
+  { name = "Thomas Breuel", email = "tmbdev@gmail.com" }
 ]
 
-[tool.poetry.dependencies]
-python = ">=3.10"
-braceexpand = "*"
-numpy = "*"
-pyyaml = "*"
+# Main runtime dependencies.
+dependencies = [
+  "braceexpand",
+  "numpy",
+  "pyyaml"
+]
 
-[tool.poetry.dev-dependencies]
-autoflake = "*"
-bandit = "*"
-black = { version = "*", extras = ["jupyter"] }
-build = "*"
-bump2version = "*"
-flake8 = "*"
-imageio = "*"
-invoke = "*"
-isort = "*"
-jupyter = "*"
-jupyterlab = "*"
-lmdb = "*"
-matplotlib = "*"
-mkdocs = "*"
-mkdocs-autorefs = "*"
-mkdocs-jupyter = "*"
-mkdocs-material = "*"
-mkdocs-material-extensions = "*"
-mkdocs-minify-plugin = "*"
-mkdocstrings = "*"
-mkdocstrings-python = "*"
-msgpack = "*"
-mypy = "*"
-nbconvert = "*"
-notebook = "*"
-papermill = "*"
-pdm = "*"
-Pillow = "*"
-pre-commit = "*"
-pydocstyle = "*"
-pytest = "*"
-pytest-cov = "*"
-pytorch_lightning = "*"
-ray = { version = "*", extras = ["default", "tune"] }
-ruff = "*"
-scipy = "*"
-setuptools = "*"
-torch = "*"
-torchvision = "*"
-transformers = "*"
-twine = "*"
-typer = "*"
-wheel = "*"
-icecream = "*"
+# Development-only dependencies (as a “dev” extra).
+[project.optional-dependencies]
+dev = [
+  "autoflake",
+  "bandit",
+  "black[jupyter]",
+  "build",
+  "bump2version",
+  "flake8",
+  "imageio",
+  "isort",
+  "jupyter",
+  "jupyterlab",
+  "lmdb",
+  "matplotlib",
+  "mkdocs",
+  "mkdocs-autorefs",
+  "mkdocs-jupyter",
+  "mkdocs-material",
+  "mkdocs-material-extensions",
+  "mkdocs-minify-plugin",
+  "mkdocstrings",
+  "mkdocstrings-python",
+  "msgpack",
+  "mypy",
+  "nbconvert",
+  "notebook",
+  "papermill",
+  "pdm",
+  "Pillow",
+  "pre-commit",
+  "pydocstyle",
+  "pytest",
+  "pytest-cov",
+  "pytorch_lightning",
+  "ray[default,tune]",
+  "ruff",
+  "scipy",
+  "setuptools",
+  "torch",
+  "torchvision",
+  "transformers",
+  "twine",
+  "typer",
+  "wheel",
+  "icecream"
+]
 
+# Tool-specific settings (these remain unchanged)
 [tool.black]
-line-length = 88
+line-length = 120
 target-version = ["py310"]
+include = '^src/.*'
 
 [tool.ruff]
 line-length = 120
 select = ["E", "F", "W", "C90"]
-ignore = ["E712", "F541"]
+ignore = ["E712", "F541", "C901", "E741"]
+exclude = ["examples"]
 
-[tool.bumpversion]
-current_version = "0.1.0"
-commit = true
-tag = true
+[tool.pre-commit]
+repos = [
+  { repo = "local", hooks = [
+      { id = "black", name = "black", entry = "black .", language = "system", pass_filenames = false },
+      { id = "isort", name = "isort", entry = "isort .", language = "system", pass_filenames = false },
+      { id = "pytest-quick", name = "pytest-quick", entry = "pytest -v -m quick", language = "system", pass_filenames = false }
+  ] }
+]
 
-[tool.bumpversion.files]
-pyproject.toml = 'version = "{current_version}"'
-# src/webdataset/__init__.py = '__version__ = "{current_version}"'
-
-# [tool.pre-commit]
-# repos = [
-#     { repo = "local", hooks = [
-#         { id = "black", name = "black", entry = "black .", language = "system", pass_filenames = false },
-#         { id = "isort", name = "isort", entry = "isort .", language = "system", pass_filenames = false },
-#         { id = "pytest-quick", name = "pytest-quick", entry = "pytest -v -m quick", language = "system", pass_filenames = false }
-#     ] }
-# ]
-
-[build-system]
-requires = ["poetry-core>=1.0.0"]
-build-backend = "poetry.core.masonry.api"

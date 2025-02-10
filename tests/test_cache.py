@@ -1,4 +1,3 @@
-
 import os
 import tempfile
 import time
@@ -12,18 +11,9 @@ from webdataset.cache import (FileCache, LRUCleanup, StreamingOpen,
 
 def test_url_to_cache_name():
     assert url_to_cache_name("http://example.com/path/to/file.txt") == "file.txt"
-    assert (
-        url_to_cache_name("http://example.com/path/to/file.txt", ndir=1)
-        == "to/file.txt"
-    )
-    assert (
-        url_to_cache_name("http://example.com/path/to/file.txt", ndir=2)
-        == "path/to/file.txt"
-    )
-    assert (
-        url_to_cache_name("http://example.com/path/to/file.txt", ndir=3)
-        == "path/to/file.txt"
-    )
+    assert url_to_cache_name("http://example.com/path/to/file.txt", ndir=1) == "to/file.txt"
+    assert url_to_cache_name("http://example.com/path/to/file.txt", ndir=2) == "path/to/file.txt"
+    assert url_to_cache_name("http://example.com/path/to/file.txt", ndir=3) == "path/to/file.txt"
     assert url_to_cache_name("http://example.com/") == ""
     assert url_to_cache_name("http://example.com", ndir=1) == ""
     assert url_to_cache_name("file:///path/to/file.txt") == "file.txt"
@@ -65,9 +55,7 @@ class TestStreamingOpen:
         for result in self.stream_open([url]):
             assert result["url"] == url
             assert "local_path" not in result
-            assert (
-                result["stream"].read(1) == b"\x1f"
-            )  # Check that the file starts with the expected gzip magic number
+            assert result["stream"].read(1) == b"\x1f"  # Check that the file starts with the expected gzip magic number
 
 
 class TestFileCache:
@@ -100,19 +88,13 @@ class TestFileCache:
         assert "local_path" in result
         assert os.path.exists(result["local_path"])
         assert os.path.dirname(result["local_path"]) == self.temp_dir.name
-        assert os.path.basename(result["local_path"]) == os.path.basename(
-            urlparse(url).path
-        )
+        assert os.path.basename(result["local_path"]) == os.path.basename(urlparse(url).path)
         with result["stream"] as file:
-            assert (
-                file.read(1) == b"\x1f"
-            )  # Check that the file starts with the expected gzip magic number
+            assert file.read(1) == b"\x1f"  # Check that the file starts with the expected gzip magic number
 
 
 def test_lru_cleanup(tmp_path):
-    lru_cleanup = LRUCleanup(
-        tmp_path, interval=None
-    )  # create an instance of the LRUCleanup class
+    lru_cleanup = LRUCleanup(tmp_path, interval=None)  # create an instance of the LRUCleanup class
 
     for i in range(20):
         fname = os.path.join(tmp_path, "%06d" % i)
@@ -124,19 +106,13 @@ def test_lru_cleanup(tmp_path):
     assert "000000" in os.listdir(tmp_path)
     assert "000019" in os.listdir(tmp_path)
 
-    total_before = sum(
-        os.path.getsize(os.path.join(tmp_path, fname)) for fname in os.listdir(tmp_path)
-    )
+    total_before = sum(os.path.getsize(os.path.join(tmp_path, fname)) for fname in os.listdir(tmp_path))
 
-    lru_cleanup.cache_size = (
-        total_before * 0.5
-    )  # set the cache size to 50% of the total size
+    lru_cleanup.cache_size = total_before * 0.5  # set the cache size to 50% of the total size
 
     lru_cleanup.cleanup()  # use the cleanup method of the LRUCleanup class
 
-    total_after = sum(
-        os.path.getsize(os.path.join(tmp_path, fname)) for fname in os.listdir(tmp_path)
-    )
+    total_after = sum(os.path.getsize(os.path.join(tmp_path, fname)) for fname in os.listdir(tmp_path))
 
     assert total_after <= total_before * 0.5
     assert "000000" not in os.listdir(tmp_path)

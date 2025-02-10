@@ -20,7 +20,7 @@ import numpy as np
 from . import gopen
 
 
-def imageencoder(image: Any, format: str = "PNG"):    # skipcq: PYL-W0622
+def imageencoder(image: Any, format: str = "PNG"):  # skipcq: PYL-W0622
     """Compress an image using PIL and return it as a string.
 
     Can handle float or uint8 images.
@@ -43,9 +43,7 @@ def imageencoder(image: Any, format: str = "PNG"):    # skipcq: PYL-W0622
     if isinstance(image, np.ndarray):
         if image.dtype in [np.dtype("f"), np.dtype("d")]:
             if np.amin(image) <= -0.001 or np.amax(image) >= 1.001:
-                raise ValueError(
-                    f"image values out of range {np.amin(image)} {np.amax(image)}"
-                )
+                raise ValueError(f"image values out of range {np.amin(image)} {np.amax(image)}")
             image = np.clip(image, 0.0, 1.0)
             image = np.array(image * 255.0, "uint8")
         assert image.ndim in [2, 3]
@@ -211,9 +209,7 @@ def make_handlers():
         dict: Dictionary of handlers for different data types
     """
     handlers = {}
-    add_handlers(
-        handlers, "cls cls2 class count index inx id", lambda x: str(x).encode("ascii")
-    )
+    add_handlers(handlers, "cls cls2 class count index inx id", lambda x: str(x).encode("ascii"))
     add_handlers(handlers, "txt text transcript", lambda x: x.encode("utf-8"))
     add_handlers(handlers, "html htm", lambda x: x.encode("utf-8"))
     add_handlers(handlers, "pyd pickle", pickle.dumps)
@@ -284,9 +280,7 @@ def encode_based_on_extension(sample: dict, handlers: dict):
     Returns:
         dict: Encoded sample
     """
-    return {
-        k: encode_based_on_extension1(v, k, handlers) for k, v in list(sample.items())
-    }
+    return {k: encode_based_on_extension1(v, k, handlers) for k, v in list(sample.items())}
 
 
 def make_encoder(spec: Union[bool, str, dict, Callable]):
@@ -452,9 +446,7 @@ class TarWriter:
             if k[0] == "_":
                 continue
             if not isinstance(v, (bytes, bytearray, memoryview)):
-                raise ValueError(
-                    f"{k} doesn't map to a bytes after encoding ({type(v)})"
-                )
+                raise ValueError(f"{k} doesn't map to a bytes after encoding ({type(v)})")
         key = obj["__key__"]
         for k in sorted(obj.keys()):
             if k == "__key__":
@@ -483,15 +475,9 @@ class TarWriter:
     def tarmode(fileobj, compress: Optional[Union[bool, str]] = None):
         if compress is False:
             return "w|"
-        elif (
-            compress is True
-            or compress == "gz"
-            or (isinstance(fileobj, str) and fileobj.endswith("gz"))
-        ):
+        elif compress is True or compress == "gz" or (isinstance(fileobj, str) and fileobj.endswith("gz")):
             return "w|gz"
-        elif compress == "bz2" or (
-            isinstance(fileobj, str) and fileobj.endswith("bz2")
-        ):
+        elif compress == "bz2" or (isinstance(fileobj, str) and fileobj.endswith("bz2")):
             return "w|bz2"
         elif compress == "xz" or (isinstance(fileobj, str) and fileobj.endswith("xz")):
             return "w|xz"
@@ -578,11 +564,7 @@ class ShardWriter:
         Args:
             obj: Sample to be written.
         """
-        if (
-            self.tarstream is None
-            or self.count >= self.maxcount
-            or self.size >= self.maxsize
-        ):
+        if self.tarstream is None or self.count >= self.maxcount or self.size >= self.maxsize:
             self.next_stream()
         size = self.tarstream.write(obj)
         self.count += 1

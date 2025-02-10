@@ -100,9 +100,7 @@ class TestDirectoryShardList:
 
     def test_random_selection(self):
         self.create_test_files(5)
-        ds = DirectoryShardList(
-            self.test_path, pattern="*.tar", select="random", poll=0.01
-        )
+        ds = DirectoryShardList(self.test_path, pattern="*.tar", select="random", poll=0.01)
         files = []
         for file in islice(ds, 5):
             files.append(file["url"])
@@ -110,15 +108,11 @@ class TestDirectoryShardList:
 
     def test_oldest_selection(self):
         self.create_test_files(5)
-        ds = DirectoryShardList(
-            self.test_path, pattern="*.tar", select="oldest", mode="unlink", poll=None
-        )
+        ds = DirectoryShardList(self.test_path, pattern="*.tar", select="oldest", mode="unlink", poll=None)
         files = [file["url"] for file in islice(ds, 3)]
         assert len(files) == 3
         assert len(glob.glob(self.test_path + "*.tar")) == 2
-        assert files == [
-            self.test_path + f"file{i}.tar._{os.getpid()}_" for i in range(3)
-        ]
+        assert files == [self.test_path + f"file{i}.tar._{os.getpid()}_" for i in range(3)]
 
     def test_adding_files(self):
         self.create_test_files(5)
@@ -143,9 +137,7 @@ class TestDirectoryShardList:
 
     def test_removing_files(self):
         self.create_test_files(5)
-        ds = DirectoryShardList(
-            self.test_path, pattern="*.tar", select="random", mode="unlink", poll=None
-        )
+        ds = DirectoryShardList(self.test_path, pattern="*.tar", select="random", mode="unlink", poll=None)
         files = set()
         for _ in range(5):
             files.add(next(iter(ds))["url"])
@@ -156,9 +148,7 @@ class TestDirectoryShardList:
 
     def test_recycle_unlink(self):
         self.create_test_files(1)
-        ds = DirectoryShardList(
-            self.test_path, pattern="*.tar", select="random", poll=None, mode="unlink"
-        )
+        ds = DirectoryShardList(self.test_path, pattern="*.tar", select="random", poll=None, mode="unlink")
         src = iter(ds)
         file = next(src)["url"]
         with pytest.raises(StopIteration):
@@ -170,9 +160,7 @@ class TestDirectoryShardList:
         files = glob.glob(self.test_path + "*.tar*")
         assert len(files) == 1
         original = files[0]
-        ds = DirectoryShardList(
-            self.test_path, pattern="*.tar", select="random", poll=None, mode="keep"
-        )
+        ds = DirectoryShardList(self.test_path, pattern="*.tar", select="random", poll=None, mode="keep")
         src = iter(ds)
         file = next(src)["url"]
         assert Path(file).exists()
@@ -183,17 +171,13 @@ class TestDirectoryShardList:
 
     def test_recycle_resample(self):
         self.create_test_files(1)
-        ds = DirectoryShardList(
-            self.test_path, pattern="*.tar", select="random", poll=None, mode="resample"
-        )
+        ds = DirectoryShardList(self.test_path, pattern="*.tar", select="random", poll=None, mode="resample")
         file = next(iter(ds))["url"]
         assert Path(file).exists()
 
     def test_cleanup_files_without_processes(self):
         self.create_test_files(1)
-        ds = DirectoryShardList(
-            self.test_path, pattern="*.tar", select="random", poll=None
-        )
+        ds = DirectoryShardList(self.test_path, pattern="*.tar", select="random", poll=None)
         file = next(iter(ds))["url"]
         os.rename(file, file + "._99999999_")
         ds.cleanup_files_without_processes()

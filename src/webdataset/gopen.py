@@ -147,9 +147,7 @@ class Pipe:
         self.close()
 
 
-def set_options(
-    obj, timeout=None, ignore_errors=None, ignore_status=None, handler=None
-):
+def set_options(obj, timeout=None, ignore_errors=None, ignore_status=None, handler=None):
     """Set options for Pipes.
 
     This function can be called on any stream. It will set pipe options only

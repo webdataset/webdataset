@@ -10,7 +10,3 @@ rule_settings:
     - inline-immediately-yielded-variable
     - simplify-len-comparison
     - simplify-empty-collection-comparison
-    - remove-redundant-fstring
-    - path-read
-    - merge-assign-and-aug-assign
-    - use-contextlib-suppress

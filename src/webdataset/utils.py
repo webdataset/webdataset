@@ -7,7 +7,6 @@
 """Miscellaneous utility functions."""
 
 import fnmatch
-import braceexpand
 import functools
 import glob
 import importlib
@@ -18,6 +17,7 @@ import sys
 import warnings
 from typing import Any, Callable, Iterable, Iterator, Union
 
+import braceexpand
 import numpy as np
 
 
@@ -152,9 +152,7 @@ def lookup_sym(sym: str, modules: list):
     return None
 
 
-def repeatedly0(
-    loader: Iterator, nepochs: int = sys.maxsize, nbatches: int = sys.maxsize
-):
+def repeatedly0(loader: Iterator, nepochs: int = sys.maxsize, nbatches: int = sys.maxsize):
     """Repeatedly returns batches from a DataLoader.
 
     Args:
@@ -309,6 +307,7 @@ def deprecated(arg=None):
 
 class ObsoleteException(Exception):
     pass
+
 
 def obsolete(func=None, *, reason=None):
     if func is None:

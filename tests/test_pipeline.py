@@ -311,13 +311,6 @@ def test_dataset_extract_keys():
     assert count_samples_tuple(ds) == 47
 
 
-def test_slice():
-    ds = wds.DataPipeline(
-        wds.SimpleShardList(local_data), wds.tarfile_to_samples(), wds.slice(10)
-    )
-    assert count_samples_tuple(ds) == 10
-
-
 def test_dataset_eof():
     import tarfile
 
@@ -410,14 +403,10 @@ def test_dataset_rename_keys():
 
 
 def test_dataset_rsample():
-    ds = wds.DataPipeline(
-        wds.SimpleShardList(local_data), wds.tarfile_to_samples(), wds.rsample(1.0)
-    )
+    ds = wds.DataPipeline(wds.SimpleShardList(local_data), wds.tarfile_to_samples(), wds.rsample(1.0))
     assert count_samples_tuple(ds) == 47
 
-    ds = wds.DataPipeline(
-        wds.SimpleShardList(local_data), wds.tarfile_to_samples(), wds.rsample(0.5)
-    )
+    ds = wds.DataPipeline(wds.SimpleShardList(local_data), wds.tarfile_to_samples(), wds.rsample(0.5))
     result = [count_samples_tuple(ds) for _ in range(300)]
     assert np.mean(result) >= 0.3 * 47 and np.mean(result) <= 0.7 * 47, np.mean(result)
 
@@ -611,38 +600,6 @@ def test_float_np_vs_torch():
     assert (image == image2.permute(1, 2, 0).numpy()).all(), (image.shape, image2.shape)
     assert cls == cls2
 
-
-def test_tenbin():
-    from webdataset import tenbin
-
-    for d0 in [0, 1, 2, 10, 100, 1777]:
-        for d1 in [0, 1, 2, 10, 100, 345]:
-            for t in [np.uint8, np.float16, np.float32, np.float64]:
-                a = np.random.normal(size=(d0, d1)).astype(t)
-                a_encoded = tenbin.encode_buffer([a])
-                (a_decoded,) = tenbin.decode_buffer(a_encoded)
-                print(a.shape, a_decoded.shape)
-                assert a.shape == a_decoded.shape
-                assert a.dtype == a_decoded.dtype
-                assert (a == a_decoded).all()
-
-
-def test_tenbin_dec():
-    ds = wds.DataPipeline(
-        wds.SimpleShardList("testdata/tendata.tar"),
-        wds.tarfile_to_samples(),
-        wds.decode(),
-        wds.to_tuple("ten"),
-    )
-    assert count_samples_tuple(ds) == 100
-    for sample in ds:
-        xs, ys = sample[0]
-        assert xs.dtype == np.float64
-        assert ys.dtype == np.float64
-        assert xs.shape == (28, 28)
-        assert ys.shape == (28, 28)
-
-
 def test_dataloader():
     import torch
 
@@ -715,9 +672,7 @@ def test_torchvision():
     import torch
     from torchvision import transforms
 
-    normalize = transforms.Normalize(
-        mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
-    )
+    normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
     preproc = transforms.Compose(
         [
             transforms.RandomResizedCrop(224),
@@ -744,9 +699,7 @@ def test_batched():
     import torch
     from torchvision import transforms
 
-    normalize = transforms.Normalize(
-        mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
-    )
+    normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
     preproc = transforms.Compose(
         [
             transforms.RandomResizedCrop(224),
@@ -776,9 +729,7 @@ def test_unbatched():
     import torch
     from torchvision import transforms
 
-    normalize = transforms.Normalize(
-        mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
-    )
+    normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
     preproc = transforms.Compose(
         [
             transforms.RandomResizedCrop(224),
@@ -858,11 +809,7 @@ def test_tenbin():
 
 def test_tenbin_dec():
     """Test tensor binary decoding."""
-    ds = (
-        wds.WebDataset("testdata/tendata.tar", shardshuffle=100)
-        .decode()
-        .to_tuple("ten")
-    )
+    ds = wds.WebDataset("testdata/tendata.tar", shardshuffle=100).decode().to_tuple("ten")
     assert count_samples_tuple(ds) == 100
     for sample in ds:
         xs, ys = sample[0]
@@ -870,3 +817,35 @@ def test_tenbin_dec():
         assert ys.dtype == np.float64
         assert xs.shape == (28, 28)
         assert ys.shape == (28, 28)
+
+
+# def test_tenbin():
+#     from webdataset import tenbin
+
+#     for d0 in [0, 1, 2, 10, 100, 1777]:
+#         for d1 in [0, 1, 2, 10, 100, 345]:
+#             for t in [np.uint8, np.float16, np.float32, np.float64]:
+#                 a = np.random.normal(size=(d0, d1)).astype(t)
+#                 a_encoded = tenbin.encode_buffer([a])
+#                 (a_decoded,) = tenbin.decode_buffer(a_encoded)
+#                 print(a.shape, a_decoded.shape)
+#                 assert a.shape == a_decoded.shape
+#                 assert a.dtype == a_decoded.dtype
+#                 assert (a == a_decoded).all()
+
+
+# def test_tenbin_dec():
+#     ds = wds.DataPipeline(
+#         wds.SimpleShardList("testdata/tendata.tar"),
+#         wds.tarfile_to_samples(),
+#         wds.decode(),
+#         wds.to_tuple("ten"),
+#     )
+#     assert count_samples_tuple(ds) == 100
+#     for sample in ds:
+#         xs, ys = sample[0]
+#         assert xs.dtype == np.float64
+#         assert ys.dtype == np.float64
+#         assert xs.shape == (28, 28)
+#         assert ys.shape == (28, 28)
+

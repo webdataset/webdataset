@@ -36,9 +36,7 @@ def test_writer(tmpdir):
         wds.decode("rgb"),
     )
     for sample in ds:
-        assert getkeys(sample) == set(
-            "txt cls json mp npy npz ppm jpg png".split()
-        ), getkeys(sample)
+        assert getkeys(sample) == set("txt cls json mp npy npz ppm jpg png".split()), getkeys(sample)
         assert isinstance(sample["json"], dict)
         assert sample["json"] == dict(a=1)
         assert isinstance(sample["mp"], dict)
@@ -154,9 +152,7 @@ def test_shardwriter(tmpdir):
     def post(fname):
         assert fname is not None
 
-    with writer.ShardWriter(
-        f"{tmpdir}/shards-%04d.tar", maxcount=5, post=post, encoder=False
-    ) as sink:
+    with writer.ShardWriter(f"{tmpdir}/shards-%04d.tar", maxcount=5, post=post, encoder=False) as sink:
         for i in range(50):
             sink.write(dict(__key__=str(i), txt=b"hello", cls=b"3"))
 

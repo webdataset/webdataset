@@ -1,94 +1,82 @@
-.PHONY: venv shell test docs serve lint push pypi
+.PHONY: venv shell test docs serve lint push pypi clean testpypi rerelease patchrelease minorrelease majorrelease
 
 # Lint code using Black and Ruff
 lint:
-	poetry run black .
-	poetry run isort .
-	poetry run ruff check .
+	! test -z "$$VIRTUAL_ENV" # must have sourced .venv/bin/activate
+	black .
+	isort .
+	ruff check .
 
-rufffix:
-	poetry run ruff check --fix .
+autofix:
+	test -d "$$VIRTUAL_ENV" # must have sourced .venv/bin/activate
+	ruff check --fix .
 
-# Create virtual environment and install dependencies (using Poetry)
+# Create virtual environment and install dependencies using uv
 venv:
-	poetry install
-	rm -f .venv
-	ln -s $(shell poetry env info --path) .venv
+	type uv  # uv must be installed
+	python -m venv .venv
+	uv sync --all-extras
+	. .venv/bin/activate && pip install -e .
 
-# Create virtual environment and install dependencies (using Poetry)
+# Clean up virtual environment and cache
 clean:
 	rm -rf .venv
-	rm -rf poetry.lock
-	poetry env remove $(poetry env info --path)
-
-
-# Activate the virtual environment (starts an interactive shell)
-shell:
-	poetry shell
+	rm -rf *.egg-info
+	rm -rf dist
+	rm -rf build
+	find . -type d -name __pycache__ -exec rm -rf {} +
 
 # Run tests using pytest
 test:
-	poetry run pytest
+	! test -z "$$VIRTUAL_ENV" # must have sourced .venv/bin/activate
+	$$VIRTUAL_ENV/bin/pytest
 
 # Generate documentation using MkDocs
 docs:
-	poetry run mkdocs build
+	! test -z "$$VIRTUAL_ENV" # must have sourced .venv/bin/activate
+	# jupyter-nbconvert readme.ipynb --to markdown && mv readme.md README.md
+	$$VIRTUAL_ENV/bin/mkdocs build
 
 # Serve documentation locally (for preview)
 serve:
-	poetry run mkdocs serve
+	! test -z "$$VIRTUAL_ENV" # must have sourced .venv/bin/activate
+	$$VIRTUAL_ENV/bin/mkdocs serve
 
 # Stage, commit, and push changes to GitHub
 push:
 	git add .
 	git push
 
-# Build the package and publish to PyPI manually
+# Build and upload to TestPyPI
 testpypi:
-	poetry build
-	twine upload --repository testpypi dist/*
-	@echo install with pip install --index-url https://test.pypi.org/simple/ --no-deps webdataset
+	! test -z "$$VIRTUAL_ENV" # must have sourced .venv/bin/activate
+	$$VIRTUAL_ENV/bin/python -m build
+	$$VIRTUAL_ENV/bin/twine upload --repository testpypi dist/*
+	@echo "Install with: pip install --index-url https://test.pypi.org/simple/ --no-deps PACKAGE"
 
-# Build the package and publish to PyPI manually
-
-rerelease:
+# Rebuild and reupload current version
+release:
+	! test -z "$$VIRTUAL_ENV" # must have sourced .venv/bin/activate
 	test -z "$$(git status --porcelain)"
 	git push
-	poetry build
-	twine upload dist/*
+	$$VIRTUAL_ENV/bin/python -m build
+	$$VIRTUAL_ENV/bin/twine upload "$$(ls -t dist/*.whl | sed 1q)"
+	$$VIRTUAL_ENV/bin/twine upload "$$(ls -t dist/*.tar.gz | sed 1q)"
 
-patchrelease:
-	test -z "$$(git status --porcelain)"
-	poetry version patch
-	git add pyproject.toml
-	git commit -m "patch release"
-	git push
-	poetry build
-	twine upload "$$(ls -t dist/*.whl | sed 1q)"
-	twine upload "$$(ls -t dist/*.tar.gz | sed 1q)"
+# Patch release (0.0.x)
+patch:
+	bumpversion patch
+	git push && git push --tags
+	$(MAKE) release
 
+# Minor release (0.x.0)
 minorrelease:
-	test -z "$$(git status --porcelain)"
-	poetry version minor
-	git add pyproject.toml
-	git commit -m "minor release"
-	poetry build
-	git push
-	twine upload "$$(ls -t dist/*.whl | sed 1q)"
-	twine upload "$$(ls -t dist/*.tar.gz | sed 1q)"
+	bumpversion minor
+	git push && git push --tags
+	$(MAKE) release
 
+# Major release (x.0.0)
 majorrelease:
-	test -z "$$(git status --porcelain)"
-	poetry version major
-	git add pyproject.toml
-	git commit -m "major release"
-	poetry build
-	git push
-	twine upload "$$(ls -t dist/*.whl | sed 1q)"
-	twine upload "$$(ls -t dist/*.tar.gz | sed 1q)"
-
-# Bump version (patch), commit, tag, and push release to GitHub
-# release:
-# 	poetry run bump2version patch
-# 	git push
-# 	git push --tags
+	bumpversion major
+	git push && git push --tags
+	$(MAKE) release

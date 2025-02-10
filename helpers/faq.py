@@ -60,9 +60,7 @@ def summarize_issue(content):
 
 def generate_faq_entries_from_issues():
     """Create FAQ entries from issues."""
-    assert os.path.isdir(
-        "faqs"
-    ), "Please create a directory named 'faqs' before running this task."
+    assert os.path.isdir("faqs"), "Please create a directory named 'faqs' before running this task."
 
     # Fetch all issues (open and closed) from the repository
     s = subprocess.run(
@@ -103,9 +101,7 @@ def generate_faq_entries_from_issues():
         comments = "\n\n".join(comment["body"] for comment in issue_details["comments"])
 
         # Combine the issue title, body, and comments
-        combined_content = (
-            f"# {issue_title}\n\n{issue_body}\n\n## Comments\n\n{comments}"
-        )
+        combined_content = f"# {issue_title}\n\n{issue_body}\n\n## Comments\n\n{comments}"
 
         # Pipe the combined content to the summarize function and write the output to a file
         summarized_content = summarize_issue(combined_content)

@@ -134,11 +134,7 @@ def tar_file_iterator(
                 continue
             if fname is None:
                 continue
-            if (
-                "/" not in fname
-                and fname.startswith(meta_prefix)
-                and fname.endswith(meta_suffix)
-            ):
+            if "/" not in fname and fname.startswith(meta_prefix) and fname.endswith(meta_suffix):
                 # skipping metadata for now
                 continue
             if skip_meta is not None and re.match(skip_meta, fname):
@@ -192,9 +188,7 @@ def tar_file_expander(
                 select_files=select_files,
                 rename_files=rename_files,
             ):
-                assert (
-                    isinstance(sample, dict) and "data" in sample and "fname" in sample
-                )
+                assert isinstance(sample, dict) and "data" in sample and "fname" in sample
                 sample["__url__"] = url
                 if local_path is not None:
                     sample["__local_path__"] = local_path
@@ -259,9 +253,7 @@ def group_by_keys(
                     yield current_sample
                 current_sample = dict(__key__=prefix, __url__=filesample["__url__"])
             if suffix in current_sample:
-                raise ValueError(
-                    f"{fname}: duplicate file name in tar file {suffix} {current_sample.keys()}"
-                )
+                raise ValueError(f"{fname}: duplicate file name in tar file {suffix} {current_sample.keys()}")
             if suffixes is None or suffix in suffixes:
                 current_sample[suffix] = value
             local_path = filesample.get("__local_path__")
@@ -295,9 +287,7 @@ def tarfile_samples(
         Stream of samples.
     """
     streams = url_opener(src, handler=handler)
-    files = tar_file_expander(
-        streams, handler=handler, select_files=select_files, rename_files=rename_files
-    )
+    files = tar_file_expander(streams, handler=handler, select_files=select_files, rename_files=rename_files)
     samples = group_by_keys(files, handler=handler)
     return samples
 

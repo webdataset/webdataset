@@ -480,7 +480,8 @@ def _decode(data, *args, handler=reraise_exception, **kw):
     Raises:
         Exception: If the handler doesn't handle an exception.
     """
-    decoder = lambda x: autodecode.imagehandler(x) if isinstance(x, str) else x
+    def decoder(x):
+        return autodecode.imagehandler(x) if isinstance(x, str) else x
     handlers = [decoder(x) for x in args]
     f = autodecode.Decoder(handlers, **kw)
 
@@ -551,9 +552,7 @@ def _rename(data, handler=reraise_exception, keep=True, **kw):
     for sample in data:
         try:
             if not keep:
-                yield {
-                    k: getfirst(sample, v, missing_is_error=True) for k, v in kw.items()
-                }
+                yield {k: getfirst(sample, v, missing_is_error=True) for k, v in kw.items()}
             else:
 
                 def listify(v):
@@ -561,12 +560,7 @@ def _rename(data, handler=reraise_exception, keep=True, **kw):
 
                 to_be_replaced = {x for v in kw.values() for x in listify(v)}
                 result = {k: v for k, v in sample.items() if k not in to_be_replaced}
-                result.update(
-                    {
-                        k: getfirst(sample, v, missing_is_error=True)
-                        for k, v in kw.items()
-                    }
-                )
+                result.update({k: getfirst(sample, v, missing_is_error=True) for k, v in kw.items()})
                 yield result
         except Exception as exn:
             if handler(exn):
@@ -637,9 +631,7 @@ def _map_dict(data, handler=reraise_exception, **kw):
 map_dict = pipelinefilter(_map_dict)
 
 
-def _to_tuple(
-    data, *args, handler=reraise_exception, missing_is_error=True, none_is_error=None
-):
+def _to_tuple(data, *args, handler=reraise_exception, missing_is_error=True, none_is_error=None):
     """
     Convert dict samples to tuples.
 
@@ -663,9 +655,7 @@ def _to_tuple(
 
     for sample in data:
         try:
-            result = tuple(
-                getfirst(sample, f, missing_is_error=missing_is_error) for f in args
-            )
+            result = tuple(getfirst(sample, f, missing_is_error=missing_is_error) for f in args)
             if none_is_error and any(x is None for x in result):
                 raise ValueError(f"to_tuple {args} got {sample.keys()}")
             yield result
@@ -724,16 +714,12 @@ def combine_values(b, combine_tensors=True, combine_scalars=True):
             import torch
 
             shapes = set(x.shape for x in b)
-            assert (
-                len(shapes) == 1
-            ), f"all shapes must be equal in collation, got {shapes}"
+            assert len(shapes) == 1, f"all shapes must be equal in collation, got {shapes}"
             b = torch.stack(list(b))
     elif isinstance(b[0], np.ndarray):
         if combine_tensors:
             shapes = set(x.shape for x in b)
-            assert (
-                len(shapes) == 1
-            ), f"all shapes must be equal in collation, got {shapes}"
+            assert len(shapes) == 1, f"all shapes must be equal in collation, got {shapes}"
             b = np.array(list(b))
     else:
         b = list(b)
@@ -766,10 +752,7 @@ def default_collation_fn(samples, combine_tensors=True, combine_scalars=True):
     keys = set(rows[0].keys())
     for row in rows[1:]:
         assert set(row.keys()) == keys, "keys don't match in different samples"
-    result = {
-        k: combine_values([row[k] for row in rows], combine_tensors, combine_scalars)
-        for k in keys
-    }
+    result = {k: combine_values([row[k] for row in rows], combine_tensors, combine_scalars) for k in keys}
     if isinstance(samples[0], (list, tuple)):
         return dict2tuple(result)
     else:
@@ -901,22 +884,14 @@ def _extract_keys(source, *patterns, duplicate_is_error=True, ignore_missing=Fal
         result = []
         for pattern in patterns:
             pattern = pattern.split(";") if isinstance(pattern, str) else pattern
-            matches = [
-                x
-                for x in sample.keys()
-                if any((fnmatch("." + x, p) or fnmatch(x, p)) for p in pattern)
-            ]
+            matches = [x for x in sample.keys() if any((fnmatch("." + x, p) or fnmatch(x, p)) for p in pattern)]
             if len(matches) == 0:
                 if ignore_missing:
                     continue
                 else:
-                    raise ValueError(
-                        f"Cannot find {pattern} in sample keys {sample.keys()}."
-                    )
+                    raise ValueError(f"Cannot find {pattern} in sample keys {sample.keys()}.")
             if len(matches) > 1 and duplicate_is_error:
-                raise ValueError(
-                    f"Multiple sample keys {sample.keys()} match {pattern}."
-                )
+                raise ValueError(f"Multiple sample keys {sample.keys()} match {pattern}.")
             value = sample[matches[0]]
             result.append(value)
         yield tuple(result)
@@ -925,9 +900,7 @@ def _extract_keys(source, *patterns, duplicate_is_error=True, ignore_missing=Fal
 extract_keys = pipelinefilter(_extract_keys)
 
 
-def _rename_keys(
-    source, *args, keep_unselected=False, must_match=True, duplicate_is_error=True, **kw
-):
+def _rename_keys(source, *args, keep_unselected=False, must_match=True, duplicate_is_error=True, **kw):
     """
     Rename keys in dictionary samples based on patterns.
 
@@ -965,15 +938,11 @@ def _rename_keys(
                 continue
             if new_name in new_sample:
                 if duplicate_is_error:
-                    raise ValueError(
-                        f"Duplicate value in sample {sample.keys()} after rename."
-                    )
+                    raise ValueError(f"Duplicate value in sample {sample.keys()} after rename.")
                 continue
             new_sample[new_name] = value
         if must_match and not all(matched.values()):
-            raise ValueError(
-                f"Not all patterns ({matched}) matched sample keys ({sample.keys()})."
-            )
+            raise ValueError(f"Not all patterns ({matched}) matched sample keys ({sample.keys()}).")
 
         yield new_sample
 

@@ -258,10 +258,7 @@ class FileCache:
                 with open(dest, "rb") as f:
                     data = f.read(200)
                 os.remove(dest)
-                raise ValueError(
-                    "%s (%s) is not a tar archive, but a %s, contains %s"
-                    % (dest, url, ftype, repr(data))
-                )
+                raise ValueError("%s (%s) is not a tar archive, but a %s, contains %s" % (dest, url, ftype, repr(data)))
         return dest
 
     def __call__(self, urls: Iterable[str]) -> Iterable[io.IOBase]:
@@ -290,4 +287,3 @@ class FileCache:
                         break
                 yield dict(url=url, stream=stream, local_path=dest)
                 break
-

@@ -84,9 +84,7 @@ class MultiLoader:
         prefix (str): Directory prefix for the ZMQ socket. Defaults to "/tmp/_multi-".
     """
 
-    def __init__(
-        self, dataset, workers=4, verbose=False, nokill=False, prefix="/tmp/_multi-"
-    ):
+    def __init__(self, dataset, workers=4, verbose=False, nokill=False, prefix="/tmp/_multi-"):
         """Initialize the MultiLoader instance.
 
         Args:
