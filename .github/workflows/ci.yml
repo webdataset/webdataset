@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install uv
+        run: pip install uv
+
+      - name: Install uv
+        run: uv sync --all-extras
+
+      - name: Install package
+        run: uv pip install -e .
+
+      - name: Run Black check
+        run: uv run black --check .
+
+      - name: Run Ruff check
+        run: uv run ruff check .
+
+      - name: Run Tests
+        run: uv run pytest
+
