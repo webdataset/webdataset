@@ -109,7 +109,8 @@ There are two interfaces, the concise "fluid" interface and a longer "pipeline" 
 
 ```python
 import webdataset as wds
-pil_dataset = wds.WebDataset(url).shuffle(1000).decode("pil").to_tuple("png", "json")
+shuffle_buffer = 10  # usually, pick something bigger, like 1000
+pil_dataset = wds.WebDataset(url).shuffle(shuffle_buffer).decode("pil").to_tuple("png", "json")
 ```
 
     /home/tmb/proj/webdataset/webdataset/compat.py:389: UserWarning: WebDataset(shardshuffle=...) is None; set explicitly to False or a number
@@ -140,7 +141,7 @@ plt.imshow(image)
 
 
 
-    <matplotlib.image.AxesImage at 0x706d349e5af0>
+    <matplotlib.image.AxesImage at 0x71a449ffb620>
 
 
 
@@ -181,7 +182,7 @@ plt.imshow(image.numpy().transpose(1, 2, 0))
 
 
 
-    <matplotlib.image.AxesImage at 0x706d3f213920>
+    <matplotlib.image.AxesImage at 0x71a48434e840>
 
 
 
@@ -211,8 +212,9 @@ The `wds.WebDataset` fluid interface is just a convenient shorthand for writing 
 ```python
 dataset = wds.DataPipeline(
     wds.SimpleShardList(url),
-
     # at this point we have an iterator over all the shards
+
+    # this shuffles the shards
     wds.shuffle(100),
 
     # add wds.split_by_node here if you are using multiple nodes
@@ -222,13 +224,12 @@ dataset = wds.DataPipeline(
     wds.tarfile_to_samples(),
 
     # this shuffles the samples in memory
-    wds.shuffle(1000),
+    wds.shuffle(shuffle_buffer),
 
     # this decodes the images and json
     wds.decode("pil"),
     wds.to_tuple("png", "json"),
     wds.map(preprocess),
-    wds.shuffle(1000),
     wds.batched(16)
 )
 
@@ -271,19 +272,19 @@ print(sample[".txt"])
 plt.imshow(sample[".jpg"])
 ```
 
+    dict_keys(['.cls', '.jpg', '.txt', '__key__', '__dataset__', '__index__', '__shard__', '__shardindex__'])
+    a high quality color photograph of a dog
+
+
     https://storage.googleapis.com/webdataset/fake-ima base: https://storage.googleapis.com/webdataset/fake-imagenet name: imagenet-train nfiles: 1282 nbytes: 31242280960 samples: 128200 cache: /tmp/_wids_cache
     /home/tmb/proj/webdataset/wids/wids.py:324: UserWarning: String specifications for transformations are deprecated. Use functions instead.
       warnings.warn(
 
 
-    dict_keys(['.cls', '.jpg', '.txt', '__key__', '__dataset__', '__index__', '__shard__', '__shardindex__'])
-    a high quality color photograph of a dog
 
 
 
-
-
-    <matplotlib.image.AxesImage at 0x706d3f2523f0>
+    <matplotlib.image.AxesImage at 0x71a4843c3020>
 
 
 
