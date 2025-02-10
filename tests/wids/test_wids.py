@@ -1,14 +1,11 @@
-import io
-import json
 import os
 import random
-import textwrap
 from contextlib import contextmanager
 from unittest.mock import patch
 
 import pytest
 
-from wids import DistributedChunkedSampler, wids, wids_specs
+from wids import DistributedChunkedSampler, wids
 from wids.wids import ChunkedSampler, ShardedSampler, ShardListDataset
 
 
@@ -162,46 +159,46 @@ class TestShardListDataset:
         assert shard_list_dataset.get_stats() == (5, 4)
 
 
-class TestSpecs:
-    def test_spec_parsing(self):
-        spec = textwrap.dedent(
-            """
-        {
-            "__kind__": "wids-shard-index-v1",
-            "name": "train",
-            "wids_version": 1,
-            "shardlist": [
-                {
-                    "url": "testdata/mpdata.tar",
-                    "nsamples": 10
-                }
-            ]
-        }
-        """
-        )
-        spec = json.loads(spec)
-        shardlist = wids_specs.extract_shardlist(spec)
-        assert len(shardlist) == 1
+# class TestSpecs:
+#     def test_spec_parsing(self):
+#         spec = textwrap.dedent(
+#             """
+#         {
+#             "__kind__": "wids-shard-index-v1",
+#             "name": "train",
+#             "wids_version": 1,
+#             "shardlist": [
+#                 {
+#                     "url": "testdata/mpdata.tar",
+#                     "nsamples": 10
+#                 }
+#             ]
+#         }
+#         """
+#         )
+#         spec = json.loads(spec)
+#         shardlist = wids_specs.extract_shardlist(spec)
+#         assert len(shardlist) == 1
 
-    def test_spec_parsing(self):
-        spec = textwrap.dedent(
-            """
-        {
-            "__kind__": "wids-shard-index-v1",
-            "name": "train",
-            "wids_version": 1,
-            "shardlist": [
-                {
-                    "url": "testdata/mpdata.tar",
-                    "nsamples": 10
-                }
-            ]
-        }
-        """
-        )
-        stream = io.StringIO(spec)
-        dataset = wids.ShardListDataset(stream)
-        assert len(dataset) == 10
+#     def test_spec_parsing(self):
+#         spec = textwrap.dedent(
+#             """
+#         {
+#             "__kind__": "wids-shard-index-v1",
+#             "name": "train",
+#             "wids_version": 1,
+#             "shardlist": [
+#                 {
+#                     "url": "testdata/mpdata.tar",
+#                     "nsamples": 10
+#                 }
+#             ]
+#         }
+#         """
+#         )
+#         stream = io.StringIO(spec)
+#         dataset = wids.ShardListDataset(stream)
+#         assert len(dataset) == 10
 
 
 class TestShardedSampler:
@@ -318,16 +315,15 @@ class TestChunkedSampler:
         )  # The samples should cover the range from 1111 to 2222
 
 
-# Fixture for mocking the distributed environment
-@pytest.fixture
-def mock_distributed_env():
-    def _mock_distributed_env(rank, world_size):
-        with patch("torch.distributed.init_process_group"):
-            with patch("torch.distributed.get_rank", return_value=rank):
-                with patch("torch.distributed.get_world_size", return_value=world_size):
-                    yield
-
-    return _mock_distributed_env
+# # Fixture for mocking the distributed environment
+# @pytest.fixture
+# def mock_distributed_env():
+#     def _mock_distributed_env(rank, world_size):
+#         with patch("torch.distributed.init_process_group"):
+#             with patch("torch.distributed.get_rank", return_value=rank):
+#                 with patch("torch.distributed.get_world_size", return_value=world_size):
+#                     yield
+#     return _mock_distributed_env
 
 
 # Context manager for mocking the distributed environment

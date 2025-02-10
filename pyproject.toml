@@ -118,7 +118,7 @@ add_ignore = ["D100", "D104", "D203", "D213", "D406", "D407", "D413", "D205", "D
 line-length = 120
 select = ["E", "F", "W", "C90"]
 ignore = ["E712", "F541", "C901", "E741"]
-exclude = ["examples"]
+exclude = ["examples", "tasks.py", "readme.ipynb", "helpers"]
 
 [tool.pre-commit]
 repos = [

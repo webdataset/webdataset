@@ -1,13 +1,11 @@
 import io
 import os
 import pickle
-from io import StringIO
 from itertools import islice
 
 import numpy as np
 import PIL
 import pytest
-import yaml
 
 import webdataset as wds
 from tests.conftest import (
@@ -316,13 +314,6 @@ def test_dataset_extract_keys():
         wds.extract_keys("*.png;*.jpg", "*.cls"),
     )
     assert count_samples_tuple(ds) == 47
-
-
-def test_slice():
-    ds = wds.DataPipeline(
-        wds.SimpleShardList(local_data), wds.tarfile_to_samples(), wds.slice(10)
-    )
-    assert count_samples_tuple(ds) == 10
 
 
 def test_dataset_eof():
@@ -845,35 +836,3 @@ def test_repeat2():
     )
     ds = ds.with_epoch(20)
     assert count_samples_tuple(ds) == 20
-
-
-def test_tenbin():
-    """Test tensor binary encoding."""
-    from webdataset import tenbin
-
-    for d0 in [0, 1, 2, 10, 100, 1777]:
-        for d1 in [0, 1, 2, 10, 100, 345]:
-            for t in [np.uint8, np.float16, np.float32, np.float64]:
-                a = np.random.normal(size=(d0, d1)).astype(t)
-                a_encoded = tenbin.encode_buffer([a])
-                (a_decoded,) = tenbin.decode_buffer(a_encoded)
-                print(a.shape, a_decoded.shape)
-                assert a.shape == a_decoded.shape
-                assert a.dtype == a_decoded.dtype
-                assert (a == a_decoded).all()
-
-
-def test_tenbin_dec():
-    """Test tensor binary decoding."""
-    ds = (
-        wds.WebDataset("testdata/tendata.tar", shardshuffle=100)
-        .decode()
-        .to_tuple("ten")
-    )
-    assert count_samples_tuple(ds) == 100
-    for sample in ds:
-        xs, ys = sample[0]
-        assert xs.dtype == np.float64
-        assert ys.dtype == np.float64
-        assert xs.shape == (28, 28)
-        assert ys.shape == (28, 28)

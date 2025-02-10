@@ -1,5 +1,4 @@
 import base64
-import gzip
 import hashlib
 import io
 import math
@@ -11,7 +10,7 @@ import sys
 import uuid
 import warnings
 from functools import partial
-from typing import Any, BinaryIO, Dict, Optional, TypeVar, Union
+from typing import BinaryIO, Optional, TypeVar, Union
 from urllib.parse import quote, urlparse
 
 import numpy as np

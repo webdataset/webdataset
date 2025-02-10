@@ -1,19 +1,16 @@
 import os
 import pickle
-from io import StringIO
 
 import numpy as np
 import PIL
 import pytest
 import torch
-import yaml
 
 import webdataset as wds
 from tests.conftest import (
     compressed,
     local_data,
     remote_loc,
-    remote_pattern,
     remote_sample,
     remote_shard,
     remote_shards,
@@ -462,7 +459,6 @@ def test_cache_dir(tmp_path):
 
     ds = wds.WebDataset(remote_sample, cache_dir=tmp_path, shardshuffle=100)
 
-    count = 0
     for epoch in range(3):
         for sample in ds:
             assert set(sample.keys()) == set(
@@ -548,7 +544,6 @@ def test_batched():
 
 def test_unbatched():
     """Test unbatching with WebDataset and unbatched() method."""
-    import torch
     from torchvision import transforms
 
     normalize = transforms.Normalize(

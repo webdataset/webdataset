@@ -1,6 +1,7 @@
 import multiprocessing
 import os
 import random
+import subprocess
 import sys
 import time
 from typing import List, Optional
@@ -14,9 +15,9 @@ from .utils import fnmatch_with_braces, glob_with_braces
 app = typer.Typer()
 
 
-def download_file(url, filename):
-    """Download a file from a URL."""
-    return wids_dl.download_file(url, filename)
+# def download_file(url, filename):
+#     """Download a file from a URL."""
+#     return wids_dl.download_file(url, filename)
 
 
 def download_file(url, filename):

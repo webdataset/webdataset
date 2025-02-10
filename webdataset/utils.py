@@ -17,6 +17,7 @@ import sys
 import warnings
 from typing import Any, Callable, Iterable, Iterator, Union
 
+import braceexpand
 import numpy as np
 
 

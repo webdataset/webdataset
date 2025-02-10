@@ -4,7 +4,6 @@ servers, object servers, and web servers.
 
 import io
 import os
-import random
 import re
 import sys
 import time
@@ -14,9 +13,7 @@ from urllib.parse import urlparse
 
 import webdataset.gopen as gopen
 
-from . import filters
 from .handlers import reraise_exception
-from .tariterators import group_by_keys, tar_file_expander
 from .utils import obsolete
 
 default_cache_dir = os.environ.get("WDS_CACHE", "./_cache")
@@ -294,133 +291,3 @@ class FileCache:
                         break
                 yield dict(url=url, stream=stream, local_path=dest)
                 break
-
-
-@obsolete
-def cached_url_opener(
-    data,
-    handler=reraise_exception,
-    cache_size=-1,
-    cache_dir=None,
-    url_to_name=pipe_cleaner,
-    validator=check_tar_format,
-    verbose=False,
-    always=False,
-):
-    """Open streams for a sequence of URLs, with caching.
-
-    Given a stream of URL names (packaged in `dict(url=url)`), yield opened streams.
-
-    Args:
-        data: An iterable of dictionaries containing URLs.
-        handler: Function to handle exceptions. Defaults to reraise_exception.
-        cache_size (int): Maximum size of the cache in bytes. Defaults to -1 (unlimited).
-        cache_dir (Optional[str]): The directory to use for caching. Defaults to None.
-        url_to_name: Function to convert URLs to cache names. Defaults to pipe_cleaner.
-        validator: Function to validate downloaded files. Defaults to check_tar_format.
-        verbose (bool): Whether to print verbose output. Defaults to False.
-        always (bool): Whether to always download files, even if they exist locally. Defaults to False.
-
-    Yields:
-        dict: A dictionary containing the original sample data and an opened file stream.
-
-    Raises:
-        ValueError: If a downloaded file fails validation.
-        Exception: For any other errors during download or file opening.
-    """
-    verbose = verbose or verbose_cache
-    for sample in data:
-        assert isinstance(sample, dict), sample
-        assert "url" in sample
-        url = sample["url"]
-        attempts = 5
-        try:
-            if not always and os.path.exists(url):
-                dest = url
-            else:
-                dest = get_file_cached(
-                    url,
-                    cache_size=cache_size,
-                    cache_dir=cache_dir,
-                    url_to_name=url_to_name,
-                    verbose=verbose,
-                )
-            if verbose:
-                print("# opening %s" % dest, file=sys.stderr)
-            assert os.path.exists(dest)
-            if not validator(dest):
-                ftype = get_filetype(dest)
-                with open(dest, "rb") as f:
-                    data = f.read(200)
-                os.remove(dest)
-                raise ValueError(
-                    "%s (%s) is not a tar archive, but a %s, contains %s"
-                    % (dest, url, ftype, repr(data))
-                )
-            try:
-                stream = open(dest, "rb")
-                sample.update(stream=stream)
-                yield sample
-            except FileNotFoundError as exn:
-                # dealing with race conditions in lru_cleanup
-                attempts -= 1
-                if attempts > 0:
-                    time.sleep(random.random() * 10)
-                    continue
-                raise exn
-        except Exception as exn:
-            exn.args = exn.args + (url,)
-            if handler(exn):
-                continue
-            else:
-                break
-
-
-@obsolete
-def cached_tarfile_samples(
-    src,
-    handler=reraise_exception,
-    cache_size=-1,
-    cache_dir=None,
-    verbose=False,
-    url_to_name=pipe_cleaner,
-    always=False,
-    select_files=None,
-    rename_files=None,
-):
-    """Process and yield samples from cached tar files.
-
-    This function is obsolete.
-
-    Args:
-        src: An iterable source of URLs or dictionaries containing URLs.
-        handler: Function to handle exceptions. Defaults to reraise_exception.
-        cache_size (int): Maximum size of the cache in bytes. Defaults to -1 (unlimited).
-        cache_dir (Optional[str]): The directory to use for caching. Defaults to None.
-        verbose (bool): Whether to print verbose output. Defaults to False.
-        url_to_name: Function to convert URLs to cache names. Defaults to pipe_cleaner.
-        always (bool): Whether to always download files, even if they exist locally. Defaults to False.
-        select_files: Function to select specific files from the tar archive. Defaults to None.
-        rename_files: Function to rename files from the tar archive. Defaults to None.
-
-    Returns:
-        An iterable of samples extracted from the cached tar files.
-    """
-    verbose = verbose or int(os.environ.get("GOPEN_VERBOSE", 0))
-    streams = cached_url_opener(
-        src,
-        handler=handler,
-        cache_size=cache_size,
-        cache_dir=cache_dir,
-        verbose=verbose,
-        url_to_name=url_to_name,
-        always=always,
-    )
-    files = tar_file_expander(
-        streams, handler=handler, select_files=select_files, rename_files=rename_files
-    )
-    samples = group_by_keys(files, handler=handler)
-    return samples
-
-
-cached_tarfile_to_samples = filters.pipelinefilter(cached_tarfile_samples)

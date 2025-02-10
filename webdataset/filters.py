@@ -480,7 +480,8 @@ def _decode(data, *args, handler=reraise_exception, **kw):
     Raises:
         Exception: If the handler doesn't handle an exception.
     """
-    decoder = lambda x: autodecode.imagehandler(x) if isinstance(x, str) else x
+    def decoder(x):
+        return autodecode.imagehandler(x) if isinstance(x, str) else x
     handlers = [decoder(x) for x in args]
     f = autodecode.Decoder(handlers, **kw)
 

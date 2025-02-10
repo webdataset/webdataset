@@ -8,6 +8,7 @@ in bytes and the maximum number of files to keep.
 The cleanup job can be run in the background using `create_cleanup_background_process`.
 """
 
+import errno
 import fcntl
 import glob
 import os

@@ -103,7 +103,8 @@ def torch_loads(data: bytes):
     """Function: torch_loads
 
     Description:
-    This function loads data using torch.loads. It first imports torch only if necessary. Then it decodes the input data using torch.load.
+    This function loads data using torch.loads. It first imports torch
+    only if necessary. Then it decodes the input data using torch.load.
 
     Parameters:
     - data (bytes): The data to be decoded.
@@ -147,7 +148,7 @@ def npy_loads(data):
 
 def npz_loads(data):
     """Load data from npz format. Imports numpy only if necessary."""
-    import numpy.lib.format
+    import numpy.lib.format  # noqa
 
     stream = io.BytesIO(data)
     return dict(np.load(stream))
