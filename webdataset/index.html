@@ -41,7 +41,7 @@
 
       <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <ul>
-                <li class="toctree-l1"><a class="reference internal" href="..">README</a>
+                <li class="toctree-l1"><a class="" href="../index.md">README</a>
                 </li>
               </ul>
               <ul class="current">
@@ -181,42 +181,42 @@
                 </li>
               </ul>
               <ul>
-                <li class="toctree-l1"><a class="reference internal" href="../FAQ/">FAQ</a>
+                <li class="toctree-l1"><a class="" href="../FAQ.md">FAQ</a>
                 </li>
               </ul>
               <p class="caption"><span class="caption-text">Examples</span></p>
               <ul>
                   <li class="toctree-l1"><a class="reference internal" >webdataset</a>
     <ul>
-                <li class="toctree-l2"><a class="reference internal" href="../examples/webdataset/">Index</a>
+                <li class="toctree-l2"><a class="" href="../examples/webdataset/index.md">None</a>
                 </li>
-                <li class="toctree-l2"><a class="reference internal" href="../examples/webdataset/wds-notes/">Wds notes</a>
+                <li class="toctree-l2"><a class="" href="../examples/webdataset/wds-notes.md">None</a>
                 </li>
-                <li class="toctree-l2"><a class="reference internal" href="../examples/webdataset/generate-text-dataset/">Dataset Generation</a>
+                <li class="toctree-l2"><a class="" href="../examples/webdataset/generate-text-dataset.md">None</a>
                 </li>
-                <li class="toctree-l2"><a class="reference internal" href="../examples/webdataset/tesseract-wds/">Tesseract wds</a>
+                <li class="toctree-l2"><a class="" href="../examples/webdataset/tesseract-wds.md">None</a>
                 </li>
-                <li class="toctree-l2"><a class="reference internal" href="../examples/webdataset/train-resnet50-wds/">Resnet 50 Training on (Fake)Imagenet with WebDataset</a>
+                <li class="toctree-l2"><a class="" href="../examples/webdataset/train-resnet50-wds.md">None</a>
                 </li>
-                <li class="toctree-l2"><a class="reference internal" href="../examples/webdataset/train-resnet50-multiray-wds/">WebDataset + Distributed PyTorch Training</a>
+                <li class="toctree-l2"><a class="" href="../examples/webdataset/train-resnet50-multiray-wds.md">None</a>
                 </li>
-                <li class="toctree-l2"><a class="reference internal" href="../examples/webdataset/train-ocr-errors-hf/">Fine Tuning LLM with Huggingface and WebDataset</a>
+                <li class="toctree-l2"><a class="" href="../examples/webdataset/train-ocr-errors-hf.md">None</a>
                 </li>
-                <li class="toctree-l2"><a class="reference internal" href="../examples/webdataset/mi-images/">Mini Imagenet Generation</a>
+                <li class="toctree-l2"><a class="" href="../examples/webdataset/mi-images.md">None</a>
                 </li>
-                <li class="toctree-l2"><a class="reference internal" href="../examples/webdataset/mi-prompts/">Mini Imagenet Generation</a>
+                <li class="toctree-l2"><a class="" href="../examples/webdataset/mi-prompts.md">None</a>
                 </li>
-                <li class="toctree-l2"><a class="reference internal" href="../examples/webdataset/column-store/">Using WebDataset as a Column Store</a>
+                <li class="toctree-l2"><a class="" href="../examples/webdataset/column-store.md">None</a>
                 </li>
     </ul>
                   </li>
                   <li class="toctree-l1"><a class="reference internal" >wids</a>
     <ul>
-                <li class="toctree-l2"><a class="reference internal" href="../examples/wids/">Index</a>
+                <li class="toctree-l2"><a class="" href="../examples/wids/index.md">None</a>
                 </li>
-                <li class="toctree-l2"><a class="reference internal" href="../examples/wids/train-resnet50-wids/">Train resnet50 wids</a>
+                <li class="toctree-l2"><a class="" href="../examples/wids/train-resnet50-wids.md">None</a>
                 </li>
-                <li class="toctree-l2"><a class="reference internal" href="../examples/wids/train-resnet50-multiray-wids/">WebIndexedDataset + Distributed PyTorch Training</a>
+                <li class="toctree-l2"><a class="" href="../examples/wids/train-resnet50-multiray-wids.md">None</a>
                 </li>
     </ul>
                   </li>
@@ -432,6 +432,11 @@ It handles URL generation, shard shuffling, caching, and sample grouping.</p>
     </tr>
   </tbody>
 </table>
+
+
+
+
+
               <details class="quote">
                 <summary>Source code in <code>webdataset/compat.py</code></summary>
                 <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">332</span>
@@ -631,7 +636,7 @@ It handles URL generation, shard shuffling, caching, and sample grouping.</p>
 <span class="normal">526</span>
 <span class="normal">527</span>
 <span class="normal">528</span>
-<span class="normal">529</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">WebDataset</span><span class="p">(</span><span class="n">DataPipeline</span><span class="p">,</span> <span class="n">FluidInterface</span><span class="p">):</span>
+<span class="normal">529</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">WebDataset</span><span class="p">(</span><span class="n">DataPipeline</span><span class="p">,</span> <span class="n">FluidInterface</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Create a WebDataset pipeline for efficient data loading.</span>
 
 <span class="sd">    This class sets up a data pipeline for loading and processing WebDataset-format data.</span>
@@ -660,7 +665,7 @@ It handles URL generation, shard shuffling, caching, and sample grouping.</p>
 <span class="sd">        ValueError: If the cache directory does not exist or if the URL type is not supported.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">urls</span><span class="p">,</span>
         <span class="n">handler</span><span class="o">=</span><span class="n">reraise_exception</span><span class="p">,</span>
@@ -751,7 +756,7 @@ It handles URL generation, shard shuffling, caching, and sample grouping.</p>
         <span class="k">if</span> <span class="n">empty_check</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">check_empty</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">update_cache_info</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">update_cache_info</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Update cache information based on arguments and environment variables.</span>
 
 <span class="sd">        Args:</span>
@@ -767,7 +772,7 @@ It handles URL generation, shard shuffling, caching, and sample grouping.</p>
             <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">cache_dir</span><span class="p">):</span>
                 <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;cache directory </span><span class="si">{</span><span class="n">args</span><span class="o">.</span><span class="n">cache_dir</span><span class="si">}</span><span class="s2"> does not exist&quot;</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">create_url_iterator</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">create_url_iterator</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Create an appropriate URL iterator based on the input type.</span>
 
 <span class="sd">        This method determines the type of URL input and creates the corresponding</span>
@@ -814,7 +819,7 @@ It handles URL generation, shard shuffling, caching, and sample grouping.</p>
 
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;cannot handle urls of type </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">urls</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="fm">__enter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__enter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Enter the runtime context for the WebDataset.</span>
 
 <span class="sd">        Returns:</span>
@@ -822,7 +827,7 @@ It handles URL generation, shard shuffling, caching, and sample grouping.</p>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span>
 
-    <span class="k">def</span> <span class="fm">__exit__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__exit__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Exit the runtime context for the WebDataset.</span>
 
 <span class="sd">        Args:</span>
@@ -887,7 +892,7 @@ It handles URL generation, shard shuffling, caching, and sample grouping.</p>
 <span class="normal">518</span>
 <span class="normal">519</span>
 <span class="normal">520</span>
-<span class="normal">521</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="fm">__enter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="normal">521</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__enter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Enter the runtime context for the WebDataset.</span>
 
 <span class="sd">    Returns:</span>
@@ -944,7 +949,7 @@ It handles URL generation, shard shuffling, caching, and sample grouping.</p>
 <span class="normal">526</span>
 <span class="normal">527</span>
 <span class="normal">528</span>
-<span class="normal">529</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="fm">__exit__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+<span class="normal">529</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__exit__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Exit the runtime context for the WebDataset.</span>
 
 <span class="sd">    Args:</span>
@@ -1065,7 +1070,7 @@ iterator for the dataset.</p>
 <span class="normal">510</span>
 <span class="normal">511</span>
 <span class="normal">512</span>
-<span class="normal">513</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">create_url_iterator</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">):</span>
+<span class="normal">513</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">create_url_iterator</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Create an appropriate URL iterator based on the input type.</span>
 
 <span class="sd">    This method determines the type of URL input and creates the corresponding</span>
@@ -1192,7 +1197,7 @@ iterator for the dataset.</p>
 <span class="normal">463</span>
 <span class="normal">464</span>
 <span class="normal">465</span>
-<span class="normal">466</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">update_cache_info</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">):</span>
+<span class="normal">466</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">update_cache_info</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Update cache information based on arguments and environment variables.</span>
 
 <span class="sd">    Args:</span>
@@ -1239,16 +1244,21 @@ iterator for the dataset.</p>
 
         <p>A wrapper for DataLoader that adds a fluid interface.</p>
 
+
+
+
+
+
               <details class="quote">
                 <summary>Source code in <code>webdataset/compat.py</code></summary>
                 <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">540</span>
 <span class="normal">541</span>
 <span class="normal">542</span>
 <span class="normal">543</span>
-<span class="normal">544</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">WebLoader</span><span class="p">(</span><span class="n">DataPipeline</span><span class="p">,</span> <span class="n">FluidInterface</span><span class="p">):</span>
+<span class="normal">544</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">WebLoader</span><span class="p">(</span><span class="n">DataPipeline</span><span class="p">,</span> <span class="n">FluidInterface</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;A wrapper for DataLoader that adds a fluid interface.&quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">DataLoader</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">))</span>
 </code></pre></div></td></tr></table></div>
               </details>
@@ -1285,6 +1295,11 @@ iterator for the dataset.</p>
 
 
     <div class="doc doc-contents first">
+
+
+
+
+
 
 
               <details class="quote">
@@ -1579,8 +1594,8 @@ iterator for the dataset.</p>
 <span class="normal">303</span>
 <span class="normal">304</span>
 <span class="normal">305</span>
-<span class="normal">306</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">FluidInterface</span><span class="p">:</span>
-    <span class="k">def</span> <span class="nf">batched</span><span class="p">(</span>
+<span class="normal">306</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">FluidInterface</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">batched</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">batchsize</span><span class="p">,</span> <span class="n">collation_fn</span><span class="o">=</span><span class="n">filters</span><span class="o">.</span><span class="n">default_collation_fn</span><span class="p">,</span> <span class="n">partial</span><span class="o">=</span><span class="kc">True</span>
     <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Create batches of the given size.</span>
@@ -1600,7 +1615,7 @@ iterator for the dataset.</p>
             <span class="n">filters</span><span class="o">.</span><span class="n">batched</span><span class="p">(</span><span class="n">batchsize</span><span class="p">,</span> <span class="n">collation_fn</span><span class="o">=</span><span class="n">collation_fn</span><span class="p">,</span> <span class="n">partial</span><span class="o">=</span><span class="n">partial</span><span class="p">)</span>
         <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">unbatched</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">unbatched</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Turn batched data back into unbatched data.</span>
 
 <span class="sd">        This method forwards to the filters.unbatched function.</span>
@@ -1610,7 +1625,7 @@ iterator for the dataset.</p>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">compose</span><span class="p">(</span><span class="n">filters</span><span class="o">.</span><span class="n">unbatched</span><span class="p">())</span>
 
-    <span class="k">def</span> <span class="nf">listed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">batchsize</span><span class="p">,</span> <span class="n">partial</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">listed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">batchsize</span><span class="p">,</span> <span class="n">partial</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Create lists of samples without collation.</span>
 
 <span class="sd">        This method forwards to the filters.batched function with collation_fn set to None.</span>
@@ -1624,7 +1639,7 @@ iterator for the dataset.</p>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">compose</span><span class="p">(</span><span class="n">filters</span><span class="o">.</span><span class="n">batched</span><span class="p">(</span><span class="n">batchsize</span><span class="o">=</span><span class="n">batchsize</span><span class="p">,</span> <span class="n">collation_fn</span><span class="o">=</span><span class="kc">None</span><span class="p">))</span>
 
-    <span class="k">def</span> <span class="nf">unlisted</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">unlisted</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Turn listed data back into individual samples.</span>
 
 <span class="sd">        This method forwards to the filters.unlisted function.</span>
@@ -1634,7 +1649,7 @@ iterator for the dataset.</p>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">compose</span><span class="p">(</span><span class="n">filters</span><span class="o">.</span><span class="n">unlisted</span><span class="p">())</span>
 
-    <span class="k">def</span> <span class="nf">log_keys</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">logfile</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">log_keys</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">logfile</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Log keys of samples passing through the pipeline.</span>
 
 <span class="sd">        This method forwards to the filters.log_keys function.</span>
@@ -1647,7 +1662,7 @@ iterator for the dataset.</p>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">compose</span><span class="p">(</span><span class="n">filters</span><span class="o">.</span><span class="n">log_keys</span><span class="p">(</span><span class="n">logfile</span><span class="p">))</span>
 
-    <span class="k">def</span> <span class="nf">shuffle</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">size</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">shuffle</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">size</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Shuffle the data in the stream.</span>
 
 <span class="sd">        This method forwards to the filters.shuffle function if size &gt; 0.</span>
@@ -1664,7 +1679,7 @@ iterator for the dataset.</p>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">compose</span><span class="p">(</span><span class="n">filters</span><span class="o">.</span><span class="n">shuffle</span><span class="p">(</span><span class="n">size</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">))</span>
 
-    <span class="k">def</span> <span class="nf">map</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="n">handler</span><span class="o">=</span><span class="n">reraise_exception</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">map</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="n">handler</span><span class="o">=</span><span class="n">reraise_exception</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Apply a function to each sample in the stream.</span>
 
 <span class="sd">        This method forwards to the filters.map function.</span>
@@ -1678,7 +1693,7 @@ iterator for the dataset.</p>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">compose</span><span class="p">(</span><span class="n">filters</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">handler</span><span class="o">=</span><span class="n">handler</span><span class="p">))</span>
 
-    <span class="k">def</span> <span class="nf">decode</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">decode</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="o">*</span><span class="n">args</span><span class="p">,</span>
         <span class="n">pre</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
@@ -1710,7 +1725,7 @@ iterator for the dataset.</p>
         <span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">decoder</span><span class="p">,</span> <span class="n">handler</span><span class="o">=</span><span class="n">handler</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">map_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">handler</span><span class="o">=</span><span class="n">reraise_exception</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">map_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">handler</span><span class="o">=</span><span class="n">reraise_exception</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Map the entries in a dict sample with individual functions.</span>
 
 <span class="sd">        This method forwards to the filters.map_dict function.</span>
@@ -1724,7 +1739,7 @@ iterator for the dataset.</p>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">compose</span><span class="p">(</span><span class="n">filters</span><span class="o">.</span><span class="n">map_dict</span><span class="p">(</span><span class="n">handler</span><span class="o">=</span><span class="n">handler</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">))</span>
 
-    <span class="k">def</span> <span class="nf">select</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">predicate</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">select</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">predicate</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Select samples based on a predicate.</span>
 
 <span class="sd">        This method forwards to the filters.select function.</span>
@@ -1738,7 +1753,7 @@ iterator for the dataset.</p>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">compose</span><span class="p">(</span><span class="n">filters</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="n">predicate</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">))</span>
 
-    <span class="k">def</span> <span class="nf">to_tuple</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">to_tuple</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Convert dict samples to tuples.</span>
 
 <span class="sd">        This method forwards to the filters.to_tuple function.</span>
@@ -1752,7 +1767,7 @@ iterator for the dataset.</p>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">compose</span><span class="p">(</span><span class="n">filters</span><span class="o">.</span><span class="n">to_tuple</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">))</span>
 
-    <span class="k">def</span> <span class="nf">map_tuple</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">handler</span><span class="o">=</span><span class="n">reraise_exception</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">map_tuple</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">handler</span><span class="o">=</span><span class="n">reraise_exception</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Map the entries of a tuple with individual functions.</span>
 
 <span class="sd">        This method forwards to the filters.map_tuple function.</span>
@@ -1766,7 +1781,7 @@ iterator for the dataset.</p>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">compose</span><span class="p">(</span><span class="n">filters</span><span class="o">.</span><span class="n">map_tuple</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">handler</span><span class="o">=</span><span class="n">handler</span><span class="p">))</span>
 
-    <span class="k">def</span> <span class="nf">slice</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">slice</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Slice the data stream.</span>
 
 <span class="sd">        This method forwards to the filters.slice function.</span>
@@ -1779,7 +1794,7 @@ iterator for the dataset.</p>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">compose</span><span class="p">(</span><span class="n">filters</span><span class="o">.</span><span class="n">slice</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">))</span>
 
-    <span class="k">def</span> <span class="nf">rename</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">rename</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Rename samples based on keyword arguments.</span>
 
 <span class="sd">        This method forwards to the filters.rename function.</span>
@@ -1792,7 +1807,7 @@ iterator for the dataset.</p>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">compose</span><span class="p">(</span><span class="n">filters</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="o">**</span><span class="n">kw</span><span class="p">))</span>
 
-    <span class="k">def</span> <span class="nf">rsample</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">p</span><span class="o">=</span><span class="mf">0.5</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">rsample</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">p</span><span class="o">=</span><span class="mf">0.5</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Randomly subsample a stream of data.</span>
 
 <span class="sd">        This method forwards to the filters.rsample function.</span>
@@ -1805,7 +1820,7 @@ iterator for the dataset.</p>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">compose</span><span class="p">(</span><span class="n">filters</span><span class="o">.</span><span class="n">rsample</span><span class="p">(</span><span class="n">p</span><span class="p">))</span>
 
-    <span class="k">def</span> <span class="nf">rename_keys</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">rename_keys</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Rename keys in samples based on patterns.</span>
 
 <span class="sd">        This method forwards to the filters.rename_keys function.</span>
@@ -1819,7 +1834,7 @@ iterator for the dataset.</p>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">compose</span><span class="p">(</span><span class="n">filters</span><span class="o">.</span><span class="n">rename_keys</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">))</span>
 
-    <span class="k">def</span> <span class="nf">extract_keys</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">extract_keys</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Extract specific keys from samples.</span>
 
 <span class="sd">        This method forwards to the filters.extract_keys function.</span>
@@ -1833,7 +1848,7 @@ iterator for the dataset.</p>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">compose</span><span class="p">(</span><span class="n">filters</span><span class="o">.</span><span class="n">extract_keys</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">))</span>
 
-    <span class="k">def</span> <span class="nf">xdecode</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">xdecode</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Decode data based on file extensions.</span>
 
 <span class="sd">        This method forwards to the filters.xdecode function.</span>
@@ -1847,7 +1862,7 @@ iterator for the dataset.</p>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">compose</span><span class="p">(</span><span class="n">filters</span><span class="o">.</span><span class="n">xdecode</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">))</span>
 
-    <span class="k">def</span> <span class="nf">mcached</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">mcached</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Cache samples in memory.</span>
 
 <span class="sd">        This method forwards to the filters.Cached class.</span>
@@ -1857,7 +1872,7 @@ iterator for the dataset.</p>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">compose</span><span class="p">(</span><span class="n">filters</span><span class="o">.</span><span class="n">Cached</span><span class="p">())</span>
 
-    <span class="k">def</span> <span class="nf">lmdb_cached</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">lmdb_cached</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Cache samples using LMDB.</span>
 
 <span class="sd">        This method forwards to the filters.LMDBCached class.</span>
@@ -1986,7 +2001,7 @@ Defaults to filters.default_collation_fn.</p>
 <span class="normal">32</span>
 <span class="normal">33</span>
 <span class="normal">34</span>
-<span class="normal">35</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">batched</span><span class="p">(</span>
+<span class="normal">35</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">batched</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">batchsize</span><span class="p">,</span> <span class="n">collation_fn</span><span class="o">=</span><span class="n">filters</span><span class="o">.</span><span class="n">default_collation_fn</span><span class="p">,</span> <span class="n">partial</span><span class="o">=</span><span class="kc">True</span>
 <span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Create batches of the given size.</span>
@@ -2152,7 +2167,7 @@ Defaults to filters.default_collation_fn.</p>
 <span class="normal">142</span>
 <span class="normal">143</span>
 <span class="normal">144</span>
-<span class="normal">145</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">decode</span><span class="p">(</span>
+<span class="normal">145</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">decode</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="o">*</span><span class="n">args</span><span class="p">,</span>
     <span class="n">pre</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
@@ -2269,7 +2284,7 @@ Defaults to filters.default_collation_fn.</p>
 <span class="normal">265</span>
 <span class="normal">266</span>
 <span class="normal">267</span>
-<span class="normal">268</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">extract_keys</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
+<span class="normal">268</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">extract_keys</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Extract specific keys from samples.</span>
 
 <span class="sd">    This method forwards to the filters.extract_keys function.</span>
@@ -2372,7 +2387,7 @@ Defaults to filters.default_collation_fn.</p>
 <span class="normal">56</span>
 <span class="normal">57</span>
 <span class="normal">58</span>
-<span class="normal">59</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">listed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">batchsize</span><span class="p">,</span> <span class="n">partial</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<span class="normal">59</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">listed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">batchsize</span><span class="p">,</span> <span class="n">partial</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Create lists of samples without collation.</span>
 
 <span class="sd">    This method forwards to the filters.batched function with collation_fn set to None.</span>
@@ -2471,7 +2486,7 @@ Defaults to filters.default_collation_fn.</p>
 <span class="normal">303</span>
 <span class="normal">304</span>
 <span class="normal">305</span>
-<span class="normal">306</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">lmdb_cached</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
+<span class="normal">306</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">lmdb_cached</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Cache samples using LMDB.</span>
 
 <span class="sd">    This method forwards to the filters.LMDBCached class.</span>
@@ -2565,7 +2580,7 @@ Defaults to filters.default_collation_fn.</p>
 <span class="normal">79</span>
 <span class="normal">80</span>
 <span class="normal">81</span>
-<span class="normal">82</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">log_keys</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">logfile</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="normal">82</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">log_keys</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">logfile</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Log keys of samples passing through the pipeline.</span>
 
 <span class="sd">    This method forwards to the filters.log_keys function.</span>
@@ -2667,7 +2682,7 @@ Defaults to filters.default_collation_fn.</p>
 <span class="normal">110</span>
 <span class="normal">111</span>
 <span class="normal">112</span>
-<span class="normal">113</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">map</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="n">handler</span><span class="o">=</span><span class="n">reraise_exception</span><span class="p">):</span>
+<span class="normal">113</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">map</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="n">handler</span><span class="o">=</span><span class="n">reraise_exception</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Apply a function to each sample in the stream.</span>
 
 <span class="sd">    This method forwards to the filters.map function.</span>
@@ -2769,7 +2784,7 @@ Defaults to filters.default_collation_fn.</p>
 <span class="normal">156</span>
 <span class="normal">157</span>
 <span class="normal">158</span>
-<span class="normal">159</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">map_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">handler</span><span class="o">=</span><span class="n">reraise_exception</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
+<span class="normal">159</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">map_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">handler</span><span class="o">=</span><span class="n">reraise_exception</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Map the entries in a dict sample with individual functions.</span>
 
 <span class="sd">    This method forwards to the filters.map_dict function.</span>
@@ -2871,7 +2886,7 @@ Defaults to filters.default_collation_fn.</p>
 <span class="normal">198</span>
 <span class="normal">199</span>
 <span class="normal">200</span>
-<span class="normal">201</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">map_tuple</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">handler</span><span class="o">=</span><span class="n">reraise_exception</span><span class="p">):</span>
+<span class="normal">201</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">map_tuple</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">handler</span><span class="o">=</span><span class="n">reraise_exception</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Map the entries of a tuple with individual functions.</span>
 
 <span class="sd">    This method forwards to the filters.map_tuple function.</span>
@@ -2936,7 +2951,7 @@ Defaults to filters.default_collation_fn.</p>
 <span class="normal">289</span>
 <span class="normal">290</span>
 <span class="normal">291</span>
-<span class="normal">292</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">mcached</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="normal">292</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">mcached</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Cache samples in memory.</span>
 
 <span class="sd">    This method forwards to the filters.Cached class.</span>
@@ -3023,7 +3038,7 @@ Defaults to filters.default_collation_fn.</p>
 <span class="normal">224</span>
 <span class="normal">225</span>
 <span class="normal">226</span>
-<span class="normal">227</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">rename</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
+<span class="normal">227</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">rename</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Rename samples based on keyword arguments.</span>
 
 <span class="sd">    This method forwards to the filters.rename function.</span>
@@ -3121,7 +3136,7 @@ Defaults to filters.default_collation_fn.</p>
 <span class="normal">251</span>
 <span class="normal">252</span>
 <span class="normal">253</span>
-<span class="normal">254</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">rename_keys</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
+<span class="normal">254</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">rename_keys</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Rename keys in samples based on patterns.</span>
 
 <span class="sd">    This method forwards to the filters.rename_keys function.</span>
@@ -3215,7 +3230,7 @@ Defaults to filters.default_collation_fn.</p>
 <span class="normal">237</span>
 <span class="normal">238</span>
 <span class="normal">239</span>
-<span class="normal">240</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">rsample</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">p</span><span class="o">=</span><span class="mf">0.5</span><span class="p">):</span>
+<span class="normal">240</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">rsample</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">p</span><span class="o">=</span><span class="mf">0.5</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Randomly subsample a stream of data.</span>
 
 <span class="sd">    This method forwards to the filters.rsample function.</span>
@@ -3314,7 +3329,7 @@ Defaults to filters.default_collation_fn.</p>
 <span class="normal">170</span>
 <span class="normal">171</span>
 <span class="normal">172</span>
-<span class="normal">173</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">select</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">predicate</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
+<span class="normal">173</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">select</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">predicate</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Select samples based on a predicate.</span>
 
 <span class="sd">    This method forwards to the filters.select function.</span>
@@ -3417,7 +3432,7 @@ Defaults to filters.default_collation_fn.</p>
 <span class="normal">96</span>
 <span class="normal">97</span>
 <span class="normal">98</span>
-<span class="normal">99</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">shuffle</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">size</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
+<span class="normal">99</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">shuffle</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">size</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Shuffle the data in the stream.</span>
 
 <span class="sd">    This method forwards to the filters.shuffle function if size &gt; 0.</span>
@@ -3511,7 +3526,7 @@ Defaults to filters.default_collation_fn.</p>
 <span class="normal">211</span>
 <span class="normal">212</span>
 <span class="normal">213</span>
-<span class="normal">214</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">slice</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+<span class="normal">214</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">slice</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Slice the data stream.</span>
 
 <span class="sd">    This method forwards to the filters.slice function.</span>
@@ -3609,7 +3624,7 @@ Defaults to filters.default_collation_fn.</p>
 <span class="normal">184</span>
 <span class="normal">185</span>
 <span class="normal">186</span>
-<span class="normal">187</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">to_tuple</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
+<span class="normal">187</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">to_tuple</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Convert dict samples to tuples.</span>
 
 <span class="sd">    This method forwards to the filters.to_tuple function.</span>
@@ -3674,7 +3689,7 @@ Defaults to filters.default_collation_fn.</p>
 <span class="normal">42</span>
 <span class="normal">43</span>
 <span class="normal">44</span>
-<span class="normal">45</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">unbatched</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="normal">45</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">unbatched</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Turn batched data back into unbatched data.</span>
 
 <span class="sd">    This method forwards to the filters.unbatched function.</span>
@@ -3735,7 +3750,7 @@ Defaults to filters.default_collation_fn.</p>
 <span class="normal">66</span>
 <span class="normal">67</span>
 <span class="normal">68</span>
-<span class="normal">69</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">unlisted</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="normal">69</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">unlisted</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Turn listed data back into individual samples.</span>
 
 <span class="sd">    This method forwards to the filters.unlisted function.</span>
@@ -3830,7 +3845,7 @@ Defaults to filters.default_collation_fn.</p>
 <span class="normal">279</span>
 <span class="normal">280</span>
 <span class="normal">281</span>
-<span class="normal">282</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">xdecode</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
+<span class="normal">282</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">xdecode</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Decode data based on file extensions.</span>
 
 <span class="sd">    This method forwards to the filters.xdecode function.</span>
@@ -3911,6 +3926,11 @@ very large datasets.</p>
     </tr>
   </tbody>
 </table>
+
+
+
+
+
               <details class="quote">
                 <summary>Source code in <code>webdataset/extradatasets.py</code></summary>
                 <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 72</span>
@@ -3967,7 +3987,7 @@ very large datasets.</p>
 <span class="normal">123</span>
 <span class="normal">124</span>
 <span class="normal">125</span>
-<span class="normal">126</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">with_epoch</span><span class="p">(</span><span class="n">IterableDataset</span><span class="p">):</span>
+<span class="normal">126</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">with_epoch</span><span class="p">(</span><span class="n">IterableDataset</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Change the actual and nominal length of an IterableDataset.</span>
 
 <span class="sd">    This will continuously iterate through the original dataset, but</span>
@@ -3981,12 +4001,12 @@ very large datasets.</p>
 <span class="sd">        length (int): Declared length of the dataset.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset</span><span class="p">,</span> <span class="n">length</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset</span><span class="p">,</span> <span class="n">length</span><span class="p">):</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">length</span> <span class="o">=</span> <span class="n">length</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">source</span> <span class="o">=</span> <span class="kc">None</span>
 
-    <span class="k">def</span> <span class="nf">__getstate__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">__getstate__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the pickled state of the dataset.</span>
 
 <span class="sd">        This resets the dataset iterator, since that can&#39;t be pickled.</span>
@@ -3998,7 +4018,7 @@ very large datasets.</p>
         <span class="n">result</span><span class="p">[</span><span class="s2">&quot;source&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="k">return</span> <span class="n">result</span>
 
-    <span class="k">def</span> <span class="nf">invoke</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">invoke</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Return an iterator over the dataset.</span>
 
 <span class="sd">        This iterator returns as many samples as given by the `length` parameter.</span>
@@ -4085,7 +4105,7 @@ very large datasets.</p>
 <span class="normal"> 98</span>
 <span class="normal"> 99</span>
 <span class="normal">100</span>
-<span class="normal">101</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">__getstate__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="normal">101</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">__getstate__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Return the pickled state of the dataset.</span>
 
 <span class="sd">    This resets the dataset iterator, since that can&#39;t be pickled.</span>
@@ -4186,7 +4206,7 @@ very large datasets.</p>
 <span class="normal">123</span>
 <span class="normal">124</span>
 <span class="normal">125</span>
-<span class="normal">126</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">invoke</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset</span><span class="p">):</span>
+<span class="normal">126</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">invoke</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Return an iterator over the dataset.</span>
 
 <span class="sd">    This iterator returns as many samples as given by the `length` parameter.</span>
@@ -4332,6 +4352,11 @@ very large datasets.</p>
     </tr>
   </tbody>
 </table>
+
+
+
+
+
               <details class="quote">
                 <summary>Source code in <code>webdataset/writer.py</code></summary>
                 <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">502</span>
@@ -4451,7 +4476,7 @@ very large datasets.</p>
 <span class="normal">616</span>
 <span class="normal">617</span>
 <span class="normal">618</span>
-<span class="normal">619</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">ShardWriter</span><span class="p">:</span>
+<span class="normal">619</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">ShardWriter</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Like TarWriter but splits into multiple shards.</span>
 
 <span class="sd">    Args:</span>
@@ -4465,7 +4490,7 @@ very large datasets.</p>
 <span class="sd">        **kw: Other options passed to TarWriter.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">pattern</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
         <span class="n">maxcount</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">100000</span><span class="p">,</span>
@@ -4504,7 +4529,7 @@ very large datasets.</p>
         <span class="bp">self</span><span class="o">.</span><span class="n">opener</span> <span class="o">=</span> <span class="n">opener</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">next_stream</span><span class="p">()</span>
 
-    <span class="k">def</span> <span class="nf">next_stream</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">next_stream</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Close the current stream and move to the next.&quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">finish</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">fname</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pattern</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">shard</span>
@@ -4524,7 +4549,7 @@ very large datasets.</p>
         <span class="bp">self</span><span class="o">.</span><span class="n">count</span> <span class="o">=</span> <span class="mi">0</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">size</span> <span class="o">=</span> <span class="mi">0</span>
 
-    <span class="k">def</span> <span class="nf">write</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">write</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Write a sample.</span>
 
 <span class="sd">        Args:</span>
@@ -4541,7 +4566,7 @@ very large datasets.</p>
         <span class="bp">self</span><span class="o">.</span><span class="n">total</span> <span class="o">+=</span> <span class="mi">1</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">size</span> <span class="o">+=</span> <span class="n">size</span>
 
-    <span class="k">def</span> <span class="nf">finish</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">finish</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Finish all writing (use close instead).&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">tarstream</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">tarstream</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
@@ -4550,7 +4575,7 @@ very large datasets.</p>
                 <span class="bp">self</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fname</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">tarstream</span> <span class="o">=</span> <span class="kc">None</span>
 
-    <span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Close the stream.&quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">finish</span><span class="p">()</span>
         <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">tarstream</span>
@@ -4558,7 +4583,7 @@ very large datasets.</p>
         <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">count</span>
         <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">size</span>
 
-    <span class="k">def</span> <span class="fm">__enter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__enter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Enter context.</span>
 
 <span class="sd">        Returns:</span>
@@ -4566,7 +4591,7 @@ very large datasets.</p>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span>
 
-    <span class="k">def</span> <span class="fm">__exit__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__exit__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Exit context.&quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
 </code></pre></div></td></tr></table></div>
@@ -4627,7 +4652,7 @@ very large datasets.</p>
 <span class="normal">612</span>
 <span class="normal">613</span>
 <span class="normal">614</span>
-<span class="normal">615</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="fm">__enter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="normal">615</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__enter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Enter context.</span>
 
 <span class="sd">    Returns:</span>
@@ -4657,7 +4682,7 @@ very large datasets.</p>
               <summary>Source code in <code>webdataset/writer.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">617</span>
 <span class="normal">618</span>
-<span class="normal">619</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="fm">__exit__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
+<span class="normal">619</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__exit__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Exit context.&quot;&quot;&quot;</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
 </code></pre></div></td></tr></table></div>
@@ -4809,7 +4834,7 @@ very large datasets.</p>
 <span class="normal">550</span>
 <span class="normal">551</span>
 <span class="normal">552</span>
-<span class="normal">553</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+<span class="normal">553</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">pattern</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">maxcount</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">100000</span><span class="p">,</span>
@@ -4874,7 +4899,7 @@ very large datasets.</p>
 <span class="normal">604</span>
 <span class="normal">605</span>
 <span class="normal">606</span>
-<span class="normal">607</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="normal">607</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Close the stream.&quot;&quot;&quot;</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">finish</span><span class="p">()</span>
     <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">tarstream</span>
@@ -4909,7 +4934,7 @@ very large datasets.</p>
 <span class="normal">596</span>
 <span class="normal">597</span>
 <span class="normal">598</span>
-<span class="normal">599</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">finish</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="normal">599</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">finish</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Finish all writing (use close instead).&quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">tarstream</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">tarstream</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
@@ -4956,7 +4981,7 @@ very large datasets.</p>
 <span class="normal">570</span>
 <span class="normal">571</span>
 <span class="normal">572</span>
-<span class="normal">573</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">next_stream</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="normal">573</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">next_stream</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Close the current stream and move to the next.&quot;&quot;&quot;</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">finish</span><span class="p">()</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">fname</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pattern</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">shard</span>
@@ -5034,7 +5059,7 @@ very large datasets.</p>
 <span class="normal">587</span>
 <span class="normal">588</span>
 <span class="normal">589</span>
-<span class="normal">590</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">write</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">):</span>
+<span class="normal">590</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">write</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Write a sample.</span>
 
 <span class="sd">    Args:</span>
@@ -5240,6 +5265,11 @@ sample = {"__key__": "a/b", "png": image, "output.png": image2}
 tarwriter.write(sample)
 </code></pre>
 
+
+
+
+
+
               <details class="quote">
                 <summary>Source code in <code>webdataset/writer.py</code></summary>
                 <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">336</span>
@@ -5405,7 +5435,7 @@ tarwriter.write(sample)
 <span class="normal">496</span>
 <span class="normal">497</span>
 <span class="normal">498</span>
-<span class="normal">499</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">TarWriter</span><span class="p">:</span>
+<span class="normal">499</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">TarWriter</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;A class for writing dictionaries to tar files.</span>
 
 <span class="sd">    Args:</span>
@@ -5442,7 +5472,7 @@ tarwriter.write(sample)
 
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">fileobj</span><span class="p">,</span>
         <span class="n">user</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;bigdata&quot;</span><span class="p">,</span>
@@ -5485,7 +5515,7 @@ tarwriter.write(sample)
         <span class="bp">self</span><span class="o">.</span><span class="n">mode</span> <span class="o">=</span> <span class="n">mode</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">compress</span> <span class="o">=</span> <span class="n">compress</span>
 
-    <span class="k">def</span> <span class="fm">__enter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__enter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Enter context.</span>
 
 <span class="sd">        Returns:</span>
@@ -5493,18 +5523,18 @@ tarwriter.write(sample)
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span>
 
-    <span class="k">def</span> <span class="fm">__exit__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">exc_type</span><span class="p">,</span> <span class="n">exc_val</span><span class="p">,</span> <span class="n">exc_tb</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__exit__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">exc_type</span><span class="p">,</span> <span class="n">exc_val</span><span class="p">,</span> <span class="n">exc_tb</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Exit context.&quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
 
-    <span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Close the tar file.&quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">tarstream</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">own_fileobj</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">own_fileobj</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">own_fileobj</span> <span class="o">=</span> <span class="kc">None</span>
 
-    <span class="k">def</span> <span class="nf">write</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">write</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Write a dictionary to the tar file.</span>
 
 <span class="sd">        Args:</span>
@@ -5552,7 +5582,7 @@ tarwriter.write(sample)
         <span class="k">return</span> <span class="n">total</span>
 
     <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">tarmode</span><span class="p">(</span><span class="n">fileobj</span><span class="p">,</span> <span class="n">compress</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">tarmode</span><span class="p">(</span><span class="n">fileobj</span><span class="p">,</span> <span class="n">compress</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
         <span class="k">if</span> <span class="n">compress</span> <span class="ow">is</span> <span class="kc">False</span><span class="p">:</span>
             <span class="k">return</span> <span class="s2">&quot;w|&quot;</span>
         <span class="k">elif</span> <span class="p">(</span>
@@ -5627,7 +5657,7 @@ tarwriter.write(sample)
 <span class="normal">419</span>
 <span class="normal">420</span>
 <span class="normal">421</span>
-<span class="normal">422</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="fm">__enter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="normal">422</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__enter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Enter context.</span>
 
 <span class="sd">    Returns:</span>
@@ -5657,7 +5687,7 @@ tarwriter.write(sample)
               <summary>Source code in <code>webdataset/writer.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">424</span>
 <span class="normal">425</span>
-<span class="normal">426</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="fm">__exit__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">exc_type</span><span class="p">,</span> <span class="n">exc_val</span><span class="p">,</span> <span class="n">exc_tb</span><span class="p">):</span>
+<span class="normal">426</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__exit__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">exc_type</span><span class="p">,</span> <span class="n">exc_val</span><span class="p">,</span> <span class="n">exc_tb</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Exit context.&quot;&quot;&quot;</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
 </code></pre></div></td></tr></table></div>
@@ -5825,7 +5855,7 @@ tarwriter.write(sample)
 <span class="normal">411</span>
 <span class="normal">412</span>
 <span class="normal">413</span>
-<span class="normal">414</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+<span class="normal">414</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">fileobj</span><span class="p">,</span>
     <span class="n">user</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;bigdata&quot;</span><span class="p">,</span>
@@ -5893,7 +5923,7 @@ tarwriter.write(sample)
 <span class="normal">430</span>
 <span class="normal">431</span>
 <span class="normal">432</span>
-<span class="normal">433</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="normal">433</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Close the tar file.&quot;&quot;&quot;</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">tarstream</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
     <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">own_fileobj</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
@@ -6033,7 +6063,7 @@ tarwriter.write(sample)
 <span class="normal">477</span>
 <span class="normal">478</span>
 <span class="normal">479</span>
-<span class="normal">480</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">write</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">):</span>
+<span class="normal">480</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">write</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Write a dictionary to the tar file.</span>
 
 <span class="sd">    Args:</span>
@@ -6225,47 +6255,7 @@ to handle different URL schemes.</p>
 
             <details class="quote">
               <summary>Source code in <code>webdataset/gopen.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">447</span>
-<span class="normal">448</span>
-<span class="normal">449</span>
-<span class="normal">450</span>
-<span class="normal">451</span>
-<span class="normal">452</span>
-<span class="normal">453</span>
-<span class="normal">454</span>
-<span class="normal">455</span>
-<span class="normal">456</span>
-<span class="normal">457</span>
-<span class="normal">458</span>
-<span class="normal">459</span>
-<span class="normal">460</span>
-<span class="normal">461</span>
-<span class="normal">462</span>
-<span class="normal">463</span>
-<span class="normal">464</span>
-<span class="normal">465</span>
-<span class="normal">466</span>
-<span class="normal">467</span>
-<span class="normal">468</span>
-<span class="normal">469</span>
-<span class="normal">470</span>
-<span class="normal">471</span>
-<span class="normal">472</span>
-<span class="normal">473</span>
-<span class="normal">474</span>
-<span class="normal">475</span>
-<span class="normal">476</span>
-<span class="normal">477</span>
-<span class="normal">478</span>
-<span class="normal">479</span>
-<span class="normal">480</span>
-<span class="normal">481</span>
-<span class="normal">482</span>
-<span class="normal">483</span>
-<span class="normal">484</span>
-<span class="normal">485</span>
-<span class="normal">486</span>
-<span class="normal">487</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">487</span>
 <span class="normal">488</span>
 <span class="normal">489</span>
 <span class="normal">490</span>
@@ -6288,7 +6278,47 @@ to handle different URL schemes.</p>
 <span class="normal">507</span>
 <span class="normal">508</span>
 <span class="normal">509</span>
-<span class="normal">510</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">gopen</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;rb&quot;</span><span class="p">,</span> <span class="n">bufsize</span><span class="o">=</span><span class="mi">8192</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
+<span class="normal">510</span>
+<span class="normal">511</span>
+<span class="normal">512</span>
+<span class="normal">513</span>
+<span class="normal">514</span>
+<span class="normal">515</span>
+<span class="normal">516</span>
+<span class="normal">517</span>
+<span class="normal">518</span>
+<span class="normal">519</span>
+<span class="normal">520</span>
+<span class="normal">521</span>
+<span class="normal">522</span>
+<span class="normal">523</span>
+<span class="normal">524</span>
+<span class="normal">525</span>
+<span class="normal">526</span>
+<span class="normal">527</span>
+<span class="normal">528</span>
+<span class="normal">529</span>
+<span class="normal">530</span>
+<span class="normal">531</span>
+<span class="normal">532</span>
+<span class="normal">533</span>
+<span class="normal">534</span>
+<span class="normal">535</span>
+<span class="normal">536</span>
+<span class="normal">537</span>
+<span class="normal">538</span>
+<span class="normal">539</span>
+<span class="normal">540</span>
+<span class="normal">541</span>
+<span class="normal">542</span>
+<span class="normal">543</span>
+<span class="normal">544</span>
+<span class="normal">545</span>
+<span class="normal">546</span>
+<span class="normal">547</span>
+<span class="normal">548</span>
+<span class="normal">549</span>
+<span class="normal">550</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">gopen</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;rb&quot;</span><span class="p">,</span> <span class="n">bufsize</span><span class="o">=</span><span class="mi">8192</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Open the URL using various schemes and protocols.</span>
 
 <span class="sd">    This function provides a unified interface for opening resources specified by URLs,</span>
@@ -6428,7 +6458,7 @@ to handle different URL schemes.</p>
 <span class="normal">40</span>
 <span class="normal">41</span>
 <span class="normal">42</span>
-<span class="normal">43</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">ignore_and_continue</span><span class="p">(</span><span class="n">exn</span><span class="p">):</span>
+<span class="normal">43</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">ignore_and_continue</span><span class="p">(</span><span class="n">exn</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Ignore the exception and continue processing.</span>
 
 <span class="sd">    Args:</span>
@@ -6513,7 +6543,7 @@ to handle different URL schemes.</p>
 <span class="normal">66</span>
 <span class="normal">67</span>
 <span class="normal">68</span>
-<span class="normal">69</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">ignore_and_stop</span><span class="p">(</span><span class="n">exn</span><span class="p">):</span>
+<span class="normal">69</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">ignore_and_stop</span><span class="p">(</span><span class="n">exn</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Ignore the exception and stop further processing.</span>
 
 <span class="sd">    Args:</span>
@@ -6576,7 +6606,7 @@ to handle different URL schemes.</p>
 <span class="normal">28</span>
 <span class="normal">29</span>
 <span class="normal">30</span>
-<span class="normal">31</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">reraise_exception</span><span class="p">(</span><span class="n">exn</span><span class="p">):</span>
+<span class="normal">31</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">reraise_exception</span><span class="p">(</span><span class="n">exn</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Re-raise the given exception.</span>
 
 <span class="sd">    Args:</span>
@@ -6663,7 +6693,7 @@ to handle different URL schemes.</p>
 <span class="normal">54</span>
 <span class="normal">55</span>
 <span class="normal">56</span>
-<span class="normal">57</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">warn_and_continue</span><span class="p">(</span><span class="n">exn</span><span class="p">):</span>
+<span class="normal">57</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">warn_and_continue</span><span class="p">(</span><span class="n">exn</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Issue a warning for the exception and continue processing.</span>
 
 <span class="sd">    Args:</span>
@@ -6752,7 +6782,7 @@ to handle different URL schemes.</p>
 <span class="normal">80</span>
 <span class="normal">81</span>
 <span class="normal">82</span>
-<span class="normal">83</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">warn_and_stop</span><span class="p">(</span><span class="n">exn</span><span class="p">):</span>
+<span class="normal">83</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">warn_and_stop</span><span class="p">(</span><span class="n">exn</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Issue a warning for the exception and stop further processing.</span>
 
 <span class="sd">    Args:</span>
@@ -6773,7 +6803,6 @@ to handle different URL schemes.</p>
             </div>
           </div><footer>
     <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
-        <a href=".." class="btn btn-neutral float-left" title="README"><span class="icon icon-circle-arrow-left"></span> Previous</a>
         <a href="../wids/" class="btn btn-neutral float-right" title="WIDS">Next <span class="icon icon-circle-arrow-right"></span></a>
     </div>
 
@@ -6800,8 +6829,6 @@ to handle different URL schemes.</p>
           <a href="http://github.com/webdataset/webdataset" class="fa fa-github" style="color: #fcfcfc"> GitHub</a>
         </span>
     
-    
-      <span><a href=".." style="color: #fcfcfc">&laquo; Previous</a></span>
     
     
       <span><a href="../wids/" style="color: #fcfcfc">Next &raquo;</a></span>
