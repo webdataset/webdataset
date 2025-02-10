@@ -28,7 +28,6 @@ faq:
 versions:
 	uv run python3 helpers/versions.py
 
-# Run tests using pytest
 test:
 	$(MAKE) venv
 	uv run pytest
