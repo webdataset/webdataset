@@ -18,7 +18,7 @@ venv:
 
 # Clean up virtual environment and cache
 clean:
-	rm -rf .venv venv dist uv.lock *.egg-info build site readme_files
+	rm -rf .venv venv dist uv.lock *.egg-info build site readme_files README_FILES
 	rm -rf .pytest_cache .mypy_cache .coverage
 	find . -type d -name __pycache__ -exec rm -rf {} +
 
