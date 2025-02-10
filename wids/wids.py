@@ -241,6 +241,7 @@ def hash_localname(dldir="/tmp/_wids_cache"):
 
     return f
 
+
 class CacheLocalname:
     def __init__(self, cachedir: str) -> None:
         self._cachedir = cachedir
@@ -251,7 +252,7 @@ class CacheLocalname:
         path = urlparse(shard).path
         fname = os.path.basename(path)
         return os.path.join(self._cachedir, fname)
-    
+
 
 class DefaultLocalname:
     def __init__(self, dldir: str = "/tmp/_wids_cache") -> None:
@@ -262,6 +263,7 @@ class DefaultLocalname:
         """Given a URL, return a local name for the shard."""
         cachename = quote(shard, safe="+-")
         return os.path.join(self._dldir, cachename)
+
 
 class LRUShards:
     """A class that manages a cache of shards. The cache is a LRU cache that

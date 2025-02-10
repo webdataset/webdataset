@@ -241,7 +241,7 @@ dev = [
     "pytorch_lightning",
     "ray",
     "ray[default]",
-    "ray[sgd]",
+    # "ray[sgd]",
     "ray[tune]",
     "scipy",
     "setuptools",

@@ -31,6 +31,11 @@ def clean(c):
     c.run(f"rm -rf build site dist __pycache__ */__pycache__ *.pyc */*.pyc")
 
 
+@task()
+def uv(c):
+    c.run("uv pip install -r pyproject.toml --all-extras")
+
+
 @task(clean)
 def cleanall(c):
     "Remove temporary files and virtualenv."
