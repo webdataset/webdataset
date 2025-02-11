@@ -1,4 +1,4 @@
-[![Test](https://github.com/tmbdev/webdataset/workflows/Test/badge.svg)](https://github.com/tmbdev/webdataset/actions?query=workflow%3ATest)
+[![Test](https://github.com/tmbdev/webdataset/workflows/CI/badge.svg)](https://github.com/tmbdev/webdataset/actions?query=workflow%3ACI)
 [![DeepSource](https://static.deepsource.io/deepsource-badge-light-mini.svg)](https://deepsource.io/gh/tmbdev/webdataset/?ref=repository-badge)
 
 
@@ -36,20 +36,29 @@ bucket = "https://storage.googleapis.com/webdataset/testdata/"
 dataset = "publaynet-train-{000000..000009}.tar"
 
 url = bucket + dataset
-!curl -s {url} | tar tf - | sed 10q
+!curl -s {bucket}publaynet-train-000000.tar | dd count=5000 2> /dev/null | tar tf - 2> /dev/null | sed 10q
 ```
 
     PMC4991227_00003.json
     PMC4991227_00003.png
+
+
     PMC4537884_00002.json
     PMC4537884_00002.png
+
+
     PMC4323233_00003.json
+
+
     PMC4323233_00003.png
+
+
     PMC5429906_00004.json
     PMC5429906_00004.png
+
+
     PMC5592712_00002.json
     PMC5592712_00002.png
-    tar: stdout: write error
 
 
 Note that in these `.tar` files, we have pairs of `.json` and `.png` files; each such pair makes up a training sample.
@@ -87,8 +96,13 @@ There are two interfaces, the concise "fluid" interface and a longer "pipeline" 
 
 ```python
 import webdataset as wds
-pil_dataset = wds.WebDataset(url).shuffle(1000).decode("pil").to_tuple("png", "json")
+shuffle_buffer = 10  # usually, pick something bigger, like 1000
+pil_dataset = wds.WebDataset(url).shuffle(shuffle_buffer).decode("pil").to_tuple("png", "json")
 ```
+
+    /home/tmb/proj/webdatasetng/src/webdataset/compat.py:379: UserWarning: WebDataset(shardshuffle=...) is None; set explicitly to False or a number
+      warnings.warn("WebDataset(shardshuffle=...) is None; set explicitly to False or a number")
+
 
 The resulting datasets are standard PyTorch `IterableDataset` instances.
 
@@ -114,13 +128,13 @@ plt.imshow(image)
 
 
 
-    <matplotlib.image.AxesImage at 0x7f73806db970>
+    <matplotlib.image.AxesImage at 0x7c000e56bc80>
 
 
 
 
     
-![png](README_files/README_11_1.png)
+![png](readme_files/readme_11_1.png)
     
 
 
@@ -141,7 +155,7 @@ def preprocess(sample):
     image, json = sample
     try:
         label = json["annotations"][0]["category_id"]
-    except:
+    except Exception:
         label = 0
     return preproc(image), label
 
@@ -155,13 +169,13 @@ plt.imshow(image.numpy().transpose(1, 2, 0))
 
 
 
-    <matplotlib.image.AxesImage at 0x7f7375fc2230>
+    <matplotlib.image.AxesImage at 0x7c00139e5ee0>
 
 
 
 
     
-![png](README_files/README_13_1.png)
+![png](readme_files/readme_13_1.png)
     
 
 
@@ -185,8 +199,9 @@ The `wds.WebDataset` fluid interface is just a convenient shorthand for writing 
 ```python
 dataset = wds.DataPipeline(
     wds.SimpleShardList(url),
-
     # at this point we have an iterator over all the shards
+
+    # this shuffles the shards
     wds.shuffle(100),
 
     # add wds.split_by_node here if you are using multiple nodes
@@ -196,13 +211,12 @@ dataset = wds.DataPipeline(
     wds.tarfile_to_samples(),
 
     # this shuffles the samples in memory
-    wds.shuffle(1000),
+    wds.shuffle(shuffle_buffer),
 
     # this decodes the images and json
     wds.decode("pil"),
     wds.to_tuple("png", "json"),
     wds.map(preprocess),
-    wds.shuffle(1000),
     wds.batched(16)
 )
 
@@ -216,65 +230,6 @@ batch[0].shape, batch[1].shape
     (torch.Size([16, 3, 224, 224]), (16,))
 
 
-
-# The `wids` Library for Indexed WebDatasets
-
-Installing the `webdataset` library installs a second library called `wids`. This library provides fully indexed/random access to the same datasets that `webdataset` accesses using iterators/streaming.
-
-Like the `webdataset` library, `wids` is high scalable and provides efficient access to very large datasets. Being indexed, it is easily backwards compatible with existing data pipelines based on indexed dataset, including precise epochs for multinode training. The library comes with its own `ChunkedSampler` and `DistributedChunkedSampler` classes, which provided shuffling accross nodes while still preserving enough locality of reference for efficient training.
-
-Internally, the library uses a `mmap`-based `tar` file reader implementation; this allows very fast access without precomputed indexes, and it also means that shard and the equivalet of "shuffle buffers" are shared in memory between workers on the same machine.
-
-This additional power comes at some cost: the library requires a small metadata file that lists all the shards in a dataset and the number of samples contained in each, the library requires local storage for as many shards as there are I/O workers on a node, it uses shared memory and `mmap`, and the availability of indexing makes it easy to accidentally use inefficient access patterns.
-
-Generally, the recommendation is to use `webdataset` for all data generation, data transformation, and training code, and to use `wids` only if you need fully random access to datasets (e.g., for browing or sparse sampling), need an indexed-based sampler, or are converting tricky legacy code.
-
-
-
-```python
-import wids
-
-train_url = "https://storage.googleapis.com/webdataset/fake-imagenet/imagenet-train.json"
-
-dataset = wids.ShardListDataset(train_url)
-
-sample = dataset[1900]
-
-print(sample.keys())
-print(sample[".txt"])
-plt.imshow(sample[".jpg"])
-```
-
-    dict_keys(['.cls', '.jpg', '.txt', '__key__', '__dataset__', '__index__', '__shard__', '__shardindex__'])
-    a high quality color photograph of a dog
-
-
-    https://storage.googleapis.com/webdataset/fake-ima base: https://storage.googleapis.com/webdataset/fake-imagenet name: imagenet-train nfiles: 1282 nbytes: 31242280960 samples: 128200 cache: /tmp/_wids_cache
-
-
-
-
-
-    <matplotlib.image.AxesImage at 0x7f7373669e70>
-
-
-
-
-    
-![png](README_files/README_19_3.png)
-    
-
-
-There are several examples of how to use `wids` in the [examples](examples) directory.
-
-- [train-resnet50-wids](examples/out/train-resnet50-wids.ipynb) shows how to train a ResNet-50 model on ImageNet using `wids`
-- [train-resnet50-multiray-wids](examples/out/train-resnet50-multiray-wids.ipynb) shows how to train a ResNet-50 model on ImageNet using multiple nodes
-
-Note that the APIs between `webdataset` and `wids` are not fully consistent:
-
-- `wids` keeps the extension's "." in the keys, while `webdataset` removes it (".txt" vs "txt")
-- `wids` doesn't have a fully fluid interface, and `add_transformation` just adds to a list of transformations
-- `webdataset` currently can't read the `wids` JSON specifications
 
 # Installation and Documentation
 
