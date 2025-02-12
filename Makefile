@@ -1,4 +1,4 @@
-.PHONY: venv shell test docs serve lint push pypi clean testpypi rerelease patchrelease minorrelease majorrelease
+.PHONY: venv shell test docs serve lint push pypi clean testpypi rerelease patchrelease minorrelease majorrelease examples
 
 # Lint code using Black and Ruff
 lint:
@@ -27,6 +27,9 @@ faq:
 
 versions:
 	uv run python3 helpers/versions.py
+
+examples:
+	. .venv/bin/activate && cd examples && ./run-notebooks
 
 # Run tests using pytest
 test:

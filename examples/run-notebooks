@@ -13,7 +13,7 @@ nbprocess() {
     fi
 }
 
-source ../venv/bin/activate
+source ../.venv/bin/activate
 
 rm -f *.log *.out.ipynb *.stripped.ipynb _temp.ipynb
 
@@ -22,7 +22,7 @@ mkdir -p out
 set -e
 
 nbprocess generate-text-dataset.ipynb
-nbprocess train-ocr-errors-hf.ipynb -p max_steps 100
+# nbprocess train-ocr-errors-hf.ipynb -p max_steps 100
 nbprocess train-resnet50-wds.ipynb -p max_steps 10000
 nbprocess train-resnet50-wids.ipynb -p max_steps 10000
 nbprocess train-resnet50-multiray-wds.ipynb -p max_steps 1000

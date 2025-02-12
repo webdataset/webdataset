@@ -44,6 +44,7 @@ dev = [
   "bump2version",
   "flake8",
   "imageio",
+  "ipykernel",
   "isort",
   "jupyter",
   "jupyterlab",
@@ -62,6 +63,7 @@ dev = [
   "nbconvert",
   "notebook",
   "papermill",
+  "pip",
   "pdm",
   "Pillow",
   "pre-commit",
@@ -75,7 +77,12 @@ dev = [
   "setuptools",
   "torch",
   "torchvision",
+
   "transformers",
+  "accelerate",
+  "peft",
+  "bitsandbytes",
+
   "twine",
   "typer",
   "wheel",
