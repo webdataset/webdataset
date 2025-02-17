@@ -126,14 +126,18 @@ def download_file(remote, local, handlers=default_cmds, verbose=False):
 
 def download_and_open(remote, local, mode="rb", handlers=default_cmds, verbose=False):
     with ULockFile(local + ".lock"):
-        if not os.path.exists(local):
-            if verbose:
-                print("downloading", remote, "to", local, file=sys.stderr)
-            download_file(remote, local, handlers=handlers)
+        # we make sure that it is a url and not a strng path to the dataset on local machine
+        if not os.path.exists(remote):
+            if not os.path.exists(local):
+                if verbose:
+                    print("downloading", remote, "to", local, file=sys.stderr)
+                download_file(remote, local, handlers=handlers)
+            else:
+                if verbose:
+                    print("using cached", local, file=sys.stderr)
+            result = open(local, mode)
         else:
-            if verbose:
-                print("using cached", local, file=sys.stderr)
-        result = open(local, mode)
+            result = open(remote, mode)
         if open_objects is not None:
             for k, v in list(open_objects.items()):
                 if v.closed:
