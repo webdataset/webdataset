@@ -424,7 +424,7 @@ class ShardListDataset(Dataset[T]):
             self.cache_dir = os.environ.get("WIDS_CACHE", "/tmp/_wids_cache")
             self.localname = DefaultLocalname(self.cache_dir)
 
-        if True or int(os.environ.get("WIDS_VERBOSE", 0)):
+        if int(os.environ.get("WIDS_VERBOSE", 0)):
             nbytes = sum(shard.get("filesize", 0) for shard in self.shards)
             nsamples = sum(shard["nsamples"] for shard in self.shards)
             print(
