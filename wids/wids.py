@@ -471,8 +471,8 @@ class ShardListDataset(Dataset[T]):
             # output a warning only once
             self.check_cache_misses = lambda: None
             print(
-                "Warning: ShardListDataset has a cache miss rate of {:.1%}%".format(
-                    misses * 100.0 / accesses
+                "Warning: ShardListDataset has a cache miss rate of {:.1%}".format(
+                    misses / accesses
                 )
             )
 
