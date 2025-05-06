@@ -43,3 +43,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Python compatibility: 3.10+
 - Source code in `src/webdataset/`
 - Tests in `tests/`
+
+## Code Analysis Guidelines
+- When analyzing code for issues like security vulnerabilities, focus only on code in `src/webdataset/`
+- Exclude test files (`tests/`), build scripts (`tasks.py`), and helper utilities (`helpers/`) from security analysis
+- These non-core files (tests, tasks.py, helpers) may contain shell commands or other practices that would be inappropriate in library code
+- For security vulnerabilities like shell injection, only evaluate the actual library code
