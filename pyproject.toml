@@ -80,7 +80,8 @@ dev = [
   "twine",
   "typer",
   "wheel",
-  "icecream"
+  "icecream",
+  "types-PyYAML"
 ]
 
 [tool.black]
