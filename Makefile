@@ -29,6 +29,11 @@ versions:
 test:
 	echo $(PATH)
 	$(MAKE) venv
+	uv run pytest -v -m quick
+
+longtest:
+	echo $(PATH)
+	$(MAKE) venv
 	uv run pytest
 
 readme:

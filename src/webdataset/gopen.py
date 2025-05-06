@@ -237,23 +237,22 @@ def gopen_curl(url, mode="rb", bufsize=8192):
         ValueError: If the mode is unknown
     """
     if mode[0] == "r":
-        cmd = f"curl --connect-timeout 30 --retry 30 --retry-delay 2 -f -s -L '{url}'"
+        cmd_args = ["curl", "--connect-timeout", "30", "--retry", "30",
+                   "--retry-delay", "2", "-f", "-s", "-L", url]
         return Pipe(
-            cmd,
+            cmd_args,
             mode=mode,
-            shell=True,
             bufsize=bufsize,
             ignore_status=[141, 23],
-        )  # skipcq: BAN-B604
+        )
     elif mode[0] == "w":
-        cmd = f"curl -f -s -X PUT -L -T - '{url}'"
+        cmd_args = ["curl", "-f", "-s", "-X", "PUT", "-L", "-T", "-", url]
         return Pipe(
-            cmd,
+            cmd_args,
             mode=mode,
-            shell=True,
             bufsize=bufsize,
             ignore_status=[141, 26],
-        )  # skipcq: BAN-B604
+        )
     else:
         raise ValueError(f"{mode}: unknown mode")
 
@@ -274,14 +273,13 @@ def gopen_htgs(url, mode="rb", bufsize=8192):
     """
     if mode[0] == "r":
         url = re.sub(r"(?i)^htgs://", "gs://", url)
-        cmd = f"curl -s -L '{url}'"
+        cmd_args = ["curl", "-s", "-L", url]
         return Pipe(
-            cmd,
+            cmd_args,
             mode=mode,
-            shell=True,
             bufsize=bufsize,
             ignore_status=[141, 23],
-        )  # skipcq: BAN-B604
+        )
     elif mode[0] == "w":
         raise ValueError(f"{mode}: cannot write")
     else:
@@ -312,15 +310,17 @@ def gopen_hf(url, mode="rb", bufsize=8192):
             repo_type=resolved_path.repo_type,
             revision=resolved_path.revision,
         )
-        auth = f"-H 'Authorization:Bearer {get_token()}'"
-        cmd = f"curl --connect-timeout 30 --retry 30 --retry-delay 2 -f -s -L {auth} '{http_url}'"
+        token = get_token()
+        cmd_args = [
+            "curl", "--connect-timeout", "30", "--retry", "30", "--retry-delay", "2",
+            "-f", "-s", "-L", "-H", f"Authorization:Bearer {token}", http_url
+        ]
         return Pipe(
-            cmd,
+            cmd_args,
             mode=mode,
-            shell=True,
             bufsize=bufsize,
             ignore_status=[141, 23],
-        )  # skipcq: BAN-B604
+        )
     elif mode[0] == "w":
         raise ValueError(f"{mode}: cannot write")
     else:
@@ -328,7 +328,7 @@ def gopen_hf(url, mode="rb", bufsize=8192):
 
 
 def gopen_gsutil(url, mode="rb", bufsize=8192):
-    """Open a URL with `curl`.
+    """Open a URL with `gsutil`.
 
     Args:
         url: URL (usually, gs:// etc.)
@@ -342,23 +342,21 @@ def gopen_gsutil(url, mode="rb", bufsize=8192):
         ValueError: If the mode is unknown
     """
     if mode[0] == "r":
-        cmd = f"gsutil cat '{url}'"
+        cmd_args = ["gsutil", "cat", url]
         return Pipe(
-            cmd,
+            cmd_args,
             mode=mode,
-            shell=True,
             bufsize=bufsize,
             ignore_status=[141, 23],
-        )  # skipcq: BAN-B604
+        )
     elif mode[0] == "w":
-        cmd = f"gsutil cp - '{url}'"
+        cmd_args = ["gsutil", "cp", "-", url]
         return Pipe(
-            cmd,
+            cmd_args,
             mode=mode,
-            shell=True,
             bufsize=bufsize,
             ignore_status=[141, 26],
-        )  # skipcq: BAN-B604
+        )
     else:
         raise ValueError(f"{mode}: unknown mode")
 
@@ -378,23 +376,21 @@ def gopen_ais(url, mode="rb", bufsize=8192):
         ValueError: If the mode is unknown
     """
     if mode[0] == "r":
-        cmd = f"ais get '{url}' -"
+        cmd_args = ["ais", "get", url, "-"]
         return Pipe(
-            cmd,
+            cmd_args,
             mode=mode,
-            shell=True,
             bufsize=bufsize,
             ignore_status=[141, 23],
-        )  # skipcq: BAN-B604
+        )
     elif mode[0] == "w":
-        cmd = f"ais put - '{url}'"
+        cmd_args = ["ais", "put", "-", url]
         return Pipe(
-            cmd,
+            cmd_args,
             mode=mode,
-            shell=True,
             bufsize=bufsize,
             ignore_status=[141, 26],
-        )  # skipcq: BAN-B604
+        )
     else:
         raise ValueError(f"{mode}: unknown mode")
 
