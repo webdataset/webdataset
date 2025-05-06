@@ -72,6 +72,10 @@ testpatch:
 
 # Rebuild and reupload current version
 release:
+	@if [ "$$(git rev-parse --abbrev-ref HEAD)" != "main" ]; then \
+		echo "Error: You must be on the main branch to release. Current branch: $$(git rev-parse --abbrev-ref HEAD)"; \
+		exit 1; \
+	fi
 	$(MAKE) push
 	uv run python -m build
 	uv run twine upload "$$(ls -t dist/*.whl | sed 1q)"
