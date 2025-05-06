@@ -8,6 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Run quick tests: `uv run pytest -v -m quick`
 - Run linting: `make lint` or `uv run black . && uv run isort . && uv run ruff check .`
 - Fix linting issues: `make autofix` or `uv run ruff check --fix .`
+- Run type checking: `make mypy` or `uv run mypy src/webdataset`
 - Run coverage: `make coverage` or `uv run pytest --cov=webdataset --cov-report=term-missing`
 - Build documentation: `make docs`
 - Serve documentation locally: `make serve` or `uv run mkdocs serve`

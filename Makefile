@@ -1,4 +1,4 @@
-.PHONY: venv shell test docs serve lint push pypi clean testpypi rerelease patchrelease minorrelease majorrelease
+.PHONY: venv shell test docs serve lint mypy push pypi clean testpypi rerelease patchrelease minorrelease majorrelease
 
 # Lint code using Black and Ruff
 lint:
@@ -51,6 +51,7 @@ serve:
 push:
 	test -z "$$(git status --porcelain)"
 	$(MAKE) lint
+	$(MAKE) mypy
 	$(MAKE) test
 	git push
 
@@ -88,6 +89,10 @@ majorrelease:
 
 coverage:
 	uv run pytest --cov=webdataset --cov=wids --cov-report=term-missing
+
+# Run mypy type checking
+mypy:
+	uv run mypy src/webdataset
 
 # unused:
 # 	./find-unused wids webdataset tests | grep -v test_ | grep -v tests/ | grep -v "function '_" | sort 
