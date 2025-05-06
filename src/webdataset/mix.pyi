@@ -1,6 +1,5 @@
 from typing import Any, Iterator, List, Optional, TypeVar
 
-
 from .pytorch import IterableDataset
 
 T = TypeVar('T')

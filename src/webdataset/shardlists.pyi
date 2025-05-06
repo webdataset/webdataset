@@ -14,7 +14,6 @@ from typing import (
     Union,
 )
 
-
 from .pytorch import IterableDataset
 
 T = TypeVar('T')

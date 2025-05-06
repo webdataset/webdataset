@@ -1,7 +1,6 @@
 import os
 from typing import Any, Callable, Dict, Iterable, Iterator, Optional, Union
 
-
 from .handlers import reraise_exception
 from .utils import obsolete
 

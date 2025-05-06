@@ -11,7 +11,6 @@ from typing import (
     Union,
 )
 
-
 from . import cache, filters, shardlists
 from .filters import reraise_exception
 from .pipeline import DataPipeline

@@ -13,7 +13,6 @@ from typing import (
 import numpy as np
 import PIL.Image
 
-
 T = TypeVar('T')
 
 # Type definitions

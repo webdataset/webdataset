@@ -15,7 +15,6 @@ from typing import (
     Union,
 )
 
-
 from .utils import PipelineStage
 
 T = TypeVar('T')

@@ -12,7 +12,6 @@ from typing import (
     Union,
 )
 
-
 from .handlers import reraise_exception
 
 T = TypeVar('T')
