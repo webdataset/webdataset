@@ -31,7 +31,7 @@ test:
 	$(MAKE) venv
 	uv run pytest -v -m quick
 
-longtest:
+fulltest:
 	echo $(PATH)
 	$(MAKE) venv
 	uv run pytest

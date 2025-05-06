@@ -5,6 +5,7 @@ servers, object servers, and web servers.
 import io
 import os
 import re
+import subprocess
 import sys
 import time
 import urllib.parse
@@ -31,10 +32,19 @@ def islocal(url):
 def get_filetype(fname: str):
     """Get the file type of a file."""
     assert os.path.exists(fname), fname
-    assert os.system("file . > /dev/null") == 0, "UNIX/Linux file command not available"
-    with os.popen("file '%s'" % fname) as f:
-        ftype = f.read()
-    return ftype
+    # Check if 'file' command is available
+    try:
+        subprocess.run(["file", "."], stdout=subprocess.DEVNULL, check=True)
+    except (subprocess.SubprocessError, FileNotFoundError):
+        raise AssertionError("UNIX/Linux file command not available")
+    # Run file command on the specified file
+    result = subprocess.run(
+        ["file", fname],
+        stdout=subprocess.PIPE,
+        text=True,
+        check=True
+    )
+    return result.stdout
 
 
 def check_tar_format(fname: str):
