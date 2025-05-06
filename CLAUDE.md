@@ -1,0 +1,44 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Build/Lint/Test Commands
+- Run all tests: `make test` or `uv run pytest`
+- Run single test: `uv run pytest tests/test_file.py::test_function -v`
+- Run quick tests: `uv run pytest -v -m quick`
+- Run linting: `make lint` or `uv run black . && uv run isort . && uv run ruff check .`
+- Fix linting issues: `make autofix` or `uv run ruff check --fix .`
+- Run coverage: `make coverage` or `uv run pytest --cov=webdataset --cov-report=term-missing`
+- Build documentation: `make docs`
+- Serve documentation locally: `make serve` or `uv run mkdocs serve`
+- Create virtual environment: `make venv`
+- Clean project: `make clean`
+- Update README and docs: `make readme`
+- Generate FAQ: `make faq` or `uv run python3 helpers/faq.py`
+- Check versions: `make versions` or `uv run python3 helpers/versions.py`
+
+## Release Commands
+- Test patch release: `make testpatch`
+- Release current version: `make release`
+- Create patch release: `make patch`
+- Create minor release: `make minorrelease`
+- Create major release: `make majorrelease`
+
+## Code Style Guidelines
+- Line length: 120 characters
+- Formatting: Black + isort with Black profile
+- Docstrings: Google style (pydocstyle convention)
+- Type hints: Use proper type annotations from typing module
+- Imports: Use from typing import Only absolute imports, not relative
+- Error handling: Use explicit exceptions with helpful messages
+- Naming: Follow Python conventions (snake_case for functions/variables)
+- Testing: Mark tests with @pytest.mark.quick for fast-running tests
+- Documentation: Update docstrings when changing function behavior
+- Avoid using deprecated or obsolete functions
+
+## Project Structure
+- Package name: webdatasetng
+- Version: 0.3.5
+- Python compatibility: 3.10+
+- Source code in `src/webdataset/`
+- Tests in `tests/`

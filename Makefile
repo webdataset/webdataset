@@ -11,8 +11,6 @@ autofix:
 
 # Create virtual environment and install dependencies using uv
 venv:
-	type uv  # uv must be installed
-	python -m venv .venv
 	uv sync --all-extras
 	uv pip install -e .
 
@@ -29,6 +27,7 @@ versions:
 	uv run python3 helpers/versions.py
 
 test:
+	echo $(PATH)
 	$(MAKE) venv
 	uv run pytest
 
