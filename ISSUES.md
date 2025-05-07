@@ -1,6 +1,6 @@
 # Issues for webdataset/webdataset
 
-Generated on 2025-05-06 10:17:26
+Generated on 2025-05-07 04:35:06
 
 ## Open Issues
 
@@ -16,25 +16,6 @@ an index-out-of-range error occurs due  to overwriting in the cache directory,
 where only one set of tar files (e.g., 0.tar, 1.tar) is retained. Renaming the
 tar files resolves the issue, indicating a need for unique naming to prevent
 cache conflicts.
-
-#### Comments
-
-No comments on this issue.
-
----
-### Issue #462: [Question] Stubs?
-
-* **Created by:** ezorita
-* **Created on:** 2025-04-22 10:41:13
-
-#### Summary
-
-The package currently lacks typing hint definitions, and it's unclear if this
-feature is planned for future updates.   Users are inquiring about the
-availability of third-party libraries that provide stubs for webdataset, but no
-references have been found. Clarification on the roadmap for typing hints or
-recommendations for existing solutions    would be beneficial. #enhancement
-#error
 
 #### Comments
 
@@ -731,33 +712,6 @@ to investigate and resolve it.
 
 * tmbdev commented on 2024-09-26 13:39:27
 * tmbdev commented on 2024-09-26 15:11:33
-
----
-### Issue #383: ResourceWarning
-
-* **Created by:** lqniunjunlper
-* **Created on:** 2024-08-15 13:09:20
-
-#### Summary
-
-The issue involves a ResourceWarning indicating an unclosed file in a Python
-script using the webdataset library,      specifically at line 64 in mix.py.
-This warning suggests that a file, /data/shard-0000005.tar, was not properly
-closed, which could lead to resource leaks. Enabling tracemalloc is recommended
-to trace the object allocation and     identify where the file was opened.
-
-#### Comment Summary (3 comments)
-
-After updating to the latest version, a warning issue has arisen related to an
-unclosed file in                        webdataset/pipeline.py, which may be
-causing a memory leak. This issue is similar to those discussed in issues #311
-and #312, with a pull request created to address it.
-
-#### Comment Details
-
-* lqniunjunlper commented on 2024-08-15 13:24:41
-* rardz commented on 2024-08-16 07:39:44
-* lqniunjunlper commented on 2024-08-19 13:50:34
 
 ---
 ### Issue #380: webdataset.github.io cache / streaming info incorrect
@@ -1694,39 +1648,6 @@ referencing a similar issue on GitHub.
 * LinB203 commented on 2023-03-10 07:24:36
 * tmbdev commented on 2023-03-18 19:39:54
 * vishaal27 commented on 2024-05-20 15:11:28
-
----
-### Issue #255: Should not call out to external processes for checking file types in caching layer
-
-* **Created by:** mseitzer
-* **Created on:** 2023-03-09 14:56:16
-
-#### Summary
-
-The cached_url_opener in the WebDataset library performs file type checks using
-the get_filetype method, which relies  on the external file command, causing
-performance issues due to process forking. This method uses os.system, invoking
-/bin/sh and potentially slowing down operations further if the user's home
-directory is on a networked filesystem. The author suggests skipping file type
-validation to improve performance, noting that the normal tar iterator does not
-perform such checks.
-
-#### Comment Summary (2 comments)
-
-The validation process focuses on cache files to ensure successful initial
-downloads and provides better error         messages, with minimal overhead on
-modern systems. While considering adding a user validation function or using a
-Python library, concerns arise about additional dependencies, as the current
-method already requires the external file library. Although checking file
-extensions was initially considered, using magic bytes is more reliable, despite
-the   cumbersome nature of repeatedly verifying the file library's existence.
-Some suggest skipping validation and handling  errors with try-catch, though
-manual installation of file can cause confusion.
-
-#### Comment Details
-
-* tmbdev commented on 2023-03-18 19:41:52
-* RoyJames commented on 2023-06-09 06:27:11
 
 ---
 ### Issue #254: Using s3fs as handler instead of "pipe:" doesn't open the files. 
