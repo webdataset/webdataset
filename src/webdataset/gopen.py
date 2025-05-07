@@ -471,6 +471,10 @@ def rewrite_url(url):
     If GOPEN_VERBOSE is set to a non-zero value, the function will print
     information about any URL rewrites that occur.
 
+    Note: This function performs basic URL rewriting without validation.
+    Validation of the resulting URL for security concerns (such as path traversal) 
+    is the responsibility of the caller.
+
     Args:
         url (str): The original URL to potentially rewrite.
 

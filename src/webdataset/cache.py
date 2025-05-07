@@ -120,6 +120,11 @@ class LRUCleanup:
     def cleanup(self):
         """Performs cleanup of the file cache in cache_dir using an LRU strategy,
         keeping the total size of all remaining files below cache_size.
+        
+        This is a simple implementation that scans the directory twice - once to compute
+        the total size and once to build a list of files for potential deletion. While
+        not theoretically optimal for extremely large caches, it is efficient enough
+        for practical purposes with typical cache sizes and file counts.
         """
         if not os.path.exists(self.cache_dir):
             return
@@ -286,12 +291,15 @@ class FileCache:
         for url in urls:
             if isinstance(url, dict):
                 url = url["url"]
+            delay = 1.0
             for _ in range(10):
                 try:
                     dest = self.get_file(url)
                     stream = open(dest, "rb")
                 except Exception as e:
                     if self.handler(e):
+                        time.sleep(delay)
+                        delay *= 1.5
                         continue
                     else:
                         break
