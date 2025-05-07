@@ -143,8 +143,18 @@ class Pipe:
         self.close()
 
     def __del__(self):
-        """Close the stream upon delete."""
-        self.close()
+        """Close the stream upon delete.
+        
+        This is a fallback for when users can't use context managers.
+        We catch all exceptions since __del__ should never raise exceptions
+        during garbage collection.
+        """
+        try:
+            self.close()
+        except Exception:
+            # Silently ignore exceptions in __del__ as per Python recommendations
+            # We can't reliably log here during garbage collection
+            pass
 
 
 def set_options(obj, timeout=None, ignore_errors=None, ignore_status=None, handler=None):

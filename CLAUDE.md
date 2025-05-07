@@ -62,3 +62,6 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
   1. Add all modified files with `git add`
   2. Generate a commit message automatically that reflects the changes based on our conversation and `git diff`
   3. Commit the changes with the generated commit message
+  
+## Command Shortcuts
+- When the user says "next?", list any remaining issues from the most recently generated list of tasks or problems
