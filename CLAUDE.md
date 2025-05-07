@@ -52,6 +52,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - The `safe_eval` function in utils.py is secure as it restricts input to alphanumeric characters and underscores
 - The `gopen_pipe` function in gopen.py deliberately uses shell=True for its intended functionality
 - The download function in cache.py correctly handles file downloads with temporary files and atomic renames, preventing race conditions
+- The exception handling in cache.py:148-150 is appropriate for handling race conditions where files may be deleted by other processes during directory walking
 
 ## Memory Instructions
 - When the user says "remember this" or "remember", add appropriate notes to this CLAUDE.md file for persistent memory
