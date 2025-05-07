@@ -197,6 +197,14 @@ def gopen_file(url, mode="rb", bufsize=8192):
 def gopen_pipe(url, mode="rb", bufsize=8192):
     """Use gopen to open a pipe.
 
+    This function deliberately uses shell=True with the pipe URL to enable shell command 
+    execution directly from URLs. This is an intentional design feature that allows users 
+    to construct processing pipelines using shell commands via the pipe: URL scheme.
+    The purpose is to enable flexible data processing directly within data loading pipelines.
+    
+    Note: This feature requires careful use with trusted input sources only, as it will
+    execute arbitrary shell commands specified in the URL.
+
     Args:
         url: A pipe: URL
         mode: Desired mode

@@ -49,3 +49,16 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Exclude test files (`tests/`), build scripts (`tasks.py`), and helper utilities (`helpers/`) from security analysis
 - These non-core files (tests, tasks.py, helpers) may contain shell commands or other practices that would be inappropriate in library code
 - For security vulnerabilities like shell injection, only evaluate the actual library code
+- The `safe_eval` function in utils.py is secure as it restricts input to alphanumeric characters and underscores
+- The `gopen_pipe` function in gopen.py deliberately uses shell=True for its intended functionality
+- The download function in cache.py correctly handles file downloads with temporary files and atomic renames, preventing race conditions
+
+## Memory Instructions
+- When the user says "remember this" or "remember", add appropriate notes to this CLAUDE.md file for persistent memory
+- Place these notes in the most relevant section, or add a new section if needed
+
+## Git Instructions
+- When the user says "commit", perform the following actions:
+  1. Add all modified files with `git add`
+  2. Generate a commit message automatically that reflects the changes based on our conversation and `git diff`
+  3. Commit the changes with the generated commit message
