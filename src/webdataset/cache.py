@@ -38,20 +38,45 @@ def get_filetype(fname: str):
     except (subprocess.SubprocessError, FileNotFoundError):
         raise AssertionError("UNIX/Linux file command not available")
     # Run file command on the specified file
-    result = subprocess.run(
-        ["file", fname],
-        stdout=subprocess.PIPE,
-        text=True,
-        check=True
-    )
+    result = subprocess.run(["file", fname], stdout=subprocess.PIPE, text=True, check=True)
     return result.stdout
+
+
+def magic_filetype(fname: str):
+    """Determine file type by checking magic numbers.
+
+    It checks common formats used with WebDataset: tar archives and gzip files.
+
+    Args:
+        fname (str): Path to the file to check
+
+    Returns:
+        str: Description of the file type
+    """
+    with open(fname, "rb") as f:
+        # Read the first 512 bytes for header checks
+        header = f.read(512)
+
+        # Check for gzip signature (begins with 1F 8B)
+        if len(header) >= 2 and header[0:2] == b"\x1f\x8b":
+            return f"{fname}: gzip compressed data"
+
+        # Check for tar file signature (ustar at position 257-261)
+        if len(header) > 261 and header[257:262] == b"ustar":
+            return f"{fname}: POSIX tar archive"
+
+        # Standard tar has a checksum at 148-156 and magic at 257-263
+        # If we can't identify it specifically, return generic data
+        return f"{fname}: data"
 
 
 def check_tar_format(fname: str):
     """Check whether a file is a tar archive."""
     assert os.path.exists(fname), fname
-    ftype = get_filetype(fname)
-    return "tar archive" in ftype or "gzip compressed" in ftype
+
+    # Always use magic_filetype for file format detection
+    ftype = magic_filetype(fname)
+    return "tar archive" in ftype.lower() or "gzip compressed" in ftype.lower()
 
 
 @obsolete
@@ -120,7 +145,7 @@ class LRUCleanup:
     def cleanup(self):
         """Performs cleanup of the file cache in cache_dir using an LRU strategy,
         keeping the total size of all remaining files below cache_size.
-        
+
         This is a simple implementation that scans the directory twice - once to compute
         the total size and once to build a list of files for potential deletion. While
         not theoretically optimal for extremely large caches, it is efficient enough
