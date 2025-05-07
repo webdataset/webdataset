@@ -53,6 +53,9 @@ def warn_and_continue(exn):
         bool: Always returns True to indicate continuation.
     """
     warnings.warn(repr(exn))
+    # Sleep ensures warnings don't scroll off screen too quickly
+    # These handlers are called rarely, so the sleep time isn't
+    # a significant performance bottleneck in practice
     time.sleep(0.5)
     return True
 
@@ -79,5 +82,8 @@ def warn_and_stop(exn):
         bool: Always returns False to indicate stopping.
     """
     warnings.warn(repr(exn))
+    # Sleep ensures warnings don't scroll off screen too quickly
+    # These handlers are called rarely, so the sleep time isn't
+    # a significant performance bottleneck in practice
     time.sleep(0.5)
     return False
