@@ -145,7 +145,7 @@ def encode_list(l, infos=None):
     if infos is None:
         infos = [""]
     elif len(l) != len(infos):
-        raise ValueError(f"length of list {l} must muatch length of infos {infos}")
+        raise ValueError(f"length of list {l} must match length of infos {infos}")
     result = []
     for i, a in enumerate(l):
         header = encode_header(a, infos[i % len(infos)])

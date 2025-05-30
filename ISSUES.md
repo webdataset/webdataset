@@ -1,47 +1,9 @@
 # Issues for webdataset/webdataset
 
-Generated on 2025-05-07 04:35:06
+Generated on 2025-05-07 06:05:59
 
 ## Open Issues
 
-### Issue #463: wids index out of range bug?
-
-* **Created by:** xiaoxd16
-* **Created on:** 2025-04-24 09:52:26
-
-#### Summary
-
-When using multiple custom datasets with the same basename in different paths,
-an index-out-of-range error occurs due  to overwriting in the cache directory,
-where only one set of tar files (e.g., 0.tar, 1.tar) is retained. Renaming the
-tar files resolves the issue, indicating a need for unique naming to prevent
-cache conflicts.
-
-#### Comments
-
-No comments on this issue.
-
----
-### Issue #461: Links to example are broken
-
-* **Created by:** Ale9806
-* **Created on:** 2025-04-16 21:20:38
-
-#### Summary
-
-The issue involves broken links in the wds-notes.ipynb file within the
-WebDataset repository, specifically for the     examples generate-text-dataset
-and tesseract-wds. These links are intended to guide users to specific Jupyter
-notebooks for initial dataset generation and shard-to-shard transformations
-using OCR, respectively, but currently do  not function as expected. This
-problem may hinder users from accessing important resources for understanding
-and       utilizing the WebDataset library effectively. #error #enhancement
-
-#### Comments
-
-No comments on this issue.
-
----
 ### Issue #460: Documentation for Webdataset + MultiNode and HF  SFTTrainer
 
 * **Created by:** Ale9806
@@ -118,20 +80,6 @@ understanding.
 
 * ManuelSokolov commented on 2025-03-17 13:23:32
 * habaohaba commented on 2025-03-17 14:00:13
-
----
-### Issue #455: aiPhone
-
-* **Created by:** aiPhone13
-* **Created on:** 2025-03-07 08:18:27
-
-#### Summary
-
-Please provide the issue details you would like summarized.
-
-#### Comments
-
-No comments on this issue.
 
 ---
 ### Issue #453: Unexpected Repetition and Missing Files in WebDataset with `resampled=True` and Shuffling Enabled
@@ -219,43 +167,6 @@ creating efficient custom samplers for large datasets can be challenging.
 * tmbdev commented on 2025-02-12 15:52:32
 
 ---
-### Issue #449: list index out of range with wids.ShardListDataset
-
-* **Created by:** ThisisBillhe
-* **Created on:** 2025-02-12 02:06:14
-
-#### Summary
-
-The error encountered during training with wids.ShardListDataset in a
-Distributed Data Parallel (DDP) environment is an IndexError indicating that a
-list index is out of range. This issue arises when the DataLoader attempts to
-access an index that does not exist within the dataset, potentially due to
-mismatched sample counts across different shards. The discrepancy in the
-number of samples in each tar file, as seen in the provided dataset metadata,
-could indeed be the cause of this error, as it may lead to uneven distribution
-of data across workers. #error #performance
-
-#### Comment Summary (6 comments)
-
-Several users are experiencing errors related to the number of tar files and GPU
-usage when using wids with PyTorch    Lightning and native PyTorch DDP. One user
-resolved the issue by removing cached tar files, suggesting that the error
-might be linked to storage space limitations or corrupted cache files. It is
-noted that wids should handle shards with varying element counts, but there
-might be a need for better validation against the JSON index file to prevent
-index   errors. Checking the default cache directory for broken files is
-recommended.
-
-#### Comment Details
-
-* geonm commented on 2025-02-12 03:10:38
-* ThisisBillhe commented on 2025-02-12 03:14:42
-* geonm commented on 2025-02-12 03:21:23
-* ThisisBillhe commented on 2025-02-12 03:28:40
-* tmbdev commented on 2025-02-12 15:46:42
-* zhao-huan commented on 2025-03-10 09:50:42
-
----
 ### Issue #448: How to prevent shuffling due to num_workers != 0 ? Can WebLoader objects be aggregated?
 
 * **Created by:** ManuelSokolov
@@ -314,34 +225,6 @@ it should be fixed.
 #### Comment Details
 
 * tmbdev commented on 2025-02-08 02:17:53
-
----
-### Issue #444: ShardListDataset cache miss rate with wids
-
-* **Created by:** omri-cavnue
-* **Created on:** 2025-01-27 20:59:41
-
-#### Summary
-
-The issue involves a high cache miss rate warning in a data pipeline using DDP
-and wids, specifically with             ShardListDataset. Despite the data being
-cached locally, the warning indicates a 9901.0% cache miss rate, which is
-puzzling since the training process continues without apparent performance
-degradation. This raises questions about    the cache's role and effectiveness
-in the dataset loading process, suggesting a need for further investigation into
-the caching mechanism and its impact on performance.
-
-#### Comment Summary (1 comments)
-
-Cache misses are insignificant for local files, but for remote files, they
-indicate a mismatch between indexes and     shard structure, with a 9991% miss
-rate suggesting a bug. The plan is to investigate the code for the issue, and if
-unsuccessful, a simple test case reproducing the bug would be helpful. Creating
-a .tar file at the start of the PyTest test case is recommended.
-
-#### Comment Details
-
-* tmbdev commented on 2025-02-08 02:20:44
 
 ---
 ### Issue #441: How Column Store work with multiple node training?
@@ -521,32 +404,6 @@ information or material.
 * tmbdev commented on 2024-12-11 02:34:53
 
 ---
-### Issue #423: Use WIDS without torch
-
-* **Created by:** timresink
-* **Created on:** 2024-11-01 15:59:07
-
-#### Summary
-
-The issue raised is about the dependency of the WIDS library on PyTorch, which
-causes import failures in non-PyTorch   environments. The user, Tim, suggests
-making WIDS less dependent on PyTorch to facilitate its use in applications that
-do not require PyTorch but still utilize datasets packed in shards. Tim is also
-willing to contribute a pull request   to address this issue if the maintainers
-are open to it.
-
-#### Comment Summary (1 comments)
-
-The user apologizes for a delayed response and confirms that wids is intended to
-work without torch, though it hasn't  been tested. They welcome a pull request
-and mention plans to separate wids and wsds into distinct projects to
-streamline bug tracking and installation.
-
-#### Comment Details
-
-* tmbdev commented on 2024-12-11 02:28:54
-
----
 ### Issue #422: load tensor type webdataset into multi GPUs
 
 * **Created by:** lyb369
@@ -560,25 +417,6 @@ assistance to efficiently manage this process, likely to optimize performance
 and ensure compatibility across multiple GPUs. Any guidance or solutions from
 those experienced in handling such datasets in a    distributed training
 environment would be greatly appreciated. #performance #enhancement
-
-#### Comments
-
-No comments on this issue.
-
----
-### Issue #421: Question: Is it possible to use WIDS to look up sample by key instead of index?
-
-* **Created by:** IMG-PRCSNG
-* **Created on:** 2024-10-25 08:17:37
-
-#### Summary
-
-The issue involves the desire to implement a method in WIDS similar to MMTar's
-get_by_name function, which allows      sample lookup by file name. The
-challenge lies in adapting this functionality to WIDS, where file counts are
-used to   determine shard indices. To get started, one could explore the
-existing MMTar implementation and consider how to       integrate a similar
-interface within the constraints of WIDS's architecture.
 
 #### Comments
 
@@ -1006,38 +844,6 @@ to the latest version. #enhancement #error
 No comments on this issue.
 
 ---
-### Issue #330: how to use wids on local dataset
-
-* **Created by:** WudiJoey
-* **Created on:** 2024-01-30 06:37:35
-
-#### Summary
-
-The issue arises when attempting to access the first element of a
-ShardListDataset using the webdataset library,       resulting in a
-UnicodeDecodeError. This error occurs because the code attempts to decode a byte
-sequence that is not   valid UTF-8, specifically at the point where the tar
-file's header name is being processed. This suggests a potential  problem with
-the encoding of the tar file or the handling of non-UTF-8 encoded data within
-the library.
-
-#### Comment Summary (3 comments)
-
-The user is encountering a UnicodeDecodeError when trying to access a dataset
-using the wids library, specifically     when the system attempts to decode file
-names in a tar archive as UTF-8. The error suggests that there might be
-non-ASCII file names or keys inside the tar archive, which are not being handled
-correctly by the MMIndexedTar class.  The user generated the tar file using
-ShardWriter, which utilizes the Python tarfile library, but it's unclear how the
-file names are encoded during this process.
-
-#### Comment Details
-
-* WudiJoey commented on 2024-01-30 07:43:52
-* tmbdev commented on 2024-02-28 03:51:58
-* WudiJoey commented on 2024-02-28 03:52:18
-
----
 ### Issue #325: Buckets of elements of different sizes
 
 * **Created by:** ethansmith2000
@@ -1126,32 +932,6 @@ tars that previously encountered       duplicate key problems.
 
 * tmbdev commented on 2024-01-04 19:29:41
 * jpc commented on 2024-10-23 20:29:06
-
----
-### Issue #311: stream is deleted but not closed
-
-* **Created by:** wangkenpu
-* **Created on:** 2023-11-24 15:35:07
-
-#### Summary
-
-The issue involves receiving numerous ResourceWarning messages when using
-WebDataset with PyTorch DataLoader,          indicating unclosed file resources
-in webdataset/tariterators.py. The warnings suggest that files are not being
-properly closed, which can be resolved by adding source["stream"].close() at the
-end of the loop in the specified      script. This fix prevents resource leaks
-and eliminates the warnings during tests.
-
-#### Comment Summary (1 comments)
-
-A pull request has been created to address the issue in the WebDataset
-repository, as referenced by the provided       GitHub link. This update is
-intended to resolve the problem efficiently. For further details, please review
-the pull   request directly on GitHub.
-
-#### Comment Details
-
-* wangkenpu commented on 2023-11-26 09:29:21
 
 ---
 ### Issue #310: Problem about webdataset load the same tar file by epoch
@@ -1844,31 +1624,6 @@ conventions.
 * tmbdev commented on 2023-01-31 21:49:04
 
 ---
-### Issue #235: gopen_curl fails on windows 
-
-* **Created by:** pratikgujjar
-* **Created on:** 2022-12-16 01:25:42
-
-#### Summary
-
-The issue arises when loading a tarfile using a URL as a webdataset on Windows,
-due to a curl command that improperly  formats URLs containing the & symbol by
-enclosing them in single quotes. This results in incorrect URL interpretation,
-causing the operation to fail. The problem is specific to Windows environments
-where the command line does not handle  single quotes as expected.
-
-#### Comment Summary (1 comments)
-
-WebDataset lacks testing on Windows, and setting up tests on GitHub for it might
-not be feasible. However, a pull      request for gopen.py with Windows-specific
-command strings would be considered for integration. Providing the correct
-command strings for Windows is the main requirement for the PR.
-
-#### Comment Details
-
-* tmbdev commented on 2022-12-20 21:16:06
-
----
 ### Issue #234: Checkpoint support
 
 * **Created by:** yncxcw
@@ -2059,35 +1814,6 @@ and write     directly to the cloud effectively.
 * tmbdev commented on 2022-12-20 23:08:48
 * adamklec commented on 2023-03-26 18:23:35
 * justinpinkney commented on 2023-06-15 11:21:18
-
----
-### Issue #214: Problems with webdataset caching and docker
-
-* **Created by:** itepifanio
-* **Created on:** 2022-10-03 12:18:29
-
-#### Summary
-
-The issue arises when using webdataset caching in a CI environment, causing a
-failure due to an error related to the   os.popen call in cache.py. The provided
-Dockerfile and Python script demonstrate the problem, which occurs
-consistently when attempting to cache datasets from a specified URL. This
-suggests a potential bug or limitation in    the webdataset library's caching
-mechanism when executed in certain environments, such as CI pipelines.
-
-#### Comment Summary (2 comments)
-
-The comments suggest that the Docker image might be missing the file command,
-which can be installed using apt install file curl. The issue arises when the
-curl command retrieves a non-tar file, likely due to an incorrect URL, resulting
-in an error for WebDataset. To address this, it's recommended to add an option
-to check URLs before the main loop and  include failed URLs in "not a tar file"
-error messages.
-
-#### Comment Details
-
-* perjmi commented on 2022-12-30 15:29:21
-* tmbdev commented on 2023-01-31 21:51:30
 
 ---
 ### Issue #212: Webdataset sharding download

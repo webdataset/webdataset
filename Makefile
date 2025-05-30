@@ -27,12 +27,10 @@ versions:
 	uv run python3 helpers/versions.py
 
 test:
-	echo $(PATH)
 	$(MAKE) venv
 	uv run pytest -v -m quick
 
 fulltest:
-	echo $(PATH)
 	$(MAKE) venv
 	uv run pytest
 

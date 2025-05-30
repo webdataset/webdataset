@@ -144,7 +144,7 @@ class Pipe:
 
     def __del__(self):
         """Close the stream upon delete.
-        
+
         This is a fallback for when users can't use context managers.
         We catch all exceptions since __del__ should never raise exceptions
         during garbage collection.
@@ -207,11 +207,11 @@ def gopen_file(url, mode="rb", bufsize=8192):
 def gopen_pipe(url, mode="rb", bufsize=8192):
     """Use gopen to open a pipe.
 
-    This function deliberately uses shell=True with the pipe URL to enable shell command 
-    execution directly from URLs. This is an intentional design feature that allows users 
+    This function deliberately uses shell=True with the pipe URL to enable shell command
+    execution directly from URLs. This is an intentional design feature that allows users
     to construct processing pipelines using shell commands via the pipe: URL scheme.
     The purpose is to enable flexible data processing directly within data loading pipelines.
-    
+
     Note: This feature requires careful use with trusted input sources only, as it will
     execute arbitrary shell commands specified in the URL.
 
@@ -255,8 +255,7 @@ def gopen_curl(url, mode="rb", bufsize=8192):
         ValueError: If the mode is unknown
     """
     if mode[0] == "r":
-        cmd_args = ["curl", "--connect-timeout", "30", "--retry", "30",
-                   "--retry-delay", "2", "-f", "-s", "-L", url]
+        cmd_args = ["curl", "--connect-timeout", "30", "--retry", "30", "--retry-delay", "2", "-f", "-s", "-L", url]
         return Pipe(
             cmd_args,
             mode=mode,
@@ -330,8 +329,19 @@ def gopen_hf(url, mode="rb", bufsize=8192):
         )
         token = get_token()
         cmd_args = [
-            "curl", "--connect-timeout", "30", "--retry", "30", "--retry-delay", "2",
-            "-f", "-s", "-L", "-H", f"Authorization:Bearer {token}", http_url
+            "curl",
+            "--connect-timeout",
+            "30",
+            "--retry",
+            "30",
+            "--retry-delay",
+            "2",
+            "-f",
+            "-s",
+            "-L",
+            "-H",
+            f"Authorization:Bearer {token}",
+            http_url,
         ]
         return Pipe(
             cmd_args,
@@ -472,7 +482,7 @@ def rewrite_url(url):
     information about any URL rewrites that occur.
 
     Note: This function performs basic URL rewriting without validation.
-    Validation of the resulting URL for security concerns (such as path traversal) 
+    Validation of the resulting URL for security concerns (such as path traversal)
     is the responsibility of the caller.
 
     Args:

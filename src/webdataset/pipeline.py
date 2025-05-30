@@ -174,9 +174,9 @@ class DataPipeline(IterableDataset, PipelineStage):
         """
         if not silent:
             warnings.warn(
-                ".with_length() only sets the value of __len__ for compatibility " +
-                "with some training environments. It does not change the number of " +
-                "samples in an epoch."
+                ".with_length() only sets the value of __len__ for compatibility "
+                + "with some training environments. It does not change the number of "
+                + "samples in an epoch."
             )
         self.size = n
         return add_length_method(self)
