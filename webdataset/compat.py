@@ -344,7 +344,7 @@ class WebDataset(DataPipeline, FluidInterface):
         shardshuffle: The number of shards to shuffle, or None. Defaults to None.
         cache_size: The size of the cache in bytes. Defaults to -1 (unlimited).
         cache_dir: The directory to use for caching. Defaults to None.
-        url_to_name: Function to convert URLs to cache names. Defaults to pipe_cleaner.
+        url_to_name: Function to convert URLs to cache names. Defaults to url_to_cache_name.
         detshuffle: Whether to use deterministic shuffling. Defaults to False.
         nodesplitter: Function to split data by node. Defaults to single_node_only.
         workersplitter: Function to split data by worker. Defaults to split_by_worker.
@@ -368,7 +368,7 @@ class WebDataset(DataPipeline, FluidInterface):
         shardshuffle=None,
         cache_size=-1,
         cache_dir=None,
-        url_to_name=cache.pipe_cleaner,
+        url_to_name=cache.url_to_cache_name,
         detshuffle=False,
         nodesplitter=shardlists.single_node_only,
         workersplitter=shardlists.split_by_worker,
@@ -427,7 +427,10 @@ class WebDataset(DataPipeline, FluidInterface):
             opener = cache.StreamingOpen(handler=handler)
         else:
             opener = cache.FileCache(
-                cache_dir=cache_dir, cache_size=cache_size, handler=handler
+                cache_dir=cache_dir,
+                cache_size=cache_size,
+                handler=handler,
+                url_to_name=url_to_name
             )
         self.append(opener)
 
