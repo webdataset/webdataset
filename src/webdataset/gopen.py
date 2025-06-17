@@ -12,7 +12,7 @@ from subprocess import PIPE, Popen
 from urllib.parse import urlparse
 from urllib.request import url2pathname
 
-from .utils import enforce_security
+from . import utils
 
 # global used for printing additional node information during verbose output
 info = {}
@@ -234,7 +234,7 @@ def gopen_pipe(url, mode="rb", bufsize=8192):
         ValueError: If the mode is unknown
     """
     assert url.startswith("pipe:")
-    if enforce_security:
+    if utils.enforce_security:
         raise ValueError("gopen_pipe: unsafe_gopen is False, cannot open pipe URLs")
     cmd = url[5:]
     if mode[0] in ["r", "w"]:
@@ -505,12 +505,12 @@ def rewrite_url(url):
         and the input URL is "http://old.com/file.txt", the function will return
         "http://new.com/file.txt".
     """
-    if enforce_security:
-        raise ValueError("rewrite_url: unsafe_gopen is False, cannot rewrite URLs using environment variables")
     name = "GOPEN_REWRITE"
     verbose = int(os.environ.get("GOPEN_VERBOSE", 0))
     if name not in os.environ:
         return url
+    if utils.enforce_security:
+        raise ValueError("rewrite_url: unsafe_gopen is False, cannot rewrite URLs using environment variables")
     for r in os.environ[name].split(";"):
         k, v = r.split("=", 1)
         nurl = re.sub("^" + k, v, url)
@@ -577,12 +577,12 @@ def gopen(url, mode="rb", bufsize=8192, **kw):
     url = rewrite_url(url)
     pr = urlparse(url)
     if pr.scheme == "":
-        if enforce_security:
+        if utils.enforce_security:
             raise ValueError("gopen: unsafe_gopen is False, cannot open local files")
         bufsize = int(os.environ.get("GOPEN_BUFFER", -1))
         return open(url, mode, buffering=bufsize)
     if pr.scheme == "file":
-        if enforce_security:
+        if utils.enforce_security:
             raise ValueError("gopen: unsafe_gopen is False, cannot open local files")
         bufsize = int(os.environ.get("GOPEN_BUFFER", -1))
         return open(url2pathname(pr.path), mode, buffering=bufsize)

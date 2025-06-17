@@ -1,0 +1,31 @@
+# Identified Problems in src/webdataset
+
+1. Shell‐injection in gopen_pipe (gopen.py)
+   - Using `shell=True` with unescaped user input (`cmd = url[5:]`) allows arbitrary command execution via malicious "pipe:" URLs.
+
+2. Unsafe use of eval in safe_eval (utils.py)
+   - `safe_eval` uses `eval(expr.format(s))` after minimal sanitization; if `expr` is attacker‐controlled, this enables arbitrary code injection.
+
+3. Race condition in FileCache.download (cache.py)
+   - Temporary files are named using only the PID (`.temp{os.getpid()}`), so concurrent downloads of the same URL collide and corrupt cache contents.
+
+4. Reliance on external "file" command for type detection (cache.py)
+   - `get_filetype` shells out to the UNIX `file` utility, which fails on non‐UNIX systems, adds latency, and is brittle.
+
+5. Runtime class monkey‐patching in add_length_method (pipeline.py)
+   - Dynamically changing `obj.__class__` breaks type safety, pickling, and static analysis, leading to unpredictable behavior.
+
+6. Shallow‐copy pitfalls in DataPipeline.compose (pipeline.py)
+   - Uses `copy.copy` on pipelines, causing shared mutable internal state across pipeline copies and subtle bugs.
+
+7. Inconsistent resource cleanup (gopen.py & writer.py)
+   - Streams and subprocess pipes rely on `__del__` and manual `close()` calls, leading to file descriptor leaks when not properly closed.
+
+8. Fragile GOPEN_REWRITE parsing (gopen.py)
+   - Splits rewrite rules on `;` and `=` without escaping, so malformed or complex patterns can crash or produce incorrect URL rewrites.
+
+9. Overbroad exception handling hides bugs (StreamingOpen, others)
+   - Catching broad `Exception` in multiple places masks programming errors and makes debugging difficult by skipping real failures.
+
+10. Heavy reliance on external binaries for core I/O (gopen.py & cache.py)
+    - Using `curl`, `gsutil`, `ais`, and other CLI tools reduces portability, complicates error handling, and exposes the library to external tool quirks.

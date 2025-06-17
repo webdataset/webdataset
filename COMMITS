@@ -1,0 +1,138 @@
+e7ce9cb 2025-05-07 Add pure Python file type detection for cross-platform support
+- Implement magic_filetype function to detect file types using magic numbers
+- Replace external 'file' command dependency with portable Python implementation
+- Add type definition in .pyi file
+- Support tar archives and gzip files which are the primary formats for WebDataset
+
+🤖 Generated with [Claude Code](https://claude.ai/code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+f5bc92c 2025-05-06 Add clarifying comments about sleep times in exception handlers
+Document that the hardcoded sleep times in handlers.py are intentional:
+- Ensures warnings don't scroll off screen too quickly
+- Not a performance bottleneck as handlers are called rarely
+- Sleep times provide better user experience during error scenarios
+
+🤖 Generated with [Claude Code](https://claude.ai/code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+51321ec 2025-05-06 Implement performance and security improvements
+- Add comment to LRU cache implementation about efficiency
+- Add exponential backoff to FileCache retry mechanism
+- Add note about URL validation in rewrite_url function
+
+🤖 Generated with [Claude Code](https://claude.ai/code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+b1e4a63 2025-05-06 Document exception handling in cache.py
+Add clarification to CLAUDE.md that the exception handling in cache.py:148-150
+is appropriate for handling race conditions in filesystem operations where
+files may be deleted by other processes during directory walking.
+
+🤖 Generated with [Claude Code](https://claude.ai/code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+a7674a9 2025-05-06 Fix resource leak in Pipe.__del__ method
+- Add proper exception handling to __del__ method in Pipe class
+- Prevent potential resource leaks during garbage collection
+- Add comments explaining fallback nature of __del__
+- Update CLAUDE.md with "next?" command shortcut
+
+🤖 Generated with [Claude Code](https://claude.ai/code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+3e963c4 2025-05-06 Document security design decisions
+- Add documentation to gopen_pipe explaining the deliberate use of shell=True
+- Document in CLAUDE.md that safe_eval and download functions are secure
+- Add memory and git command instructions to CLAUDE.md
+
+🤖 Generated with [Claude Code](https://claude.ai/code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+6dc7725 2025-05-06 Update release target to check for main branch
+Added a branch check to ensure releases can only be made
+from the main branch, preventing accidental releases from
+feature or development branches.
+
+🤖 Generated with [Claude Code](https://claude.ai/code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+c708557 2025-05-06 Add code analysis guidelines to CLAUDE.md
+Add a new section with guidelines about which files to include
+when performing security analysis, focusing on the core library
+code and excluding test files, build scripts, and helpers.
+
+🤖 Generated with [Claude Code](https://claude.ai/code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+79e7ece 2025-05-06 removed shell in cache.py
+
+99c5bf2 2025-05-06 updated gopen to avoid shell calls for most subprograms
+
+38966f6 2025-05-06 type declaration fixes
+
+5fd3edf 2025-05-06 added type declarations
+
+1f0534b 2025-05-06 added missing mypy related files
+
+6057b9e 2025-05-06 updated mkaefile, issues, claude instructions
+
+de03327 2025-02-10 Bump version: 0.3.4 → 0.3.5
+
+53d254c 2025-02-10 cleaned up workflow, updated readme
+
+c6109cb 2025-02-10 Bump version: 0.3.3 → 0.3.4
+
+99c8887 2025-02-10 fix
+
+2457a32 2025-02-10 more fixes to pyproject.toml and Makefile
+
+6c6a88f 2025-02-10 Bump version: 0.3.2 → 0.3.3
+
+176b198 2025-02-10 fix
+
+f10c422 2025-02-10 trying to fix packaging
+
+5ee4df4 2025-02-09 fix
+
+10a6d95 2025-02-09 Bump version: 0.3.1 → 0.3.2
+
+bcc8dad 2025-02-09 fixes
+
+fb8d5ab 2025-02-09 Bump version: 0.3.0 → 0.3.1
+
+eabf6a6 2025-02-09 fixes
+
+142166a 2025-02-09 fixes
+
+d0ddfe4 2025-02-09 fixed lint errors
+
+a4e232c 2025-02-09 fixed ruff and sourcery issues
+
+7d1fc5b 2025-02-09 added helpers
+
+e376ed4 2025-02-09 added ruff etc.
+
+8de3fc6 2025-02-09 moved tests
+
+b24c199 2025-02-09 fixed docs generation
+
+a761cf4 2025-02-09 cleanup
+
+a52927f 2025-02-09 refactored and removed wids/wsds from main repo
+
+0f3b5a8 2025-02-07 Merge pull request #420 from rookboom/johan/bug_fix_missing_import
+Missing import prevents iterable objects from being used as url source.
+15a8d69 2025-02-07 Merge pull request #431 from Akhil-CM/fix_extension_check
+fix (wids): length checks in extension checking of keys
+c5529ac 2025-02-07 Merge pull request #443 from lhoestq/add-hf-to-gopen
+Add Hugging Face support in gopen via `curl`
+54c74d9 2025-01-27 ad hf to gopen
