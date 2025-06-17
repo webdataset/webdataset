@@ -12,8 +12,15 @@ from subprocess import PIPE, Popen
 from urllib.parse import urlparse
 from urllib.request import url2pathname
 
+from .utils import enforce_safety
+
 # global used for printing additional node information during verbose output
 info = {}
+
+# If set to True, allows:
+# - opening of local files with gopen_file
+# - opening of named pipes with gopen_pipe
+# - URL rewriting with rewrite_url
 
 
 class Pipe:
@@ -227,6 +234,8 @@ def gopen_pipe(url, mode="rb", bufsize=8192):
         ValueError: If the mode is unknown
     """
     assert url.startswith("pipe:")
+    if enforce_safety:
+        raise ValueError("gopen_pipe: unsafe_gopen is False, cannot open pipe URLs")
     cmd = url[5:]
     if mode[0] in ["r", "w"]:
         return Pipe(
@@ -496,6 +505,8 @@ def rewrite_url(url):
         and the input URL is "http://old.com/file.txt", the function will return
         "http://new.com/file.txt".
     """
+    if enforce_safety:
+        raise ValueError("rewrite_url: unsafe_gopen is False, cannot rewrite URLs using environment variables")
     name = "GOPEN_REWRITE"
     verbose = int(os.environ.get("GOPEN_VERBOSE", 0))
     if name not in os.environ:
@@ -566,9 +577,13 @@ def gopen(url, mode="rb", bufsize=8192, **kw):
     url = rewrite_url(url)
     pr = urlparse(url)
     if pr.scheme == "":
+        if enforce_safety:
+            raise ValueError("gopen: unsafe_gopen is False, cannot open local files")
         bufsize = int(os.environ.get("GOPEN_BUFFER", -1))
         return open(url, mode, buffering=bufsize)
     if pr.scheme == "file":
+        if enforce_safety:
+            raise ValueError("gopen: unsafe_gopen is False, cannot open local files")
         bufsize = int(os.environ.get("GOPEN_BUFFER", -1))
         return open(url2pathname(pr.path), mode, buffering=bufsize)
     handler = gopen_schemes["__default__"]

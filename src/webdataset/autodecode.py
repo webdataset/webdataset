@@ -16,6 +16,8 @@ from functools import partial
 
 import numpy as np
 
+from .utils import enforce_safety
+
 pytorch_weights_only = os.environ.get("WDS_PYTORCH_WEIGHTS_ONLY", "0") == "1"
 
 # Obtained with:
@@ -120,6 +122,9 @@ def torch_loads(data: bytes):
 
     import torch
 
+    if enforce_safety:
+        raise ValueError("torch.loads is not allowed for security reasons when enforce_safety is set.")
+
     stream = io.BytesIO(data)
     return torch.load(stream, weights_only=pytorch_weights_only, map_location="cpu")
 
@@ -160,6 +165,16 @@ def cbor_loads(data):
     return cbor.loads(data)
 
 
+def unpickle_loads(data):
+    """Load data from pickle format. Imports pickle only if necessary."""
+    import pickle
+
+    if enforce_safety:
+        raise ValueError("Unpickling is not allowed for security reasons when enforce_safety is set.")
+
+    return pickle.loads(data)
+
+
 decoders = {
     "txt": lambda data: data.decode("utf-8"),
     "text": lambda data: data.decode("utf-8"),
@@ -171,8 +186,9 @@ decoders = {
     "id": lambda data: int(data),
     "json": lambda data: json.loads(data),
     "jsn": lambda data: json.loads(data),
-    "pyd": lambda data: pickle.loads(data),
-    "pickle": lambda data: pickle.loads(data),
+    "pkl": unpickle_loads,
+    "pickle": unpickle_loads,
+    "pyd": unpickle_loads,
     "pth": lambda data: torch_loads(data),
     "ten": tenbin_loads,
     "tb": tenbin_loads,

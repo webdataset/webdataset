@@ -21,6 +21,9 @@ import braceexpand
 import numpy as np
 
 
+enforce_safety = False
+
+
 def glob_with_braces(pattern):
     """Apply glob to patterns with braces by pre-expanding the braces.
 
