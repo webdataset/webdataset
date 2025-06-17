@@ -16,7 +16,7 @@ from functools import partial
 
 import numpy as np
 
-from .utils import enforce_safety
+from .utils import enforce_security
 
 pytorch_weights_only = os.environ.get("WDS_PYTORCH_WEIGHTS_ONLY", "0") == "1"
 
@@ -122,8 +122,8 @@ def torch_loads(data: bytes):
 
     import torch
 
-    if enforce_safety:
-        raise ValueError("torch.loads is not allowed for security reasons when enforce_safety is set.")
+    if enforce_security:
+        raise ValueError("torch.loads is not allowed for security reasons when enforce_security is set.")
 
     stream = io.BytesIO(data)
     return torch.load(stream, weights_only=pytorch_weights_only, map_location="cpu")
@@ -169,8 +169,8 @@ def unpickle_loads(data):
     """Load data from pickle format. Imports pickle only if necessary."""
     import pickle
 
-    if enforce_safety:
-        raise ValueError("Unpickling is not allowed for security reasons when enforce_safety is set.")
+    if enforce_security:
+        raise ValueError("Unpickling is not allowed for security reasons when enforce_security is set.")
 
     return pickle.loads(data)
 

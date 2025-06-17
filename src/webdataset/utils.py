@@ -21,7 +21,7 @@ import braceexpand
 import numpy as np
 
 
-enforce_safety = False
+enforce_security = False
 
 
 def glob_with_braces(pattern):
