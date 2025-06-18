@@ -70,7 +70,8 @@ from .shardlists import (
     split_by_worker,
 )
 from .tariterators import tarfile_samples, tarfile_to_samples
-from .utils import PipelineStage, repeatedly, enforce_security
+from .utils import PipelineStage, repeatedly
+from . import utils
 from .writer import ShardWriter, TarWriter, numpy_dumps, torch_dumps
 
 __version__ = "0.3.5"
