@@ -21,7 +21,7 @@ import braceexpand
 import numpy as np
 
 
-enforce_security = False
+enforce_security = bool(os.environ.get("WDS_SECURE", "0"))
 
 
 def glob_with_braces(pattern):

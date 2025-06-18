@@ -40,10 +40,12 @@ url = bucket + dataset
 ```
 
     PMC4991227_00003.json
+
+
     PMC4991227_00003.png
-
-
     PMC4537884_00002.json
+
+
     PMC4537884_00002.png
 
 
@@ -51,13 +53,13 @@ url = bucket + dataset
 
 
     PMC4323233_00003.png
-
-
     PMC5429906_00004.json
+
+
     PMC5429906_00004.png
-
-
     PMC5592712_00002.json
+
+
     PMC5592712_00002.png
 
 
@@ -100,7 +102,7 @@ shuffle_buffer = 10  # usually, pick something bigger, like 1000
 pil_dataset = wds.WebDataset(url).shuffle(shuffle_buffer).decode("pil").to_tuple("png", "json")
 ```
 
-    /home/tmb/proj/webdatasetng/src/webdataset/compat.py:379: UserWarning: WebDataset(shardshuffle=...) is None; set explicitly to False or a number
+    /Users/tbreuel/proj/webdataset/src/webdataset/compat.py:379: UserWarning: WebDataset(shardshuffle=...) is None; set explicitly to False or a number
       warnings.warn("WebDataset(shardshuffle=...) is None; set explicitly to False or a number")
 
 
@@ -128,7 +130,7 @@ plt.imshow(image)
 
 
 
-    <matplotlib.image.AxesImage at 0x7c000e56bc80>
+    <matplotlib.image.AxesImage at 0x12fec5050>
 
 
 
@@ -169,7 +171,7 @@ plt.imshow(image.numpy().transpose(1, 2, 0))
 
 
 
-    <matplotlib.image.AxesImage at 0x7c00139e5ee0>
+    <matplotlib.image.AxesImage at 0x1677a1250>
 
 
 
@@ -230,6 +232,12 @@ batch[0].shape, batch[1].shape
     (torch.Size([16, 3, 224, 224]), (16,))
 
 
+
+# Secure Mode
+
+You can run WebDataset in a mode that improves security. This disables the `pipe:` and `file:` protocols, as well as attempts to decode Python pickles. This should disable simple attacks and no successful attacks are currently known; rely on this mode at your own risk. 
+
+You enable secure mode by setting `webdataset.utils.enforce_security = True` before you start using the library. You can also set `WDS_SECURE=1` in your environment.
 
 # Installation and Documentation
 

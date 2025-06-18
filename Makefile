@@ -36,15 +36,22 @@ fulltest:
 
 readme:
 	# execute readme.ipynb notebook in place
-	uv run jupyter nbconvert --execute --to notebook --inplace readme.ipynb
-	uv run jupyter-nbconvert readme.ipynb --to markdown && mv readme.md README.md
+	uv run jupyter nbconvert --execute --to notebook --inplace README.ipynb
+	uv run jupyter-nbconvert readme.ipynb --to markdown
+	git add README.md && git commit -a -m "updated README.md"
+
+faq:
 	uv run python3 helpers/faq.py
+	git add FAQ.md && git commit -a -m "updated FAQ.md"
+
+versions:
 	uv run python3 helpers/versions.py
-	git add README.md FAQ.md VERSIONS.md && git commit -a -m "updated README.md FAQ.md VERSIONS.md"
+	git add VERSIONS.md && git commit -a -m "updated VERSIONS.md"
 
 docs:
-	$(MAKE) readme
 	uv run mkdocs build
+
+alldocs: docs readme faq versions
 
 # Serve documentation locally (for preview)
 serve:
