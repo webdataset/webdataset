@@ -20,9 +20,6 @@ clean:
 	rm -rf .pytest_cache .mypy_cache .coverage
 	find . -type d -name __pycache__ -exec rm -rf {} +
 
-faq:
-	uv run python3 helpers/faq.py
-
 versions:
 	uv run python3 helpers/versions.py
 
