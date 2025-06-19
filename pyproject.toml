@@ -43,6 +43,7 @@ dev = [
   "black[jupyter]",
   "build",
   "bump2version",
+  "diffusers",
   "flake8",
   "imageio",
   "isort",
