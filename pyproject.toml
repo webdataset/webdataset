@@ -119,7 +119,7 @@ add_ignore = ["D100", "D104", "D203", "D213", "D406", "D407", "D413", "D205", "D
 [tool.ruff]
 line-length = 120
 lint.select = ["E", "F", "W", "C90"]
-lint.ignore = ["E712", "F541", "C901", "E741"]
+lint.ignore = ["E712", "F541", "C901", "E741", "E501"]
 exclude = ["examples", "tasks.py", "readme.ipynb", "helpers"]
 
 [tool.ruff.lint.per-file-ignores]

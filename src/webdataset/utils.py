@@ -20,7 +20,6 @@ from typing import Any, Callable, Iterable, Iterator, Union
 import braceexpand
 import numpy as np
 
-
 enforce_security = bool(int(os.environ.get("WDS_SECURE", "0")))
 
 

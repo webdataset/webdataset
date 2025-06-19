@@ -167,7 +167,6 @@ def cbor_loads(data):
 
 def unpickle_loads(data):
     """Load data from pickle format. Imports pickle only if necessary."""
-    import pickle
 
     if utils.enforce_security:
         raise ValueError("Unpickling is not allowed for security reasons when enforce_security is set.")
