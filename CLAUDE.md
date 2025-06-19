@@ -39,7 +39,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Structure
 - Package name: webdatasetng
-- Version: 0.3.5
+- Version: 1.0.0
 - Python compatibility: 3.10+
 - Source code in `src/webdataset/`
 - Tests in `tests/`
