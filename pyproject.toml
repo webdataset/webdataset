@@ -1,6 +1,6 @@
 [project]
 name = "webdataset"
-version = "1.0.1"
+version = "1.0.2"
 description = "High performance storage and I/O for deep learning and data processing."
 authors = [
     {name = "Thomas Breuel", email = "tmbdev+removeme@gmail.com"},
