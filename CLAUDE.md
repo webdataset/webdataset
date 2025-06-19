@@ -38,7 +38,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Avoid using deprecated or obsolete functions
 
 ## Project Structure
-- Package name: webdatasetng
+- Package name: webdataset
 - Version: 1.0.0
 - Python compatibility: 3.10+
 - Source code in `src/webdataset/`

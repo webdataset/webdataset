@@ -1,5 +1,5 @@
 [project]
-name = "webdatasetng"
+name = "webdataset"
 version = "1.0.1"
 description = "High performance storage and I/O for deep learning and data processing."
 authors = [
