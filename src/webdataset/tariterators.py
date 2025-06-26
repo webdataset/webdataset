@@ -270,6 +270,7 @@ def group_by_keys(
 
 def tarfile_samples(
     src: Iterable[Dict[str, Any]],
+    keys: Callable[[str], Tuple[str, str]] = base_plus_ext,
     handler: Callable[[Exception], bool] = reraise_exception,
     select_files: Optional[Callable[[str], bool]] = None,
     rename_files: Optional[Callable[[str], str]] = None,
@@ -278,6 +279,7 @@ def tarfile_samples(
 
     Args:
         src: Stream of tar files.
+        keys: Function that takes a file name and returns a key and a suffix.
         handler: Exception handler.
         select_files: Function that selects files to be included.
         rename_files: Function to rename files.
@@ -287,7 +289,7 @@ def tarfile_samples(
     """
     streams = url_opener(src, handler=handler)
     files = tar_file_expander(streams, handler=handler, select_files=select_files, rename_files=rename_files)
-    samples = group_by_keys(files, handler=handler)
+    samples = group_by_keys(files, keys=keys, handler=handler)
     return samples
 
 
