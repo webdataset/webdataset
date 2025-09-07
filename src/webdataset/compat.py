@@ -405,10 +405,10 @@ class WebDataset(DataPipeline, FluidInterface):
 
         # next, we select a URL opener, either with or without caching
         # this generates a stream of dict(url=..., stream=...)
-        if cache_dir is None or cache_size == 0:
+        if args.cache_dir is None or args.cache_size == 0:
             opener = cache.StreamingOpen(handler=handler)
         else:
-            opener = cache.FileCache(cache_dir=cache_dir, cache_size=cache_size, handler=handler)
+            opener = cache.FileCache(cache_dir=args.cache_dir, cache_size=args.cache_size, handler=handler)
         self.append(opener)
 
         # now we need to open each stream and read the tar files contained in it
