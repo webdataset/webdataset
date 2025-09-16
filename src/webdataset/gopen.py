@@ -264,7 +264,7 @@ def gopen_curl(url, mode="rb", bufsize=8192):
         ValueError: If the mode is unknown
     """
     if mode[0] == "r":
-        cmd_args = ["curl", "--connect-timeout", "30", "--retry", "30", "--retry-delay", "2", "-f", "-s", "-L", url]
+        cmd_args = ["curl", "--connect-timeout", "0.5", "--retry", "1", "--retry-delay", "1", "-f", "-s", "-L", url]
         return Pipe(
             cmd_args,
             mode=mode,
