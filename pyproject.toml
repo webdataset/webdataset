@@ -32,6 +32,9 @@ build-backend = "setuptools.build_meta"
 packages = ["webdataset"]
 package-dir = {"" = "src"}
 
+[tool.setuptools.package-data]
+webdataset = ["py.typed", "*.pyi"]
+
 # Development-only dependencies (as a “dev” extra).
 [project.optional-dependencies]
 dev = [
