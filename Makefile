@@ -1,4 +1,4 @@
-.PHONY: venv shell test docs serve lint mypy push pypi clean testpypi rerelease patchrelease minorrelease majorrelease
+.PHONY: venv shell test docs serve lint mypy typeguard push pypi clean testpypi rerelease patchrelease minorrelease majorrelease
 
 # Lint code using Black and Ruff
 lint:
@@ -101,6 +101,10 @@ coverage:
 # Run mypy type checking
 mypy:
 	uv run mypy src/webdataset
+
+# Run tests with typeguard runtime type checking
+typeguard:
+	uv run pytest --typeguard-packages=webdataset tests/test_cache.py tests/test_filters.py tests/test_handlers.py tests/test_gopen.py tests/test_shardlists.py tests/test_security.py tests/test_loaders.py -v
 
 # unused:
 # 	./find-unused wids webdataset tests | grep -v test_ | grep -v tests/ | grep -v "function '_" | sort 

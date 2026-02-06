@@ -10,7 +10,7 @@
 import random
 import re
 import tarfile
-from typing import Any, Callable, Dict, Iterable, Iterator, Optional, Set, Tuple
+from typing import Any, BinaryIO, Callable, Dict, IO, Iterable, Iterator, Optional, Set, Tuple, Union
 
 import braceexpand
 
@@ -107,7 +107,7 @@ def url_opener(
 
 
 def tar_file_iterator(
-    fileobj: tarfile.TarFile,
+    fileobj: Union[IO[bytes], BinaryIO, gopen.Pipe],
     skip_meta: Optional[str] = r"__[^/]*__($|/)",
     handler: Callable[[Exception], bool] = reraise_exception,
     select_files: Optional[Callable[[str], bool]] = None,

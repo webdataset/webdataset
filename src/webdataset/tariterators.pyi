@@ -1,8 +1,10 @@
 import tarfile
 from typing import (
     Any,
+    BinaryIO,
     Callable,
     Dict,
+    IO,
     Iterable,
     Iterator,
     Optional,
@@ -12,6 +14,7 @@ from typing import (
     Union,
 )
 
+from . import gopen
 from .handlers import reraise_exception
 
 T = TypeVar('T')
@@ -32,7 +35,7 @@ def url_opener(
 ) -> Iterator[Dict[str, Any]]: ...
 
 def tar_file_iterator(
-    fileobj: tarfile.TarFile,
+    fileobj: Union[IO[bytes], BinaryIO, gopen.Pipe],
     skip_meta: Optional[str] = r"__[^/]*__($|/)",
     handler: Callable[[Exception], bool] = reraise_exception,
     select_files: Optional[Callable[[str], bool]] = None,

@@ -9,7 +9,7 @@ import subprocess
 import sys
 import time
 import urllib.parse
-from typing import Callable, Iterable, Optional
+from typing import Any, Callable, Dict, Iterable, Iterator, Optional
 from urllib.parse import urlparse
 
 import webdataset.gopen as gopen
@@ -244,7 +244,7 @@ class FileCache:
         *,
         url_to_name: Callable[[str], str] = url_to_cache_name,
         verbose: bool = False,
-        validator: Callable[[str], bool] = check_tar_format,
+        validator: Optional[Callable[[str], bool]] = check_tar_format,
         handler: Callable[[Exception], bool] = reraise_exception,
         cache_size: int = -1,
         cache_cleanup_interval: int = 30,
@@ -301,7 +301,7 @@ class FileCache:
                 raise ValueError("%s (%s) is not a tar archive, but a %s, contains %s" % (dest, url, ftype, repr(data)))
         return dest
 
-    def __call__(self, urls: Iterable[str]) -> Iterable[io.IOBase]:
+    def __call__(self, urls: Iterable[str]) -> Iterator[Dict[str, Any]]:
         """Download files from a list of URLs and yield file streams.
 
         Args:
