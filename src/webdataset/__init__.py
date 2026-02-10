@@ -57,6 +57,7 @@ from .handlers import (
     warn_and_stop,
 )
 from .mix import RandomMix, RoundRobin
+from .multimodal import MultiModalWebDataset, PairedShardList, PairedTarExpander
 from .pipeline import DataPipeline
 from .shardlists import (
     MultiShardSample,

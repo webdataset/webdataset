@@ -9,6 +9,7 @@ modules = [
     "gopen",
     "handlers",
     "mix",
+    "multimodal",
     "pipeline",
     "shardlists",
     "tariterators",
