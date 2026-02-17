@@ -185,11 +185,11 @@ plt.imshow(image.numpy().transpose(1, 2, 0))
 
 Here are a number of notebooks showing how to use WebDataset for image classification and LLM training:
 
-- [train-resnet50-wds](examples/out/train-resnet50-wds.ipynb) -- simple, single GPU training from Imagenet
-- [train-resnet50-multiray-wds](examples/out/train-resnet50-multiray-wds.ipynb) -- multinode training using webdataset
-- [generate-text-dataset](examples/out/generate-text-dataset.ipynb) -- initial dataset generation
-- [tesseract-wds](examples/out/tesseract-wds.ipynb) -- shard-to-shard transformations, here for OCR running over large datasets
-- [train-ocr-errors-hf](examples/out/train-ocr-errors-hf.ipynb) -- an example of LLM fine tuning using a dataset in webdataset format
+- [train-resnet50-wds](examples/train-resnet50-wds.ipynb) -- simple, single GPU training from Imagenet
+- [train-resnet50-multiray-wds](examples/train-resnet50-multiray-wds.ipynb) -- multinode training using webdataset
+- [generate-text-dataset](examples/generate-text-dataset.ipynb) -- initial dataset generation
+- [tesseract-wds](examples/tesseract-wds.ipynb) -- shard-to-shard transformations, here for OCR running over large datasets
+- [train-ocr-errors-hf](examples/train-ocr-errors-hf.ipynb) -- an example of LLM fine tuning using a dataset in webdataset format
 
 The [wds-notes](examples/wds-notes.ipynb) notebook contains some additional documentation and information about the library.
 
