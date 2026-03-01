@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from webdataset.shardlists import DirectoryShardList, ResampledShards, SimpleShardList
+from webdataset.shardlists import DirectoryShardList, ResampledShards, SimpleShardList, split_by_node, split_by_worker
 
 
 class TestSimpleShardList:
@@ -181,3 +181,40 @@ class TestDirectoryShardList:
         os.rename(file, file + "._99999999_")
         ds.cleanup_files_without_processes()
         assert not Path(file + "._99999999_").exists()
+
+
+def _patch_worker_info(monkeypatch, *, rank=0, world_size=1, worker=0, num_workers=1):
+    monkeypatch.setattr(
+        "webdataset.shardlists.utils.pytorch_worker_info",
+        lambda group=None: (rank, world_size, worker, num_workers),
+    )
+
+
+@pytest.mark.parametrize(
+    "splitter,info",
+    [
+        (split_by_worker, dict(worker=0, num_workers=1)),
+        (split_by_node, dict(rank=0, world_size=1)),
+    ],
+)
+def test_single_splitter_passthrough(monkeypatch, splitter, info):
+    _patch_worker_info(monkeypatch, **info)
+    src = list(range(8))
+    assert list(splitter(src)) == src
+
+
+@pytest.mark.parametrize(
+    "splitter,info,expected",
+    [
+        (split_by_worker, dict(worker=0, num_workers=3), [0, 3, 6]),
+        (split_by_worker, dict(worker=1, num_workers=3), [1, 4, 7]),
+        (split_by_worker, dict(worker=2, num_workers=3), [2, 5]),
+        (split_by_node, dict(rank=0, world_size=3), [0, 3, 6]),
+        (split_by_node, dict(rank=1, world_size=3), [1, 4, 7]),
+        (split_by_node, dict(rank=2, world_size=3), [2, 5]),
+    ],
+)
+def test_multi_splitter_round_robin_split(monkeypatch, splitter, info, expected):
+    _patch_worker_info(monkeypatch, **info)
+    src = list(range(8))
+    assert list(splitter(src)) == expected
