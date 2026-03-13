@@ -41,7 +41,6 @@ def get_filetype(fname: str):
     result = subprocess.run(["file", fname], stdout=subprocess.PIPE, text=True, check=True)
     return result.stdout
 
-
 def magic_filetype(fname: str):
     """Determine file type by checking magic numbers.
 
@@ -61,6 +60,10 @@ def magic_filetype(fname: str):
         if len(header) >= 2 and header[0:2] == b"\x1f\x8b":
             return f"{fname}: gzip compressed data"
 
+        # Check for xz signature (begins with FD 37 7A 58 5A 00)
+        if len(header) >= 6 and header[0:6] == b'\xfd7zXZ\x00':
+            return f"{fname}: xz compressed data"
+
         # Check for tar file signature (ustar at position 257-261)
         if len(header) > 261 and header[257:262] == b"ustar":
             return f"{fname}: POSIX tar archive"
@@ -76,7 +79,8 @@ def check_tar_format(fname: str):
 
     # Always use magic_filetype for file format detection
     ftype = magic_filetype(fname)
-    return "tar archive" in ftype.lower() or "gzip compressed" in ftype.lower()
+    good_formats = ["tar archive", "gzip compressed data", "xz compressed data"]
+    return any(fmt in ftype.lower() for fmt in good_formats)
 
 
 @obsolete
