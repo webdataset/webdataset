@@ -73,6 +73,7 @@ There are several libraries supporting the WebDataset format:
 - [Webdataset.jl](https://github.com/webdataset/WebDataset.jl) a Julia implementation
 - [tarp](https://github.com/webdataset/tarp), a Golang implementation and command line tool
 - Ray Data sources and sinks
+- 🤗 [Datasets](https://github.com/huggingface/datasets), Hugging Face's data loading and processing library
 
 The `webdataset` library can be used with PyTorch, Tensorflow, and Jax.
 
@@ -265,6 +266,7 @@ WebDataset loads a few additional libraries dynamically only when they are actua
 - `msgpack` for MessagePack decoding
 - the `curl` command line tool for accessing HTTP servers
 - the Google/Amazon/Azure command line tools for accessing cloud storage buckets
+- the `huggingface_hub` library for accessing Hugging Face datasets and storage buckets using `hf://` paths
 
 Loading of one of these libraries is triggered by configuring a decoder that attempts to decode content in the given format and encountering a file in that format during decoding. (Eventually, the torch... dependencies will be refactored into those libraries.)
 
