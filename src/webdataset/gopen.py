@@ -329,7 +329,7 @@ def gopen_hf(url, mode="rb", bufsize=8192):
     from huggingface_hub import HfFileSystem, get_token
 
     if mode[0] == "r":
-        http_url = http_url = HfFileSystem().url(url)
+        http_url = HfFileSystem().url(url)
         token = get_token()
         cmd_args = [
             "curl",
