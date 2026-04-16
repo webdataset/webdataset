@@ -313,10 +313,10 @@ def gopen_htgs(url, mode="rb", bufsize=8192):
 
 
 def gopen_hf(url, mode="rb", bufsize=8192):
-    """Open a URL with `curl`.
+    """Open a HF URL with `curl`.
 
     Args:
-        url: URL (usually, hf:// etc.)
+        url: URL (usually, hf:// e.g. hf://datasets/... or hf://buckets/...)
         mode: File mode
         bufsize: Buffer size
 
@@ -326,16 +326,10 @@ def gopen_hf(url, mode="rb", bufsize=8192):
     Raises:
         ValueError: If the mode is write or unknown
     """
-    from huggingface_hub import HfFileSystem, get_token, hf_hub_url
+    from huggingface_hub import HfFileSystem, get_token
 
     if mode[0] == "r":
-        resolved_path = HfFileSystem().resolve_path(url)
-        http_url = hf_hub_url(
-            repo_id=resolved_path.repo_id,
-            filename=resolved_path.path_in_repo,
-            repo_type=resolved_path.repo_type,
-            revision=resolved_path.revision,
-        )
+        http_url = HfFileSystem().url(url)
         token = get_token()
         cmd_args = [
             "curl",
