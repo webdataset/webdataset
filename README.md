@@ -268,4 +268,6 @@ WebDataset loads a few additional libraries dynamically only when they are actua
 
 Loading of one of these libraries is triggered by configuring a decoder that attempts to decode content in the given format and encountering a file in that format during decoding. (Eventually, the torch... dependencies will be refactored into those libraries.)
 
+---
 
+*[Mukller](https://github.com/Mukller)*
