@@ -184,14 +184,21 @@ class LRUCleanup:
 def download(url, dest, chunk_size=1024**2, verbose=False):
     """Download a file from `url` to `dest`."""
     temp = dest + f".temp{os.getpid()}"
-    with gopen.gopen(url) as stream:
-        with open(temp, "wb") as f:
-            while True:
-                data = stream.read(chunk_size)
-                if not data:
-                    break
-                f.write(data)
-    os.rename(temp, dest)
+    try:
+        with gopen.gopen(url) as stream:
+            with open(temp, "wb") as f:
+                while True:
+                    data = stream.read(chunk_size)
+                    if not data:
+                        break
+                    f.write(data)
+        os.rename(temp, dest)
+    except BaseException:
+        try:
+            os.remove(temp)
+        except FileNotFoundError:
+            pass
+        raise
 
 
 class StreamingOpen:

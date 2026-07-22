@@ -5,6 +5,7 @@ from urllib.parse import urlparse
 
 import pytest
 
+import webdataset.cache as cache
 from webdataset.cache import FileCache, LRUCleanup, StreamingOpen, url_to_cache_name
 
 
@@ -30,6 +31,42 @@ def test_url_to_cache_name():
 def test_url_to_cache_name_non_string_input():
     with pytest.raises(AssertionError):
         url_to_cache_name(123)
+
+
+class FailingStream:
+    def __init__(self, *, fail_on_read=False, fail_on_close=False):
+        self.fail_on_read = fail_on_read
+        self.fail_on_close = fail_on_close
+        self.reads = 0
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        if self.fail_on_close:
+            raise OSError("stream close failed")
+
+    def read(self, size):
+        self.reads += 1
+        if self.fail_on_read and self.reads == 2:
+            raise OSError("stream read failed")
+        return b"partial data" if self.reads == 1 else b""
+
+
+@pytest.mark.parametrize("failure", ["read", "close", "rename"])
+def test_download_removes_temp_file_after_failure(tmp_path, monkeypatch, failure):
+    dest = str(tmp_path / "shard.tar")
+    stream = FailingStream(fail_on_read=failure == "read", fail_on_close=failure == "close")
+    monkeypatch.setattr(cache.gopen, "gopen", lambda url: stream)
+
+    if failure == "rename":
+        monkeypatch.setattr(cache.os, "rename", lambda src, dst: (_ for _ in ()).throw(OSError("rename failed")))
+
+    with pytest.raises(OSError, match=f"{failure} failed"):
+        cache.download("mock://shard", dest)
+
+    assert not os.path.exists(dest)
+    assert not os.path.exists(dest + f".temp{os.getpid()}")
 
 
 class TestStreamingOpen:
