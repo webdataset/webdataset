@@ -15,7 +15,7 @@ from tests.conftest import (
     remote_shard,
     remote_shards,
 )
-from webdataset import compat
+from webdataset import compat, filters
 
 
 def identity(x):
@@ -565,15 +565,96 @@ def test_lmdb_cached(tmp_path):
     assert len(result1) == len(result3)
 
 
-def test_shuffle_seed():
-    """Test that shuffle is deterministic for a given seed."""
+def make_shard_shuffle_only_dataset(seed=0, detshuffle=False):
+    """Create a WebDataset pipeline truncated immediately after shard shuffling."""
+    dataset = compat.WebDataset(
+        "shard-{000000..000999}.tar",
+        shardshuffle=100,
+        seed=seed,
+        detshuffle=detshuffle,
+        nodesplitter=None,
+        workersplitter=None,
+        empty_check=False,
+    )
+    for index, stage in enumerate(dataset.pipeline):
+        ordinary_shuffle = isinstance(stage, filters.FilterFunction) and stage.f is filters._shuffle
+        if ordinary_shuffle or isinstance(stage, filters.detshuffle):
+            del dataset.pipeline[index + 1 :]
+            return dataset
+    raise AssertionError("shard shuffle stage not found")
 
-    def make_shuffle_only_ds(seed=0):
-        ds = compat.WebDataset("shard-{000000..000999}.tar", shardshuffle=True, seed=seed)
-        index = ["shuffle" in str(stage) for stage in ds.pipeline].index(True)
-        del ds.pipeline[index + 1 :]
-        return ds
 
-    ds1 = make_shuffle_only_ds(seed=0)
-    ds2 = make_shuffle_only_ds(seed=0)
-    assert list(ds1) == list(ds2)
+def shard_order(dataset):
+    """Return the URL order produced by a shard-only dataset."""
+    return [sample["url"] for sample in dataset]
+
+
+def test_shuffle_with_explicit_seed_is_repeatable(monkeypatch):
+    """An explicit seed produces the same ordinary shuffle on every iteration."""
+    monkeypatch.delenv("WDS_SEED", raising=False)
+    dataset1 = make_shard_shuffle_only_dataset(seed=0)
+    dataset2 = make_shard_shuffle_only_dataset(seed=0)
+
+    first_order = shard_order(dataset1)
+    assert first_order == shard_order(dataset2)
+    assert first_order == shard_order(dataset1)
+
+
+def test_shuffle_without_configured_seed_varies_by_iteration(monkeypatch):
+    """An unseeded ordinary shuffle creates a fresh order for each iteration."""
+    monkeypatch.delenv("WDS_SEED", raising=False)
+    dataset = make_shard_shuffle_only_dataset(seed=None)
+
+    first_order = shard_order(dataset)
+    second_order = shard_order(dataset)
+    assert dataset.seed is None
+    assert len(first_order) == 1000
+    assert set(first_order) == set(second_order)
+    assert first_order != second_order
+
+
+def test_wds_seed_is_repeatable_and_explicit_seed_takes_precedence(monkeypatch):
+    """WDS_SEED seeds ordinary shuffle unless an explicit seed is supplied."""
+    monkeypatch.delenv("WDS_SEED", raising=False)
+    expected_explicit_order = shard_order(make_shard_shuffle_only_dataset(seed=0))
+
+    monkeypatch.setenv("WDS_SEED", "fixed-seed")
+    environment_seeded = make_shard_shuffle_only_dataset(seed=None)
+    environment_order = shard_order(environment_seeded)
+    assert environment_seeded.seed == "fixed-seed"
+    assert environment_order == shard_order(environment_seeded)
+
+    explicitly_seeded = make_shard_shuffle_only_dataset(seed=0)
+    assert explicitly_seeded.seed == 0
+    assert shard_order(explicitly_seeded) == expected_explicit_order
+
+
+def test_detshuffle_is_epoch_aware_and_repeatable(monkeypatch):
+    """Equal detshuffle seeds reproduce each epoch while changing between epochs."""
+    monkeypatch.delenv("WDS_SEED", raising=False)
+    dataset1 = make_shard_shuffle_only_dataset(seed=123, detshuffle=True)
+    dataset2 = make_shard_shuffle_only_dataset(seed=123, detshuffle=True)
+
+    epoch0_order = shard_order(dataset1)
+    epoch1_order = shard_order(dataset1)
+    assert epoch0_order == shard_order(dataset2)
+    assert epoch1_order == shard_order(dataset2)
+    assert epoch0_order != epoch1_order
+
+    unseeded = make_shard_shuffle_only_dataset(seed=None, detshuffle=True)
+    assert unseeded.seed is None
+    assert shard_order(unseeded) != shard_order(unseeded)
+
+
+def test_wds_seed_supports_detshuffle(monkeypatch):
+    """WDS_SEED provides a repeatable epoch-aware detshuffle base seed."""
+    monkeypatch.setenv("WDS_SEED", "fixed-seed")
+    dataset1 = make_shard_shuffle_only_dataset(seed=None, detshuffle=True)
+    dataset2 = make_shard_shuffle_only_dataset(seed=None, detshuffle=True)
+
+    epoch0_order = shard_order(dataset1)
+    epoch1_order = shard_order(dataset1)
+    assert dataset1.seed == "fixed-seed"
+    assert epoch0_order == shard_order(dataset2)
+    assert epoch1_order == shard_order(dataset2)
+    assert epoch0_order != epoch1_order

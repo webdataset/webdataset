@@ -53,7 +53,7 @@ class FluidInterface:
 def check_empty(source: Iterable[Sample]) -> Iterator[Sample]: ...
 
 class WebDataset(DataPipeline, FluidInterface):
-    seed: int
+    seed: Optional[Union[int, str]]
 
     def __init__(
         self,

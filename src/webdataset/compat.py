@@ -381,7 +381,15 @@ class WebDataset(DataPipeline, FluidInterface):
             warnings.warn("set WebDataset(shardshuffle=...) to a positive integer or 0 or False")
             shardshuffle = 100
         args = SimpleNamespace(**locals())
-        self.seed = os.environ.get("WDS_SEED", random.randint(0, 1000000)) if seed is None else seed
+        self.seed = seed if seed is not None else os.environ.get("WDS_SEED")
+        # Ordinary shuffle interprets None as a fresh RNG per iteration; detshuffle needs a stable base.
+        if self.seed is None:
+            self._detshuffle_seed = random.randint(0, 1000000)
+        elif isinstance(self.seed, str):
+            # detshuffle adds the epoch numerically, so map environment strings to a stable integer.
+            self._detshuffle_seed = random.Random(self.seed).getrandbits(64)
+        else:
+            self._detshuffle_seed = self.seed
         self.update_cache_info(args)
 
         # first, we add a generator for the urls to used
@@ -399,7 +407,7 @@ class WebDataset(DataPipeline, FluidInterface):
         # add a shard shuffler
         if args.shardshuffle is not None:
             if args.detshuffle:
-                self.append(filters.detshuffle(args.shardshuffle, seed=self.seed))
+                self.append(filters.detshuffle(args.shardshuffle, seed=self._detshuffle_seed))
             else:
                 self.append(filters.shuffle(args.shardshuffle, seed=self.seed))
 
