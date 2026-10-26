@@ -115,6 +115,8 @@ def tar_file_iterator(
 ) -> Iterator[Dict[str, Any]]:
     """Iterate over tar file, yielding filename, content pairs for the given tar stream.
 
+    Member metadata is discarded after each entry, including skipped entries.
+
     Args:
         fileobj: The tar file stream.
         skip_meta: Regexp for keys that are skipped entirely.
@@ -145,7 +147,6 @@ def tar_file_iterator(
             data = stream.extractfile(tarinfo).read()
             result = dict(fname=fname, data=data)
             yield result
-            stream.members = []
         except Exception as exn:
             if hasattr(exn, "args") and len(exn.args) > 0:
                 exn.args = (str(exn.args[0]) + " @ " + str(fileobj),) + exn.args[1:]
@@ -153,6 +154,9 @@ def tar_file_iterator(
                 continue
             else:
                 break
+        finally:
+            # Discard headers for skipped entries as well as yielded files.
+            stream.members = []
     del stream
 
 
