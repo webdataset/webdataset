@@ -170,7 +170,7 @@ def tar_file_expander(
         handler: Exception handler.
         select_files: Select files from tarfiles by name (permits skipping files).
         rename_files: Function to rename files.
-        eof_value: Value to yield at the end of each shard.
+        eof_value: Value to yield at the end of each shard, including after a handled error.
 
     Yields:
         A stream of samples.
@@ -192,16 +192,13 @@ def tar_file_expander(
                 if local_path is not None:
                     sample["__local_path__"] = local_path
                 yield sample
-            # we yield an EOF marker at the end of each shard so that
-            # samples from different shards don't get mixed up
-            if eof_value is not None:
-                yield eof_value
         except Exception as exn:
             exn.args = exn.args + (source.get("stream"), source.get("url"))
-            if handler(exn):
-                continue
-            else:
+            if not handler(exn):
                 break
+        # Keep shard boundaries even when a read error was handled.
+        if eof_value is not None:
+            yield eof_value
 
 
 def group_by_keys(
