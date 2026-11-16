@@ -54,6 +54,34 @@ class TestResampledShards:
         self.deterministic = False
         self.max_urls = int(1e6)
 
+    def test_weighted_draws(self):
+        def draw():
+            return list(ResampledShards(self.urls, nshards=100, deterministic=True, worker_seed=lambda: 0, weights=[0, 1, 4]))
+
+        shards = draw()
+        assert shards == draw()
+        urls = [s["url"] for s in shards]
+        assert self.urls[0] not in urls
+        assert urls.count(self.urls[2]) > urls.count(self.urls[1]) > 0
+
+    def test_weighted_webdataset(self, tmp_path, monkeypatch):
+        from webdataset import TarWriter, WebDataset
+
+        monkeypatch.chdir(tmp_path)
+        paths = [f"{i}.tar" for i in range(2)]
+        for i, path in enumerate(paths):
+            with TarWriter(path) as writer:
+                writer.write({"__key__": str(i), "txt": "sample"})
+        ds = WebDataset(paths, resampled=True, shard_weights=[0, 1], shardshuffle=False)
+        assert [s["__key__"] for s in ds.with_epoch(5)] == ["1"] * 5
+        with pytest.raises(ValueError, match="shard_weights"):
+            WebDataset(paths, shard_weights=[0, 1], shardshuffle=False)
+
+    @pytest.mark.parametrize("weights", [[1], [0, 0, 0], [-1, 2, 3], [1, float("nan"), 3], [1e308, 1e308, 0]])
+    def test_invalid_weights(self, weights):
+        with pytest.raises(ValueError):
+            ResampledShards(self.urls, weights=weights)
+
     def test_init(self):
         rs = ResampledShards(
             self.urls,

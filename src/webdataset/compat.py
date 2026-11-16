@@ -332,6 +332,7 @@ class WebDataset(DataPipeline, FluidInterface):
         handler: Function to handle exceptions. Defaults to reraise_exception.
         mode: The mode of operation. Defaults to None.
         resampled: Whether to use resampled mode. Defaults to False.
+        shard_weights: Relative weights for draws with replacement, one per expanded URL.
         repeat: Whether to repeat the dataset. Defaults to False.
         shardshuffle: The number of shards to shuffle, or None. Defaults to None.
         cache_size: The size of the cache in bytes. Defaults to -1 (unlimited).
@@ -369,6 +370,7 @@ class WebDataset(DataPipeline, FluidInterface):
         empty_check=True,
         verbose=False,
         seed=None,
+        shard_weights=None,
     ):
         super().__init__()
         if resampled:
@@ -454,6 +456,15 @@ class WebDataset(DataPipeline, FluidInterface):
             ValueError: If the URL type is not supported or implemented.
         """
         urls = args.urls
+        if args.shard_weights is not None and (
+            args.mode != "resampled"
+            or isinstance(urls, dict)
+            or (
+                isinstance(urls, str)
+                and (urls.endswith((".yaml", ".yml", ".json")) or urlparse(urls).path.endswith("/"))
+            )
+        ):
+            raise ValueError("shard_weights requires a resampled list of shard URLs")
 
         # .yaml specification files
         if isinstance(urls, str) and (urls.endswith(".yaml") or urls.endswith(".yml")):
@@ -481,7 +492,7 @@ class WebDataset(DataPipeline, FluidInterface):
         # the rest is either a shard list or a resampled shard list
         if isinstance(args.urls, str) or utils.is_iterable(args.urls):
             if args.mode == "resampled":
-                self.append(shardlists.ResampledShardList(args.urls))
+                self.append(shardlists.ResampledShardList(args.urls, weights=args.shard_weights))
             else:
                 self.append(shardlists.SimpleShardList(args.urls))
             return

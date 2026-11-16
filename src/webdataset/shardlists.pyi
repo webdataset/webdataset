@@ -68,6 +68,7 @@ class ResampledShards(IterableDataset):
         deterministic: bool = False,
         max_urls: int = int(1e6),
         empty_check: bool = True,
+        weights: Optional[Iterable[float]] = None,
     ) -> None: ...
 
     def __iter__(self) -> Iterator[Dict[str, str]]: ...
