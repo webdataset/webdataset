@@ -11,6 +11,7 @@ Code works locally or over HTTP connections.
 """
 
 import glob
+import math
 import os
 import os.path
 import random
@@ -18,7 +19,7 @@ import re
 import sys
 import time
 from dataclasses import dataclass, field
-from itertools import islice
+from itertools import accumulate, islice
 from typing import List
 
 import braceexpand
@@ -292,6 +293,7 @@ class ResampledShards(IterableDataset):
         deterministic=False,
         max_urls=int(1e6),
         empty_check=True,
+        weights=None,
     ):
         """Initialize the ResampledShards.
 
@@ -303,12 +305,23 @@ class ResampledShards(IterableDataset):
             deterministic (bool): Whether to use deterministic sampling.
             max_urls (int): Maximum number of URLs to consider.
             empty_check (bool): Whether to check for empty URL list.
+            weights: Optional relative sampling weight for each expanded shard URL.
 
         Raises:
             ValueError: If empty_check is True and no shards are found.
         """
         super().__init__()
         self.urls = expand_source(urls, max_urls)
+        self.cum_weights = None
+        if weights is not None:
+            weights = list(weights)
+            if len(weights) != len(self.urls) or not weights:
+                raise ValueError("weights must contain one weight per expanded URL")
+            if not all(math.isfinite(w) and w >= 0 for w in weights):
+                raise ValueError("shard weights must be finite and nonnegative")
+            self.cum_weights = list(accumulate(weights))
+            if not 0 < self.cum_weights[-1] < math.inf:
+                raise ValueError("total shard weight must be finite and positive")
         if empty_check:
             if len(self.urls) == 0:
                 raise ValueError("empty_check=True, but no shards found in ResampledShards")
@@ -341,8 +354,11 @@ class ResampledShards(IterableDataset):
             print(f"# ResampledShards seed {seed}")
         self.rng = random.Random(seed)
         for _ in range(self.nshards):
-            index = self.rng.randint(0, len(self.urls) - 1)
-            yield dict(url=self.urls[index])
+            if self.cum_weights is None:
+                url = self.urls[self.rng.randint(0, len(self.urls) - 1)]
+            else:
+                url = self.rng.choices(self.urls, cum_weights=self.cum_weights)[0]
+            yield dict(url=url)
 
 
 ResampledShardList = ResampledShards

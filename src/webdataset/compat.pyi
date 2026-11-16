@@ -74,6 +74,7 @@ class WebDataset(DataPipeline, FluidInterface):
         empty_check: bool = True,
         verbose: bool = False,
         seed: Optional[int] = None,
+        shard_weights: Optional[Iterable[float]] = None,
     ) -> None: ...
 
     def update_cache_info(self, args: SimpleNamespace) -> None: ...
